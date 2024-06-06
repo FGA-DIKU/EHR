@@ -1,0 +1,109 @@
+env: local
+paths:
+  pretrain_model_path: "../outputs/pretraining/test"
+  # model_path: "outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_10_hours_pre_TEST_OUTCOME_test"
+  #checkpoint_epoch: 1
+  outcome: "../outputs/features/outcomes/TEST_OUTCOME/TEST_OUTCOME.pt"
+  #output_path: "outputs/finetuning"
+  run_name: "test"
+  #tokenized_dir:"tokenized"
+  tokenized_file: "tokenized_finetune.pt" # can also be a list
+  tokenized_pids: "pids_finetune.pt" # can also be a list
+  #redefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
+  #exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+model:
+  #extend_head: 
+  # hidden_size: null
+  cls:
+    _target_: ehr2vec.model.heads.ClassifierGRU
+    bidirectional: true
+data:
+  num_patients: 300 #300
+  val_split: 0.1
+  test_split: 0.1
+  truncation_len: 30
+  select_censored: false
+  # gender: M
+  min_age: 0
+  max_age: 70
+  # min_len: null
+  #code_types:
+   # - D
+  min_len: 2
+  censorer:
+   _target_: data_fixes.censor.EQ_Censorer
+  # remove_features: ['abspos']
+  number_of_train_patients: 10
+
+outcome: 
+  type: TEST_OUTCOME
+  n_hours: 124 # censor time
+  censor_type: TEST_OUTCOME
+  # censor_type: 
+    # year: 2015
+    # month: 01
+    # day: 01
+    # TEST_OUTCOME
+
+trainer_args:
+  sampler: true
+  sample_weight_function:
+    _target_: evaluation.utils.inverse_sqrt # function to calculate sample weights
+  batch_size: 8
+  val_batch_size: 16
+  effective_batch_size: 16
+  epochs: 3
+  info: true
+  gradient_clip: 
+    clip_value: 1.0
+  shuffle: true
+  checkpoint_frequency: 1
+  early_stopping: 20
+  stopping_criterion: roc_auc
+  
+optimizer:
+  lr: 5e-4
+  eps: 1e-6
+
+scheduler:
+  _target_: transformers.get_linear_schedule_with_warmup
+  num_warmup_steps: 10
+  num_training_steps: 100
+
+metrics:
+  accuracy:
+    _target_: evaluation.metrics.Accuracy
+    threshold: 0.6
+  balanced_accuracy:
+    _target_: evaluation.metrics.Balanced_Accuracy
+  precision:
+    _target_: evaluation.metrics.Precision
+  recall:
+    _target_: evaluation.metrics.Recall
+  roc_auc:
+    _target_: evaluation.metrics.ROC_AUC
+  pr_auc:
+    _target_: evaluation.metrics.PR_AUC
+  dice:
+    _target_: evaluation.metrics.Dice
+  f1:
+    _target_: evaluation.metrics.F1
+  precentage_positives:
+    _target_: evaluation.metrics.Percentage_Positives
+  mean_probability:
+    _target_: evaluation.metrics.Mean_Probability
+  cohen_kappa:
+    _target_: evaluation.metrics.Cohen_Kappa
+  mathews_correlation:
+    _target_: evaluation.metrics.Matthews_Correlation_Coefficient
+  true_positives:
+    _target_: evaluation.metrics.True_Positives
+  true_negatives:
+    _target_: evaluation.metrics.True_Negatives
+  false_positives:
+    _target_: evaluation.metrics.False_Positives
+  false_negatives:
+    _target_: evaluation.metrics.False_Negatives
+  
+  
+ 

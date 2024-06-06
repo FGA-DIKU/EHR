@@ -1,0 +1,25 @@
+env: local
+paths:
+  run_name: _test
+outcomes_name: "TEST_OUTCOME"
+features_dir: ../outputs/features
+loader:
+  data_dir: ../data/formatted/synthea500
+  concepts: [
+    diagnose
+  ]
+  batch_size: 50
+  chunksize: 300
+outcomes:
+  TEST_OUTCOME: 
+    type: [CONCEPT]
+    match: [['422650009']]
+    exclude: ['DT7432X']
+    match_how: contains
+    case_sensitive: true
+  TEST_CENSOR:
+    type: [CONCEPT]
+    match: [['42265']]
+    match_how: startswith
+    case_sensitive: false
+    
