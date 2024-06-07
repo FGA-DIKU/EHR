@@ -1,6 +1,6 @@
 """ File for excluding errors """
 import pandas as pd
-from typing import Union, List
+from typing import Union, List, Tuple
 
 def exclude_incorrect_event_ages(df: pd.DataFrame, min_age: int = -1, max_age: int = 120) -> pd.DataFrame:
     """Exclude patients with incorrect ages (outside defined range)"""
@@ -10,12 +10,31 @@ def exclude_event_nans(df: pd.DataFrame) -> pd.DataFrame:
     """Exclude events (row) with (any) NaNs """
     return df.dropna()
 
-def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: int = 3, background_length: int = 0) -> Union[pd.DataFrame, list, dict]:
+def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: int = 3, background_length: int = 0) -> Union[pd.DataFrame, Tuple[list, list], Tuple[dict, list]]:
     if isinstance(x, pd.DataFrame):
-        return x.groupby('PID').filter(lambda x: len(x) >= min_len + background_length)
-    elif isinstance(x, list) and isinstance(x[0], list):
-        return [x for x in x if len(x) >= min_len + background_length]
+        return exclude_short_sequences_df(x, min_len, background_length)
+    elif isinstance(x, list) and isinstance(x[0], list): 
+        return exclude_short_sequences_list(x, min_len, background_length)
     elif isinstance(x, dict):
-        return {k: v for k, v in x.items() if len(x['concept']) >= min_len + background_length}
+        return exclude_short_sequences_dict
     else:
         raise TypeError('Invalid type for x, only pd.DataFrame, list of lists, and dict are supported.')
+    
+def min_len_condition(c: list, min_len:int, background_length:int)->bool:
+    return len(c) >= min_len + background_length
+
+def exclude_short_sequences_df(x: pd.DataFrame, min_len:int, background_length:int)->pd.DataFrame:    
+    return x.groupby('PID').filter(lambda x: min_len_condition(x, min_len, background_length))
+
+def exclude_short_sequences_list(x: List[list], min_len:int, background_length:int)->Tuple[list, list]:
+    kept_indices, concepts = zip(*[(i, c) for i, c in enumerate(x) if min_len_condition(c, min_len, background_length)])
+    return list(concepts), list(kept_indices)
+
+def exclude_short_sequences_dict(x: dict, min_len:int, background_length:int)->Tuple[dict, list]:
+    kept_indices = [i for i, c in enumerate(x['concept']) if min_len_condition(c, min_len, background_length)]
+    filtered_x = {k: [v[i] for i in kept_indices] for k, v in x.items()}
+    return filtered_x, kept_indices
+
+
+
+
