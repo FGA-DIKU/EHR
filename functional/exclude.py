@@ -10,7 +10,7 @@ def exclude_event_nans(df: pd.DataFrame) -> pd.DataFrame:
     """Exclude events (row) with (any) NaNs """
     return df.dropna()
 
-def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: int = 3, background_length: int = 0) -> Union[pd.DataFrame, Tuple[list, list], Tuple[dict, list]]:
+def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: int = 3, background_length: int = 0) -> Tuple[Union[pd.DataFrame, List[list], dict], List[int]]:
     if isinstance(x, pd.DataFrame):
         return exclude_short_sequences_df(x, min_len, background_length)
     elif isinstance(x, list) and isinstance(x[0], list): 
@@ -23,8 +23,10 @@ def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: i
 def min_len_condition(c: list, min_len:int, background_length:int)->bool:
     return len(c) >= min_len + background_length
 
-def exclude_short_sequences_df(x: pd.DataFrame, min_len:int, background_length:int)->pd.DataFrame:    
-    return x.groupby('PID').filter(lambda x: min_len_condition(x, min_len, background_length))
+def exclude_short_sequences_df(x: pd.DataFrame, min_len:int, background_length:int)->pd.DataFrame:
+    filtered_df = x.groupby('PID').filter(lambda x: min_len_condition(x['CONCEPT'], min_len, background_length))
+    kept_indices = filtered_df.index.tolist()  
+    return filtered_df, kept_indices
 
 def exclude_short_sequences_list(x: List[list], min_len:int, background_length:int)->Tuple[list, list]:
     kept_indices, concepts = zip(*[(i, c) for i, c in enumerate(x) if min_len_condition(c, min_len, background_length)])
