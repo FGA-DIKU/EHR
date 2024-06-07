@@ -2,36 +2,23 @@
 import pandas as pd
 from typing import Union
 
-def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_col: str = 'segment'):
-    if isinstance(x, pd.Series):
-        return normalize_segments_series(x)
-    elif isinstance(x, pd.DataFrame):
-        return normalize_segments_df(x)
-    elif isinstance(x, list):
-        return normalize_segments_list(x)
-    elif isinstance(x, dict):
-        return normalize_segments_dict(x)
+def normalize_segments(x: Union[pd.DataFrame, dict], segment_col: str = 'segment'):
+    if isinstance(x, pd.DataFrame):
+        return normalize_segments_df(x, segment_col)
+    elif isinstance(x, dict): # TODO: Only used for Data.features (should be removed when pipeline is refactored)
+        return normalize_segments_dict(x, segment_col)
     else:
-        raise TypeError('Invalid type for x, only pd.DataFrame, list, and dict are supported.')
+        raise TypeError('Invalid type for x, only pd.DataFrame and dict are supported.')
 
 def normalize_segments_df(df: pd.DataFrame, segment_col: str = 'segment') -> pd.DataFrame:
-    return df.groupby('PID')[segment_col].transform(lambda x: normalize_segments_series(x))
-
-def normalize_segments_series(series: pd.Series) -> pd.Series:
-    return series.factorize()[0]
-
-def normalize_segments_list(segments: list) -> list:
-    segment_set = sorted(set(segments))
-    correct_segments = list(range(len(segment_set)))
-    converter = {k: v for (k,v) in zip(segment_set, correct_segments)}
-
-    return [converter[segment] for segment in segments]
+    return df.groupby('PID')[segment_col].transform(lambda x: x.factorize()[0])
 
 def normalize_segments_dict(features: dict, segment_col: str = 'segment') -> dict:
     for idx, segments in enumerate(features[segment_col]):
-        features[segment_col][idx] = normalize_segments_list(segments)
+        segment_set = sorted(set(segments))
+        converter = {k: i for i, k in enumerate(segment_set)}
+        features[segment_col][idx] = [converter[segment] for segment in segments]
     return features
-
 
 def get_background_length(features: dict, vocabulary)-> int:
     """Get the length of the background sentence, first SEP token included."""
