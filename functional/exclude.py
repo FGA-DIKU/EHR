@@ -16,7 +16,7 @@ def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: i
     elif isinstance(x, list) and isinstance(x[0], list): 
         return exclude_short_sequences_list(x, min_len, background_length)
     elif isinstance(x, dict):
-        return exclude_short_sequences_dict
+        return exclude_short_sequences_dict(x, min_len, background_length)
     else:
         raise TypeError('Invalid type for x, only pd.DataFrame, list of lists, and dict are supported.')
     
