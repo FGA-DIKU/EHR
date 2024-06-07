@@ -5,10 +5,12 @@ from os.path import join
 from typing import List, Tuple
 
 from corebehrt.data.utils import Utilities
-from corebehrt.data_fixes.exclude import Excluder
 from corebehrt.common.utils import Data, iter_patients
 from corebehrt.common.config import Config
 
+# New stuff
+from functional.exclude import exclude_short_sequences
+from functional.utils import get_background_length
 
 SPECIAL_CODES = ['[', 'BG_']
 
@@ -73,10 +75,9 @@ class PatientFilter:
 
     def exclude_short_sequences(self, data: Data) -> Data:
         """Exclude patients with less than k concepts"""
-        excluder = Excluder(min_len = self.cfg.data.get('min_len', 3),
-                            vocabulary=data.vocabulary)
-        kept_indices = excluder._exclude(data.features)
-        return self.select_entries(data, kept_indices)
+        background_length = get_background_length(data.features, data.vocabulary)
+        data.features = exclude_short_sequences(data.features, min_len=self.cfg.data.get('min_len', 3), background_length=background_length)
+        return data
 
     def select_by_age(self, data: Data) -> Data:
         """

@@ -23,9 +23,7 @@ class FeatureMaker:
         for creator in self.pipeline:
             concepts = creator(concepts, patients_info)
             concepts['CONCEPT'] = concepts['CONCEPT'].astype(str)
-        features, pids = self.create_features(concepts)
-
-        return features, pids
+        return concepts
     
     def create_pipeline(self) -> list:
         """Create the pipeline of feature creators."""
