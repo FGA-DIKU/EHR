@@ -19,11 +19,11 @@ from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_directory_for_features
 from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
-from corebehrt.data.featuremaker import FeatureMaker
 from corebehrt.data.tokenizer import EHRTokenizer
 from tqdm import tqdm
 
 # New stuff
+from classes.features import FeatureCreator
 from classes.excluder import Excluder
 
 CONFIG_NAME = 'create_data.yaml'
@@ -108,7 +108,7 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger)-> l
     """
     pids = []
     for i, (concept_batch, patient_batch) in enumerate(tqdm(conceptloader(), desc='Batch Process Data', file=TqdmToLogger(logger))):
-        feature_maker = FeatureMaker(cfg.features) # Otherwise appended to old features
+        feature_maker = FeatureCreator(cfg.features) # Otherwise appended to old features
         concept_batch = feature_maker(concept_batch, patient_batch)
         concept_batch = excluder.exclude_incorrect_events(features_batch)
         concept_batch = excluder.exclude_short_sequences(features_batch)

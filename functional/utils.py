@@ -1,6 +1,7 @@
 """ Random utils, should be structered later """
 import pandas as pd
-from typing import Union
+from datetime import datetime
+from typing import Union, List, Tuple
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_col: str = 'segment'):
     if isinstance(x, pd.Series):
@@ -18,7 +19,7 @@ def normalize_segments_df(df: pd.DataFrame, segment_col: str = 'segment') -> pd.
     return df.groupby('PID')[segment_col].transform(lambda x: normalize_segments_series(x))
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
-    return series.factorize()[0]
+    return series.factorize(use_na_sentinel=False)[0]
 
 def normalize_segments_list(segments: list) -> list:
     segment_set = sorted(set(segments))
@@ -40,3 +41,20 @@ def get_background_length(features: dict, vocabulary)-> int:
     background_length = len(set(example_concepts) & background_tokens)
 
     return background_length + 2 # +2 for [CLS] and [SEP] tokens
+
+def get_abspos_from_origin_point(timestamps: Union[pd.Series, List[datetime]],
+                                    origin_point: datetime)->Union[pd.Series, List[float]]:
+    """Get the absolute position in hours from the origin point"""
+    if isinstance(timestamps, pd.Series):
+        return (timestamps - origin_point).dt.total_seconds() / 60 / 60
+    elif isinstance(timestamps, list):
+        return [(timestamp - origin_point).total_seconds() / 60 / 60 for timestamp in timestamps]
+    else:
+        raise TypeError('Invalid type for timestamps, only pd.Series and list are supported.')
+
+def get_time_difference(now: pd.Series, then: pd.Series)-> pd.Series:
+    """Get the time difference in hours"""
+    return (now - then).dt.days / 365.25
+
+def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
+    return concepts.groupby('PID').agg(list).to_dict('list'), concepts['PID'].sort_values().unique().tolist()
