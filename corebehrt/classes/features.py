@@ -3,8 +3,9 @@ from typing import Union
 
 import pandas as pd
 
-from corebehrt.functional.creators import (create_abspos, create_ages, create_background,
-                                 create_death, create_segments)
+from corebehrt.functional.creators import (create_abspos, create_ages,
+                                           create_background, create_death,
+                                           create_segments)
 
 
 class FeatureCreator:
@@ -19,14 +20,16 @@ class FeatureCreator:
         self.background_vars = background_vars
 
     def __call__(self, concepts: pd.DataFrame, patients_info: pd.DataFrame) -> pd.DataFrame:
+        # !Do we need those if statements?
+        concepts.rename(columns={'CONCEPT': 'concept'}, inplace=True)
         if self.background_vars:
             concepts = create_background(concepts, patients_info, self.background_vars)
         if self.ages:
-            concepts = create_ages(concepts, patients_info.set_index('PID')['BIRTHDATE'])
+            concepts = create_ages(concepts, patients_info)
         if self.segment:
             concepts = create_segments(concepts)
         if self.origin_point:
             concepts = create_abspos(concepts, self.origin_point)
-        concepts = create_death(concepts, patients_info)
+        concepts = create_death(concepts, patients_info, self.origin_point)
 
         return concepts

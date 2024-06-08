@@ -67,6 +67,8 @@ class ConceptLoaderLarge(ConceptLoader):
     """Load concepts and patient data in chunks"""
     def __init__(self, concepts: list = ['diagnosis', 'medication'], data_dir: str = 'formatted_data', chunksize=10000, batchsize=100000):
         super().__init__(concepts, data_dir)
+        self.chunksize = chunksize
+        self.batchsize = batchsize
 
     def __call__(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
         return self.process()
@@ -77,7 +79,7 @@ class ConceptLoaderLarge(ConceptLoader):
         random.seed(42)
         random.shuffle(patient_ids)
 
-        for chunk_ids in self.get_patient_batch(patient_ids, self.batch_size):
+        for chunk_ids in self.get_patient_batch(patient_ids, self.batchsize):
             concepts_chunk = pd.concat([self.read_file_chunk(p, chunk_ids) for p in self.concepts_paths], ignore_index=True).drop_duplicates()
             concepts_chunk = concepts_chunk.sort_values(by=['PID','TIMESTAMP'])
             patients_info_chunk = patients_info[patients_info['PID'].isin(chunk_ids)]

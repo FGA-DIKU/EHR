@@ -7,7 +7,7 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_co
     if isinstance(x, pd.Series):
         return normalize_segments_series(x)
     elif isinstance(x, pd.DataFrame):
-        return normalize_segments_df(x)
+        return normalize_segments_df(x, segment_col=segment_col)
     elif isinstance(x, list):
         return normalize_segments_list(x)
     elif isinstance(x, dict):
@@ -16,7 +16,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_co
         raise TypeError('Invalid type for x, only pd.DataFrame, list, and dict are supported.')
 
 def normalize_segments_df(df: pd.DataFrame, segment_col: str = 'segment') -> pd.DataFrame:
-    return df.groupby('PID')[segment_col].transform(lambda x: normalize_segments_series(x))
+    df['segment'] = df.groupby('PID')[segment_col].transform(lambda x: normalize_segments_series(x))
+    return df
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     return series.factorize(use_na_sentinel=False)[0]
@@ -66,7 +67,7 @@ def calculate_ages_at_death(patients_info:pd.DataFrame)-> list:
 
 def get_last_segments(concepts: pd.DataFrame, patients_info: pd.DataFrame)-> list:
     """For each patient, get the last segment in the concepts DataFrame."""
-    if 'SEGMENT' not in concepts.columns:
+    if 'segment' not in concepts.columns:
         raise ValueError("Make sure SEGMENT is created before DeathCreator is used.")
-    last_segments = concepts.groupby('PID')['SEGMENT'].last().to_dict()
+    last_segments = concepts.groupby('PID')['segment'].last().to_dict()
     return [last_segments.get(pid) for pid in patients_info['PID']] 

@@ -12,24 +12,24 @@ import shutil
 from os.path import join
 
 import torch
+from tqdm import tqdm
+
+from corebehrt.classes.excluder import Excluder
+# New stuff
+from corebehrt.classes.features import FeatureCreator
 from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
-from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_directory_for_features
 from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.data.tokenizer import EHRTokenizer
-from tqdm import tqdm
-
-# New stuff
-from corebehrt.classes.features import FeatureCreator
-from corebehrt.classes.excluder import Excluder
+from common.logger import TqdmToLogger
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
 
-args = get_args(CONFIG_NAME, 'data_pretrain')
+args = get_args(CONFIG_NAME, 'create_data')
 config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.config_path)
 
 
@@ -45,6 +45,7 @@ def main_data(config_path):
         Saves
     """
     cfg = load_config(config_path)
+
     cfg, _, mount_context = AzurePathContext(cfg, dataset_name=BLOBSTORE).azure_data_pretrain_setup()
 
     logger = DirectoryPreparer(config_path).prepare_directory(cfg)  
@@ -101,21 +102,27 @@ def check_and_clear_directory(cfg, logger, tokenized_dir_name='tokenized'):
             else:
                 shutil.rmtree(file_path)
 
-def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger)-> list:
+def create_and_save_features(conceptloader:ConceptLoaderLarge, 
+                             excluder: Excluder, 
+                             cfg, logger)-> list:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
     pids = []
     for i, (concept_batch, patient_batch) in enumerate(tqdm(conceptloader(), desc='Batch Process Data', file=TqdmToLogger(logger))):
-        feature_maker = FeatureCreator(cfg.features) # Otherwise appended to old features
-        concept_batch = feature_maker(concept_batch, patient_batch)
-        concept_batch = excluder.exclude_incorrect_events(features_batch)
-        concept_batch = excluder.exclude_short_sequences(features_batch)
-        features_batch, pids_batch = feature_maker.create_features(concept_batch, patient_batch)
-        torch.save(features_batch, join(cfg.output_dir, 'features', f'features_{i}.pt'))
-        torch.save(pids_batch, join(cfg.output_dir, 'features', f'pids_features_{i}.pt'))
-        pids.append(pids_batch)
+        feature_creator = FeatureCreator(cfg.features) # Otherwise appended to old features
+        concept_batch = feature_creator(concept_batch, patient_batch)
+        excluder = Excluder(**cfg.excluder)
+        concept_batch = excluder.exclude_incorrect_events(concept_batch)
+        concept_batch, pids = excluder.exclude_short_sequences(concept_batch)
+        # write to disk e.g. parquet
+        concept_batch.to_csv(join(cfg.output_dir, 'features', f'features.csv'), index=False, mode='a' if i > 0 else 'w')
+
+        #torch.save(features_batch, join(cfg.output_dir, 'features', f'features_{i}.pt'))
+        #torch.save(pids_batch, join(cfg.output_dir, 'features', f'pids_features_{i}.pt'))
+        #pids.append(pids_batch)
+    assert False
     return pids
 
 
