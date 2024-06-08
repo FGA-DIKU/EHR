@@ -23,8 +23,8 @@ def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: i
 def min_len_condition(c: list, min_len:int, background_length:int)->bool:
     return len(c) >= min_len + background_length
 
-def exclude_short_sequences_df(x: pd.DataFrame, min_len:int, background_length:int)->pd.DataFrame:
-    filtered_df = x.groupby('PID').filter(lambda x: min_len_condition(x['CONCEPT'], min_len, background_length))
+def exclude_short_sequences_df(df: pd.DataFrame, min_len:int, background_length:int)->pd.DataFrame:
+    filtered_df = df.groupby('PID').filter(lambda x: min_len_condition(x['concept'], min_len, background_length))
     kept_indices = filtered_df.index.tolist()  
     return filtered_df, kept_indices
 
