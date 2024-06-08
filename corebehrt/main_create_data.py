@@ -21,9 +21,10 @@ from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.data.featuremaker import FeatureMaker
 from corebehrt.data.tokenizer import EHRTokenizer
-from corebehrt.data_fixes.exclude import Excluder
-from corebehrt.data_fixes.handle import Handler
 from tqdm import tqdm
+
+# New stuff
+from classes.excluder import Excluder
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
@@ -53,8 +54,7 @@ def main_data(config_path):
     logger.info('Starting feature creation and processing')
     if not check_directory_for_features(cfg.loader.data_dir):
         pids = create_and_save_features(ConceptLoaderLarge(**cfg.loader), 
-                                        Handler(**cfg.handler), 
-                                        Excluder(**cfg.excluder), 
+                                        Excluder(**cfg.excluder), # Excluder is the new Handler and old Excluder
                                         cfg, logger)
         torch.save(pids, join(cfg.output_dir, 'features', 'pids_features.pt'))
     else:
@@ -101,7 +101,7 @@ def check_and_clear_directory(cfg, logger, tokenized_dir_name='tokenized'):
             else:
                 shutil.rmtree(file_path)
 
-def create_and_save_features(conceptloader, handler, excluder, cfg, logger, )-> list:
+def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger)-> list:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
@@ -109,13 +109,13 @@ def create_and_save_features(conceptloader, handler, excluder, cfg, logger, )-> 
     pids = []
     for i, (concept_batch, patient_batch) in enumerate(tqdm(conceptloader(), desc='Batch Process Data', file=TqdmToLogger(logger))):
         feature_maker = FeatureMaker(cfg.features) # Otherwise appended to old features
-        features_batch, pids_batch = feature_maker(concept_batch, patient_batch)
-        features_batch = handler(features_batch)
-        features_batch, _, kept_indices  = excluder(features_batch)
-        kept_pids = [pids_batch[idx] for idx in kept_indices]
+        concept_batch = feature_maker(concept_batch, patient_batch)
+        concept_batch = excluder.exclude_incorrect_events(features_batch)
+        concept_batch = excluder.exclude_short_sequences(features_batch)
+        features_batch, pids_batch = feature_maker.create_features(concept_batch, patient_batch)
         torch.save(features_batch, join(cfg.output_dir, 'features', f'features_{i}.pt'))
-        torch.save(kept_pids, join(cfg.output_dir, 'features', f'pids_features_{i}.pt'))
-        pids.append(kept_pids)
+        torch.save(pids_batch, join(cfg.output_dir, 'features', f'pids_features_{i}.pt'))
+        pids.append(pids_batch)
     return pids
 
 

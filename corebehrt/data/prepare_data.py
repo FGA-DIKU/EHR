@@ -15,8 +15,10 @@ from corebehrt.common.utils import Data
 from corebehrt.data.dataset import MLMDataset
 from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
-from corebehrt.data_fixes.handle import Handler
 from corebehrt.data_fixes.truncate import Truncator
+
+# New stuff
+from functional.utils import normalize_segments
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -255,9 +257,7 @@ class DataModifier:
         or if position_ids present (org. BEHRT version) then normalize those."""
         segments_key = 'segment' if 'segment' in data.features else 'position_ids'
 
-        for idx, segments in enumerate(data.features[segments_key]):
-            data.features[segments_key][idx] = Handler.normalize_segments(segments)
-
+        data.features = normalize_segments(data.features, segments_key)
         return data
 
 def retrieve_outcomes(all_outcomes: Dict, all_censor_outcomes: Dict, cfg: Config)->Union[List, List]:
