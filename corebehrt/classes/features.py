@@ -1,7 +1,11 @@
-import pandas as pd
 from datetime import datetime
 from typing import Union
-from functional.creators import create_ages, create_abspos, create_segments, create_background
+
+import pandas as pd
+
+from corebehrt.functional.creators import (create_abspos, create_ages, create_background,
+                                 create_death, create_segments)
+
 
 class FeatureCreator:
     def __init__(self,
@@ -23,5 +27,6 @@ class FeatureCreator:
             concepts = create_segments(concepts)
         if self.origin_point:
             concepts = create_abspos(concepts, self.origin_point)
+        concepts = create_death(concepts, patients_info)
 
         return concepts

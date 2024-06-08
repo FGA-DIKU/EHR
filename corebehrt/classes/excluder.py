@@ -1,8 +1,8 @@
 """ Excluder class for excluding incorrect events and patients """
 import pandas as pd
 from typing import Union, List
-from functional.exclude import exclude_incorrect_event_ages, exclude_event_nans, exclude_short_sequences
-from functional.utils import normalize_segments
+from corebehrt.functional.exclude import exclude_incorrect_event_ages, exclude_event_nans, exclude_short_sequences
+from corebehrt.functional.utils import normalize_segments
 
 
 class Excluder:

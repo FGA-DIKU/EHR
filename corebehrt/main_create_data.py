@@ -23,8 +23,8 @@ from corebehrt.data.tokenizer import EHRTokenizer
 from tqdm import tqdm
 
 # New stuff
-from classes.features import FeatureCreator
-from classes.excluder import Excluder
+from corebehrt.classes.features import FeatureCreator
+from corebehrt.classes.excluder import Excluder
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
