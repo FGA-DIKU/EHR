@@ -23,6 +23,8 @@ class FeatureCreator:
         """Create features based on given concepts and patients_info dataframes.
         concepts: table with columns: 'PID', 'TIMESTAMP', 'CONCEPT', 'ADMISSION_ID' 
         patients_info: table with columns: 'PID', and columns holding birth and death (inferred) and background variables
+        Output:
+            Table with PID, concept, abspos, age, segment. We constuct background and death events, insert SEP and CLS tokens.
         """
         # !Do we need those if statements?
         concepts.rename(columns={'CONCEPT': 'concept'}, inplace=True)
