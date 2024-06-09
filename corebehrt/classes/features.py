@@ -20,6 +20,10 @@ class FeatureCreator:
         self.background_vars = background_vars
 
     def __call__(self, concepts: pd.DataFrame, patients_info: pd.DataFrame) -> pd.DataFrame:
+        """Create features based on given concepts and patients_info dataframes.
+        concepts: table with columns: 'PID', 'TIMESTAMP', 'CONCEPT', 'ADMISSION_ID' 
+        patients_info: table with columns: 'PID', and columns holding birth and death (inferred) and background variables
+        """
         # !Do we need those if statements?
         concepts.rename(columns={'CONCEPT': 'concept'}, inplace=True)
         if self.background_vars:

@@ -5,10 +5,11 @@ Saved for later, should be revamped with all azure stuff
 
 ### config.py
 Is this possible to simplify?
+-> switch to hydra?/ Use CLI instead of config
 
 ### initalize.py
 Classes: Initalizer, ModelManager
- - How much are these needed?
+ - How much are these needed? Takes care of some things but can be improved with torch.lightning
 
 Functional: Basically all
 
@@ -23,7 +24,7 @@ Functional: Basically all
 Notes: Revamp to be less dependent on specific file extensions
 
 ### logger.py
-Don't understand? Is this really needed?
+Don't understand? Is this really needed? -> useful but there might be other ways?
 
 ### saver.py
 Classes: Saver
@@ -42,7 +43,7 @@ Notes: Might be simplified via. Azure revamp
 
 ### utils.py
 classes: Data
- - Should we move away from this class?
+ - Should we move away from this class? -> I would keep it, otherwise one needs to pass multiple objects which belong together
 
 Functional: basically all
 
