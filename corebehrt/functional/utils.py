@@ -20,6 +20,8 @@ def normalize_segments_df(df: pd.DataFrame, segment_col: str = 'segment') -> pd.
     return df
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
+    # Convert to string to ensure consistent types and avoid warnings
+    series = series.astype(str)
     return series.factorize(use_na_sentinel=False)[0]
 
 def normalize_segments_list(segments: list) -> list:
