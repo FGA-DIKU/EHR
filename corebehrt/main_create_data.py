@@ -25,6 +25,8 @@ from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.data.tokenizer import EHRTokenizer
 from common.logger import TqdmToLogger
+import polars as pl
+from corebehrt.functional.tokenize import add_separator_token, add_cls_token
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
@@ -54,16 +56,28 @@ def main_data(config_path):
     logger.info('Initialize Processors')
     logger.info('Starting feature creation and processing')
     if not check_directory_for_features(cfg.loader.data_dir):
-        pids = create_and_save_features(ConceptLoaderLarge(**cfg.loader), 
+        logger.info('Creating features')
+        create_and_save_features(ConceptLoaderLarge(**cfg.loader), 
                                         Excluder(**cfg.excluder), # Excluder is the new Handler and old Excluder
                                         cfg, logger)
-        torch.save(pids, join(cfg.output_dir, 'features', 'pids_features.pt'))
+        logger.info('Finished feature creation and processing')
     else:
-        pids = torch.load(join(cfg.loader.data_dir, 'features', 'pids_features.pt'))
-    logger.info('Finished feature creation and processing')
+        logger.info('Use existing features')
     
-    logger.info('Splitting batches')
-    batches = Batches(cfg, pids)
+
+    logger.info('Splitting')
+
+    df = pl.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})
+    df = add_separator_token(df)
+    df = add_cls_token(df)
+    pretrain_pids, finetune_pids, test_pids = split_into_pids(df, cfg)
+    
+    df = EHRTokenizer(train_pids = pretrain_pids, **cfg, )(df)
+    
+    print(df)
+    assert False
+
+    batches = Batches(cfg, [])
     batches_split = batches.split_batches()
     
     tokenized_dir_name = cfg.get('tokenized_dir_name','tokenized')
@@ -115,14 +129,13 @@ def create_and_save_features(conceptloader:ConceptLoaderLarge,
         concept_batch = feature_creator(concept_batch, patient_batch)
         excluder = Excluder(**cfg.excluder)
         concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch, pids = excluder.exclude_short_sequences(concept_batch)
-        # write to disk e.g. parquet
-        concept_batch.to_csv(join(cfg.output_dir, 'features', f'features.csv'), index=False, mode='a' if i > 0 else 'w')
-
-        #torch.save(features_batch, join(cfg.output_dir, 'features', f'features_{i}.pt'))
-        #torch.save(pids_batch, join(cfg.output_dir, 'features', f'pids_features_{i}.pt'))
-        #pids.append(pids_batch)
-    assert False
+        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
+        concept_batch.drop(columns=['TIMESTAMP', 'ADMISSION_ID'], inplace=True, errors='ignore')
+        concept_batch.to_csv(join(cfg.output_dir, 'features', f'features.csv'), 
+                             index=False, 
+                             mode='a' if i > 0 else 'w',
+                             header=i==0)
+        pids.extend(pids_batch) 
     return pids
 
 
