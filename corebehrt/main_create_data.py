@@ -11,7 +11,9 @@ import os
 import shutil
 from os.path import join
 
+import dask.dataframe as dd
 import torch
+from common.logger import TqdmToLogger
 from tqdm import tqdm
 
 from corebehrt.classes.excluder import Excluder
@@ -24,9 +26,8 @@ from corebehrt.common.utils import check_directory_for_features
 from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.data.tokenizer import EHRTokenizer
-from common.logger import TqdmToLogger
-import polars as pl
-from corebehrt.functional.tokenize import add_separator_token, add_cls_token
+from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.functional.tokenize import add_cls_token, add_separator_token
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
@@ -67,12 +68,21 @@ def main_data(config_path):
 
     logger.info('Splitting')
 
-    df = pl.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})
+    df = dd.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})# pl.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})
+    
     df = add_separator_token(df)
     df = add_cls_token(df)
-    pretrain_pids, finetune_pids, test_pids = split_into_pids(df, cfg)
     
-    df = EHRTokenizer(train_pids = pretrain_pids, **cfg, )(df)
+    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(df.pids, **cfg.split)
+    df_pt = df.filter(df['PID'].isin(pretrain_pids))
+    df_ft = df.filter(df['PID'].isin(finetune_pids))
+    df_test = df.filter(df['PID'].isin(test_pids))
+
+    vocabulary = None
+    if 'vocabulary' in cfg.paths:
+        logger.info(f'Loading vocabulary from {cfg.paths.vocabulary}')
+        vocabulary = torch.load(cfg.paths.vocabulary) 
+    df = EHRTokenizer(train_pids = pretrain_pids, vocabulary=vocabulary)(df)
     
     print(df)
     assert False
