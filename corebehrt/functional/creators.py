@@ -32,6 +32,7 @@ def create_background(concepts: pd.DataFrame, patients_info: pd.DataFrame, backg
         'concept': itertools.chain.from_iterable(
                 [(patients_info[col].map(lambda x: f'BG_{col}_{x}')).tolist() for col in background_vars]),
         'TIMESTAMP': select_column(patients_info, 'birth').tolist() * len(background_vars),
+        'ADMISSION_ID': [0] * len(patients_info) * len(background_vars) # otherwise dropped at nan drop
         })
     
     return pd.concat([background, concepts])
