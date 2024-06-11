@@ -17,19 +17,23 @@ def add_token(
     to select the position of the token.
     The abspos_adjustment is used to ensure the tokens will be placed correctly.
     """
-    events = features.groupby('PID', maintain_order=True).apply(group_func)
+    features = features.lazy()
+    features = features.sort(['PID', 'abspos'])
+    events = features.groupby('PID', maintain_order=True).apply(
+        group_func, schema=features.schema)
     events = events.with_columns([
         pl.lit(token).alias('concept'),
         (pl.col('abspos') + abspos_adjustment).alias('abspos')
     ])
-    features = pl.concat([features, events])
-    return features.sort(['PID', 'abspos'])
+    return pl.concat([features, events])
 
 def add_separator_token(features: pl.DataFrame, sep_token: str = '[SEP]') -> pl.DataFrame:
     """Add separator token after each segment."""
-    return add_token(features, sep_token, find_visit_change, 1e-3)
+    return add_token(features, sep_token, find_visit_change, 1e-3
+                     ).sort(['PID', 'abspos'])
 
 def add_cls_token(features: pl.DataFrame, cls_token: str = '[CLS]') -> pl.DataFrame:
     """Add a classification token to the beginning of each patient's sequence"""
-    return add_token(features, cls_token, find_first_event, -1e-3)
+    return add_token(features, cls_token, find_first_event, -1e-3
+                     ).sort(['PID', 'abspos'])
 
