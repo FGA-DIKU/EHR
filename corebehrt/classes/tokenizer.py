@@ -5,7 +5,7 @@ from corebehrt.functional.tokenize import (add_cls_token, add_separator_token,
 
 
 class EHRTokenizer():
-    def __init__(self, vocabulary=None, cutoffs=None):
+    def __init__(self, vocabulary=None, cutoffs=None, sep_tokens:bool=True, cls_token:bool=True):
         if vocabulary is None:
             self.new_vocab = True
             self.vocabulary = {
@@ -21,6 +21,8 @@ class EHRTokenizer():
         if cutoffs is not None:
             self.check_cutoff(cutoffs)
         self.cutoffs = cutoffs
+        self.sep_tokens = sep_tokens
+        self.cls_token = cls_token
 
     def check_cutoff(self, cutoffs: dict):
         if not isinstance(cutoffs, dict):
@@ -29,8 +31,10 @@ class EHRTokenizer():
             raise ValueError('All values in cutoffs must be integers')
         
     def __call__(self, features: dd.DataFrame)->dd.DataFrame:
-        features = add_separator_token(features)
-        features = add_cls_token(features)
+        if self.sep_tokens:
+            features = add_separator_token(features)
+        if self.cls_token:
+            features = add_cls_token(features)
         features = features.reset_index(drop=True)
         if self.cutoffs:
             features = limit_concept_length(features, self.cutoffs) # Cutoff concepts to max_concept_length

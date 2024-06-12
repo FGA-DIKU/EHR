@@ -19,15 +19,14 @@ from tqdm import tqdm
 from corebehrt.classes.excluder import Excluder
 # New stuff
 from corebehrt.classes.features import FeatureCreator
+from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_directory_for_features
-from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
-from corebehrt.data.tokenizer import EHRTokenizer
+from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.split import split_pids_into_pt_ft_test
-from corebehrt.functional.tokenize import add_cls_token, add_separator_token
 
 CONFIG_NAME = 'create_data.yaml'
 BLOBSTORE = 'PHAIR'
@@ -68,28 +67,19 @@ def main_data(config_path):
 
     logger.info('Splitting')
 
-    df = dd.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})# pl.read_csv('../outputs/features/features/features.csv', dtypes={'concept': str})
-    
-    df = add_separator_token(df)
-    df = add_cls_token(df)
-    
-    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(df.pids, **cfg.split)
-    df_pt = df.filter(df['PID'].isin(pretrain_pids))
-    df_ft = df.filter(df['PID'].isin(finetune_pids))
-    df_test = df.filter(df['PID'].isin(test_pids))
+    df = dd.read_csv('../outputs/features/features/features.csv')
+    pids = df.PID.unique().compute().tolist()
+    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
+        pids, **cfg.split_ratios)
+    df_pt = df[df['PID'].isin(pretrain_pids)]
+    df_ft_test = df[df['PID'].isin(finetune_pids+test_pids)]
 
+    logger.info('Tokenizing')
     vocabulary = None
     if 'vocabulary' in cfg.paths:
         logger.info(f'Loading vocabulary from {cfg.paths.vocabulary}')
         vocabulary = torch.load(cfg.paths.vocabulary) 
-    df = EHRTokenizer(train_pids = pretrain_pids, vocabulary=vocabulary)(df)
-    
-    print(df)
-    assert False
-
-    batches = Batches(cfg, [])
-    batches_split = batches.split_batches()
-    
+    tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
     tokenized_dir_name = cfg.get('tokenized_dir_name','tokenized')
     check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
     
@@ -99,11 +89,28 @@ def main_data(config_path):
         vocabulary = torch.load(cfg.paths.vocabulary) 
 
     logger.info('Tokenizing')
-    tokenizer = EHRTokenizer(config=cfg.tokenizer, vocabulary=vocabulary)
-    batch_tokenize = BatchTokenize(pids, tokenizer, cfg, tokenized_dir_name=tokenized_dir_name)
+    #batch_tokenize = BatchTokenize(pids, tokenizer, cfg, tokenized_dir_name=tokenized_dir_name)
     shutil.copy(config_path, join(cfg.output_dir, tokenized_dir_name,  'data_cfg.yaml'))
+    tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
+    df_pt = tokenizer(df_pt)
+    tokenizer.freeze_vocabulary()
+    df_ft_test = tokenizer(df_ft_test)
+
+    df_ft = df_ft_test[df_ft_test['PID'].isin(finetune_pids)]
+    df_test = df_ft_test[df_ft_test['PID'].isin(test_pids)]
+    feats_pt, pids_pt = convert_to_sequences(df_pt)
+    feats_ft, pids_ft = convert_to_sequences(df_ft)
+    feats_test, pids_test = convert_to_sequences(df_test)
+    torch.save(tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, 'vocabulary.pt'))
     
-    batch_tokenize.tokenize(batches_split)
+    torch.save(feats_pt, join(cfg.output_dir, tokenized_dir_name, 'features_pretrain.pt'))
+    torch.save(pids_pt, join(cfg.output_dir, tokenized_dir_name, 'pids_pretrain.pt'))
+
+    torch.save(feats_ft, join(cfg.output_dir, tokenized_dir_name, 'features_finetune.pt'))
+    torch.save(pids_ft, join(cfg.output_dir, tokenized_dir_name, 'pids_finetune.pt'))
+
+    torch.save(feats_test, join(cfg.output_dir, tokenized_dir_name, 'features_test.pt'))
+    torch.save(pids_test, join(cfg.output_dir, tokenized_dir_name, 'pids_test.pt'))
     logger.info('Finished tokenizing')
     
     if cfg.env=='azure':
