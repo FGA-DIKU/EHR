@@ -1,4 +1,4 @@
-import polars as pl
+import dask.dataframe as dd
 
 from corebehrt.functional.tokenize import (add_cls_token, add_separator_token,
                                            limit_concept_length, tokenize)
@@ -28,12 +28,16 @@ class EHRTokenizer():
         if not all(isinstance(value, int) for value in cutoffs.values()):
             raise ValueError('All values in cutoffs must be integers')
         
-    def __call__(self, features: pl.DataFrame)->pl.DataFrame:
+    def __call__(self, features: dd.DataFrame)->dd.DataFrame:
         features = add_separator_token(features)
         features = add_cls_token(features)
+        features = features.reset_index(drop=True)
         if self.cutoffs:
             features = limit_concept_length(features, self.cutoffs) # Cutoff concepts to max_concept_length
-        features, vocabulary = tokenize(features, vocabulary=self.vocabulary, frozen_vocab=~self.new_vocab)
+        features, vocabulary = tokenize(
+            features, 
+            vocabulary=self.vocabulary, 
+            frozen_vocab=not self.new_vocab)
         self.vocabulary = vocabulary
         return features
     
