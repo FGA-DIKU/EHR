@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock, call
-from tests.helpers import ConfigMock
+from corebehrt.tests.helpers import ConfigMock
 from data.batch import Batches, BatchTokenize, Split
 from data.tokenizer import EHRTokenizer
 

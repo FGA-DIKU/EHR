@@ -1,6 +1,6 @@
 import unittest
 
-from ehr2vec.common.config import Config
+from common.config import Config
 
 
 class TestConfig(unittest.TestCase):

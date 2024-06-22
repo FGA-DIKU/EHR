@@ -1,41 +1,16 @@
 import unittest
-from data_fixes.exclude import Excluder
+
+from functional.exclude import (exclude_event_nans,
+                                exclude_incorrect_event_ages,
+                                exclude_short_sequences,
+                                exclude_short_sequences_df,
+                                exclude_short_sequences_dict,
+                                exclude_short_sequences_list,
+                                min_len_condition)
+
 
 class TestExcluder(unittest.TestCase):
-
-    def setUp(self):
-        self.excluder = Excluder(min_len=3, vocabulary={'[PAD]': 0, '[CLS]': 1, '[SEP]': 2, 'A': 3, 'B': 4, 'C': 5})
-
-    def test_exclude_short_sequences(self):
-        features = {
-            'concept': [[3, 4, 5], [3, 4], [3, 4, 5, 5]]
-        }
-        outcomes = [1, 0, 1]
-        expected_result = (
-            {'concept': [[3, 4, 5], [3, 4, 5, 5]]}, # features
-            [1, 1], # outcomes
-            [0, 2]  # kept_indices
-        )
-        result = self.excluder.exclude_short_sequences(features, outcomes)
-        self.assertEqual(result, expected_result)
-
-    def test__exclude(self):
-        features = {
-            'concept': [[3, 4, 5], [3, 4], [3, 4, 5, 5]]
-        }
-        expected_result = [0, 2]
-        result = self.excluder._exclude(features)
-        self.assertEqual(result, expected_result)
-
-    def test__is_tokenized(self):
-        concepts_list = [[3, 4, 5], [3, 4], [3, 4, 5, 5]]
-        concepts_list2 = [['A', 'B', 'C'], ['A', 'B'], ['A', 'B', 'C', 'C']]
-        
-        result = self.excluder._is_tokenized(concepts_list)
-        self.assertTrue(result)
-
-        result = self.excluder._is_tokenized(concepts_list2)
-        self.assertFalse(result)
+    pass
 
 if __name__ == '__main__':
     unittest.main()

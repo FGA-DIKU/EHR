@@ -83,11 +83,11 @@ The fine-tuning process is handled by the [`main_finetune_cv.py`](corebehrt/main
 ### [`BinaryOutcomeDataset`](corebehrt/data/dataset/py)
 Returns patient with target.
 
-### [ModelManager](corebehrt/common/initialize.py)
+### [`ModelManager`](corebehrt/common/initialize.py)
 Handling of loading in weights+config from pretrained model.  
 Initializing training components.
 
-### [Initializer](corebehrt/common/initialize.py)
+### [`Initializer`](corebehrt/common/initialize.py)
 Returning azure related stuff. Name should be changed/revamped to SDK2.
 
 ### [`EHRTrainer`](corebehrt/trainer/trainer.py)

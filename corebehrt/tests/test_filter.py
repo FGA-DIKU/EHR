@@ -1,8 +1,8 @@
 import random
 import unittest
 from unittest.mock import Mock, patch
-from ehr2vec.tests.helpers import ConfigMock
-from ehr2vec.data.filter import CodeTypeFilter, PatientFilter
+from corebehrt.tests.helpers import ConfigMock
+from data.filter import CodeTypeFilter, PatientFilter
 
 
 class TestCodeTypeFilter(unittest.TestCase):

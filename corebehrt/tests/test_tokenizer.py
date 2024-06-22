@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from tests.helpers import ConfigMock
+from corebehrt.tests.helpers import ConfigMock
 from data.tokenizer import EHRTokenizer
 
 class TestEHRTokenizer(unittest.TestCase):
