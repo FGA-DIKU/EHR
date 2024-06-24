@@ -1,6 +1,5 @@
 import unittest
-from itertools import combinations
-from data.split import get_n_splits_cv
+from corebehrt.data.split import get_n_splits_cv
 class TestDataObject:
     def __init__(self, pids):
         self.pids = pids

@@ -1,5 +1,5 @@
 import unittest
-from classes.features import FeatureCreator
+from corebehrt.classes.features import FeatureCreator
 
 
 

@@ -1,8 +1,10 @@
 import random
 import unittest
 from unittest.mock import Mock, patch
-from corebehrt.tests.helpers import ConfigMock
-from data.filter import CodeTypeFilter, PatientFilter
+
+from helpers import ConfigMock
+
+from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 
 
 class TestCodeTypeFilter(unittest.TestCase):

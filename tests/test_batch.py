@@ -1,12 +1,12 @@
 import unittest
 from unittest.mock import patch, MagicMock, call
-from corebehrt.tests.helpers import ConfigMock
-from data.batch import Batches, BatchTokenize, Split
-from data.tokenizer import EHRTokenizer
+from helpers import ConfigMock
+from corebehrt.data.batch import Batches, BatchTokenize, Split
+from corebehrt.data.tokenizer import EHRTokenizer
 
 class TestBatches(unittest.TestCase):
-    @patch('data.batch.load_exclude_pids', return_value=['100'])
-    @patch('data.batch.load_assigned_pids', return_value={'pretrain': [str(i) for i in range(10)], 'finetune': [str(i) for i in range(90, 100)]})
+    @patch('corebehrt.data.batch.load_exclude_pids', return_value=['100'])
+    @patch('corebehrt.data.batch.load_assigned_pids', return_value={'pretrain': [str(i) for i in range(10)], 'finetune': [str(i) for i in range(90, 100)]})
     def setUp(self, *args):
         self.cfg = ConfigMock()
         self.cfg.split_ratios = {'pretrain': 0.7, 'finetune': 0.2, 'test': 0.1}
@@ -55,7 +55,7 @@ class TestBatchTokenize(unittest.TestCase):
         self.pids = [['1', '2', '3'], ['4', '5', '6']]
         self.batch_tokenize = BatchTokenize(self.pids, self.tokenizer, self.cfg)
 
-    @patch('data.batch.BatchTokenize.load_and_filter_batch', return_value=({
+    @patch('corebehrt.data.batch.BatchTokenize.load_and_filter_batch', return_value=({
                 'concept': [['BG_GENDER_MALE', 'Diagnosis1', 'Medication1', 'Diagnosis2'], ['BG_GENDER_FEMALE', 'Diagnosis3', 'Medication1']],
                 'segment': [[0, 1, 1, 2], [0, 1, 2]]},
             ["1", "2"]))
@@ -71,13 +71,13 @@ class TestBatchTokenize(unittest.TestCase):
         self.assertEqual(result, expected_result)
         self.assertEqual(result_pids, expected_pids)
 
-    @patch('data.batch.BatchTokenize.load_and_filter_batch', side_effect=[
+    @patch('corebehrt.data.batch.BatchTokenize.load_and_filter_batch', side_effect=[
         ({'concept': [['BG_GENDER_MALE', 'Diagnosis1', 'Medication1']], 'segment': [[0, 1, 2]]}, ["1"]),
         ({'concept': [['BG_GENDER_MALE', 'Diagnosis1']], 'segment': [[0, 1]]}, ["2"]),
         ({'concept': [['UNKNOWN']], 'segment': [[0]]}, ["3"]),
     ])
     @patch('torch.save', return_value=None)
-    @patch('data.batch.BatchTokenize.save_tokenized_data', return_value=None)
+    @patch('corebehrt.data.batch.BatchTokenize.save_tokenized_data', return_value=None)
     def test_tokenize(self, tokenize, save, save_tokenized_data):
         splits = {'pretrain': Split(mode='pretrain', pids=['1']), 'finetune': Split(mode='finetune', pids=["2"]), 'test': Split(mode='test', pids=["3"])}
         self.batch_tokenize.tokenize(splits)

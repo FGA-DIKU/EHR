@@ -1,6 +1,6 @@
 import unittest
 
-from common.config import Config
+from corebehrt.common.config import Config
 
 
 class TestConfig(unittest.TestCase):

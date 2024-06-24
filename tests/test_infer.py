@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from data_fixes.infer import Inferrer
+from corebehrt.data_fixes.infer import Inferrer
 
 class TestInferrer(unittest.TestCase):
 

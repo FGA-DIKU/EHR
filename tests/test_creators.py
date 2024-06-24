@@ -1,8 +1,8 @@
 import unittest
-from tests.helpers import ConfigMock
+from helpers import ConfigMock
 import pandas as pd
 from datetime import datetime
-from functional.creators import create_abspos, create_ages, create_background, create_death, create_segments
+from corebehrt.functional.creators import create_abspos, create_ages, create_background, create_death, create_segments
 
 
 class TestBaseCreator(unittest.TestCase):

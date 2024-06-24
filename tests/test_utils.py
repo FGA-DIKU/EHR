@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from unittest.mock import Mock, MagicMock, patch
 
-from data.utils import Utilities
+from corebehrt.data.utils import Utilities
 
 class TestUtilities(unittest.TestCase):
     def test_process_datasets(self):

@@ -1,5 +1,5 @@
 import unittest
-from data_fixes.censor import Censorer, EQ_Censorer
+from corebehrt.data_fixes.censor import Censorer, EQ_Censorer
 
 class TestCensorer(unittest.TestCase):
 

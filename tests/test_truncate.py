@@ -1,5 +1,5 @@
 import unittest
-from data_fixes.truncate import Truncator
+from corebehrt.data_fixes.truncate import Truncator
 
 class TestTruncator(unittest.TestCase):
 
