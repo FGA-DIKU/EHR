@@ -4,11 +4,11 @@ paths:
 outcomes_name: "TEST_OUTCOME"
 features_dir: ../outputs/features
 loader:
-  data_dir: ../data/formatted/synthea500
+  data_dir: ../example_data
   concepts: [
     diagnose
   ]
-  batch_size: 50
+  batchsize: 50
   chunksize: 300
 outcomes:
   TEST_OUTCOME: 

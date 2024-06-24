@@ -3,7 +3,10 @@ import os
 from collections import defaultdict
 from os.path import join
 
+import pandas as pd
 import torch
+from tqdm import tqdm
+
 from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
@@ -11,7 +14,6 @@ from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_patient_counts
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.downstream_tasks.outcomes import OutcomeMaker
-from tqdm import tqdm
 
 BLOBSTORE = 'PHAIR'
 CONFIG_NAME = 'outcomes_test.yaml'
@@ -20,14 +22,17 @@ args = get_args(CONFIG_NAME)
 config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.config_path)
 
             
-def process_data(loader, cfg, features_cfg, logger):
+def process_data(loader, cfg, features_cfg, logger)->dict:
     all_outcomes = defaultdict(list)
     for (concept_batch, patient_batch) in tqdm(loader(), desc='Batch Process Data', file=TqdmToLogger(logger)):
         check_patient_counts(concept_batch, patient_batch, logger)
-        pids = concept_batch.PID.unique()
-        outcomes = OutcomeMaker(cfg, features_cfg)(concept_batch, patient_batch, pids)
-        for key, value in outcomes.items():
-            all_outcomes[key].extend(value)
+        outcome_tables = OutcomeMaker(cfg, features_cfg)(concept_batch, patient_batch)
+        # Concatenate the tables for each key
+        for key, df in outcome_tables.items():
+            if key in all_outcomes:
+                all_outcomes[key] = pd.concat([all_outcomes[key], df])
+            else:
+                all_outcomes[key] = df
     return all_outcomes
 
 def main_data(config_path):
@@ -41,7 +46,7 @@ def main_data(config_path):
     logger.info('Starting outcomes creation')
     features_cfg = load_config(join(cfg.features_dir, 'data_config.yaml'))
     outcomes = process_data(ConceptLoaderLarge(**cfg.loader), cfg, features_cfg, logger)
-    
+    print(outcomes)
     torch.save(outcomes, join(cfg.paths.outcome_dir, f'{cfg.outcomes_name}.pt'))
     
     logger.info('Finish outcomes creation')

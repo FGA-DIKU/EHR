@@ -1,9 +1,7 @@
-import os
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-import torch
 
 from corebehrt.data.utils import Utilities
 
@@ -15,44 +13,41 @@ class OutcomeMaker:
         self.config = config
 
     def __call__(
-        self, concepts_plus: pd.DataFrame, patients_info: pd.DataFrame, patient_set=None
+        self, concepts_plus: pd.DataFrame, patients_info: pd.DataFrame
     )->dict:
-        
+        """Create outcomes from concepts_plus and patients_info"""
+        patient_set = concepts_plus.PID.unique()
+        concepts_plus = self.filter_table_by_pids(concepts_plus, patient_set)
+        patients_info = self.filter_table_by_pids(patients_info, patient_set)
         concepts_plus = self.remove_missing_timestamps(concepts_plus)
-        patients_info_dict = patients_info.set_index("PID").to_dict()
-    
-        if patient_set is None:
-            patient_set = self.load_patient_set()
-        outcome_df = pd.DataFrame({"PID": patient_set})
-
+ 
+        outcome_tables = {}
         for outcome, attrs in self.outcomes.items():
             types = attrs["type"]
             matches = attrs["match"]
             if types == "patients_info":
-                timestamps = self.match_patient_info(outcome_df, patients_info_dict, matches)
+                timestamps = self.match_patient_info(patients_info, matches)
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
-            timestamps = timestamps.rename(outcome)
-            timestamps = Utilities.get_abspos_from_origin_point(timestamps, self.features_cfg.features.abspos)
-            outcome_df = outcome_df.merge(timestamps, on="PID", how="left")
-        outcomes = outcome_df.to_dict("list")
+            timestamps['TIMESTAMP'] = Utilities.get_abspos_from_origin_point(timestamps['TIMESTAMP'], self.features_cfg.features.origin_point) 
+            timestamps['TIMESTAMP'] = timestamps['TIMESTAMP'].astype(int)
+            outcome_tables[outcome] = timestamps
+        return outcome_tables
 
-        return outcomes
+    @staticmethod
+    def filter_table_by_pids(table: pd.DataFrame, pids: List[str])->pd.DataFrame:
+        return table[table.PID.isin(pids)]
     
     @staticmethod
     def remove_missing_timestamps(concepts_plus: pd.DataFrame )->pd.DataFrame:
         return concepts_plus[concepts_plus.TIMESTAMP.notna()]
 
-    def match_patient_info(self, outcome: pd.DataFrame, patients_info: dict, matches: List[List])->pd.Series:
-        timestamps = outcome.PID.map(
-                    lambda pid: patients_info[matches].get(pid, pd.NaT)
-        )  # Get from dict [outcome] [pid]
-        timestamps = pd.Series(
-            timestamps.values, index=outcome.PID
-        )  # Convert to series
-        return timestamps
+    def match_patient_info(self, patients_info: dict, match: List[List])->pd.Series:
+        """Get timestamps of interest from patients_info"""
+        return patients_info[['PID', match]].dropna()
 
-    def match_concepts(self, concepts_plus: pd.DataFrame, types: List[List], matches:List[List], attrs:Dict):
+    def match_concepts(self, concepts_plus: pd.DataFrame, types: List[List], 
+                       matches:List[List], attrs:Dict)->pd.DataFrame:
         """It first goes through all the types and returns true for a row if the entry starts with any of the matches.
         We then ensure all the types are true for a row by using bitwise_and.reduce. E.g. CONCEPT==COVID_TEST AND VALUE==POSITIVE"""
         if 'exclude' in attrs:
@@ -62,15 +57,7 @@ class OutcomeMaker:
         mask = np.bitwise_and.reduce(col_booleans)
         if "negation" in attrs:
             mask = ~mask
-        if attrs.get("use_last", False):
-            return self.select_last_event(concepts_plus, mask)
-        return self.select_first_event(concepts_plus, mask)
-    @staticmethod
-    def select_last_event(concepts_plus:pd.DataFrame, mask:pd.Series):
-        return concepts_plus[mask].groupby("PID").TIMESTAMP.max()
-    @staticmethod
-    def select_first_event(concepts_plus:pd.DataFrame, mask:pd.Series):
-        return concepts_plus[mask].groupby("PID").TIMESTAMP.min()
+        return concepts_plus[mask].drop(columns=['ADMISSION_ID', 'CONCEPT'])
     
     @staticmethod
     def get_col_booleans(concepts_plus:pd.DataFrame, types:List, matches:List[List], 
@@ -78,32 +65,31 @@ class OutcomeMaker:
         col_booleans = []
         for typ, lst in zip(types, matches):
             if match_how=='startswith':
-                if case_sensitive:
-                    col_bool = concepts_plus[typ].astype(str).str.startswith(tuple(lst), False)
-                else:
-                    match_lst = [x.lower() for x in lst]
-                    col_bool = concepts_plus[typ].astype(str).str.lower().str.startswith(tuple(match_lst), False)
+                col_bool = OutcomeMaker.startswith_match(concepts_plus, typ, lst, case_sensitive)
             elif match_how == 'contains':
-                col_bool = pd.Series([False] * len(concepts_plus), index=concepts_plus.index)
-                for item in lst:
-                    pattern = item if case_sensitive else item.lower()
-                    if case_sensitive:
-                        col_bool |= concepts_plus[typ].astype(str).str.contains(pattern, na=False)
-                    else:
-                        col_bool |= concepts_plus[typ].astype(str).str.lower().str.contains(pattern, na=False)
+                col_bool = OutcomeMaker.contains_match(concepts_plus, typ, lst, case_sensitive)
             else:
                 raise ValueError(f"match_how must be startswith or contains, not {match_how}")
             col_booleans.append(col_bool)
         return col_booleans
     
-    def load_patient_set(self)->list:
-        pids = torch.load(
-                os.path.join(self.config.paths.extra_dir, "PIDs.pt")
-        )  # Load PIDs
-        excluder_kept_indices = torch.load(
-            os.path.join(self.config.paths.extra_dir, "excluder_kept_indices.pt")
-        )  # Remember excluded patients
-        patient_set = [
-            pids[i] for i in excluder_kept_indices
-        ]  # Construct patient set
-        return patient_set
+    @staticmethod
+    def startswith_match(df: pd.DataFrame, column: str, patterns: List[str], case_sensitive: bool) -> pd.Series:
+        """Match strings using startswith"""
+        if not case_sensitive:
+            patterns = [x.lower() for x in patterns]
+            return df[column].astype(str).str.lower().str.startswith(tuple(patterns), False)
+        return df[column].astype(str).str.startswith(tuple(patterns), False)
+    
+    @staticmethod
+    def contains_match(df: pd.DataFrame, column: str, patterns: List[str], case_sensitive: bool) -> pd.Series:
+        """Match strings using contains"""
+        col_bool = pd.Series([False] * len(df), index=df.index)
+        for pattern in patterns:
+            if not case_sensitive:
+                pattern = pattern.lower()
+            if case_sensitive:
+                col_bool |= df[column].astype(str).str.contains(pattern, na=False) 
+            else: 
+                col_bool |= df[column].astype(str).str.lower().str.contains(pattern, na=False)
+        return col_bool
