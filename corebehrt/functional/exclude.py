@@ -11,6 +11,7 @@ def exclude_event_nans(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna()
 
 def exclude_short_sequences(x: Union[pd.DataFrame, List[list], dict], min_len: int = 3, background_length: int = 0) -> Tuple[Union[pd.DataFrame, List[list], dict], List[int]]:
+    """Keep only entries which have at least the length of min_len+background_length"""
     if isinstance(x, pd.DataFrame):
         return exclude_short_sequences_df(x, min_len, background_length)
     elif isinstance(x, list) and isinstance(x[0], list): 

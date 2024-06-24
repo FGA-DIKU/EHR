@@ -27,6 +27,7 @@ class FeatureCreator:
             Table with PID, concept, abspos, age, segment. We constuct background and death events, insert SEP and CLS tokens.
         """
         # !Do we need those if statements?
+        self._validate_input(concepts, patients_info)
         concepts.rename(columns={'CONCEPT': 'concept'}, inplace=True)
         if self.background_vars:
             concepts = create_background(concepts, patients_info, self.background_vars)
@@ -39,3 +40,16 @@ class FeatureCreator:
         concepts = create_death(concepts, patients_info, self.origin_point)
 
         return concepts
+
+    def _validate_input(self, concepts: pd.DataFrame, patients_info: pd.DataFrame):
+        """Check if required columns are present in concepts and patients_info dataframes."""
+        required_concept_columns = ['PID', 'TIMESTAMP', 'CONCEPT', 'ADMISSION_ID']
+        required_patient_columns = ['PID'] + self.background_vars
+        
+        missing_concept_columns = [col for col in required_concept_columns if col not in concepts.columns]
+        if missing_concept_columns:
+            raise ValueError(f"Missing required columns in concepts DataFrame: {', '.join(missing_concept_columns)}")
+        
+        missing_patient_columns = [col for col in required_patient_columns if col not in patients_info.columns]
+        if missing_patient_columns:
+            raise ValueError(f"Missing required columns in patients_info DataFrame: {', '.join(missing_patient_columns)}")
