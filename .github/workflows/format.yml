@@ -1,10 +1,25 @@
-name: black
-on: [push, pull_request]
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: Python application
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+permissions:
+  contents: read
 jobs:
-  formatting:
-    runs-on: windows-latest
+  format:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: psf/black@stable
-        with:
-          options: "--check classes functional"
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip' # caching pip dependencies
+    - name: Install dependencies
+      run: |
+        pip install black>=23.10.1
+    - name: Run black
+      run: |
+        black --check classes functional
