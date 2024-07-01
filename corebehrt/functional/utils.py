@@ -59,20 +59,9 @@ def get_time_difference(now: pd.Series, then: pd.Series)-> pd.Series:
 def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
     return concepts.groupby('PID').agg(list).to_dict('list'), concepts['PID'].sort_values().unique().tolist()
 
-def find_column(df: pd.DataFrame, match: str)-> str:
-    """Check if a column containing the match string (not case sensitive) exists in dataframe and return it."""
-    columns = df.columns.str.lower().str.contains(match.lower())
-    if any(columns):
-        return df.columns[columns][0]
-    raise KeyError(f'No column containing "{match}" found in df.')
-
-def select_column(df: pd.DataFrame, match: str)-> pd.Series:
-    """Select the first column containing the match string (not case sensitive) in the dataframe."""
-    return df[find_column(df, match)]
-
 def calculate_ages_at_death(patients_info:pd.DataFrame)-> list:
     """Calculate the age at death for each patient."""
-    ages_at_death = (select_column(patients_info, 'death') - select_column(patients_info, 'birth')).dt.days / 365.25
+    ages_at_death = (patients_info['DEATHDATE'] - patients_info['BIRTHDATE']).dt.days / 365.25
     return ages_at_death.round(3).to_list()
 
 def get_last_segments(concepts: pd.DataFrame, patients_info: pd.DataFrame)-> list:
