@@ -14,14 +14,13 @@ loader:
   chunksize: 300
 
 features:
-  age: 
-    round: 2
-  abspos:
+  ages: true
+  origin_point:
     year: 2020
     month: 1
     day: 26
   segment: true
-  background: ['GENDER']
+  background_vars: ['GENDER']
 
 tokenizer:
   sep_tokens: true
