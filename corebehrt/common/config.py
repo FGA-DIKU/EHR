@@ -5,22 +5,19 @@ from os.path import join
 
 class Config(dict):
     """Config class that allows for dot notation."""
-    def __init__(self, dictionary=None):
-        super(Config, self).__init__()
-        if dictionary:
-            for key, value in dictionary.items():
-                if isinstance(value, dict):
-                    value = Config(value)
-                elif isinstance(value, str):
-                    value = self.str_to_num(value)
-                self[key] = value
-                setattr(self, key, value)
+    def __init__(self, dictionary={}):
+        super().__init__(dictionary)
+        for key, value in self.items():
+            self.__setitem__(key, value)
+            self.__setattr__(key, value)
 
     def __setattr__(self, key, value):
-        if isinstance(value, str):
+        if isinstance(value, dict):
+            value = Config(value)
+        elif isinstance(value, str):
             value = self.str_to_num(value)
-        super(Config, self).__setattr__(key, value)
-        super(Config, self).__setitem__(key, value)
+        super().__setattr__(key, value)
+        super().__setitem__(key, value)
 
     def str_to_num(self, s):
         """Converts a string to a float or int if possible."""
@@ -30,22 +27,24 @@ class Config(dict):
             return s
 
     def __setitem__(self, key, value):
+        if isinstance(value, dict):
+            value = Config(value)
         if isinstance(value, str):
             value = self.str_to_num(value)
-        super(Config, self).__setitem__(key, value)
-        super(Config, self).__setattr__(key, value)
+        super().__setitem__(key, value)
+        super().__setattr__(key, value)
 
     def __delattr__(self, name):
         if name in self:
             dict.__delitem__(self, name)  # Use the parent class's method to avoid recursion
         if hasattr(self, name):
-            super(Config, self).__delattr__(name)
+            super().__delattr__(name)
 
     def __delitem__(self, name):
         if name in self:
             dict.__delitem__(self, name)  # Use the parent class's method to avoid recursion
         if hasattr(self, name):
-            super(Config, self).__delattr__(name)
+            super().__delattr__(name)
     
     def yaml_repr(self, dumper):
         return dumper.represent_dict(self.to_dict())
