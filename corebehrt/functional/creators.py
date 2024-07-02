@@ -11,7 +11,7 @@ from corebehrt.functional.utils import (calculate_ages_at_death,
 
 def create_ages(concepts: pd.DataFrame, patients_info: pd.DataFrame) -> pd.DataFrame:
     """Creates the AGE column"""
-    birthdates = patients_info.set_index('PID')[find_column(patients_info, 'birth')]
+    birthdates = patients_info.set_index('PID')['BIRTHDATE']
     concepts['age'] = get_time_difference(concepts['TIMESTAMP'], concepts['PID'].map(birthdates))
     return concepts
 
@@ -46,7 +46,7 @@ def create_death(concepts: pd.DataFrame, patients_info: pd.DataFrame, origin_poi
     if 'age' in concepts.columns:
         death_info['age'] = calculate_ages_at_death(patients_info)
     if 'abspos' in concepts.columns:
-        death_info['abspos'] = get_abspos_from_origin_point(select_column(patients_info, 'birth'), origin_point).to_list()
+        death_info['abspos'] = get_abspos_from_origin_point(patients_info['BIRTHDATE'], origin_point).to_list()
 
     # Append death info to concepts
     death_info = pd.DataFrame(death_info)
