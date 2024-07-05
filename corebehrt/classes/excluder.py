@@ -16,8 +16,7 @@ class Excluder:
         """Exclude events with incorrect ages (outside defined range)"""
         df = exclude_incorrect_event_ages(df, self.min_age, self.max_age)
         df = exclude_event_nans(df)
-        if 'segment' in df:
-            df = normalize_segments(df)
+        df['segment'] = normalize_segments(df)
         return df.reset_index(drop=True)
     
     def exclude_short_sequences(self, x: Union[pd.DataFrame, List[list], dict]) -> Union[pd.DataFrame, List[list], dict]: # TODO: Currently doesn't support outcomes

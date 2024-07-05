@@ -3,11 +3,11 @@ import pandas as pd
 from datetime import datetime
 from typing import Union, List, Tuple
 
-def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_col: str = 'segment'):
+def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
         return normalize_segments_series(x)
     elif isinstance(x, pd.DataFrame):
-        return normalize_segments_df(x, segment_col=segment_col)
+        return normalize_segments_df(x)
     elif isinstance(x, list):
         return normalize_segments_list(x)
     elif isinstance(x, dict):
@@ -15,9 +15,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict], segment_co
     else:
         raise TypeError('Invalid type for x, only pd.DataFrame, list, and dict are supported.')
 
-def normalize_segments_df(df: pd.DataFrame, segment_col: str = 'segment') -> pd.DataFrame:
-    df['segment'] = df.groupby('PID')[segment_col].transform(lambda x: normalize_segments_series(x))
-    return df
+def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
+    return df.groupby('PID')['segment'].transform(lambda x: normalize_segments_series(x))
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     return series.factorize(use_na_sentinel=False)[0]
@@ -29,9 +28,9 @@ def normalize_segments_list(segments: list) -> list:
 
     return [converter[segment] for segment in segments]
 
-def normalize_segments_dict(features: dict, segment_col: str = 'segment') -> dict:
-    for idx, segments in enumerate(features[segment_col]):
-        features[segment_col][idx] = normalize_segments_list(segments)
+def normalize_segments_dict(features: dict) -> dict:
+    for idx, segments in enumerate(features['segment']):
+        features['segment'][idx] = normalize_segments_list(segments)
     return features
 
 
