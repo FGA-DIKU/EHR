@@ -3,53 +3,46 @@ import itertools
 from datetime import datetime
 
 import pandas as pd
-
-from corebehrt.functional.utils import (calculate_ages_at_death,
-                              get_abspos_from_origin_point, get_last_segments,
-                              get_time_difference, normalize_segments_df)
+from pandas.core.groupby.generic import DataFrameGroupBy
 
 
-def create_ages(concepts: pd.DataFrame, patients_info: pd.DataFrame) -> pd.DataFrame:
-    """Creates the AGE column"""
-    birthdates = patients_info.set_index('PID')['BIRTHDATE']
-    concepts['age'] = get_time_difference(concepts['TIMESTAMP'], concepts['PID'].map(birthdates))
-    return concepts
+from corebehrt.functional.utils import (get_abspos_from_origin_point,
+                              get_time_difference, normalize_segments_series)
 
-def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFrame:
-    """Creates the ABSPOS column"""
-    concepts['abspos'] = get_abspos_from_origin_point(concepts['TIMESTAMP'], origin_point)
-    return concepts
+def create_ages(timestamps: pd.Series, birthdates: pd.Series) -> pd.Series:
+    """Returns the AGE column - Functions as a wrapper for get_time_difference"""
+    return get_time_difference(timestamps, birthdates)
 
-def create_segments(concepts: pd.DataFrame, segment_col='ADMISSION_ID') -> pd.DataFrame:
-    """ Creates the SEGMENT column (the normalize segments_df can do this) """
-    return normalize_segments_df(concepts, segment_col)
+def create_abspos(timestamps: pd.Series, origin_point: datetime) -> pd.Series:
+    """Returns the ABSPOS column - Functions as a wrapper for get_abspos_from_origin_point"""
+    return get_abspos_from_origin_point(timestamps, origin_point)
 
-def create_background(concepts: pd.DataFrame, patients_info: pd.DataFrame, background_vars: list) -> pd.DataFrame:
+def create_segments(groupby: DataFrameGroupBy) -> pd.Series:
+    """Creates the SEGMENT column - Functions as a wrapper for normalize_segments_series"""
+    return groupby.transform(normalize_segments_series)
+
+def create_background(patients_info: pd.DataFrame, background_vars: list) -> pd.DataFrame:
     """ Creates the BACKGROUND column """
     background = pd.DataFrame({
         'PID': patients_info['PID'].tolist() * len(background_vars),
         'concept': itertools.chain.from_iterable(
                 [(patients_info[col].map(lambda x: f'BG_{col}_{x}')).tolist() for col in background_vars]),
-        'TIMESTAMP': patients_info['DEATHDATE'].tolist() * len(background_vars),
+        'TIMESTAMP': patients_info['BIRTHDATE'].tolist() * len(background_vars),
         })
     
-    return pd.concat([background, concepts])
+    return background
 
-def create_death(concepts: pd.DataFrame, patients_info: pd.DataFrame, origin_point: datetime)-> pd.DataFrame:
+def create_death(patients_info: pd.DataFrame, segments_with_pids: pd.DataFrame, origin_point: datetime)-> pd.DataFrame:
     """Creates the DEATH concept"""
     patients_info = patients_info[patients_info['DEATHDATE'].notna()] # Only consider patients with death info
 
-    death_info = {'PID': patients_info['PID'].tolist()}
-    death_info['concept'] = ['Death'] * len(patients_info)
-    if 'segment' in concepts.columns:
-        death_info['segment'] = get_last_segments(concepts, patients_info)
-    if 'age' in concepts.columns:
-        death_info['age'] = calculate_ages_at_death(patients_info)
-    if 'abspos' in concepts.columns:
-        death_info['abspos'] = get_abspos_from_origin_point(patients_info['BIRTHDATE'], origin_point).to_list()
+    last_segments = segments_with_pids.groupby('PID')['segment'].last().to_dict()
+    death_info = pd.DataFrame({
+        'PID': patients_info['PID'],
+        'concept': ['Death'] * len(patients_info),
+        'age': create_ages(patients_info['DEATHDATE'], patients_info['BIRTHDATE']),
+        'abspos': create_abspos(patients_info['DEATHDATE'], origin_point),
+        'segment': patients_info['PID'].map(last_segments)
+    })
 
-    # Append death info to concepts
-    death_info = pd.DataFrame(death_info)
-    return pd.concat([concepts, death_info])
-
-
+    return death_info

@@ -59,15 +59,3 @@ def get_time_difference(now: pd.Series, then: pd.Series)-> pd.Series:
 
 def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
     return concepts.groupby('PID').agg(list).to_dict('list'), concepts['PID'].sort_values().unique().tolist()
-
-def calculate_ages_at_death(patients_info:pd.DataFrame)-> list:
-    """Calculate the age at death for each patient."""
-    ages_at_death = (patients_info['DEATHDATE'] - patients_info['BIRTHDATE']).dt.days / 365.25
-    return ages_at_death.round(3).to_list()
-
-def get_last_segments(concepts: pd.DataFrame, patients_info: pd.DataFrame)-> list:
-    """For each patient, get the last segment in the concepts DataFrame."""
-    if 'segment' not in concepts.columns:
-        raise ValueError("Make sure SEGMENT is created before DeathCreator is used.")
-    last_segments = concepts.groupby('PID')['segment'].last().to_dict()
-    return [last_segments.get(pid) for pid in patients_info['PID']] 
