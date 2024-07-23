@@ -253,11 +253,8 @@ class DataModifier:
 
     @staticmethod
     def normalize_segments(data: Data) -> Data:
-        """Normalize segments after truncation to start with 1 and increase by 1
-        or if position_ids present (org. BEHRT version) then normalize those."""
-        segments_key = 'segment' if 'segment' in data.features else 'position_ids'
-
-        data.features = normalize_segments(data.features, segments_key)
+        """Normalize segments after truncation to start with 1 and increase by 1 then normalize those."""
+        data.features = normalize_segments(data.features)
         return data
 
 def retrieve_outcomes(all_outcomes: Dict, all_censor_outcomes: Dict, cfg: Config)->Union[List, List]:
