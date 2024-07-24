@@ -1,15 +1,20 @@
 import unittest
-from tests.helpers import ConfigMock
 import pandas as pd
+from datetime import datetime
+
+from corebehrt.functional.creators import (
+    create_ages,
+    create_abspos,
+    create_segments,
+    create_background,
+    create_death,
+)
 
 
-class TestBaseCreator(unittest.TestCase):
+class TestCreators(unittest.TestCase):
     def setUp(self):
-        self.cfg = ConfigMock()
-        self.cfg.age = {"round": 2}
-        self.cfg.abspos = {"year": 2020, "month": 1, "day": 26}
-        self.cfg.segment = True
-        self.cfg.background = ["GENDER"]
+        self.origin_point = datetime(2020, 1, 26)
+        self.background_vars = ["GENDER"]
 
         self.concepts = pd.DataFrame(
             {
@@ -29,54 +34,50 @@ class TestBaseCreator(unittest.TestCase):
             }
         )
 
-    def test_birthdate_column(self):
-        # basecreator = BaseCreator(self.cfg)
-        # patients_info_pure = pd.DataFrame({'BIRTHDATE': []})
-        # patients_info_convert = pd.DataFrame({'DATE_OF_BIRTH': []})
-        # patients_info_false = pd.DataFrame({'NOTHING': []})
-        # self.assertIn('BIRTHDATE', basecreator._rename_birthdate_column(patients_info_pure))
-        # self.assertIn('BIRTHDATE', basecreator._rename_birthdate_column(patients_info_convert))
-        # with self.assertRaises(KeyError):
-        #     basecreator._rename_birthdate_column(patients_info_false)
-        pass
-
     def test_age_creator(self):
-        # creator = AgeCreator(self.cfg)
-        # result = creator.create(self.concepts, self.patients_info)
-        # self.assertIsInstance(result, pd.DataFrame)
-        # self.assertIn('AGE', result.columns)
-        # self.assertEqual(result.AGE.tolist(), [20, 21, 22, 23])
-        pass
+        # Aligned birth dates
+        birthdates = (
+            self.patients_info.set_index("PID")
+            .loc[self.concepts.PID]
+            .reset_index()
+            .BIRTHDATE
+        )
+        result = create_ages(self.concepts.TIMESTAMP, birthdates)
+        self.assertIsInstance(result, pd.Series)
+        self.assertEqual(result.map(round).tolist(), [20, 21, 22, 23])
 
     def test_abspos_creator(self):
-        # creator = AbsposCreator(self.cfg)
-        # result = creator.create(self.concepts, self.patients_info)
-        # self.assertIsInstance(result, pd.DataFrame)
-        # self.assertIn('ABSPOS', result.columns)
-        # origin_point = datetime(**self.cfg.abspos)
-        # self.assertTrue(result.ABSPOS.iloc[0] < 0)
-        # self.assertTrue(all(result.ABSPOS.iloc[1:] > 0))
-        # self.assertEqual(result.ABSPOS.tolist(), ((self.concepts.TIMESTAMP - origin_point).dt.total_seconds() / 60 / 60).tolist())
-        pass
+        result = create_abspos(self.concepts.TIMESTAMP, self.origin_point)
+        self.assertIsInstance(result, pd.Series)
+        self.assertEqual(
+            result.tolist(),
+            (
+                (self.concepts.TIMESTAMP - self.origin_point).dt.total_seconds()
+                / 60
+                / 60
+            ).tolist(),
+        )
 
     def test_segment_creator(self):
-        # creator = SegmentCreator(self.cfg)
-        # result = creator.create(self.concepts, self.patients_info)
-        # self.assertIsInstance(result, pd.DataFrame)
-        # self.assertIn('SEGMENT', result.columns)
-        # self.assertEqual(result.SEGMENT.tolist(), [1, 1, 1, 2])
-        pass
+        groups = self.concepts.groupby("PID")["ADMISSION_ID"]
+        result = create_segments(groups)
+        self.assertIsInstance(result, pd.Series)
+        self.assertEqual(result.tolist(), [0, 0, 0, 1])
 
     def test_background_creator(self):
-        # creator = BackgroundCreator(self.cfg)
-        # result = creator.create(self.concepts, self.patients_info)
-        # self.assertIsInstance(result, pd.DataFrame)
-        # self.assertIn('SEGMENT', result.columns)
-        # self.assertIn('AGE', result.columns)
-        # self.assertIn('ABSPOS', result.columns)
-        # for _, patient in result.groupby("PID"):
-        #     self.assertEqual(patient.CONCEPT.str.startswith('BG_').sum(), len(self.cfg.background))
-        pass
+        result = create_background(self.patients_info, self.background_vars)
+
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertEqual(list(result.columns), ["PID", "concept", "TIMESTAMP"])
+
+        # Check that all added concept are prefixed by BG_
+        self.assertTrue(result.concept.str.startswith("BG_").all())
+
+        # Check, that each patient has one of each background_vars
+        for _, patient in result.groupby("PID"):
+            self.assertEqual(len(patient), len(self.background_vars))
+            patient_vars = patient.concept.apply(lambda s: s.split("_")[1])
+            self.assertEqual(list(patient_vars), self.background_vars)
 
 
 if __name__ == "__main__":

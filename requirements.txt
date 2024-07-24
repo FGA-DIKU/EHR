@@ -1,10 +1,12 @@
 azureml==0.2.7
+azureml-core==1.56.0
 numpy==1.26.4
 pandas==1.5.3
 pyarrow==16.1.0
 python_dateutil==2.9.0
 PyYAML==6.0.1
 scikit_learn==1.5.1
+setuptools==71.1.0
 torch==2.3.1
 tqdm==4.66.4
 transformers==4.41.2

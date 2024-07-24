@@ -1,9 +1,7 @@
 import unittest
 import pandas as pd
 from datetime import datetime
-from corebehrt.classes.features import (
-    FeatureCreator,
-)  # Replace 'your_module' with the actual module name
+from corebehrt.classes.features import FeatureCreator
 
 
 class TestFeatureCreator(unittest.TestCase):
