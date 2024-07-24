@@ -7,7 +7,6 @@ from corebehrt.functional.creators import (
     create_abspos,
     create_segments,
     create_background,
-    create_death,
 )
 
 
