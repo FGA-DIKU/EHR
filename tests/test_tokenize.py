@@ -7,6 +7,7 @@ from corebehrt.functional.tokenize import (
     add_separator_token,
     add_cls_token,
     limit_concept_length,
+    tokenize,
 )
 
 
@@ -23,6 +24,8 @@ class TestCreators(unittest.TestCase):
                 }
             ).set_index("PID"),
         ).reset_index()
+
+        self.vocabulary = {"[UNK]": 0, "C1": 1, "C2": 2, "C3": 3}
 
     def test_add_sep(self):
         expected_concept = [
@@ -90,7 +93,30 @@ class TestCreators(unittest.TestCase):
         )
 
     def test_tokenize_update(self):
-        pass
+        expected_concept = [1, 2, 2, 2, 3, 4, 2, 2, 5]
+        expected_vocabulary = {
+            "[UNK]": 0,
+            "C1": 1,
+            "C2": 2,
+            "C3": 3,
+            "C4a": 4,
+            "C4b": 5,
+        }
+
+        result, result_vocab = tokenize(self.features, self.vocabulary, False)
+
+        self.assertIsNot(result, self.features)
+        self.assertIsNot(result_vocab, self.vocabulary)
+        result = result.compute()
+        self.assertEqual(result.concept.tolist(), expected_concept)
+        self.assertEqual(result_vocab, expected_vocabulary)
 
     def test_tokenize_frozen(self):
-        pass
+        expected_concept = [1, 2, 2, 2, 3, 0, 2, 2, 0]
+
+        result, result_vocab = tokenize(self.features, self.vocabulary, True)
+
+        self.assertIsNot(result, self.features)
+        self.assertIs(result_vocab, self.vocabulary)
+        result = result.compute()
+        self.assertEqual(result.concept.tolist(), expected_concept)

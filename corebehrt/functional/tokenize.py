@@ -38,7 +38,7 @@ def add_cls_token(features: dd.DataFrame, cls_token: str = "[CLS]"):
 
 
 def tokenize(
-    features: dd.DataFrame, vocabulary: dict, frozen_vocab: bool
+    features: dd.DataFrame, vocabulary: dict, frozen_vocab: bool, inplace: bool = False
 ) -> dd.DataFrame:
     """
     Tokenize the concepts in the features DataFrame.
@@ -46,15 +46,23 @@ def tokenize(
     And the tokens will be replaced with the UNK token.
     """
     if frozen_vocab:
-        features = tokenize_frozen(features, vocabulary)
+        features = tokenize_frozen(features, vocabulary, inplace=inplace)
     else:
-        features = tokenize_with_update(features, vocabulary)
+        features, vocabulary = tokenize_with_update(
+            features, vocabulary, inplace=inplace
+        )
 
     return features, vocabulary
 
 
-def tokenize_with_update(features: dd.DataFrame, vocabulary: dict) -> dd.DataFrame:
+def tokenize_with_update(
+    features: dd.DataFrame, vocabulary: dict, inplace: bool = False
+) -> dd.DataFrame:
     """Tokenize the concepts in the features DataFrame and update the vocabulary."""
+    if not inplace:
+        vocabulary = {**vocabulary}
+        features = features.copy()
+
     unique_concepts = features["concept"].unique().compute()
     for concept in unique_concepts:
         if concept not in vocabulary:
@@ -62,11 +70,16 @@ def tokenize_with_update(features: dd.DataFrame, vocabulary: dict) -> dd.DataFra
     features["concept"] = features["concept"].map(
         lambda x: vocabulary[x], meta=("concept", "int64")
     )
-    return features
+    return features, vocabulary
 
 
-def tokenize_frozen(features: dd.DataFrame, vocabulary: dict) -> dd.DataFrame:
+def tokenize_frozen(
+    features: dd.DataFrame, vocabulary: dict, inplace: bool = False
+) -> dd.DataFrame:
     """Tokenize the concepts in the features DataFrame with a frozen vocabulary."""
+    if not inplace:
+        features = features.copy()
+
     features["concept"] = features["concept"].map(
         lambda x: vocabulary.get(x, vocabulary["[UNK]"]), meta=("concept", "int64")
     )
