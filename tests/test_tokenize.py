@@ -82,14 +82,10 @@ class TestCreators(unittest.TestCase):
         cutoffs = {"C4": 2}
         expected_concept = ["C1", "C2", "C2", "C2", "C3", "C4", "C2", "C2", "C4"]
 
-        result = limit_concept_length(self.features, cutoffs)
+        result_concept = limit_concept_length(self.features.concept, cutoffs)
+        result_concept = result_concept.compute().tolist()
 
-        self.assertIsNot(result, self.features)
-        result = result.compute()
-        self.assertEqual(result.concept.tolist(), expected_concept)
-        self.assertEqual(
-            result.segment.tolist(), self.features.segment.compute().tolist()
-        )
+        self.assertEqual(result_concept, expected_concept)
 
     def test_tokenize_update(self):
         expected_concept = [1, 2, 2, 2, 3, 4, 2, 2, 5]
@@ -102,20 +98,21 @@ class TestCreators(unittest.TestCase):
             "C4b": 5,
         }
 
-        result, result_vocab = tokenize(self.features, self.vocabulary, False)
+        result_concept, result_vocab = tokenize(
+            self.features.concept, self.vocabulary, False
+        )
+        result_concept = result_concept.compute().tolist()
 
-        self.assertIsNot(result, self.features)
-        self.assertIsNot(result_vocab, self.vocabulary)
-        result = result.compute()
-        self.assertEqual(result.concept.tolist(), expected_concept)
+        self.assertEqual(result_concept, expected_concept)
         self.assertEqual(result_vocab, expected_vocabulary)
 
     def test_tokenize_frozen(self):
         expected_concept = [1, 2, 2, 2, 3, 0, 2, 2, 0]
 
-        result, result_vocab = tokenize(self.features, self.vocabulary, True)
+        result_concept, result_vocab = tokenize(
+            self.features.concept, self.vocabulary, True
+        )
+        result_concept = result_concept.compute().tolist()
 
-        self.assertIsNot(result, self.features)
         self.assertIs(result_vocab, self.vocabulary)
-        result = result.compute()
-        self.assertEqual(result.concept.tolist(), expected_concept)
+        self.assertEqual(result_concept, expected_concept)

@@ -37,64 +37,41 @@ def add_cls_token(features: dd.DataFrame, cls_token: str = "[CLS]"):
     return _add_token(features, cls_token, _get_first_event, -1e-3)
 
 
-def tokenize(
-    features: dd.DataFrame, vocabulary: dict, frozen_vocab: bool, inplace: bool = False
-) -> dd.DataFrame:
+def tokenize(concepts: dd.Series, vocabulary: dict, frozen_vocab: bool) -> dd.Series:
     """
-    Tokenize the concepts in the features DataFrame.
+    Tokenize the given concepts.
     if frozen_vocab is True, the vocabulary will not be updated.
     And the tokens will be replaced with the UNK token.
     """
     if frozen_vocab:
-        features = tokenize_frozen(features, vocabulary, inplace=inplace)
+        concepts = tokenize_frozen(concepts, vocabulary)
     else:
-        features, vocabulary = tokenize_with_update(
-            features, vocabulary, inplace=inplace
-        )
+        concepts, vocabulary = tokenize_with_update(concepts, vocabulary)
 
-    return features, vocabulary
+    return concepts, vocabulary
 
 
-def tokenize_with_update(
-    features: dd.DataFrame, vocabulary: dict, inplace: bool = False
-) -> dd.DataFrame:
+def tokenize_with_update(concepts: dd.Series, vocabulary: dict) -> dd.Series:
     """Tokenize the concepts in the features DataFrame and update the vocabulary."""
-    if not inplace:
-        vocabulary = {**vocabulary}
-        features = features.copy()
-
-    unique_concepts = features["concept"].unique().compute()
+    vocabulary = {**vocabulary}
+    unique_concepts = concepts.unique().compute()
     for concept in unique_concepts:
         if concept not in vocabulary:
             vocabulary[concept] = len(vocabulary)
-    features["concept"] = features["concept"].map(
-        lambda x: vocabulary[x], meta=("concept", "int64")
-    )
-    return features, vocabulary
+    concepts = concepts.map(lambda x: vocabulary[x], meta=("concept", "int64"))
+    return concepts, vocabulary
 
 
-def tokenize_frozen(
-    features: dd.DataFrame, vocabulary: dict, inplace: bool = False
-) -> dd.DataFrame:
+def tokenize_frozen(concepts: dd.Series, vocabulary: dict) -> dd.Series:
     """Tokenize the concepts in the features DataFrame with a frozen vocabulary."""
-    if not inplace:
-        features = features.copy()
-
-    features["concept"] = features["concept"].map(
+    return concepts.map(
         lambda x: vocabulary.get(x, vocabulary["[UNK]"]), meta=("concept", "int64")
     )
-    return features
 
 
-def limit_concept_length(
-    features: dd.DataFrame, cutoffs: dict, inplace: bool = False
-) -> dd.DataFrame:
+def limit_concept_length(concepts: dd.Series, cutoffs: dict) -> dd.Series:
     """Limit the length of the concepts based on cutoffs."""
-    if not inplace:
-        features = features.copy()
     for key, value in cutoffs.items():
-        type_mask = features.concept.str.startswith(key)
-        features["concept"] = features["concept"].mask(
-            type_mask, features["concept"].str.slice(0, value)
-        )
-    return features
+        mask = concepts.str.startswith(key)
+        concepts = concepts.mask(mask, concepts.str.slice(0, value))
+    return concepts

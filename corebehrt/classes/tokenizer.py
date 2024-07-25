@@ -49,10 +49,14 @@ class EHRTokenizer:
         features = features.reset_index(drop=True)
         if self.cutoffs:
             # Cutoff concepts to max_concept_length
-            features = limit_concept_length(features, self.cutoffs)
+            features["concept"] = limit_concept_length(
+                features["concept"], self.cutoffs
+            )
 
-        features, vocabulary = tokenize(
-            features, vocabulary=self.vocabulary, frozen_vocab=not self.new_vocab
+        features["concept"], vocabulary = tokenize(
+            features["concept"],
+            vocabulary=self.vocabulary,
+            frozen_vocab=not self.new_vocab,
         )
         self.vocabulary = vocabulary
         return features
