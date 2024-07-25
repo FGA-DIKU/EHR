@@ -25,14 +25,16 @@ def _add_token(
     return dd.concat([df, df_change]).sort_values(["PID", "abspos"])
 
 
-def add_separator_token(df: dd.DataFrame, sep_token: str = "[SEP]") -> dd.DataFrame:
+def add_separator_token(
+    features: dd.DataFrame, sep_token: str = "[SEP]"
+) -> dd.DataFrame:
     """Add separator token after each segment in the dataframe"""
-    return _add_token(df, sep_token, _get_segment_change, 1e-3)
+    return _add_token(features, sep_token, _get_segment_change, 1e-3)
 
 
-def add_cls_token(df: dd.DataFrame, cls_token: str = "[CLS]"):
+def add_cls_token(features: dd.DataFrame, cls_token: str = "[CLS]"):
     """Add a classification token to the beginning of each patient's sequence"""
-    return _add_token(df, cls_token, _get_first_event, -1e-3)
+    return _add_token(features, cls_token, _get_first_event, -1e-3)
 
 
 def tokenize(
@@ -71,10 +73,15 @@ def tokenize_frozen(features: dd.DataFrame, vocabulary: dict) -> dd.DataFrame:
     return features
 
 
-def limit_concept_length(features: dd.DataFrame, cutoffs: dict) -> dd.DataFrame:
+def limit_concept_length(
+    features: dd.DataFrame, cutoffs: dict, inplace: bool = False
+) -> dd.DataFrame:
     """Limit the length of the concepts based on cutoffs."""
+    if not inplace:
+        features = features.copy()
     for key, value in cutoffs.items():
-        type_mask = features["concept"].str.starts_with(key)
-        # shorten the concepts
-        features["concept"] = features.loc[type_mask, "concept"].str.slice(0, value)
+        type_mask = features.concept.str.startswith(key)
+        features["concept"] = features["concept"].mask(
+            type_mask, features["concept"].str.slice(0, value)
+        )
     return features
