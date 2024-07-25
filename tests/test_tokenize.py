@@ -1,5 +1,6 @@
 import unittest
 import dask.dataframe as dd
+import pandas as pd
 from datetime import datetime
 
 from corebehrt.functional.tokenize import (
@@ -10,14 +11,17 @@ from corebehrt.functional.tokenize import (
 
 class TestCreators(unittest.TestCase):
     def setUp(self):
-        self.features = dd.DataFrame.from_dict(
-            {
-                "PID": map(str, [1, 1, 1, 2, 2, 3, 3, 3, 3]),
-                "concept": [1, 2, 2, 2, 3, 4, 2, 2, 5],
-                "segment": [0, 1, 1, 0, 1, 0, 1, 2, 2],
-                "abspos": [1, 2, 3, 1, 2, 1, 2, 3, 4],
-            }
-        )
+        self.features = dd.from_pandas(
+            pd.DataFrame(
+                {
+                    "PID": map(str, [1, 1, 1, 2, 2, 3, 3, 3, 3]),
+                    "concept": [1, 2, 2, 2, 3, 4, 2, 2, 5],
+                    "age": [33.1, 33.2, 33.3, 21.9, 22.0, 36.1, 36.7, 38.1, 38.2],
+                    "segment": [0, 1, 1, 0, 1, 0, 1, 2, 2],
+                    "abspos": map(float, [1, 2, 3, 1, 2, 1, 2, 3, 4]),
+                }
+            ).set_index("PID"),
+        ).reset_index()
 
     def test_add_sep(self):
         expected_concept = [

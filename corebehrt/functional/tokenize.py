@@ -1,39 +1,28 @@
 import dask.dataframe as dd
 
 
-def _get_segment_change(group):
+def _get_segment_change(df: dd.DataFrame) -> dd.Series:
     """Select entries where segment changes."""
-    sorted_group = group.sort_values("abspos")
-    segment_change = sorted_group["segment"] != sorted_group["segment"].shift(-1)
-    filtered_group = sorted_group[segment_change]
-    return filtered_group
+    return (df.segment != df.segment.shift(-1)) | (df.PID != df.PID.shift(-1))
 
 
-def _get_first_event(group: dd.DataFrame):
+def _get_first_event(df: dd.DataFrame) -> dd.Series:
     """Select the first event in the group based on abspos."""
-    return group.nsmallest(1, "abspos")
+    return (df.PID != df.PID.shift(1)).fillna(True)
 
 
 def _add_token(
-    features: dd.DataFrame, token: str, group_func: callable, abspos_adjustment: float
+    df: dd.DataFrame, token: str, mask_func: callable, abspos_adjustment: float
 ) -> dd.DataFrame:
     """
-    Insert tokens into the DataFrame based on group_func applied ot each patient group.
+    Insert tokens into the DataFrame based on the mask_func applied to the sorted (PID,abspos) dataframe.
     The abspos_adjustment is used to ensure the tokens will be placed correctly in the final sequences.
     """
-    features = features.sort_values(["PID", "abspos"])
-    events = (
-        features.groupby("PID")
-        .apply(
-            group_func,
-            include_groups=False,
-            meta=features.set_index("PID"),
-        )
-        .reset_index()
-    )
-    events["concept"] = token
-    events["abspos"] = events["abspos"] + abspos_adjustment
-    return dd.concat([features, events]).sort_values(["PID", "abspos"])
+    df = df.sort_values(["PID", "abspos"])
+    df_change = df[mask_func(df)]
+    df_change["concept"] = token
+    df_change["abspos"] += abspos_adjustment
+    return dd.concat([df, df_change]).sort_values(["PID", "abspos"])
 
 
 def add_separator_token(df: dd.DataFrame, sep_token: str = "[SEP]") -> dd.DataFrame:
