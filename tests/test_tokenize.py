@@ -1,7 +1,6 @@
 import unittest
 import dask.dataframe as dd
 import pandas as pd
-from datetime import datetime
 
 from corebehrt.functional.tokenize import (
     add_separator_token,
