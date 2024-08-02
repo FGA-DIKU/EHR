@@ -27,6 +27,8 @@ def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
+    # Convert to string to ensure consistent types and avoid warnings
+    series = series.astype(str)
     return series.factorize(use_na_sentinel=False)[0]
 
 
