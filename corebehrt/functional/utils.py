@@ -62,6 +62,8 @@ def get_abspos_from_origin_point(
 ) -> Union[pd.Series, List[float]]:
     """Get the absolute position in hours from the origin point"""
     if isinstance(timestamps, pd.Series):
+        if len(timestamps) == 0:
+            return pd.Series([])
         return (timestamps - origin_point).dt.total_seconds() / 60 / 60
     elif isinstance(timestamps, list):
         return [
@@ -76,6 +78,8 @@ def get_abspos_from_origin_point(
 
 def get_time_difference(now: pd.Series, then: pd.Series) -> pd.Series:
     """Get the time difference in hours"""
+    if len(now) == 0:
+        return pd.Series([])
     return (now - then).dt.days / 365.25
 
 
