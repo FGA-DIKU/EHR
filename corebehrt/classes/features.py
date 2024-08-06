@@ -30,7 +30,9 @@ class FeatureCreator:
         concepts.rename(columns={"CONCEPT": "concept"}, inplace=True)
         # Create background
         background = create_background(patients_info, self.background_vars)
-        concepts = pd.concat([concepts, background])
+        if len(background) > 0:
+            # Check and only concat if non-empty to avoid deprecation warning.
+            concepts = pd.concat([concepts, background])
         # Create ages
         birthdates = patients_info.set_index("PID")["BIRTHDATE"]
         concepts["age"] = create_ages(
@@ -45,6 +47,8 @@ class FeatureCreator:
         death = create_death(
             patients_info, concepts[["PID", "segment"]], self.origin_point
         )
-        concepts = pd.concat([concepts, death])
+        if len(death) > 0:
+            # Check and only concat if non-empty to avoid deprecation warning.
+            concepts = pd.concat([concepts, death])
 
         return concepts

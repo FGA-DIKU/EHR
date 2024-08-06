@@ -20,7 +20,6 @@ from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_directory_for_features
-from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from tqdm import tqdm
 
@@ -32,11 +31,8 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.convert import convert_to_sequences
 
-CONFIG_NAME = "create_data.yaml"
+CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
-
-args = get_args(CONFIG_NAME, "data_pretrain")
-config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.config_path)
 
 
 def main_data(config_path):
@@ -185,4 +181,5 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
 
 
 if __name__ == "__main__":
-    main_data(config_path)
+    args = get_args(CONFIG_PATH)
+    main_data(args.config_path)
