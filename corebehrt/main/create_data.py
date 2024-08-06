@@ -171,7 +171,7 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
         concept_batch.drop(
             columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
         )
-        concept_batch[["PID", "concept", "age", "segment", "abspos"]].to_csv(
+        concept_batch.to_csv(
             join(cfg.output_dir, "features", f"features.csv"),
             index=False,
             mode="a" if i > 0 else "w",
