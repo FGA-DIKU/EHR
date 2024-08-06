@@ -20,7 +20,6 @@ from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_directory_for_features
-from corebehrt.data.batch import Batches, BatchTokenize
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from tqdm import tqdm
 
