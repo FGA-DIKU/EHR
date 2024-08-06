@@ -23,7 +23,7 @@ The pretraining process is handled by the [`main_create_data.py`](corebehrt/main
 
 Enable your virtual environment and run:
 ```
-(.venv) $ python -m corebehrt.main_create_data
+(.venv) $ python -m corebehrt.main.create_data
 ```
 This creates the `outputs` folder.
 
