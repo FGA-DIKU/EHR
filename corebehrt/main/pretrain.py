@@ -1,6 +1,5 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
-import os
 from os.path import join
 
 from corebehrt.common.azure import AzurePathContext, save_to_blobstore
@@ -15,11 +14,11 @@ from corebehrt.common.utils import compute_number_of_warmup_steps
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
-CONFIG_NAME = "pretrain.yaml"
+CONFIG_PATH = "../corebehrt/configs/pretrain.yaml"
 BLOBSTORE = "PHAIR"
 
-args = get_args(CONFIG_NAME)
-config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.config_path)
+args = get_args(CONFIG_PATH)
+config_path = args.config_path
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 

@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from transformers import BertModel
 from transformers.models.roformer.modeling_roformer import RoFormerEncoder
@@ -22,7 +23,7 @@ class BertEHREncoder(BertModel):
         position_ids = {key: batch[key] for key in ['age', 'abspos']}
         outputs = super().forward(
             input_ids=batch['concept'],
-            attention_mask=batch['attention_mask'],
+            attention_mask=torch.ones_like(batch['concept']),
             token_type_ids=batch['segment'],
             position_ids=position_ids,
         )
@@ -38,7 +39,7 @@ class BertEHRModel(BertEHREncoder):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]    # Last hidden state
-        logits = self.cls(sequence_output, batch['attention_mask'])
+        logits = self.cls(sequence_output)
         outputs.logits = logits
 
         if batch.get('target') is not None:

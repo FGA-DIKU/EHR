@@ -72,10 +72,10 @@ class PatientFilter:
         kept_indices = [i for i, censor in enumerate(data.censor_outcomes) if pd.notna(censor)]
         return self.select_entries(data, kept_indices)
 
-    def exclude_short_sequences(self, data: Data) -> Data:
+    def filter_by_min_sequence_length(self, data: Data) -> Data:
         """Exclude patients with less than k concepts"""
         background_length = get_background_length(data.features, data.vocabulary)
-        data.features = exclude_short_sequences(data.features, min_len=self.cfg.data.get('min_len', 3), background_length=background_length)
+        data.features, data.pids = exclude_short_sequences(data.features, min_len=self.cfg.data.get('min_len', 3), background_length=background_length)
         return data
 
     def select_by_age(self, data: Data) -> Data:
