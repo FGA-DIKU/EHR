@@ -18,7 +18,7 @@ from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
 
 # New stuff
-from functional.utils import normalize_segments
+from corebehrt.functional.utils import normalize_segments
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
