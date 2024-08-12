@@ -40,9 +40,11 @@ class FeatureCreator:
         )
         # Create segments
         grouped_object = concepts.groupby("PID")["ADMISSION_ID"]
+        concepts.drop("ADMISSION_ID", axis=1, inplace=True)
         concepts["segment"] = create_segments(grouped_object)
         # Create abspos
         concepts["abspos"] = create_abspos(concepts["TIMESTAMP"], self.origin_point)
+        concepts.drop("TIMESTAMP", axis=1, inplace=True)
         # Create death
         death = create_death(
             patients_info, concepts[["PID", "segment"]], self.origin_point

@@ -67,7 +67,7 @@ def main_data(config_path):
     else:
         logger.info("Using existing features!")
 
-    df = dd.read_csv(join(cfg.output_dir, "features", f"features.csv"))
+    df = dd.read_csv(join(cfg.output_dir, "features", f"features.csv"), dtype={'concept': 'str'})
     pids = df.PID.unique().compute().tolist()
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
         pids, **cfg.split_ratios
@@ -83,11 +83,6 @@ def main_data(config_path):
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
     tokenized_dir_name = cfg.get("tokenized_dir_name", "tokenized")
     check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
-
-    vocabulary = None
-    if "vocabulary" in cfg.paths:
-        logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
-        vocabulary = torch.load(cfg.paths.vocabulary)
 
     # TODO: config file is already copied by DirectoryPreparer but deleted again by check_and_clear_directory
     shutil.copy(config_path, join(cfg.output_dir, tokenized_dir_name, "data_cfg.yaml"))
