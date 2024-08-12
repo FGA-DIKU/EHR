@@ -1,6 +1,5 @@
 """Create tokenized features from formatted data. config template: data.yaml"""
 
-import os
 from collections import defaultdict
 from os.path import join
 
@@ -15,10 +14,7 @@ from corebehrt.downstream_tasks.outcomes import OutcomeMaker
 from tqdm import tqdm
 
 BLOBSTORE = "PHAIR"
-CONFIG_NAME = "outcomes_test.yaml"
-
-args = get_args(CONFIG_NAME)
-config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), args.config_path)
+CONFIG_PATH = "../corebehrt/configs/outcomes_test.yaml"
 
 
 def process_data(loader, cfg, features_cfg, logger):
@@ -64,4 +60,5 @@ def main_data(config_path):
 
 
 if __name__ == "__main__":
-    main_data(config_path)
+    args = get_args(CONFIG_PATH)
+    main_data(args.config_path)
