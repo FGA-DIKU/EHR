@@ -30,7 +30,7 @@ class FineTuneHead(torch.nn.Module):
         self.classifier = torch.nn.Linear(config.hidden_size, 1)
         self.pool = BiGRU(config.hidden_size)
 
-    def forward(self, hidden_states: torch.Tensor, attention_mask=None) -> torch.Tensor:
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         return self.pool(hidden_states, attention_mask=attention_mask)
 
 class BiGRU(torch.nn.Module):
@@ -43,7 +43,7 @@ class BiGRU(torch.nn.Module):
         classifier_input_size = self.hidden_size * 2
         self.classifier = torch.nn.Linear(classifier_input_size, 1)
 
-    def forward(self, hidden_states: torch.Tensor, attention_mask=None) -> torch.Tensor:
+    def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
         lengths = attention_mask.sum(dim=1).cpu()
         packed = torch.nn.utils.rnn.pack_padded_sequence(hidden_states, lengths, batch_first=True, enforce_sorted=False)
         # Pass the hidden states through the RßNN

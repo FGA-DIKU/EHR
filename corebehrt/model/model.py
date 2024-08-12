@@ -39,7 +39,7 @@ class BertEHRModel(BertEHREncoder):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]    # Last hidden state
-        logits = self.cls(sequence_output)
+        logits = self.cls(sequence_output, batch['attention_mask'])
         outputs.logits = logits
 
         if batch.get('target') is not None:
