@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 
 PID_KEY = 'PID'
 VOCABULARY_FILE = 'vocabulary.pt'
+DEFAULT_CENSORER = 'corebehrt.data_fixes.censor.Censorer'
 
 # TODO: Add option to load test set only!
 class DatasetPreparer:
@@ -241,10 +242,10 @@ class DataModifier:
 
     def censor_data(self, data: Data, n_hours: float) -> Data:
         """Censors data n_hours after censor_outcome."""
-        censorer_cfg = self.cfg.data.get('censorer', {'_target_': 'data_fixes.censor.Censorer'})
+        censorer_cfg = self.cfg.data.get('censorer', {'_target_': DEFAULT_CENSORER})
         censorer = instantiate(censorer_cfg, vocabulary=data.vocabulary, n_hours=n_hours)
         logger.info(f"Censoring data {n_hours} hours after outcome with {censorer.__class__.__name__}")
-        data.features = censorer(data.features, data.censor_outcomes, exclude=False)
+        data.features = censorer(data.features, data.censor_outcomes)
         return data
 
     @staticmethod

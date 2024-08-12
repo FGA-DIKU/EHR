@@ -1,6 +1,7 @@
 import random
-import pandas as pd
 from typing import List, Union
+
+import pandas as pd
 
 from corebehrt.common.utils import iter_patients
 
@@ -31,13 +32,8 @@ class Censorer:
     def _censor(self, patient: dict, event_timestamp: float) -> dict:
         """Censor the patient's features based on the event timestamp."""
         if not pd.isna(event_timestamp):
-            # Extract the attention mask and determine the number of non-masked items
-            attention_mask = patient["attention_mask"]
-            num_non_masked = attention_mask.count(1)
-
-            # Extract absolute positions and concepts for non-masked items
-            absolute_positions = patient["abspos"][:num_non_masked]
-            concepts = patient["concept"][:num_non_masked]
+            absolute_positions = patient["abspos"]
+            concepts = patient["concept"]
 
             # Determine if the concepts are tokenized and if they are background
             tokenized_flag = self._identify_if_tokenized(concepts)
@@ -86,9 +82,9 @@ class Censorer:
 
 
 class EQ_Censorer(Censorer):
-    def __call__(self, features: dict, censor_outcomes: list, exclude: bool = True) -> dict:
+    def __call__(self, features: dict, censor_outcomes: list) -> dict:
         censor_outcomes = self.get_censor_outcomes_for_negatives(censor_outcomes)
-        return super().__call__(features, censor_outcomes, exclude)
+        return super().__call__(features, censor_outcomes)
 
     @staticmethod
     def get_censor_outcomes_for_negatives(censor_outcomes: list) -> list:

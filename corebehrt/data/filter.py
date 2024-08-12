@@ -75,8 +75,8 @@ class PatientFilter:
     def filter_by_min_sequence_length(self, data: Data) -> Data:
         """Exclude patients with less than k concepts"""
         background_length = get_background_length(data.features, data.vocabulary)
-        data.features, data.pids = exclude_short_sequences(data.features, min_len=self.cfg.data.get('min_len', 3), background_length=background_length)
-        return data
+        _, kept_indices = exclude_short_sequences(data.features, min_len=self.cfg.data.get('min_len', 3), background_length=background_length) # ! this needs to be improved, we are filtering features twice
+        return self.select_entries(data, kept_indices)
 
     def select_by_age(self, data: Data) -> Data:
         """
