@@ -28,7 +28,7 @@ class EhrEmbeddings(nn.Module):
             hidden_dropout_prob: float              - dropout probability
     """
     def __init__(self, config: BertConfig):
-        super().__init__(config)
+        super().__init__()
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.to_dict().get('layer_norm_eps', 1e-12))
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 

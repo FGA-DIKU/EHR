@@ -136,8 +136,8 @@ class EHRTrainer:
         self.run_log('Train loss', step_loss / self.accumulation_steps)
 
     def validate_and_log(self, epoch: int, epoch_loss: float, train_loop: DataLoader)-> None:
-        val_loss, val_metrics = self._evaluate(epoch, mode='val')
-        _, test_metrics = self._evaluate(epoch, mode='test')
+        val_loss, val_metrics = self._evaluate(mode='val')
+        _, test_metrics = self._evaluate(mode='test')
         if epoch==1: # for testing purposes/if first epoch is best
             self._save_checkpoint(epoch, train_loss=epoch_loss, val_loss=val_loss, val_metrics=val_metrics, test_metrics=test_metrics, final_step_loss=epoch_loss[-1], best_model=True)
         if self._should_stop_early(epoch, val_loss, epoch_loss, val_metrics, test_metrics):
@@ -204,7 +204,8 @@ class EHRTrainer:
             dataloader = self.get_dataloader(self.val_dataset, self.args.get('val_batch_size'))
         elif mode == 'test':
             if self.test_dataset is None:
-                raise ValueError("Test dataset is None")
+                Warning("Test dataset is None")
+                return None, None
             dataloader = self.get_dataloader(self.test_dataset, self.args.get('test_batch_size'))
         else:
             raise ValueError(f"Mode {mode} not supported. Use 'val' or 'test'")

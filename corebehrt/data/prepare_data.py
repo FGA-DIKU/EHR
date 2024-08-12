@@ -18,7 +18,7 @@ from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
 
 # New stuff
-from functional.utils import normalize_segments
+from corebehrt.functional.utils import normalize_segments
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -102,7 +102,7 @@ class DatasetPreparer:
             # 7. Optional: Filter code types
             if data_cfg.get('code_types'):
                 data = Utilities.process_data(data, self.code_type_filter.filter)
-                data = Utilities.process_data(data, self.patient_filter.exclude_short_sequences)
+                data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
 
         # 8. Data censoring
         data = Utilities.process_data(data, self.data_modifier.censor_data,
@@ -113,7 +113,7 @@ class DatasetPreparer:
                 data = Utilities.process_data(data, self.patient_filter.select_by_age)
         
         # 9. Exclude patients with less than k concepts
-        data = Utilities.process_data(data, self.patient_filter.exclude_short_sequences)
+        data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
 
         # 10. Optional: Patient selection
         if data_cfg.get('num_patients') and not predefined_pids:
@@ -158,24 +158,20 @@ class DatasetPreparer:
 
         # 1. Load tokenized data
         data = self.loader.load_tokenized_data(mode='pretrain')
-        
         if self.cfg.paths.get('exclude_pids', None) is not None:
             logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
             exclude_pids = load_exclude_pids(self.cfg.paths)
             data = Utilities.process_data(data, self.patient_filter.exclude_pids, args_for_func={'exclude_pids': exclude_pids})
-
         predefined_pids =  'predefined_splits' in self.cfg.paths
         if predefined_pids:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = self._select_predefined_pids(data)
-
         # 3. Exclude short sequences
-        data = Utilities.process_data(data, self.patient_filter.exclude_short_sequences)
+        data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
         if not predefined_pids:
             # 4. Optional: Patient Subset Selection
             if data_cfg.get('num_patients'):
                 data = Utilities.process_data(data, self.patient_filter.select_random_subset, args_for_func={'num_patients':data_cfg.num_patients})
-
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = Utilities.process_data(data, self.data_modifier.truncate, args_for_func={'truncation_len': data_cfg.truncation_len})

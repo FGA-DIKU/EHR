@@ -44,7 +44,7 @@ class FeaturesLoader:
     def load_tokenized_data(self, mode: str=None)->Data:
         """Load features for finetuning"""
         tokenized_dir = self.path_cfg.get('tokenized_dir', 'tokenized')
-        tokenized_files = self.path_cfg.get('tokenized_file', f"tokenized_{mode}.pt")
+        tokenized_files = self.path_cfg.get('tokenized_file', f"features_{mode}.pt")
         tokenized_pids_files = self.path_cfg.get('tokenized_pids', f"pids_{mode}.pt")
         
         # Ensure the files are in a list. We might want to load multiple files.

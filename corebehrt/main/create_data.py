@@ -31,7 +31,7 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.convert import convert_to_sequences
 
-CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
+CONFIG_PATH = "../corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
 
 
