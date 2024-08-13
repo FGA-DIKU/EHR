@@ -31,18 +31,22 @@ DEAFAULT_VAL_SPLIT = 0.2
 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
+
 def main_finetune(config_path):
-    cfg, run, mount_context, pretrain_model_path = (
-        Initializer.initialize_configuration_finetune(
-            config_path, dataset_name=BLOBSTORE
-        )
+    (
+        cfg,
+        run,
+        mount_context,
+        pretrain_model_path,
+    ) = Initializer.initialize_configuration_finetune(
+        config_path, dataset_name=BLOBSTORE
     )
 
     logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
 
     copy_data_config(cfg, finetune_folder)
     copy_pretrain_config(cfg, finetune_folder)
-    
+
     cfg.save_to_yaml(join(finetune_folder, "finetune_config.yaml"))
 
     dataset_preparer = DatasetPreparer(cfg)
@@ -59,21 +63,44 @@ def main_finetune(config_path):
         save_data(test_data, finetune_folder)
 
         cv_splits = cv_loop_predefined_splits(
-            cfg, run, logger, finetune_folder,
-            data, cfg.paths.predefined_splits, test_data
+            cfg,
+            run,
+            logger,
+            finetune_folder,
+            data,
+            cfg.paths.predefined_splits,
+            test_data,
         )
 
     else:
         logger.info("Splitting data")
-        cv_splits = cfg.get('cv_splits', DEFAULT_CV_SPLITS)
+        cv_splits = cfg.get("cv_splits", DEFAULT_CV_SPLITS)
         test_data, train_val_indices = split_into_test_data_and_train_val_indices(
             cfg, data
         )
         save_data(test_data, finetune_folder)
         if cv_splits > 1:
-            cv_loop(cfg, run, logger, finetune_folder, dataset_preparer, data, train_val_indices, test_data)
+            cv_loop(
+                cfg,
+                run,
+                logger,
+                finetune_folder,
+                dataset_preparer,
+                data,
+                train_val_indices,
+                test_data,
+            )
         else:
-            finetune_without_cv(cfg, run, logger, finetune_folder, dataset_preparer, data, train_val_indices, test_data)
+            finetune_without_cv(
+                cfg,
+                run,
+                logger,
+                finetune_folder,
+                dataset_preparer,
+                data,
+                train_val_indices,
+                test_data,
+            )
 
     compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="val")
     if len(test_data) > 0:
@@ -94,8 +121,15 @@ def main_finetune(config_path):
 
 
 def finetune_fold(
-    cfg, run, logger, finetune_folder: str, dataset_preparer: DatasetPreparer,
-    train_data: Data, val_data: Data, fold: int, test_data: Data = None
+    cfg,
+    run,
+    logger,
+    finetune_folder: str,
+    dataset_preparer: DatasetPreparer,
+    train_data: Data,
+    val_data: Data,
+    fold: int,
+    test_data: Data = None,
 ) -> None:
     """Finetune model on one fold"""
     if "scheduler" in cfg:
@@ -161,7 +195,10 @@ def finetune_fold(
 
 
 def split_and_finetune(
-    cfg, run, logger, finetune_folder: str, 
+    cfg,
+    run,
+    logger,
+    finetune_folder: str,
     dataset_preparer: DatasetPreparer,
     data: Data,
     train_indices: list,
@@ -171,7 +208,17 @@ def split_and_finetune(
 ):
     train_data = data.select_data_subset_by_indices(train_indices, mode="train")
     val_data = data.select_data_subset_by_indices(val_indices, mode="val")
-    finetune_fold(cfg, run, logger, finetune_folder, dataset_preparer, train_data, val_data, fold, test_data)
+    finetune_fold(
+        cfg,
+        run,
+        logger,
+        finetune_folder,
+        dataset_preparer,
+        train_data,
+        val_data,
+        fold,
+        test_data,
+    )
 
 
 def _limit_patients(cfg, logger, indices_or_pids: list, split: str) -> list:
@@ -189,10 +236,18 @@ def _limit_patients(cfg, logger, indices_or_pids: list, split: str) -> list:
     return indices_or_pids
 
 
-def cv_loop(cfg, run, logger, finetune_folder: str, dataset_preparer: DatasetPreparer, 
-            data: Data, train_val_indices: list, test_data: Data) -> None:
+def cv_loop(
+    cfg,
+    run,
+    logger,
+    finetune_folder: str,
+    dataset_preparer: DatasetPreparer,
+    data: Data,
+    train_val_indices: list,
+    test_data: Data,
+) -> None:
     """Loop over cross validation folds."""
-    cv_splits = cfg.get('cv_splits', DEFAULT_CV_SPLITS)
+    cv_splits = cfg.get("cv_splits", DEFAULT_CV_SPLITS)
     for fold, (train_indices, val_indices) in enumerate(
         get_n_splits_cv(data, cv_splits, train_val_indices)
     ):
@@ -201,12 +256,29 @@ def cv_loop(cfg, run, logger, finetune_folder: str, dataset_preparer: DatasetPre
         logger.info("Splitting data")
         train_indices = _limit_patients(cfg, logger, train_indices, "train")
         val_indices = _limit_patients(cfg, logger, val_indices, "val")
-        split_and_finetune(cfg, run, logger, finetune_folder, dataset_preparer, data, train_indices, val_indices, fold, test_data)
+        split_and_finetune(
+            cfg,
+            run,
+            logger,
+            finetune_folder,
+            dataset_preparer,
+            data,
+            train_indices,
+            val_indices,
+            fold,
+            test_data,
+        )
 
 
 def finetune_without_cv(
-        cfg, run, logger, finetune_folder: str, dataset_preparer: DatasetPreparer,
-    data: Data, train_val_indices: list, test_data: Data = None
+    cfg,
+    run,
+    logger,
+    finetune_folder: str,
+    dataset_preparer: DatasetPreparer,
+    data: Data,
+    train_val_indices: list,
+    test_data: Data = None,
 ) -> None:
     val_split = cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
     logger.info(
@@ -214,11 +286,28 @@ def finetune_without_cv(
     )
     train_indices = train_val_indices[: int(len(train_val_indices) * (1 - val_split))]
     val_indices = train_val_indices[int(len(train_val_indices) * (1 - val_split)) :]
-    split_and_finetune(cfg, run, logger, finetune_folder, dataset_preparer, data, train_indices, val_indices, 1, test_data)
+    split_and_finetune(
+        cfg,
+        run,
+        logger,
+        finetune_folder,
+        dataset_preparer,
+        data,
+        train_indices,
+        val_indices,
+        1,
+        test_data,
+    )
 
 
-def cv_loop_predefined_splits(cfg, run, logger, finetune_folder: str,
-    data: Data, predefined_splits_dir: str, test_data: Data
+def cv_loop_predefined_splits(
+    cfg,
+    run,
+    logger,
+    finetune_folder: str,
+    data: Data,
+    predefined_splits_dir: str,
+    test_data: Data,
 ) -> int:
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir
@@ -238,12 +327,12 @@ def cv_loop_predefined_splits(cfg, run, logger, finetune_folder: str,
             train_data = data.select_data_subset_by_pids(train_pids, mode="train")
         if len(val_pids) < len(val_data.pids):
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
-        finetune_fold(cfg, run, logger, finetune_folder, train_data, val_data, fold, test_data)
+        finetune_fold(
+            cfg, run, logger, finetune_folder, train_data, val_data, fold, test_data
+        )
     return cv_splits
 
 
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)
     main_finetune(args.config_path)
-
-    

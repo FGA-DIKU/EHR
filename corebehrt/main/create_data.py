@@ -67,7 +67,9 @@ def main_data(config_path):
     else:
         logger.info("Using existing features!")
 
-    df = dd.read_csv(join(cfg.output_dir, "features", f"features.csv"), dtype={'concept': 'str'})
+    df = dd.read_csv(
+        join(cfg.output_dir, "features", f"features.csv"), dtype={"concept": "str"}
+    )
     pids = df.PID.unique().compute().tolist()
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
         pids, **cfg.split_ratios
