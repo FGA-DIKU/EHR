@@ -14,7 +14,7 @@ from corebehrt.downstream_tasks.outcomes import OutcomeMaker
 from tqdm import tqdm
 
 BLOBSTORE = "PHAIR"
-CONFIG_PATH = "../corebehrt/configs/outcomes_test.yaml"
+CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
 
 def process_data(loader, cfg, features_cfg, logger):

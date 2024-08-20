@@ -23,7 +23,7 @@ from corebehrt.evaluation.utils import (
 )
 from corebehrt.trainer.trainer import EHRTrainer
 
-CONFIG_PATH = "../corebehrt/configs/finetune.yaml"
+CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
 BLOBSTORE = "PHAIR"
 
 DEFAULT_CV_SPLITS = 2  # You can change this to desired value
