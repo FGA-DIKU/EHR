@@ -39,7 +39,7 @@ class BertEHRModel(BertEHREncoder):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]    # Last hidden state
-        logits = self.cls(sequence_output, batch['attention_mask'])
+        logits = self.cls(sequence_output)
         outputs.logits = logits
 
         if batch.get('target') is not None:
@@ -52,12 +52,24 @@ class BertEHRModel(BertEHREncoder):
         return self.loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
 
 
-class BertForFineTuning(BertEHRModel):
+class BertForFineTuning(BertEHREncoder):
     def __init__(self, config):
         super().__init__(config)
 
         self.loss_fct = nn.BCEWithLogitsLoss()
         self.cls = FineTuneHead(config)
+    
+    def forward(self, batch: dict):
+        outputs = super().forward(batch)
+
+        sequence_output = outputs[0]    # Last hidden state
+        logits = self.cls(sequence_output, batch['attention_mask'])
+        outputs.logits = logits
+
+        if batch.get('target') is not None:
+            outputs.loss = self.get_loss(logits, batch['target'])
+
+        return outputs
         
     def get_loss(self, hidden_states, labels):    
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
