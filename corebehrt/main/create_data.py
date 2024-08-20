@@ -31,7 +31,7 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.convert import convert_to_sequences
 
-CONFIG_PATH = "../corebehrt/configs/create_data.yaml"
+CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
 
 
@@ -163,11 +163,11 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
             **cfg.features
         )  # Otherwise appended to old features
         concept_batch = feature_maker(concept_batch, patient_batch)
-        concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.drop(
             columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
         )
+        concept_batch = excluder.exclude_incorrect_events(concept_batch)
+        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.to_csv(
             join(cfg.output_dir, "features", f"features.csv"),
             index=False,
