@@ -33,7 +33,7 @@ class OutcomeMaker:
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
             timestamps = timestamps.rename(outcome)
-            timestamps = Utilities.get_abspos_from_origin_point(timestamps, self.features_cfg.features.abspos)
+            timestamps = Utilities.get_abspos_from_origin_point(timestamps, self.features_cfg.features.origin_point)
             outcome_df = outcome_df.merge(timestamps, on="PID", how="left")
         outcomes = outcome_df.to_dict("list")
 

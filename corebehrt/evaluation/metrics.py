@@ -67,7 +67,7 @@ class BaseMetric:
     
     def _return_confusion_matrix(self, outputs, batch):
         predictions, targets = self._return_predictions_and_targrets(outputs, batch)
-        return confusion_matrix(targets, predictions).ravel()
+        return confusion_matrix(targets, predictions, labels=[True, False]).ravel()
 
     def __call__(self, outputs, batch):
         raise NotImplementedError

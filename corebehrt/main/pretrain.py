@@ -14,7 +14,7 @@ from corebehrt.common.utils import compute_number_of_warmup_steps
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
-CONFIG_PATH = "../corebehrt/configs/pretrain.yaml"
+CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 BLOBSTORE = "PHAIR"
 
 args = get_args(CONFIG_PATH)

@@ -54,7 +54,7 @@ class BinaryOutcomeDataset(BaseEHRDataset):
     def __getitem__(self, index: int) -> dict:
         patient = super().__getitem__(index)
         patient["target"] = float(pd.notna(self.outcomes[index]))
-
+        patient['attention_mask'] = torch.ones(len(patient['concept']), dtype=torch.long) # Require attention mask for bi-gru head
         return patient
 
 

@@ -8,6 +8,9 @@ from corebehrt.common.config import Config, instantiate
 from corebehrt.dataloader.collate_fn import dynamic_padding
 from corebehrt.trainer.utils import (compute_avg_metrics,
                                    get_tqdm)
+from corebehrt.trainer.utils import (compute_avg_metrics,
+                                   get_tqdm, save_curves, save_metrics_to_csv,
+                                   save_predictions)
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -136,8 +139,8 @@ class EHRTrainer:
         self.run_log('Train loss', step_loss / self.accumulation_steps)
 
     def validate_and_log(self, epoch: int, epoch_loss: float, train_loop: DataLoader)-> None:
-        val_loss, val_metrics = self._evaluate(mode='val')
-        _, test_metrics = self._evaluate(mode='test')
+        val_loss, val_metrics = self._evaluate(epoch, mode='val')
+        _, test_metrics = self._evaluate(epoch, mode='test')
         if epoch==1: # for testing purposes/if first epoch is best
             self._save_checkpoint(epoch, train_loss=epoch_loss, val_loss=val_loss, val_metrics=val_metrics, test_metrics=test_metrics, final_step_loss=epoch_loss[-1], best_model=True)
         if self._should_stop_early(epoch, val_loss, epoch_loss, val_metrics, test_metrics):
@@ -192,21 +195,21 @@ class EHRTrainer:
         """Sets up the training dataloader and returns it"""
         self.model.train()
         self.save_setup()
-        dataloader = DataLoader(self.train_dataset, batch_size=self.args['batch_size'], sampler=self.sampler,
-                                shuffle=self.args.get('shuffle', True), collate_fn=self.args['collate_fn'])
+        dataloader = self.get_dataloader(self.train_dataset, mode='train')
         return dataloader
 
-    def _evaluate(self, mode='val')->tuple:
+    def _evaluate(self, epoch: int, mode='val')->tuple:
         """Returns the validation/test loss and metrics"""
         if mode == 'val':
             if self.val_dataset is None:
-                raise ValueError("Validation dataset is None")
-            dataloader = self.get_dataloader(self.val_dataset, self.args.get('val_batch_size'))
+                self.log('No validation dataset provided')
+                return None, None
+            dataloader = self.get_dataloader(self.val_dataset, mode='val')
         elif mode == 'test':
             if self.test_dataset is None:
-                Warning("Test dataset is None")
+                self.log('No test dataset provided')
                 return None, None
-            dataloader = self.get_dataloader(self.test_dataset, self.args.get('test_batch_size'))
+            dataloader = self.get_dataloader(self.test_dataset, mode='test')
         else:
             raise ValueError(f"Mode {mode} not supported. Use 'val' or 'test'")
         
@@ -233,7 +236,7 @@ class EHRTrainer:
                         metric_values[name].append(func(outputs, batch))
 
         if self.accumulate_logits:
-            metric_values = self.process_binary_classification_results(logits_list, targets_list)
+            metric_values = self.process_binary_classification_results(logits_list, targets_list, epoch, mode=mode)
         else:
             metric_values = compute_avg_metrics(metric_values)
         
@@ -241,21 +244,36 @@ class EHRTrainer:
         
         return loss / len(loop), metric_values
 
-    def process_binary_classification_results(self, logits:list, targets:list)->dict:
+
+    def process_binary_classification_results(self, logits:list, targets:list, epoch:int, mode='val')->dict:
         """Process results specifically for binary classification."""
-        batch = {'target': torch.cat(targets)}
-        outputs = namedtuple('Outputs', ['logits'])(torch.cat(logits))
+        targets = torch.cat(targets)
+        logits = torch.cat(logits)
+        batch = {'target': targets}
+        outputs = namedtuple('Outputs', ['logits'])(logits)
         metrics = {}
         for name, func in self.metrics.items():
             v = func(outputs, batch)
             self.log(f"{name}: {v}")
             metrics[name] = v
+        save_curves(self.run_folder, logits, targets, epoch, mode)
+        save_metrics_to_csv(self.run_folder, metrics, epoch, mode)
+        save_curves(self.run_folder, logits, targets, BEST_MODEL_ID, mode)
+        save_metrics_to_csv(self.run_folder, metrics, BEST_MODEL_ID, mode) # For compatibility / best model
+        save_predictions(self.run_folder, logits, targets, BEST_MODEL_ID, mode)
         return metrics
     
-    def get_dataloader(self, dataset, batch_size=None) -> DataLoader:
+    def get_dataloader(self, dataset, mode) -> DataLoader:
+        """Returns a dataloader for the dataset"""
+        if mode=='val':
+            batchsize = self.args.get('val_batch_size', self.args['batch_size'])
+        elif mode=='test':
+            batchsize = self.args.get('test_batch_size', self.args['batch_size'])
+        else:
+            batchsize = self.args['batch_size']
         return DataLoader(
             dataset, 
-            batch_size=batch_size if batch_size is not None else self.args['batch_size'], 
+            batch_size=batchsize, 
             shuffle=False, 
             collate_fn=self.args['collate_fn']
         )

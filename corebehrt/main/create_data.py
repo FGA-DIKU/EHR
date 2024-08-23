@@ -31,7 +31,7 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.convert import convert_to_sequences
 
-CONFIG_PATH = "../corebehrt/configs/create_data.yaml"
+CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
 
 
@@ -67,7 +67,9 @@ def main_data(config_path):
     else:
         logger.info("Using existing features!")
 
-    df = dd.read_csv(join(cfg.output_dir, "features", f"features.csv"))
+    df = dd.read_csv(
+        join(cfg.output_dir, "features", f"features.csv"), dtype={"concept": "str"}
+    )
     pids = df.PID.unique().compute().tolist()
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
         pids, **cfg.split_ratios
@@ -83,11 +85,6 @@ def main_data(config_path):
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
     tokenized_dir_name = cfg.get("tokenized_dir_name", "tokenized")
     check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
-
-    vocabulary = None
-    if "vocabulary" in cfg.paths:
-        logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
-        vocabulary = torch.load(cfg.paths.vocabulary)
 
     # TODO: config file is already copied by DirectoryPreparer but deleted again by check_and_clear_directory
     shutil.copy(config_path, join(cfg.output_dir, tokenized_dir_name, "data_cfg.yaml"))
@@ -166,11 +163,11 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
             **cfg.features
         )  # Otherwise appended to old features
         concept_batch = feature_maker(concept_batch, patient_batch)
-        concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.drop(
             columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
         )
+        concept_batch = excluder.exclude_incorrect_events(concept_batch)
+        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.to_csv(
             join(cfg.output_dir, "features", f"features.csv"),
             index=False,

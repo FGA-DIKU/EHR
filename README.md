@@ -16,19 +16,30 @@ Enable your virtual environment and run the unittests:
 ```
 
 ## Pipeline
-Lists the step in the pipeline and how to run them.
-
-### 1. Create Data
-The pretraining process is handled by the [`main_create_data.py`](corebehrt/main_create_data.py) script.
-
-Enable your virtual environment and run:
+The pipeline can be run from the root directory by executing the following commands:
 ```
 (.venv) $ python -m corebehrt.main.create_data
+(.venv) $ python -m corebehrt.main.pretrain
+(.venv) $ python -m corebehrt.main.create_outcomes
+(.venv) $ python -m corebehrt.main.finetune
 ```
-This creates the `outputs` folder.
 
+### 1. Create Data
+Creates tokenized features from the formatted data.
+
+### 2. Pretrain
+Pretrains the model on the tokenized features.
+
+### 3. Create Outcomes
+Creates the outcomes from the formatted data.
+Outcomes are stored as absolute positions.
+
+### 4. Finetune
+Finetunes the pretrained model on the outcomes.
+
+
+## Classes
 #### [`FeatureCreator`](corebehrt/classes/features.py)
-
 From the **raw data**
 PID|CONCEPT|ADMISSION_ID|TIMESTAMP|...
 ---|-------|------------|---------|---
