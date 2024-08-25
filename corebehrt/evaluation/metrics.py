@@ -36,7 +36,7 @@ class LossAccessor:
         self.loss_name = loss_name
     
     def __call__(self, outputs, batch):
-        return outputs.__getattribute__(self.loss_name)
+        return outputs.__getattribute__(self.loss_name).cpu()
 
 def binary_hit(outputs, batch, threshold=0.5, average=True):
     logits = outputs.logits
