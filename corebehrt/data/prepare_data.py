@@ -18,7 +18,12 @@ from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
 from corebehrt.classes.outcomes import OutcomeHandler
 # New stuff
-from corebehrt.functional.utils import normalize_segments
+from corebehrt.functional.utils import normalize_segments, get_background_length_dd
+import dask.dataframe as dd
+from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
+from corebehrt.functional.split import split_pids_into_train_val
+from corebehrt.functional.convert import convert_to_sequences
+from corebehrt.functional.load import load_pids
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -41,6 +46,7 @@ class DatasetPreparer:
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
+
         data = self._prepare_mlm_features()
         if 'predefined_splits' in self.cfg.paths:
             train_data, val_data = load_and_select_splits(self.cfg.paths.predefined_splits, data)
@@ -50,9 +56,9 @@ class DatasetPreparer:
 
         train_dataset = MLMDataset(train_data.features, train_data.vocabulary, **self.cfg.data.dataset)
         val_dataset = MLMDataset(val_data.features, train_data.vocabulary, **self.cfg.data.dataset)
-
         
         return train_dataset, val_dataset
+
 
     def prepare_finetune_data(self) -> Data:
         data_cfg = self.cfg.data
@@ -154,17 +160,24 @@ class DatasetPreparer:
         """
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
+        paths_cfg = self.cfg.paths
 
-        # 1. Load tokenized data
-        data = self.loader.load_tokenized_data(mode='pretrain')
-        if self.cfg.paths.get('exclude_pids', None) is not None:
-            logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
-            exclude_pids = load_exclude_pids(self.cfg.paths)
-            data = Utilities.process_data(data, self.patient_filter.exclude_pids, args_for_func={'exclude_pids': exclude_pids})
+        # 1. Load tokenized data + vocab
+        data =  dd.read_csv(join(paths_cfg.data_path, paths_cfg.tokenized_dir, 'features_pretrain', '*.csv')) # self.loader.load_tokenized_data(mode='pretrain')
+        vocab = torch.load(join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE))
+
+        # 2. Exclude pids
+        data = exclude_pids(data, paths_cfg.get('exclude_pids', None))
+
+        # Convert to sequences
+        features, pids = convert_to_sequences(data)
+        data = Data(features, pids, vocabulary=vocab, mode='pretrain')
+
         predefined_pids =  'predefined_splits' in self.cfg.paths
         if predefined_pids:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = self._select_predefined_pids(data)
+            
         # 3. Exclude short sequences
         data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
         if not predefined_pids:
