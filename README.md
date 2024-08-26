@@ -21,7 +21,7 @@ The pipeline can be run from the root directory by executing the following comma
 (.venv) $ python -m corebehrt.main.create_data
 (.venv) $ python -m corebehrt.main.pretrain
 (.venv) $ python -m corebehrt.main.create_outcomes
-(.venv) $ python -m corebehrt.main.finetune
+(.venv) $ python -m corebehrt.main.finetune_cv
 ```
 
 ### 1. Create Data
