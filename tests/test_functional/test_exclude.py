@@ -5,6 +5,10 @@ import pandas as pd
 
 from corebehrt.classes.excluder import Excluder
 
+import dask.dataframe as dd
+
+import torch 
+import os
 
 class TestExcluder(unittest.TestCase):
     def setUp(self):
@@ -67,6 +71,19 @@ class TestExcluder(unittest.TestCase):
         )
         self.assertEqual(len(kept_indices), 2)
 
+    def test_exclude_short_sequences_dd(self):
+        df = pd.DataFrame(
+            {
+                "PID": [1, 1, 1, 1, 2, 2, 3],
+                "concept": ["A", "B", "C", "D", "E", "F", "G"],
+            }
+        )
+        ddf = dd.from_pandas(df, npartitions=1)
+
+        result = self.excluder.exclude_short_sequences(ddf)
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result.compute()["PID"].nunique(), 1)
+
     def test_normalize_segments(self):
         df = pd.DataFrame(
             {
@@ -83,6 +100,22 @@ class TestExcluder(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.excluder.exclude_short_sequences("invalid input")
 
+    def test_exclude_pids(self):
+        df = pd.DataFrame(
+            {
+                "PID": [1, 1, 1, 2, 2, 3],
+                "concept": ["A", "B", "C", "D", "E", "F"],
+                "age": [-1, 50, 120, 30, 80, np.nan],
+                "segment": [0, 1, 2, 0, 1, 0],
+                "abspos": [-20, 20, 60, -200, 203, 204],
+            }
+        )
+
+        ddf = dd.from_pandas(df, npartitions=1)
+        exclude_path = "tests/data/prepped/pids/exclude_pids.pt"    
+        result = self.excluder.exclude_pids(ddf, exclude_path).compute()
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result["PID"].nunique(), 2)
 
 if __name__ == "__main__":
     unittest.main()

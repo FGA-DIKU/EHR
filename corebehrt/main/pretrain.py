@@ -36,6 +36,7 @@ def main_train(config_path):
         cfg, "pretrain_config.yaml"
     )  # if we are training from checkpoint, we need to load the old config
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
+
     if "scheduler" in cfg:
         logger.info("Computing number of warmup steps")
         compute_number_of_warmup_steps(cfg, len(train_dataset))
