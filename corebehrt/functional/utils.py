@@ -12,6 +12,8 @@ import logging
 logger = logging.getLogger(__name__)
 import random
 
+# New stuff
+import dask.dataframe as dd
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -64,6 +66,15 @@ def get_background_length(features: dict, vocabulary) -> int:
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
+def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
+    """Get the length of the background sentence, first SEP token included."""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
+    first_pid_value = features['PID'].compute().iloc[0]
+    first_pid = features[features['PID'] == first_pid_value]
+    all_concepts_first_pid = first_pid["concept"].compute().tolist()
+    background_length = len(set(all_concepts_first_pid) & background_tokens)
+
+    return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
     """Get the length of the background sentence"""

@@ -23,11 +23,18 @@ from corebehrt.classes.outcomes import OutcomeHandler
 # New stuff
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
+<<<<<<< HEAD
 from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_predefined_pids
 from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
+=======
+from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
+from corebehrt.functional.split import split_pids_into_train_val
+from corebehrt.functional.convert import convert_to_sequences
+from corebehrt.functional.load import load_pids
+>>>>>>> f7af9c8 (exclude_pids in prepare_data)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -61,6 +68,7 @@ class DatasetPreparer:
             train_data, val_data = data.split(val_ratio)
         self.saver.save_train_val_pids(train_data.pids, val_data.pids)
 
+<<<<<<< HEAD
         train_dataset = MLMDataset(
             train_data.features, train_data.vocabulary, **self.cfg.data.dataset
         )
@@ -68,7 +76,13 @@ class DatasetPreparer:
             val_data.features, train_data.vocabulary, **self.cfg.data.dataset
         )
 
+=======
+        train_dataset = MLMDataset(train_data.features, train_data.vocabulary, **self.cfg.data.dataset)
+        val_dataset = MLMDataset(val_data.features, train_data.vocabulary, **self.cfg.data.dataset)
+        
+>>>>>>> f7af9c8 (exclude_pids in prepare_data)
         return train_dataset, val_dataset
+
 
     def prepare_finetune_data(self) -> Data:
         data_cfg = self.cfg.data

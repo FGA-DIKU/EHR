@@ -10,7 +10,6 @@ from corebehrt.functional import exclude
 from corebehrt.functional.utils import normalize_segments
 from dask import dataframe as dd
 
-
 class Excluder:
     def __init__(
         self,
