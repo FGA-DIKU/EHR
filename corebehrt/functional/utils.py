@@ -14,8 +14,6 @@ import random
 
 # New stuff
 import dask.dataframe as dd
-import os
-from os.path import join
 from corebehrt.functional.load import load_pids
 import logging
 
