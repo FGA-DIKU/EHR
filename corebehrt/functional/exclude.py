@@ -84,7 +84,7 @@ def exclude_short_sequences_dict(
     return filtered_x, kept_indices
 
 
-def exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
+def exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
     if pids_path is not None:
         excluded_pids = load_pids(pids_path)
         data = data[~data["PID"].isin(excluded_pids)]

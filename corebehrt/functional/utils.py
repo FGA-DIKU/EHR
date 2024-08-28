@@ -6,7 +6,6 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
-import os
 from os.path import join
 from corebehrt.functional.load import load_pids
 import logging
@@ -118,7 +117,7 @@ def select_data_by_pids(data: dd.DataFrame, pids: List[int]) -> dd.DataFrame:
     return data[data["PID"].isin(pids)]
 
 
-def exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
+def exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
     if pids_path is not None:
         excluded_pids = load_pids(pids_path)
         data = data[~data["PID"].isin(excluded_pids)]
