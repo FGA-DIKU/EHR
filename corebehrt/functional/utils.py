@@ -6,11 +6,14 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
-import os 
+import os
 from os.path import join
 from corebehrt.functional.load import load_pids
 import logging
+
 logger = logging.getLogger(__name__)
+import random
+
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -63,15 +66,17 @@ def get_background_length(features: dict, vocabulary) -> int:
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
+
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    first_pid_value = features['PID'].compute().iloc[0]
-    first_pid = features[features['PID'] == first_pid_value]
+    first_pid_value = features["PID"].compute().iloc[0]
+    first_pid = features[features["PID"] == first_pid_value]
     all_concepts_first_pid = first_pid["concept"].compute().tolist()
     background_length = len(set(all_concepts_first_pid) & background_tokens)
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
+
 
 def get_abspos_from_origin_point(
     timestamps: Union[pd.Series, List[datetime]], origin_point: datetime
@@ -128,3 +133,21 @@ def get_first_event_by_pid(df: pd.DataFrame):
     Get the first event for each PID in the table.
     """
     return df.groupby("PID").TIMESTAMP.min()
+
+
+def filter_table_by_exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
+    if pids_path is not None:
+        excluded_pids = load_pids(pids_path)
+        data = data[~data["PID"].isin(excluded_pids)]
+        return data
+    else:
+        return data
+
+def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
+    if n >= len(data):
+        return data
+    pids = data["PID"].unique().compute().tolist()
+    random.seed(42)
+    random.shuffle(pids)
+    pids = pids[:n]
+    return select_data_by_pids(data, pids)

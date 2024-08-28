@@ -6,6 +6,7 @@ import random
 
 from corebehrt.functional.utils import select_data_by_pids
 
+
 def split_pids_into_pt_ft_test(
     pids: list, pretrain: float, finetune: float, test: float
 ) -> Tuple[list, list, list]:
@@ -32,7 +33,7 @@ def split_pids_into_pt_ft_test(
     return pretrain_pids, finetune_pids, test_pids
 
 
-def split_pids_into_train_val(data: dd.DataFrame, split:float) -> Tuple[list, list]:
+def split_pids_into_train_val(data: dd.DataFrame, split: float) -> Tuple[list, list]:
     """
     Splits data into train and val. Returns two dataframes.
     """

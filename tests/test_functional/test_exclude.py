@@ -7,6 +7,7 @@ from corebehrt.classes.excluder import Excluder
 
 import dask.dataframe as dd
 
+
 class TestExcluder(unittest.TestCase):
     def setUp(self):
         self.excluder = Excluder(min_age=0, max_age=100, min_len=3, background_length=1)
@@ -109,10 +110,11 @@ class TestExcluder(unittest.TestCase):
         )
 
         ddf = dd.from_pandas(df, npartitions=1)
-        exclude_path = "tests/data/prepped/pids/exclude_pids.pt"    
+        exclude_path = "tests/data/prepped/pids/exclude_pids.pt"
         result = self.excluder.exclude_pids(ddf, exclude_path).compute()
         self.assertEqual(len(result), 3)
         self.assertEqual(result["PID"].nunique(), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
