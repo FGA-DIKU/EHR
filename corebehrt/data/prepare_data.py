@@ -23,7 +23,8 @@ import dask.dataframe as dd
 from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.load import load_pids
+from corebehrt.functional.load import load_predefined_pids
+from corebehrt.functional.utils import select_data_by_pids
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -178,14 +179,14 @@ class DatasetPreparer:
         # 2. Exclude pids
         data = exclude_pids(data, paths_cfg.get('exclude_pids', None))
 
+        # 3. Select predefined pids, remove the rest
+        if predefined_pids := self.cfg.paths.get('predefined_pids', False):
+            logger.warning("Using predefined splits. Ignoring test_split parameter")
+            data = select_data_by_pids(data, load_predefined_pids(predefined_pids))
+
         # Convert to sequences
         features, pids = convert_to_sequences(data)
         data = Data(features, pids, vocabulary=vocab, mode='pretrain')
-
-        predefined_pids =  'predefined_splits' in self.cfg.paths
-        if predefined_pids:
-            logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = self._select_predefined_pids(data)
 
         # 3. Exclude short sequences
         data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)

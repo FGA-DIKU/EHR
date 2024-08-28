@@ -6,6 +6,11 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
+import os 
+from os.path import join
+from corebehrt.functional.load import load_pids
+import logging
+logger = logging.getLogger(__name__)
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -101,4 +106,15 @@ def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
     )
 
 def select_data_by_pids(data: dd.DataFrame, pids: List[int]) -> dd.DataFrame:
+    missing_pids = set(pids) - set(data["PID"].unique().compute())
+    if missing_pids:
+        logger.info(f"{len(missing_pids)} PIDs are not in the data.")
     return data[data["PID"].isin(pids)]
+
+def exclude_pids(data: dd.DataFrame, pids_path) -> dd.DataFrame:
+    if pids_path is not None:
+        excluded_pids = load_pids(pids_path)
+        data = data[~data["PID"].isin(excluded_pids)]
+        return data
+    else:
+        return data
