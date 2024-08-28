@@ -6,11 +6,14 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
-import os 
+import os
 from os.path import join
 from corebehrt.functional.load import load_pids
 import logging
+
 logger = logging.getLogger(__name__)
+import random
+
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -63,15 +66,17 @@ def get_background_length(features: dict, vocabulary) -> int:
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
+
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    first_pid_value = features['PID'].compute().iloc[0]
-    first_pid = features[features['PID'] == first_pid_value]
+    first_pid_value = features["PID"].compute().iloc[0]
+    first_pid = features[features["PID"] == first_pid_value]
     all_concepts_first_pid = first_pid["concept"].compute().tolist()
     background_length = len(set(all_concepts_first_pid) & background_tokens)
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
+
 
 def get_abspos_from_origin_point(
     timestamps: Union[pd.Series, List[datetime]], origin_point: datetime
@@ -105,16 +110,28 @@ def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
         concepts["PID"].sort_values().unique().tolist(),
     )
 
+
 def select_data_by_pids(data: dd.DataFrame, pids: List[int]) -> dd.DataFrame:
     missing_pids = set(pids) - set(data["PID"].unique().compute())
     if missing_pids:
         logger.info(f"{len(missing_pids)} PIDs are not in the data.")
     return data[data["PID"].isin(pids)]
 
-def exclude_pids(data: dd.DataFrame, pids_path) -> dd.DataFrame:
+
+def exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
     if pids_path is not None:
         excluded_pids = load_pids(pids_path)
         data = data[~data["PID"].isin(excluded_pids)]
         return data
     else:
         return data
+
+
+def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
+    if n >= len(data):
+        return data
+    pids = data["PID"].unique().compute().tolist()
+    random.seed(42)
+    random.shuffle(pids)
+    pids = pids[:n]
+    return select_data_by_pids(data, pids)

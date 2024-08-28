@@ -10,6 +10,7 @@ from corebehrt.functional import exclude
 from corebehrt.functional.utils import normalize_segments
 from dask import dataframe as dd
 
+
 class Excluder:
     def __init__(
         self,
@@ -38,6 +39,8 @@ class Excluder:
         """Exclude patients with less than k events (taken background into account)"""
         return exclude.exclude_short_sequences(x, self.min_len, self.background_length)
 
-    def exclude_pids(self, data: dd.DataFrame, pids_path: Optional[str] = None) -> dd.DataFrame:
+    def exclude_pids(
+        self, data: dd.DataFrame, pids_path: Optional[str] = None
+    ) -> dd.DataFrame:
         """Exclude pids from data."""
         return exclude.exclude_pids(data, pids_path)

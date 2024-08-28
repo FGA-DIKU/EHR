@@ -7,6 +7,7 @@ from typing import Union, List, Tuple
 import dask.dataframe as dd
 from corebehrt.functional.load import load_pids
 
+
 def exclude_incorrect_event_ages(
     df: pd.DataFrame, min_age: int = -1, max_age: int = 120
 ) -> pd.DataFrame:
@@ -25,7 +26,9 @@ def exclude_short_sequences(
     background_length: int = 0,
 ) -> Tuple[Union[pd.DataFrame, List[list], dict], List[int]]:
     if isinstance(x, dd.DataFrame):
-        return x.map_partitions(exclude_short_sequences_dd, min_len, background_length, meta=x)
+        return x.map_partitions(
+            exclude_short_sequences_dd, min_len, background_length, meta=x
+        )
     elif isinstance(x, pd.DataFrame):
         return exclude_short_sequences_df(x, min_len, background_length)
     elif isinstance(x, list) and isinstance(x[0], list):
@@ -33,9 +36,7 @@ def exclude_short_sequences(
     elif isinstance(x, dict):
         return exclude_short_sequences_dict(x, min_len, background_length)
     else:
-        raise TypeError(
-            "Invalid type for x, only dd.DataFrame are supported."
-        )
+        raise TypeError("Invalid type for x, only dd.DataFrame are supported.")
 
 
 def min_len_condition(c: list, min_len: int, background_length: int) -> bool:
@@ -43,7 +44,10 @@ def min_len_condition(c: list, min_len: int, background_length: int) -> bool:
 
 
 def exclude_short_sequences_dd(df, min_len, background_length):
-    return df.groupby("PID").filter(lambda x: min_len_condition(x["concept"], min_len, background_length))
+    return df.groupby("PID").filter(
+        lambda x: min_len_condition(x["concept"], min_len, background_length)
+    )
+
 
 def exclude_short_sequences_df(
     df: pd.DataFrame, min_len: int, background_length: int
@@ -80,12 +84,10 @@ def exclude_short_sequences_dict(
     return filtered_x, kept_indices
 
 
-def exclude_pids(data: dd.DataFrame, pids_path) -> dd.DataFrame:
+def exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
     if pids_path is not None:
         excluded_pids = load_pids(pids_path)
         data = data[~data["PID"].isin(excluded_pids)]
         return data
     else:
         return data
-    
-

@@ -29,7 +29,6 @@ from corebehrt.classes.excluder import Excluder
 from corebehrt.classes.tokenizer import EHRTokenizer
 
 from corebehrt.functional.split import split_pids_into_pt_ft_test
-from corebehrt.functional.convert import convert_to_sequences
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
@@ -100,14 +99,32 @@ def main_data(config_path):
     df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
 
-
-    df_pt.to_csv(join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"), index=False)
-    df_ft.to_csv(join(cfg.output_dir, tokenized_dir_name, "features_finetune", "*.csv"), index=False)
-    df_test.to_csv(join(cfg.output_dir, tokenized_dir_name, "features_test", "*.csv"), index=False)
-    torch.save(df_pt.compute()["PID"].unique().tolist(), join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"))
-    torch.save(df_ft.compute()["PID"].unique().tolist(), join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"))
-    torch.save(df_test.compute()["PID"].unique().tolist(), join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"))
-    torch.save(tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt"))
+    df_pt.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"),
+        index=False,
+    )
+    df_ft.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_finetune", "*.csv"),
+        index=False,
+    )
+    df_test.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_test", "*.csv"), index=False
+    )
+    torch.save(
+        df_pt.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"),
+    )
+    torch.save(
+        df_ft.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"),
+    )
+    torch.save(
+        df_test.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"),
+    )
+    torch.save(
+        tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
+    )
     # torch.save(df_pt, join(cfg.output_dir, tokenized_dir_name, "features_pretrain.pt"))
     # torch.save(df_ft, join(cfg.output_dir, tokenized_dir_name, "features_finetune.pt"))
     # torch.save(df_test, join(cfg.output_dir, tokenized_dir_name, "features_test.pt"))
