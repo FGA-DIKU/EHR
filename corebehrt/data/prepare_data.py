@@ -62,9 +62,16 @@ class DatasetPreparer:
 
     def prepare_finetune_data(self) -> Data:
         data_cfg = self.cfg.data
+        paths_cfg = self.cfg.paths
 
         # 1. Loading tokenized data
-        data = self.loader.load_tokenized_data(mode='finetune')
+        data =  dd.read_csv(join(paths_cfg.data_path, paths_cfg.tokenized_dir, 'features_finetune', '*.csv')) # self.loader.load_tokenized_data(mode='pretrain')
+        vocab = torch.load(join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE))
+        
+        # Convert to sequences
+        features, pids = convert_to_sequences(data)
+        data = Data(features, pids, vocabulary=vocab, mode='finetune')
+
         initial_pids = data.pids
         if self.cfg.paths.get('exclude_pids', None) is not None:
             logger.info(f"Pids to exclude: {self.cfg.paths.exclude_pids}")
@@ -179,7 +186,7 @@ class DatasetPreparer:
         if predefined_pids:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = self._select_predefined_pids(data)
-            
+
         # 3. Exclude short sequences
         data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
         if not predefined_pids:
