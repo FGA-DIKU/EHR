@@ -7,7 +7,6 @@ from corebehrt.classes.excluder import Excluder
 
 import dask.dataframe as dd
 
-
 class TestExcluder(unittest.TestCase):
     def setUp(self):
         self.excluder = Excluder(min_age=0, max_age=100, min_len=3, background_length=1)

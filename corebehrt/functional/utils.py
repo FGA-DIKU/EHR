@@ -14,6 +14,11 @@ import random
 
 # New stuff
 import dask.dataframe as dd
+import os 
+from os.path import join
+from corebehrt.functional.load import load_pids
+import logging
+logger = logging.getLogger(__name__)
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):

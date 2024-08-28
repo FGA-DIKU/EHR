@@ -23,7 +23,6 @@ from corebehrt.classes.outcomes import OutcomeHandler
 # New stuff
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
-<<<<<<< HEAD
 from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
@@ -34,7 +33,9 @@ from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_pids
->>>>>>> f7af9c8 (exclude_pids in prepare_data)
+=======
+from corebehrt.functional.load import load_predefined_pids
+from corebehrt.functional.utils import select_data_by_pids
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -267,9 +268,23 @@ class DatasetPreparer:
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
 
+        # 3. Select predefined pids, remove the rest
+        if predefined_pids := self.cfg.paths.get('predefined_pids', False):
+            logger.warning("Using predefined splits. Ignoring test_split parameter")
+            data = select_data_by_pids(data, load_predefined_pids(predefined_pids))
+
         # Convert to sequences
         features, pids = convert_to_sequences(data)
         data = Data(features, pids, vocabulary=vocab, mode="pretrain")
+        # 3. Exclude short sequences
+        data = Utilities.process_data(data, self.patient_filter.filter_by_min_sequence_length)
+        if not predefined_pids:
+            # 4. Optional: Patient Subset Selection
+            if data_cfg.get('num_patients'):
+                data = Utilities.process_data(data, self.patient_filter.select_random_subset, args_for_func={'num_patients':data_cfg.num_patients})
+        # 5. Truncation
+        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
+        data = Utilities.process_data(data, self.data_modifier.truncate, args_for_func={'truncation_len': data_cfg.truncation_len})
 
         # 6. Normalize segments
         data = Utilities.process_data(data, self.data_modifier.normalize_segments)
