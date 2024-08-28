@@ -6,8 +6,6 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
-import os
-from os.path import join
 from corebehrt.functional.load import load_pids
 import logging
 
@@ -134,8 +132,7 @@ def get_first_event_by_pid(df: pd.DataFrame):
     """
     return df.groupby("PID").TIMESTAMP.min()
 
-
-def filter_table_by_exclude_pids(data: dd.DataFrame, pids_path:Union[None, str]) -> dd.DataFrame:
+def exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
     if pids_path is not None:
         excluded_pids = load_pids(pids_path)
         data = data[~data["PID"].isin(excluded_pids)]
