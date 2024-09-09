@@ -11,7 +11,7 @@ from corebehrt.common.loader import (
 )
 from corebehrt.common.setup import DirectoryPreparer, copy_data_config, get_args
 from corebehrt.common.utils import compute_number_of_warmup_steps
-from corebehrt.data.prepare_data import DatasetPreparer
+from corebehrt.classes.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
@@ -23,27 +23,40 @@ config_path = args.config_path
 
 
 def main_train(config_path):
+
+    # Load config
     cfg = load_config(config_path)
 
+    # Setup path configuration
     cfg, run, mount_context = AzurePathContext(
         cfg, dataset_name=BLOBSTORE
     ).adjust_paths_for_azure_pretrain()
 
+    # Prepare directories and logger
     logger, run_folder = DirectoryPreparer.setup_run_folder(cfg)
+    # Perist log file
     copy_data_config(cfg, run_folder)
 
-    loaded_from_checkpoint = load_model_cfg_from_checkpoint(
-        cfg, "pretrain_config.yaml"
-    )  # if we are training from checkpoint, we need to load the old config
+    # Load config from checkpoint and overwrite if we are training from checkpoint
+    loaded_from_checkpoint = load_model_cfg_from_checkpoint(cfg, "pretrain_config.yaml")
+
+    # Prepare data sets (train and validation)
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
+    import pdb
+
+    pdb.set_trace()
     if "scheduler" in cfg:
         logger.info("Computing number of warmup steps")
         compute_number_of_warmup_steps(cfg, len(train_dataset))
 
+    # Load checkpoint and epoch count
     checkpoint, epoch = load_checkpoint_and_epoch(cfg)
+
+    # Initialize model, optimizer, trainer
     logger.info(f"Continue training from epoch {epoch}")
     initializer = Initializer(cfg, checkpoint=checkpoint)
     model = initializer.initialize_pretrain_model(train_dataset)
+
     logger.info("Initializing optimizer")
     optimizer = initializer.initialize_optimizer(model)
     scheduler = initializer.initialize_scheduler(optimizer)
@@ -62,6 +75,8 @@ def main_train(config_path):
         run=run,
         last_epoch=epoch,
     )
+
+    # Train model
     logger.info("Start training")
     trainer.train()
     if cfg.env == "azure":
