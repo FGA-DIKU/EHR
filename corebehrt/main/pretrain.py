@@ -42,9 +42,6 @@ def main_train(config_path):
 
     # Prepare data sets (train and validation)
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
-    import pdb
-
-    pdb.set_trace()
     if "scheduler" in cfg:
         logger.info("Computing number of warmup steps")
         compute_number_of_warmup_steps(cfg, len(train_dataset))

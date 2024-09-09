@@ -1,10 +1,12 @@
 from typing import Iterator, Tuple, List
 
-from corebehrt.common.utils import Data
+from corebehrt.classes.data.dataset import EHRDataset as Data
 from sklearn.model_selection import KFold
 
 
-def get_n_splits_cv(data: Data, n_splits: int, indices:list=None)->Iterator[Tuple[List[int], List[int]]]:
+def get_n_splits_cv(
+    data: Data, n_splits: int, indices: list = None
+) -> Iterator[Tuple[List[int], List[int]]]:
     """
     Generate indices for n_splits cross-validation.
 
@@ -27,5 +29,3 @@ def get_n_splits_cv(data: Data, n_splits: int, indices:list=None)->Iterator[Tupl
         val_indices = [indices[i] for i in val_idx]
 
         yield train_indices, val_indices
-    
-

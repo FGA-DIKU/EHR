@@ -12,8 +12,8 @@ from corebehrt.common.setup import (
     copy_pretrain_config,
     get_args,
 )
-from corebehrt.common.utils import Data, compute_number_of_warmup_steps
-from corebehrt.classes.dataset import BinaryOutcomeDataset
+from corebehrt.common.utils import compute_number_of_warmup_steps
+from corebehrt.classes.data.dataset import BinaryOutcomeDataset, EHRDataset as Data
 from corebehrt.classes.data.prepare import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
 from corebehrt.evaluation.utils import (

@@ -14,8 +14,7 @@ from corebehrt.common.loader import (
     load_exclude_pids,
 )
 from corebehrt.common.saver import Saver
-from corebehrt.common.utils import Data
-from corebehrt.classes.data.dataset import MLMDataset
+from corebehrt.classes.data.dataset import MLMDataset, EHRDataset
 from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
@@ -63,7 +62,7 @@ class DatasetPreparer:
 
         return train_dataset, val_dataset
 
-    def prepare_finetune_data(self) -> Data:
+    def prepare_finetune_data(self) -> EHRDataset:
         data_cfg = self.cfg.data
 
         # 1. Loading tokenized data
@@ -192,7 +191,7 @@ class DatasetPreparer:
         self._log_features(data)
         return data
 
-    def _prepare_mlm_features(self) -> Data:
+    def _prepare_mlm_features(self) -> EHRDataset:
         """
         1. Load tokenized data
         2. Optional: Remove background tokens
@@ -253,8 +252,8 @@ class DatasetPreparer:
         return data
 
     def _retrieve_and_assign_outcomes(
-        self, data: Data, outcomes: Dict, censor_outcomes: Dict
-    ) -> Data:
+        self, data: EHRDataset, outcomes: Dict, censor_outcomes: Dict
+    ) -> EHRDataset:
         """Retrieve outcomes and assign them to the data instance"""
         data.outcomes = Utilities.select_and_order_outcomes_for_patients(
             outcomes, data.pids, self.cfg.outcome.type
@@ -277,7 +276,7 @@ class DatasetPreparer:
             val_pids = torch.load(get_pids_file(predefined_splits_path, "val"))
             return train_pids + val_pids
 
-    def _select_predefined_pids(self, data: Data):
+    def _select_predefined_pids(self, data: EHRDataset):
         """Validate predefined splits as subset of data."""
         predefined_splits_path = self.cfg.paths.predefined_splits
         predefined_pids = self._get_predefined_pids(predefined_splits_path)
@@ -288,7 +287,7 @@ class DatasetPreparer:
         data = data.select_data_subset_by_pids(predefined_pids, mode=data.mode)
         return data
 
-    def _load_outcomes_to_data(self, data: Data) -> None:
+    def _load_outcomes_to_data(self, data: EHRDataset) -> None:
         """Load outcomes and censor outcomes to data."""
         for outcome_type in ["outcomes", "censor_outcomes"]:
             setattr(
@@ -299,7 +298,7 @@ class DatasetPreparer:
                 ),
             )
 
-    def _log_features(self, data: Data) -> None:
+    def _log_features(self, data: EHRDataset) -> None:
         logger.info(f"Final features: {data.features.keys()}")
         logger.info("Example features: ")
         for k, v in data.features.items():
@@ -311,12 +310,12 @@ class DataModifier:
         self.cfg = cfg
 
     @staticmethod
-    def truncate(data: Data, truncation_len: int) -> Data:
+    def truncate(data: EHRDataset, truncation_len: int) -> EHRDataset:
         truncator = Truncator(max_len=truncation_len, vocabulary=data.vocabulary)
         data.features = truncator(data.features)
         return data
 
-    def censor_data(self, data: Data, n_hours: float) -> Data:
+    def censor_data(self, data: EHRDataset, n_hours: float) -> EHRDataset:
         """Censors data n_hours after censor_outcome."""
         censorer_cfg = self.cfg.data.get("censorer", {"_target_": DEFAULT_CENSORER})
         censorer = instantiate(
@@ -329,7 +328,7 @@ class DataModifier:
         return data
 
     @staticmethod
-    def normalize_segments(data: Data) -> Data:
+    def normalize_segments(data: EHRDataset) -> EHRDataset:
         """Normalize segments after truncation to start with 1 and increase by 1 then normalize those."""
         data.features = normalize_segments(data.features)
         return data
