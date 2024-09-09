@@ -13,7 +13,7 @@ from corebehrt.common.setup import (
     get_args,
 )
 from corebehrt.common.utils import compute_number_of_warmup_steps
-from corebehrt.classes.data.dataset import BinaryOutcomeDataset, EHRDataset as Data
+from corebehrt.classes.data.dataset import EHRDataset as Data
 from corebehrt.classes.data.prepare import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
 from corebehrt.evaluation.utils import (
@@ -148,13 +148,9 @@ def finetune_fold(
     dataset_preparer.saver.save_patient_nums(train_data, val_data, folder=fold_folder)
 
     logger.info("Initializing datasets")
-    train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes)
-    val_dataset = BinaryOutcomeDataset(val_data.features, val_data.outcomes)
-    test_dataset = (
-        BinaryOutcomeDataset(test_data.features, test_data.outcomes)
-        if len(test_data) > 0
-        else None
-    )
+    train_dataset = train_data.to_binary_outcome_dataset()
+    val_dataset = val_data.to_binary_outcome_dataset()
+    test_dataset = test_data.to_binary_outcome_dataset() if len(test_data) > 0 else None
     modelmanager = ModelManager(cfg, fold)
     checkpoint = modelmanager.load_checkpoint()
     modelmanager.load_model_config()

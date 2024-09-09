@@ -130,6 +130,15 @@ class EHRDataset:
         split_index = int(len(indices) * (1 - split))
         return indices[:split_index], indices[split_index:]
 
+    def to_mlm_dataset(self, vocabulary=None, **kwargs) -> "MLMDataset":
+        # Set vocabulary, if it is not already set
+        if vocabulary is None:
+            vocabulary = self.vocabulary
+        return MLMDataset(self.features, vocabulary, **kwargs)
+
+    def to_binary_outcome_dataset(self) -> "BinaryOutcomeDataset":
+        return BinaryOutcomeDataset(self.features, self.outcomes)
+
 
 class BaseTorchEHRDataset(Dataset):
     def __init__(self, features: dict):

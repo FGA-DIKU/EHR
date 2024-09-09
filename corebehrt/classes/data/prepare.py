@@ -14,7 +14,7 @@ from corebehrt.common.loader import (
     load_exclude_pids,
 )
 from corebehrt.common.saver import Saver
-from corebehrt.classes.data.dataset import MLMDataset, EHRDataset
+from corebehrt.classes.data.dataset import EHRDataset
 from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
@@ -53,11 +53,9 @@ class DatasetPreparer:
             train_data, val_data = data.split(val_ratio)
         self.saver.save_train_val_pids(train_data.pids, val_data.pids)
 
-        train_dataset = MLMDataset(
-            train_data.features, train_data.vocabulary, **self.cfg.data.dataset
-        )
-        val_dataset = MLMDataset(
-            val_data.features, train_data.vocabulary, **self.cfg.data.dataset
+        train_dataset = train_data.to_mlm_dataset(**self.cfg.data.dataset)
+        val_dataset = val_data.to_mlm_dataset(
+            vocabulary=train_data.vocabulary, **self.cfg.data.dataset
         )
 
         return train_dataset, val_dataset
