@@ -14,7 +14,7 @@ from corebehrt.common.setup import (
 )
 from corebehrt.common.utils import Data, compute_number_of_warmup_steps
 from corebehrt.classes.dataset import BinaryOutcomeDataset
-from corebehrt.classes.prepare_data import DatasetPreparer
+from corebehrt.classes.data.prepare import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
 from corebehrt.evaluation.utils import (
     compute_and_save_scores_mean_std,

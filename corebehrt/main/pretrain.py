@@ -11,7 +11,7 @@ from corebehrt.common.loader import (
 )
 from corebehrt.common.setup import DirectoryPreparer, copy_data_config, get_args
 from corebehrt.common.utils import compute_number_of_warmup_steps
-from corebehrt.classes.prepare_data import DatasetPreparer
+from corebehrt.classes.data.prepare import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"

@@ -15,7 +15,7 @@ from corebehrt.common.loader import (
 )
 from corebehrt.common.saver import Saver
 from corebehrt.common.utils import Data
-from corebehrt.classes.dataset import MLMDataset
+from corebehrt.classes.data.dataset import MLMDataset
 from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator

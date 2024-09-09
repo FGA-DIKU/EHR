@@ -6,8 +6,8 @@ import torch
 import random
 from os import makedirs
 from os.path import join
-from corebehrt.classes.prepare_data import DatasetPreparer
-from corebehrt.classes.dataset import MLMDataset
+from corebehrt.classes.data.prepare import DatasetPreparer
+from corebehrt.classes.data.dataset import MLMDataset
 from corebehrt.common.config import load_config
 
 
