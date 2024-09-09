@@ -88,3 +88,17 @@ def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
         concepts.groupby("PID").agg(list).to_dict("list"),
         concepts["PID"].sort_values().unique().tolist(),
     )
+
+def filter_table_by_pids(df: pd.DataFrame, pids: List[str])->pd.DataFrame:
+    """
+    Assumes that the table has a column named PID. 
+    Returns a new table with only the rows that have a PID in pids
+    """
+    return df[df.PID.isin(pids)]
+
+def remove_missing_timestamps(df: pd.DataFrame )->pd.DataFrame:
+    """
+    Assumes that the table has a column named TIMESTAMP.
+    Returns a new table with only the rows that have a TIMESTAMP.
+    """
+    return df[df.TIMESTAMP.notna()]

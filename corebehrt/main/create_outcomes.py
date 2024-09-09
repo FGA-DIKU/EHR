@@ -10,23 +10,26 @@ from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import check_patient_counts
 from corebehrt.data.concept_loader import ConceptLoaderLarge
-from corebehrt.downstream_tasks.outcomes import OutcomeMaker
+from corebehrt.classes.outcomes import OutcomeMaker
 from tqdm import tqdm
+import pandas as pd
 
 BLOBSTORE = "PHAIR"
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
 
-def process_data(loader, cfg, features_cfg, logger):
+def process_data(loader, cfg, features_cfg, logger)->dict:
     all_outcomes = defaultdict(list)
-    for concept_batch, patient_batch in tqdm(
-        loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
-    ):
+    for (concept_batch, patient_batch) in tqdm(loader(), desc='Batch Process Data', file=TqdmToLogger(logger)):
         check_patient_counts(concept_batch, patient_batch, logger)
         pids = concept_batch.PID.unique()
-        outcomes = OutcomeMaker(cfg, features_cfg)(concept_batch, patient_batch, pids)
-        for key, value in outcomes.items():
-            all_outcomes[key].extend(value)
+        outcome_tables = OutcomeMaker(cfg.outcomes, features_cfg.features.origin_point)(concept_batch, patient_batch, pids)
+        # Concatenate the tables for each key
+        for key, df in outcome_tables.items():
+            if key in all_outcomes:
+                all_outcomes[key] = pd.concat([all_outcomes[key], df])
+            else:
+                all_outcomes[key] = df
     return all_outcomes
 
 
@@ -44,9 +47,11 @@ def main_data(config_path):
     logger.info("Mount Dataset")
     logger.info("Starting outcomes creation")
     features_cfg = load_config(join(cfg.features_dir, "data_config.yaml"))
-    outcomes = process_data(ConceptLoaderLarge(**cfg.loader), cfg, features_cfg, logger)
-
-    torch.save(outcomes, join(cfg.paths.outcome_dir, f"{cfg.outcomes_name}.pt"))
+    outcome_tables = process_data(ConceptLoaderLarge(**cfg.loader), cfg, features_cfg, logger)
+    
+    for key, df in outcome_tables.items():
+        df.to_csv(join(cfg.paths.outcome_dir, f'{key}.csv'), index=False)
+    
 
     logger.info("Finish outcomes creation")
 
