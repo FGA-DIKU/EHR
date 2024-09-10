@@ -16,7 +16,7 @@ from corebehrt.data.dataset import MLMDataset
 from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
-
+from corebehrt.classes.outcomes import OutcomeHandler
 # New stuff
 from corebehrt.functional.utils import normalize_segments
 
@@ -87,19 +87,17 @@ class DatasetPreparer:
                 data = Utilities.process_data(data, self.patient_filter.select_by_gender)
             
             # 4. Loading and processing outcomes
-            outcomes, censor_outcomes = self.loader.load_outcomes()
-            logger.info("Assigning outcomes to data")
-            data = Utilities.process_data(data, self._retrieve_and_assign_outcomes,
-                                            args_for_func={'outcomes': outcomes, 'censor_outcomes': censor_outcomes})
-
-            # 5. Optional: select patients of interest
-            if data_cfg.get("select_censored"):
-                data = Utilities.process_data(data, self.patient_filter.select_censored)
-
-            # 6. Optional: Filter patients with outcome before censoring
-            if self.cfg.outcome.type != self.cfg.outcome.get('censor_type', None):
-                data = Utilities.process_data(data, self.patient_filter.filter_outcome_before_censor) # !Timeframe (earlier instance of outcome)
-
+            outcome_dates, exposure_dates = self.loader.load_outcomes_and_exposures()
+            outcomehandler = OutcomeHandler(
+                index_date=self.cfg.outcome.get('index_date', None),
+                select_patient_group=data_cfg.get("select_patient_group", None), # exposed/unexposed
+                exclude_pre_followup_outcome_patients=self.cfg.outcome.get("first_time_outcomes_only", False),
+            )
+            data = outcomehandler.handle(
+                data,
+                outcome_dates, 
+                exposure_dates, 
+                )
             # 7. Optional: Filter code types
             if data_cfg.get('code_types'):
                 data = Utilities.process_data(data, self.code_type_filter.filter)

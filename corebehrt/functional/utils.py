@@ -102,3 +102,10 @@ def remove_missing_timestamps(df: pd.DataFrame )->pd.DataFrame:
     Returns a new table with only the rows that have a TIMESTAMP.
     """
     return df[df.TIMESTAMP.notna()]
+
+def get_first_event_by_pid(df:pd.DataFrame):
+    """
+    Assumes that the table has a column named PID and TIMESTAMP.
+    Get the first event for each PID in the table.
+    """
+    return df.groupby('PID').TIMESTAMP.min()

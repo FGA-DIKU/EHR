@@ -127,21 +127,46 @@ class DirectoryPreparer:
         cfg.paths.output_path = output_path
         cfg.paths.run_name = DirectoryPreparer.construct_finetune_model_dir_name(cfg)
         return cfg
-    
+
     @staticmethod
     def construct_finetune_model_dir_name(cfg: Config)->str:
-        """Constructs the name of the finetune model directory. Based on the outcome type, the censor type, and the number of hours pre- or post- outcome."""
-        days = True if abs(cfg.outcome.n_hours)>48 else False
-        window = int(abs(cfg.outcome.n_hours/24)) if days else abs(cfg.outcome.n_hours)
-        days_hours = 'days' if days else 'hours'
-        pre_post = 'pre' if cfg.outcome.n_hours<0 else 'post'
-        if isinstance(cfg.outcome.censor_type, str):
-            censor_event = cfg.outcome.censor_type
-        elif isinstance(cfg.outcome.censor_type, dict):
-            censor_event = [f"{k}{v}" for k, v in cfg.outcome.censor_type.items() if v is not None]
-            censor_event = '_'.join(censor_event)
-        else:
-            raise ValueError(f"Unknown censor type {cfg.outcome.censor_type}")
-        return f"finetune_{cfg.outcome.type}_censored_{window}_{days_hours}_{pre_post}_{censor_event}_{cfg.paths.run_name}"
+        """
+        Constructs the name of the finetune model directory. 
+        Based on the outcome type, the censor type, and the number of hours pre- or post- outcome.
+        """
+        outcome_name = DirectoryPreparer.get_event_name(cfg.paths.outcome)
+        censor_name = DirectoryPreparer.get_event_name(cfg.paths.exposure) \
+            if cfg.paths.get('exposure', False) else outcome_name
+        finetune_folder_name = f"finetune_{outcome_name}_censored_"
 
+        n_hours_censor = cfg.outcome.get('n_hours_censoring', None)
+        n_hours_str = DirectoryPreparer.handle_n_hours(n_hours_censor) if n_hours_censor is not None else 'at'
+        
+        if cfg.outcome.get('index_date', None) is not None:
+            censor_name = DirectoryPreparer.handle_index_date(cfg.outcome.index_date)            
+    
+        finetune_folder_name = f"{finetune_folder_name}{n_hours_str}_{censor_name}"
+
+        n_hours_start_follow_up = cfg.outcome.get('n_hours_follow_up', None)
+        n_hours_follow_up_str = DirectoryPreparer.handle_n_hours(n_hours_start_follow_up) if n_hours_start_follow_up is not None else 'at'
+
+        finetune_folder_name = f"{finetune_folder_name}_followup_start_{n_hours_follow_up_str}_index_date_{cfg.paths.run_name}"
+        return finetune_folder_name
+    
+    @staticmethod
+    def get_event_name(path: str)-> str:
+        return split(path)[-1].strip('.csv')
+
+    @staticmethod
+    def handle_n_hours(n_hours: int) -> str:
+        days = True if abs(n_hours) > 48 else False
+        window = int(abs(n_hours / 24)) if days else abs(n_hours)
+        days_hours = 'days' if days else 'hours'
+        pre_post = 'pre' if n_hours < 0 else 'post'
+        return f"{window}_{days_hours}_{pre_post}"
+
+    @staticmethod
+    def handle_index_date(n_hours: dict) -> str:
+        censor_event = [f"{k}{v}" for k, v in n_hours.items() if v is not None]
+        return '_'.join(censor_event)
 

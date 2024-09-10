@@ -13,13 +13,13 @@ loader:
 outcomes:
   TEST_OUTCOME: 
     type: [CONCEPT]
-    match: [['422650009']]
-    exclude: ['DT7432X']
+    match: [['157']]
+    exclude: ['157141000119108']
     match_how: contains
     case_sensitive: true
   TEST_CENSOR:
     type: [CONCEPT]
-    match: [['42265']]
+    match: [['10509']]
     match_how: startswith
     case_sensitive: false
     
