@@ -26,7 +26,7 @@ def startswith_match(df: pd.DataFrame, column: str, patterns: List[str], case_se
 
 def contains_match(df: pd.DataFrame, column: str, patterns: List[str], case_sensitive: bool) -> pd.Series:
     """Match strings using contains"""
-    col_bool = pd.Series([False] * len(df), index=df.index)
+    col_bool = pd.Series([False] * len(df), index=df.index, name=column)
     for pattern in patterns:
         if not case_sensitive:
             pattern = pattern.lower()
