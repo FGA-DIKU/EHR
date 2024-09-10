@@ -89,23 +89,26 @@ def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
         concepts["PID"].sort_values().unique().tolist(),
     )
 
-def filter_table_by_pids(df: pd.DataFrame, pids: List[str])->pd.DataFrame:
+
+def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID. 
+    Assumes that the table has a column named PID.
     Returns a new table with only the rows that have a PID in pids
     """
     return df[df.PID.isin(pids)]
 
-def remove_missing_timestamps(df: pd.DataFrame )->pd.DataFrame:
+
+def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     """
     Assumes that the table has a column named TIMESTAMP.
     Returns a new table with only the rows that have a TIMESTAMP.
     """
     return df[df.TIMESTAMP.notna()]
 
-def get_first_event_by_pid(df:pd.DataFrame):
+
+def get_first_event_by_pid(df: pd.DataFrame):
     """
     Assumes that the table has a column named PID and TIMESTAMP.
     Get the first event for each PID in the table.
     """
-    return df.groupby('PID').TIMESTAMP.min()
+    return df.groupby("PID").TIMESTAMP.min()
