@@ -2,15 +2,16 @@ env: local
 paths:
   pretrain_model_path: "./outputs/pretraining/test"
   # model_path: "outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_10_hours_pre_TEST_OUTCOME_test"
-  #checkpoint_epoch: 1
-  outcome: "./outputs/features/outcomes/TEST_OUTCOME/TEST_OUTCOME.pt"
-  #output_path: "outputs/finetuning"
+  # checkpoint_epoch: 1
+  outcome: "./outputs/features/outcomes/TEST_OUTCOME/TEST_OUTCOME.csv"
+  exposure: "./outputs/features/outcomes/TEST_OUTCOME/TEST_CENSOR.csv"
+  # output_path: "outputs/finetuning"
   run_name: "test"
-  #tokenized_dir:"tokenized"
+  # tokenized_dir:"tokenized"
   tokenized_file: "features_finetune.pt" # can also be a list
   tokenized_pids: "pids_finetune.pt" # can also be a list
-  #redefined_splits: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test
-  #exclude_pids: outputs\pretraining\behrt_test\finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test\test_pids.pt
+  # predefined_splits: split_dir
+  # exclude_pids: pids_path
 model:
   #extend_head: 
   # hidden_size: null
@@ -28,7 +29,7 @@ data:
   min_age: 0
   max_age: 70
   # min_len: null
-  #code_types:
+  # code_types:
    # - D
   min_len: 2
   censorer:
@@ -37,14 +38,10 @@ data:
   number_of_train_patients: 10
 
 outcome: 
-  type: TEST_OUTCOME
+  n_hours_censoring: -1 # censor time after index date (negative means before)
+  n_hours_start_follow_up: -1 # start follow up (considering outcomes) time after index date (negative means before)
+  first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
   n_hours: 124 # censor time
-  censor_type: TEST_OUTCOME
-  # censor_type: 
-    # year: 2015
-    # month: 01
-    # day: 01
-    # TEST_OUTCOME
 
 trainer_args:
   sampler: true

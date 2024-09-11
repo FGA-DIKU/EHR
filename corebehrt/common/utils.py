@@ -5,9 +5,10 @@ import random
 from copy import deepcopy
 from dataclasses import dataclass, field
 from os.path import join
-from typing import Dict, Generator, List, Optional, Tuple
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
 import pandas as pd
+import numpy as np
 import torch
 
 from corebehrt.common.config import Config
@@ -161,3 +162,30 @@ class Data:
         random.shuffle(indices)
         split_index = int(len(indices)*(1-split))
         return indices[:split_index], indices[split_index:]
+    
+    def exclude_pids(self, exclude_pids: List[str]) -> 'Data':
+        """Exclude pids from data."""
+        logger.info(f"Excluding {len(exclude_pids)} pids")
+        logger.info(f"Pids before exclusion: {len(self.pids)}")
+        current_pids = self.pids
+        data = self.select_data_subset_by_pids(list(set(current_pids).difference(set(exclude_pids))), mode=self.mode)
+        logger.info(f"Pids after exclusion: {len(self.pids)}")
+        return data
+    
+    def add_outcomes(self, outcomes: Union[List, Dict]):
+        """Add outcomes to data"""
+        self.outcomes = self._outcome_helper(outcomes)
+    
+    def add_index_dates(self, index_dates: Union[List, Dict]):
+        """Add censor outcomes to data"""
+        self.censor_outcomes = self._outcome_helper(index_dates)
+
+    def _outcome_helper(self, outcomes_like: Union[List, Dict, pd.Series])->List:
+        """Helper function to convert outcomes to list if necessary"""
+        if isinstance(outcomes_like, dict):
+            outcomes_like = [outcomes_like.get(pid, np.nan) for pid in self.pids]
+        elif isinstance(outcomes_like, pd.Series):
+            outcomes_like = [outcomes_like.loc[pid] if pid in outcomes_like else np.nan for pid in self.pids]
+        elif isinstance(outcomes_like, list) and (len(outcomes_like) != len(self.pids)):
+            raise ValueError("Length of outcomes does not match length of pids")
+        return outcomes_like

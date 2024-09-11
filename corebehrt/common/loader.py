@@ -3,6 +3,7 @@ import os
 from os.path import join
 from typing import Dict, List, Tuple, Union
 
+import pandas as pd
 import torch
 from transformers import BertConfig
 
@@ -87,14 +88,19 @@ class FeaturesLoader:
         
         return torch.load(vocabulary_file_path)
 
-    def load_outcomes(self)->Tuple[dict, dict]:
-        """Load outcomes and censoring timestamps from file. If no censoring timestamps provided, use outcomes as censoring timestamps."""
+    def load_outcomes_and_exposures(self)->Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Load outcomes and censoring timestamps from file. 
+        If no censoring timestamps provided, use outcomes as censoring timestamps.
+        """
         logger.info(f'Load outcomes from {self.path_cfg.outcome}')
-        censoring_timestamps_path = self.path_cfg.censor if self.path_cfg.get("censor", False) else self.path_cfg.outcome
-        logger.info(f'Load censoring_timestamps from {censoring_timestamps_path}')
-        outcomes = torch.load(self.path_cfg.outcome)
-        censor_outcomes = torch.load(self.path_cfg.censor) if self.path_cfg.get('censor', False) else outcomes   
-        return outcomes, censor_outcomes
+        outcomes = pd.read_csv(self.path_cfg.outcome)
+        if not self.path_cfg.get("exposure", False):
+            logger.warning("No exposure file provided. Using outcomes as censoring timestamps.")
+            return outcomes, outcomes.copy(deep=True)
+        logger.info(f'Load exposure timestamps from {self.path_cfg.exposure}')        
+        exposures = pd.read_csv(self.path_cfg.exposure)
+        return outcomes, exposures
     
     def load_finetune_data(self, path: str=None, mode: str=None)->Data:
         """Load features for finetuning"""
