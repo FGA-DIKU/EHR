@@ -24,20 +24,9 @@ from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
 from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
-<<<<<<< HEAD
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.load import load_predefined_pids
-from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
-=======
-from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
-=======
->>>>>>> 7071c74 (added truncation)
-from corebehrt.functional.split import split_pids_into_train_val
-from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.load import load_pids
-=======
-from corebehrt.functional.load import load_predefined_pids
+from corebehrt.functional.load import load_pids, load_predefined_pids
 from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

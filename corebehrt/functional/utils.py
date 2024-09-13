@@ -3,17 +3,6 @@
 import pandas as pd
 from datetime import datetime
 from typing import Union, List, Tuple, Callable
-<<<<<<< HEAD
-
-# New stuff
-import dask.dataframe as dd
-from corebehrt.functional.load import load_pids
-import logging
-
-logger = logging.getLogger(__name__)
-import random
-=======
->>>>>>> 7071c74 (added truncation)
 
 # New stuff
 import dask.dataframe as dd
