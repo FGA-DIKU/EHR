@@ -53,7 +53,6 @@ class TestMatchingFunctions(unittest.TestCase):
             self.df, "CONCEPT", ["COVID", "TEST"], case_sensitive=True
         )
         expected = pd.Series([True, True, False, False, True, False], name="CONCEPT")
-        print(result.name)
         pd.testing.assert_series_equal(result, expected)
 
     def test_contains_match_case_insensitive(self):

@@ -2,7 +2,7 @@
 
 import pandas as pd
 from datetime import datetime
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Callable
 
 # New stuff
 import dask.dataframe as dd
@@ -66,14 +66,14 @@ def get_background_length(features: dict, vocabulary) -> int:
 
 
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
-    """Get the length of the background sentence, first SEP token included."""
-    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
+    """Get the length of the background sentence"""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_") or k.startswith("[")])
     first_pid_value = features["PID"].compute().iloc[0]
     first_pid = features[features["PID"] == first_pid_value]
     all_concepts_first_pid = first_pid["concept"].compute().tolist()
     background_length = len(set(all_concepts_first_pid) & background_tokens)
 
-    return background_length + 2  # +2 for [CLS] and [SEP] tokens
+    return background_length
 
 
 def get_abspos_from_origin_point(
@@ -132,19 +132,49 @@ def get_first_event_by_pid(df: pd.DataFrame):
     """
     return df.groupby("PID").TIMESTAMP.min()
 
-def exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
-    if pids_path is not None:
-        excluded_pids = load_pids(pids_path)
-        data = data[~data["PID"].isin(excluded_pids)]
-        return data
-    else:
-        return data
-
 def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
+    """
+    Assumes that the table has a column named PID.
+    Returns a new table with a random subset of n PIDs.
+    """
     if n >= len(data):
         return data
     pids = data["PID"].unique().compute().tolist()
     random.seed(42)
     random.shuffle(pids)
     pids = pids[:n]
-    return select_data_by_pids(data, pids)
+    return filter_table_by_pids(data, pids)
+
+def truncate_patient(patient: pd.DataFrame, background_length: 
+    int, max_len: int, sep_token: str) -> pd.DataFrame:
+    """
+    Assumes patient is pd.DataFrame.
+    Truncate patient to max_len, keeping background.
+    """
+    if len(patient["concept"]) <= max_len:
+        return patient
+
+    truncation_length = max_len - background_length
+    if patient["concept"].iloc[-truncation_length] == sep_token:
+        truncation_length -= 1
+
+    truncated_patient = pd.concat([patient.iloc[:background_length], patient.iloc[-truncation_length:]], ignore_index=True)
+
+    return truncated_patient
+
+
+def truncate_data(data: dd.DataFrame, max_len:int, vocabulary: dict, truncate_function: Callable = truncate_patient) -> dd.DataFrame:
+    """
+    Assumes table has a column named PID.
+    Truncate the data to max_len. CLS and SEP tokens are kept if present.
+    Uses truncate_patient as default truncate function.
+    """
+    background_length = get_background_length_dd(data, vocabulary)
+
+    truncated_data = data.groupby("PID")[list(data.columns)].apply(
+        lambda x: truncate_function(x, background_length, max_len, vocabulary.get("[SEP]")),
+        meta={col: dtype for col, dtype in data.dtypes.items()},
+    ).reset_index(drop=True)
+    
+    return truncated_data
+

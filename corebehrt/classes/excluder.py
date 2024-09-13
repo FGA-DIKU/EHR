@@ -43,4 +43,4 @@ class Excluder:
         self, data: dd.DataFrame, pids_path: Optional[str] = None
     ) -> dd.DataFrame:
         """Exclude pids from data."""
-        return exclude.exclude_pids(data, pids_path)
+        return exclude.filter_table_by_exclude_pids(data, pids_path)
