@@ -43,8 +43,4 @@ class Excluder:
         self, data: dd.DataFrame, pids_path: Optional[str] = None
     ) -> dd.DataFrame:
         """Exclude pids from data."""
-<<<<<<< HEAD
         return exclude.filter_table_by_exclude_pids(data, pids_path)
-=======
-        return exclude.exclude_pids(data, pids_path)
->>>>>>> 5c238b5 (exclude short seqs + black)

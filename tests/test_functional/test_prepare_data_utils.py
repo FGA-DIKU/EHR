@@ -51,6 +51,11 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
         filtered_data_pd = filtered_data.compute()
         self.assertEqual(len(filtered_data_pd), 5)
 
+<<<<<<< HEAD
+=======
+    
+
+>>>>>>> 7071c74 (added truncation)
 
 if __name__ == "__main__":
     unittest.main()

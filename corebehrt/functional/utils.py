@@ -3,6 +3,7 @@
 import pandas as pd
 from datetime import datetime
 from typing import Union, List, Tuple, Callable
+<<<<<<< HEAD
 
 # New stuff
 import dask.dataframe as dd
@@ -11,6 +12,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 import random
+=======
+>>>>>>> 7071c74 (added truncation)
 
 # New stuff
 import dask.dataframe as dd
@@ -74,17 +77,6 @@ def get_background_length(features: dict, vocabulary) -> int:
 
 
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
-    """Get the length of the background sentence, first SEP token included."""
-    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    first_pid_value = features["PID"].compute().iloc[0]
-    first_pid = features[features["PID"] == first_pid_value]
-    all_concepts_first_pid = first_pid["concept"].compute().tolist()
-    background_length = len(set(all_concepts_first_pid) & background_tokens)
-
-    return background_length + 2  # +2 for [CLS] and [SEP] tokens
-
-<<<<<<< HEAD
-def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
     """Get the length of the background sentence"""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_") or k.startswith("[")])
     first_pid_value = features["PID"].compute().iloc[0]
@@ -94,8 +86,6 @@ def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
 
     return background_length
 
-=======
->>>>>>> 5c238b5 (exclude short seqs + black)
 
 def get_abspos_from_origin_point(
     timestamps: Union[pd.Series, List[datetime]], origin_point: datetime

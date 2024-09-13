@@ -24,18 +24,21 @@ from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
 from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
+<<<<<<< HEAD
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_predefined_pids
 from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
 =======
 from corebehrt.functional.exclude import exclude_short_sequences, exclude_pids
+=======
+>>>>>>> 7071c74 (added truncation)
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_pids
 =======
 from corebehrt.functional.load import load_predefined_pids
-from corebehrt.functional.utils import select_data_by_pids, select_random_subset
+from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -242,13 +245,13 @@ class DatasetPreparer:
         )
 
         # 2. Exclude pids
-        data = exclude_pids(data, paths_cfg.get("exclude_pids", None))
+        data = filter_table_by_exclude_pids(data, paths_cfg.get("filter_table_by_exclude_pids", None))
 
         # 3. Select predefined pids, remove the rest
         predefined_pids = self.cfg.paths.get("predefined_pids", False)
         if predefined_pids:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = select_data_by_pids(data, load_predefined_pids(predefined_pids))
+            data = filter_table_by_pids(data, load_predefined_pids(predefined_pids))
 
         # 3. Exclude short sequences
         data = exclude_short_sequences(
@@ -259,17 +262,13 @@ class DatasetPreparer:
         if not predefined_pids and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
 
+        # 5. Truncation
+        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
+        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+
         # Convert to sequences
         features, pids = convert_to_sequences(data)
         data = Data(features, pids, vocabulary=vocab, mode="pretrain")
-        
-        # 5. Truncation
-        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = Utilities.process_data(
-            data,
-            self.data_modifier.truncate,
-            args_for_func={"truncation_len": data_cfg.truncation_len},
-        )
 
         # 6. Normalize segments
         data = Utilities.process_data(data, self.data_modifier.normalize_segments)
