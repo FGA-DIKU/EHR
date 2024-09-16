@@ -23,7 +23,7 @@ from corebehrt.classes.outcomes import OutcomeHandler
 # New stuff
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
-from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
+from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids, filter_patients_by_gender
 from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_pids, load_predefined_pids
@@ -89,33 +89,21 @@ class DatasetPreparer:
             join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE)
         )
 
-        # Convert to sequences
-        features, pids = convert_to_sequences(data)
-        data = Data(features, pids, vocabulary=vocab, mode="finetune")
-
-        initial_pids = data.pids
-        if self.cfg.paths.get("filter_table_by_exclude_pids", None) is not None:
-            logger.info(f"Pids to exclude: {self.cfg.paths.filter_table_by_exclude_pids}")
-            filter_table_by_exclude_pids = load_exclude_pids(self.cfg.paths)
-            data = Utilities.process_data(
-                data,
-                self.patient_filter.filter_table_by_exclude_pids,
-                args_for_func={"filter_table_by_exclude_pids": filter_table_by_exclude_pids},
-            )
-
-        predefined_pids = "predefined_splits" in self.cfg.paths
-        if predefined_pids:
+        initial_pids = data['PID'].unique().compute().tolist()
+        data = filter_table_by_exclude_pids(data, paths_cfg.get("filter_table_by_exclude_pids", None))
+        predefined_splits = self.cfg.paths.get("predefined_splits", False)
+        if predefined_splits:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             logger.warning("Use original censoring time. Overwrite n_hours parameter.")
-            if not os.path.exists(self.cfg.paths.predefined_splits):
+            if not os.path.exists(predefined_splits):
                 raise ValueError(
-                    f"Predefined splits folder {self.cfg.paths.predefined_splits} does not exist."
+                    f"Predefined splits folder {predefined_splits} does not exist."
                 )
             if os.path.exists(
-                join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
+                join(predefined_splits, "finetune_config.yaml")
             ):
                 original_config = load_config(
-                    join(self.cfg.paths.predefined_splits, "finetune_config.yaml")
+                    join(predefined_splits, "finetune_config.yaml")
                 )
             else:
                 if "model_path" not in self.cfg.paths:
@@ -126,15 +114,18 @@ class DatasetPreparer:
                     join(self.cfg.paths.model_path, "finetune_config.yaml")
                 )
             self.cfg.outcome.n_hours = original_config.outcome.n_hours
-            data = self._select_predefined_pids(data)
-            self._load_outcomes_to_data(data)
+            logger.warning("Using predefined splits. Ignoring test_split parameter")
+            data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
+            outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
+            censor_outcomes = pd.read_csv(join(predefined_splits, "censor_outcomes.csv"))
 
-        if not predefined_pids:
+        if not predefined_splits:
             # 2. Optional: Select gender group
-            if data_cfg.get("gender"):
-                data = Utilities.process_data(
-                    data, self.patient_filter.select_by_gender
-                )
+            data = filter_patients_by_gender(data, vocab, self.cfg.data.get('gender', None))
+            # Convert to sequences
+            features, pids = convert_to_sequences(data)
+            data = Data(features, pids, vocabulary=vocab, mode="finetune")
+
 
             # 4. Loading and processing outcomes
             outcome_dates, exposure_dates = self.loader.load_outcomes_and_exposures()
@@ -161,7 +152,7 @@ class DatasetPreparer:
             self.data_modifier.censor_data,
             args_for_func={"n_hours": self.cfg.outcome.n_hours},
         )
-        if not predefined_pids:
+        if not predefined_splits:
             # 3. Optional: Select Patients By Age
             if data_cfg.get("min_age") or data_cfg.get("max_age"):
                 data = Utilities.process_data(data, self.patient_filter.select_by_age)
@@ -172,7 +163,7 @@ class DatasetPreparer:
         )
 
         # 10. Optional: Patient selection
-        if data_cfg.get("num_patients") and not predefined_pids:
+        if data_cfg.get("num_patients") and not predefined_splits:
             data = Utilities.process_data(
                 data,
                 self.patient_filter.select_random_subset,

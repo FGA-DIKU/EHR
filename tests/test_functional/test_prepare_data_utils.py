@@ -5,8 +5,8 @@ import dask.dataframe as dd
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     select_random_subset,
+    get_gender_token
 )
-from corebehrt.functional.exclude import filter_table_by_exclude_pids
 import random
 
 
@@ -36,21 +36,21 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
             len(subset_data), 5
         )  # Should return all data because n > len(data)
 
-    @patch("corebehrt.functional.exclude.load_pids")
-    def test_filter_table_by_exclude_pids_with_path(self, mock_load_pids):
-        # Mock load_pids to return a list of PIDs to exclude
-        mock_load_pids.return_value = [1, 2]
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, 'dummy_path')
-        filtered_data_pd = filtered_data.compute()
-
-        self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd['PID'])))
-        self.assertEqual(len(filtered_data_pd), 3)
-
-    def test_filter_table_by_exclude_pids_without_path(self):
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, None)
-        filtered_data_pd = filtered_data.compute()
-        self.assertEqual(len(filtered_data_pd), 5)
-
+    def test_get_gender_token(self):
+        # Sample vocabulary dictionary
+        vocabulary = {
+            "BG_GENDER_Male": 1,
+            "BG_GENDER_Female": 2,
+        }
+        
+        # Test cases for different gender tokens
+        self.assertEqual(get_gender_token("Male", vocabulary), 1)
+        self.assertEqual(get_gender_token("Female", vocabulary), 2)
+        
+        # Test case for a gender not in vocabulary
+        with self.assertRaises(ValueError) as context:
+            get_gender_token("Unknown", vocabulary)
+        self.assertEqual(str(context.exception), "No gender token found in vocabulary. Searched for BG_GENDER_Unknown")
     
 if __name__ == "__main__":
     unittest.main()

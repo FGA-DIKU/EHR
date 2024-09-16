@@ -178,3 +178,14 @@ def truncate_data(data: dd.DataFrame, max_len:int, vocabulary: dict, truncate_fu
     
     return truncated_data
 
+def get_gender_token(gender: str, vocabulary: dict) -> int:
+    """
+    Retrieves the token for the specified gender from the vocabulary.
+    Assumes that the gender starts with BG_GENDER_.
+    """
+    gender_key = f"BG_GENDER_{gender}"
+    try:
+        return vocabulary[gender_key]
+    except KeyError:
+        raise ValueError(f"No gender token found in vocabulary. Searched for {gender_key}")
+
