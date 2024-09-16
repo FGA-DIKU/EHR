@@ -15,7 +15,6 @@ from os.path import join
 import torch
 import dask.dataframe as dd
 
-from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
@@ -47,9 +46,6 @@ def main_data(config_path):
     Saves
     """
     cfg = load_config(config_path)
-    cfg, _, mount_context = AzurePathContext(
-        cfg, dataset_name=BLOBSTORE
-    ).azure_data_pretrain_setup()
 
     logger = DirectoryPreparer(config_path).prepare_directory(cfg)
     logger.info("Mount Dataset")
@@ -123,15 +119,6 @@ def main_data(config_path):
     torch.save(feats_test, join(cfg.output_dir, tokenized_dir_name, "features_test.pt"))
     torch.save(pids_test, join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"))
     logger.info("Finished tokenizing")
-
-    if cfg.env == "azure":
-        features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
-        save_to_blobstore(
-            local_path="data/",
-            remote_path=join(BLOBSTORE, "features", features_dir_name),
-        )
-        mount_context.stop()
-    logger.info("Finished")
 
 
 # TODO: Move to functional.tokenize (appears to be specific to tokenize)

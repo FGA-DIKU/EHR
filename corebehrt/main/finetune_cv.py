@@ -3,7 +3,6 @@ from os.path import join, split
 
 import torch
 
-from corebehrt.common.azure import save_to_blobstore
 from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import (
@@ -24,7 +23,6 @@ from corebehrt.evaluation.utils import (
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
-BLOBSTORE = "PHAIR"
 
 DEFAULT_CV_SPLITS = 2  # You can change this to desired value
 DEAFAULT_VAL_SPLIT = 0.2
@@ -33,13 +31,8 @@ DEAFAULT_VAL_SPLIT = 0.2
 
 
 def main_finetune(config_path):
-    (
-        cfg,
-        run,
-        mount_context,
-        pretrain_model_path,
-    ) = Initializer.initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
+    (cfg, pretrain_model_path) = Initializer.initialize_configuration_finetune(
+        config_path
     )
 
     logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
@@ -64,7 +57,6 @@ def main_finetune(config_path):
 
         cv_splits = cv_loop_predefined_splits(
             cfg,
-            run,
             logger,
             finetune_folder,
             data,
@@ -82,7 +74,6 @@ def main_finetune(config_path):
         if cv_splits > 1:
             cv_loop(
                 cfg,
-                run,
                 logger,
                 finetune_folder,
                 dataset_preparer,
@@ -93,7 +84,6 @@ def main_finetune(config_path):
         else:
             finetune_without_cv(
                 cfg,
-                run,
                 logger,
                 finetune_folder,
                 dataset_preparer,
@@ -106,23 +96,11 @@ def main_finetune(config_path):
     if len(test_data) > 0:
         compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="test")
 
-    if cfg.env == "azure":
-        save_path = (
-            pretrain_model_path
-            if cfg.paths.get("save_folder_path", None) is None
-            else cfg.paths.save_folder_path
-        )
-        save_to_blobstore(
-            local_path=cfg.paths.run_name,
-            remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name),
-        )
-        mount_context.stop()
     logger.info("Done")
 
 
 def finetune_fold(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -176,7 +154,6 @@ def finetune_fold(
         sampler=sampler,
         scheduler=scheduler,
         cfg=cfg,
-        run=run,
         logger=logger,
         accumulate_logits=True,
         run_folder=fold_folder,
@@ -196,7 +173,6 @@ def finetune_fold(
 
 def split_and_finetune(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -210,7 +186,6 @@ def split_and_finetune(
     val_data = data.select_data_subset_by_indices(val_indices, mode="val")
     finetune_fold(
         cfg,
-        run,
         logger,
         finetune_folder,
         dataset_preparer,
@@ -238,7 +213,6 @@ def _limit_patients(cfg, logger, indices_or_pids: list, split: str) -> list:
 
 def cv_loop(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -258,7 +232,6 @@ def cv_loop(
         val_indices = _limit_patients(cfg, logger, val_indices, "val")
         split_and_finetune(
             cfg,
-            run,
             logger,
             finetune_folder,
             dataset_preparer,
@@ -272,7 +245,6 @@ def cv_loop(
 
 def finetune_without_cv(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -288,7 +260,6 @@ def finetune_without_cv(
     val_indices = train_val_indices[int(len(train_val_indices) * (1 - val_split)) :]
     split_and_finetune(
         cfg,
-        run,
         logger,
         finetune_folder,
         dataset_preparer,
@@ -302,7 +273,6 @@ def finetune_without_cv(
 
 def cv_loop_predefined_splits(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     data: Data,
@@ -328,7 +298,7 @@ def cv_loop_predefined_splits(
         if len(val_pids) < len(val_data.pids):
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
         finetune_fold(
-            cfg, run, logger, finetune_folder, train_data, val_data, fold, test_data
+            cfg, logger, finetune_folder, train_data, val_data, fold, test_data
         )
     return cv_splits
 
