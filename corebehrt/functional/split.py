@@ -7,6 +7,7 @@ import random
 from corebehrt.functional.utils import filter_table_by_pids
 from corebehrt.functional.load import load_predefined_splits
 
+
 def split_pids_into_pt_ft_test(
     pids: list, pretrain: float, finetune: float, test: float
 ) -> Tuple[list, list, list]:
@@ -46,6 +47,7 @@ def split_pids_into_train_val(data: dd.DataFrame, split: float) -> Tuple[list, l
     train_data = filter_table_by_pids(data, train_pids)
     val_data = filter_table_by_pids(data, val_pids)
     return train_data, val_data
+
 
 def load_train_val_split(data: dd.DataFrame, split_path: str) -> dd.DataFrame:
     """

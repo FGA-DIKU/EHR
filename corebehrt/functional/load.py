@@ -31,11 +31,10 @@ def load_predefined_pids(
         pids = load_pids(split_paths)
     return pids
 
-def load_predefined_splits(
-    split_path: str, splits: List = ["train", "val"]
-) -> List:
+
+def load_predefined_splits(split_path: str, splits: List = ["train", "val"]) -> List:
     for split in splits:
         if not os.path.exists(join(split_path, f"pids_{split}.pt")):
             raise FileNotFoundError(f"pids_{split}.pt not found in {split_path}")
-    
+
     return [load_pids(join(split_path, f"pids_{split}.pt")) for split in splits]
