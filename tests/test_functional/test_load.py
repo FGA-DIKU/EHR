@@ -2,7 +2,11 @@ import os
 import unittest
 import tempfile
 import torch
-from corebehrt.functional.load import load_pids, load_predefined_pids, load_predefined_splits
+from corebehrt.functional.load import (
+    load_pids,
+    load_predefined_pids,
+    load_predefined_splits,
+)
 
 
 class TestLoadPIDs(unittest.TestCase):
@@ -70,6 +74,7 @@ class TestLoadPIDs(unittest.TestCase):
     def test_load_predefined_splits(self):
         splits = load_predefined_splits(self.split_path, ["train", "test"])
         self.assertListEqual(splits, [{1, 2, 3}, {4, 2, 3, 100}])
+
 
 if __name__ == "__main__":
     unittest.main()

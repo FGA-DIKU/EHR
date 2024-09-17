@@ -11,6 +11,7 @@ from corebehrt.functional.exclude import filter_table_by_exclude_pids
 import random
 from pandas.testing import assert_frame_equal
 
+
 class TestPrepDataUtilsFunctions(unittest.TestCase):
     def setUp(self):
         # Sample data for testing
@@ -41,10 +42,10 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
     def test_filter_table_by_exclude_pids_with_path(self, mock_load_pids):
         # Mock load_pids to return a list of PIDs to exclude
         mock_load_pids.return_value = [1, 2]
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, 'dummy_path')
+        filtered_data = filter_table_by_exclude_pids(self.data_dd, "dummy_path")
         filtered_data_pd = filtered_data.compute()
 
-        self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd['PID'])))
+        self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd["PID"])))
         self.assertEqual(len(filtered_data_pd), 3)
 
     def test_filter_table_by_exclude_pids_without_path(self):
@@ -52,24 +53,21 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
         filtered_data_pd = filtered_data.compute()
         self.assertEqual(len(filtered_data_pd), 5)
 
-
     def test_normalize_segments_dask(self):
-        sample_data = pd.DataFrame({
-            "PID": [1, 1, 1, 2, 2, 3],
-            "segment": [10, 20, 30, 5, 7, 8]
-        })
+        sample_data = pd.DataFrame(
+            {"PID": [1, 1, 1, 2, 2, 3], "segment": [10, 20, 30, 5, 7, 8]}
+        )
         sample_dd = dd.from_pandas(sample_data, npartitions=1)
         normalized_dd = normalize_segments_dask(sample_dd)
         normalized_pd = normalized_dd.compute()
 
-        expected_data = {
-            "PID": [1, 1, 1, 2, 2, 3],
-            "segment": [0, 1, 2, 0, 1, 0]
-        }
-        expected_df = dd.from_pandas(pd.DataFrame(expected_data), npartitions=2).compute()
-    
+        expected_data = {"PID": [1, 1, 1, 2, 2, 3], "segment": [0, 1, 2, 0, 1, 0]}
+        expected_df = dd.from_pandas(
+            pd.DataFrame(expected_data), npartitions=2
+        ).compute()
+
         assert_frame_equal(normalized_pd, expected_df, check_like=True)
 
-    
+
 if __name__ == "__main__":
     unittest.main()

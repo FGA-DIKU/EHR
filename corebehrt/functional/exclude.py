@@ -53,7 +53,7 @@ def exclude_short_sequences_df(
     df: pd.DataFrame, min_len: int, background_length: int
 ) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID and concept. 
+    Assumes that the table has a column named PID and concept.
     Returns a new table with only the rows that have a concept with a length greater than min_len.
     """
     filtered_df = df.groupby("PID").filter(
@@ -88,7 +88,9 @@ def exclude_short_sequences_dict(
     return filtered_x, kept_indices
 
 
-def filter_table_by_exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
+def filter_table_by_exclude_pids(
+    data: dd.DataFrame, pids_path: Union[None, str]
+) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that do not have a PID in pids

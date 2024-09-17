@@ -20,22 +20,27 @@ from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
 from corebehrt.classes.outcomes import OutcomeHandler
+
 # New stuff
 import dask.dataframe as dd
-from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids
+from corebehrt.functional.exclude import (
+    exclude_short_sequences,
+    filter_table_by_exclude_pids,
+)
 from corebehrt.functional.split import split_pids_into_train_val, load_train_val_split
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_pids, load_predefined_pids
 from corebehrt.functional.utils import (
-    filter_table_by_pids, 
-    select_random_subset, 
-    truncate_data, 
-    truncate_patient, 
+    filter_table_by_pids,
+    select_random_subset,
+    truncate_data,
+    truncate_patient,
     normalize_segments,
-    get_background_length_dd
+    get_background_length_dd,
 )
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
 from corebehrt.functional.save import save_sequence_lengths, save_data, save_pids_splits
+
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 PID_KEY = "PID"
@@ -60,8 +65,12 @@ class DatasetPreparer:
         """Load data, truncate, adapt features, create dataset"""
         predefined_splits = self.cfg.paths.get("predefined_pids", False)
         train_data, val_data = self._prepare_mlm_features(predefined_splits)
-        train_dataset = MLMDataset(train_data.features, train_data.vocabulary, **self.cfg.data.dataset)
-        val_dataset = MLMDataset(val_data.features, train_data.vocabulary, **self.cfg.data.dataset)
+        train_dataset = MLMDataset(
+            train_data.features, train_data.vocabulary, **self.cfg.data.dataset
+        )
+        val_dataset = MLMDataset(
+            val_data.features, train_data.vocabulary, **self.cfg.data.dataset
+        )
         return train_dataset, val_dataset
 
     def prepare_finetune_data(self) -> Data:
@@ -87,12 +96,16 @@ class DatasetPreparer:
 
         initial_pids = data.pids
         if self.cfg.paths.get("filter_table_by_exclude_pids", None) is not None:
-            logger.info(f"Pids to exclude: {self.cfg.paths.filter_table_by_exclude_pids}")
+            logger.info(
+                f"Pids to exclude: {self.cfg.paths.filter_table_by_exclude_pids}"
+            )
             filter_table_by_exclude_pids = load_exclude_pids(self.cfg.paths)
             data = Utilities.process_data(
                 data,
                 self.patient_filter.filter_table_by_exclude_pids,
-                args_for_func={"filter_table_by_exclude_pids": filter_table_by_exclude_pids},
+                args_for_func={
+                    "filter_table_by_exclude_pids": filter_table_by_exclude_pids
+                },
             )
 
         predefined_pids = "predefined_splits" in self.cfg.paths
@@ -131,15 +144,19 @@ class DatasetPreparer:
             # 4. Loading and processing outcomes
             outcome_dates, exposure_dates = self.loader.load_outcomes_and_exposures()
             outcomehandler = OutcomeHandler(
-                index_date=self.cfg.outcome.get('index_date', None),
-                select_patient_group=data_cfg.get("select_patient_group", None), # exposed/unexposed
-                exclude_pre_followup_outcome_patients=self.cfg.outcome.get("first_time_outcomes_only", False),
+                index_date=self.cfg.outcome.get("index_date", None),
+                select_patient_group=data_cfg.get(
+                    "select_patient_group", None
+                ),  # exposed/unexposed
+                exclude_pre_followup_outcome_patients=self.cfg.outcome.get(
+                    "first_time_outcomes_only", False
+                ),
             )
             data = outcomehandler.handle(
                 data,
-                outcome_dates, 
-                exposure_dates, 
-                )
+                outcome_dates,
+                exposure_dates,
+            )
             # 7. Optional: Filter code types
             if data_cfg.get("code_types"):
                 data = Utilities.process_data(data, self.code_type_filter.filter)
@@ -218,13 +235,15 @@ class DatasetPreparer:
         )
 
         # 2. Exclude pids
-        data = filter_table_by_exclude_pids(data, paths_cfg.get("filter_table_by_exclude_pids", None))
+        data = filter_table_by_exclude_pids(
+            data, paths_cfg.get("filter_table_by_exclude_pids", None)
+        )
 
         # 3. Select predefined pids, remove the rest
         if predefined_splits:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
-            
+
         # 3. Exclude short sequences
         data = exclude_short_sequences(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
@@ -263,7 +282,7 @@ class DatasetPreparer:
         train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
         val_features, val_pids = convert_to_sequences(val_data)
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-        
+
         log_features_in_sequence(train_data)
 
         return train_data, val_data
