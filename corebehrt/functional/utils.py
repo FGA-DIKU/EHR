@@ -22,6 +22,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
         return normalize_segments_list(x)
     elif isinstance(x, dict):
         return normalize_segments_dict(x)
+    elif isinstance(x, dd.DataFrame):
+        return normalize_segments_dask(x)
     else:
         raise TypeError(
             "Invalid type for x, only pd.DataFrame, list, and dict are supported."
@@ -33,6 +35,13 @@ def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: normalize_segments_series(x)
     )
 
+def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
+    def normalize_group(partition):
+        partition["segment"] = partition.groupby("PID")["segment"].transform(normalize_segments_series)
+        return partition
+    
+    normalized_df = df.map_partitions(normalize_group, meta=df)
+    return normalized_df
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     # Convert to string to ensure consistent types and avoid warnings
@@ -65,7 +74,7 @@ def get_background_length(features: dict, vocabulary) -> int:
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
-def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
+def get_background_length_dd(features: dd.DataFrame, vocabulary: dict) -> int:
     """Get the length of the background sentence"""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_") or k.startswith("[")])
     first_pid_value = features["PID"].compute().iloc[0]
@@ -177,4 +186,3 @@ def truncate_data(data: dd.DataFrame, max_len:int, vocabulary: dict, truncate_fu
     ).reset_index(drop=True)
     
     return truncated_data
-

@@ -4,9 +4,9 @@ paths:
   data_path: ./outputs/features
   output_path: ./outputs/pretraining
   type: diag
-  run_name: test
+  run_name: test_predefined_pids
   tokenized_dir: tokenized
-  # predefined_splits: outputs/pretraining/behrt_base
+  predefined_pids: ./outputs/pretraining/test/
   
 data:
   dataset:

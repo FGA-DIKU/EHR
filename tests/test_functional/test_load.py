@@ -2,7 +2,7 @@ import os
 import unittest
 import tempfile
 import torch
-from corebehrt.functional.load import load_pids, load_predefined_pids
+from corebehrt.functional.load import load_pids, load_predefined_pids, load_predefined_splits
 
 
 class TestLoadPIDs(unittest.TestCase):
@@ -24,9 +24,11 @@ class TestLoadPIDs(unittest.TestCase):
         self.mode_files = [
             os.path.join(self.split_path, f"pids_train.pt"),
             os.path.join(self.split_path, f"pids_test.pt"),
+            os.path.join(self.split_path, f"pids_val.pt"),
         ]
         torch.save({1, 2, 3}, self.mode_files[0])
         torch.save({4, 2, 3, 100}, self.mode_files[1])
+        torch.save({4, 2, 3, 500}, self.mode_files[2])
 
     def tearDown(self):
         # Cleanup temporary directory
@@ -64,6 +66,10 @@ class TestLoadPIDs(unittest.TestCase):
         pids = load_predefined_pids(self.split_path, mode=["train", "test"])
         self.assertEqual(pids, {1, 2, 3, 4, 100})
 
+    # Test load_predefined_splits
+    def test_load_predefined_splits(self):
+        splits = load_predefined_splits(self.split_path, ["train", "test"])
+        self.assertListEqual(splits, [{1, 2, 3}, {4, 2, 3, 100}])
 
 if __name__ == "__main__":
     unittest.main()
