@@ -33,6 +33,9 @@ class FeatureCreator:
         if len(background) > 0:
             # Check and only concat if non-empty to avoid deprecation warning.
             concepts = pd.concat([concepts, background])
+        concepts = concepts.sort_values(["PID", "TIMESTAMP"], axis=0).reset_index(
+            drop=True
+        )
         # Create ages
         birthdates = patients_info.set_index("PID")["BIRTHDATE"]
         concepts["age"] = create_ages(
