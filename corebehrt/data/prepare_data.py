@@ -167,7 +167,23 @@ class DatasetPreparer:
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
-        
+
+        # 9. Normalize segments
+        data = normalize_segments(data)
+
+        # Check if max segment is larger than type_vocab_size
+        #TODO: pass pt_model_config and perform this check
+        # max_segment(data, model_cfg.type_vocab_size) 
+        # Previously had issue with it
+
+        # save
+        save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
+        save_sequence_lengths(data, save_dir, desc="_finetune")
+        save_data(data, vocab, save_dir, desc="_finetune")
+        outcomes.to_csv(join(save_dir, "outcomes.csv"), index=False)
+        index_dates.to_csv(join(save_dir, "index_dates.csv"), index=False)
+
+        # Convert to sequences
         features, pids = convert_to_sequences(data)
         data = Data(features=features, 
                     pids=pids, vocabulary=vocab, mode="finetune")
@@ -175,18 +191,7 @@ class DatasetPreparer:
         data.add_index_dates(index_dates)
         data.check_lengths()
 
-        # 13. Normalize segments
-        data = Utilities.process_data(data, self.data_modifier.normalize_segments)
-
-        # Verify and save
-        data.check_lengths()
-        data = Utilities.process_data(data, self.saver.save_sequence_lengths)
-
-        excluded_pids = list(set(initial_pids).difference(set(data.pids)))
-        self.saver.save_list(excluded_pids, "excluded_pids.pt")
-
-        self.saver.save_data(data)
-        self._log_features(data)
+        log_features_in_sequence(data)
         return data
 
     def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
