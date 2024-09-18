@@ -82,7 +82,7 @@ class DatasetPreparer:
                 "features_finetune",
                 "*.csv",
             )
-        )  # self.loader.load_tokenized_data(mode='pretrain')
+        )  
         vocab = torch.load(
             join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE)
         )
@@ -122,7 +122,7 @@ class DatasetPreparer:
             # 2. Optional: Select gender group
             data = filter_patients_by_gender(data, vocab, self.cfg.data.get('gender', None))
 
-            # 4. Loading and processing outcomes
+            # 3. Loading and processing outcomes
             outcomes = pd.read_csv(paths_cfg.outcome)
             exposures = pd.read_csv(paths_cfg.exposure)
             
@@ -137,7 +137,7 @@ class DatasetPreparer:
                 exposures=exposures, 
                 )
 
-        # 8. Data censoring
+        # 4. Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours
         data = censor_data(
             data,
@@ -145,10 +145,23 @@ class DatasetPreparer:
         )
         
         if not predefined_splits:
-            # 3. Optional: Select Patients By Age
+            # 5. Optional: Select Patients By Age
             if data_cfg.get("min_age") or data_cfg.get("max_age"):
                 data = filter_patients_by_age_at_last_event(data, data_cfg.min_age, data_cfg.max_age)
 
+        # 6. Exclude short sequences
+        data = exclude_short_sequences(
+            data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
+        )
+
+        # 7. Optional: Patient Subset Selection
+        if not predefined_splits and data_cfg.get("num_patients"):
+            data = select_random_subset(data, data_cfg.num_patients)
+
+        # 8. Truncation
+        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
+        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+        
         features, pids = convert_to_sequences(data)
         data = Data(features=features, 
                     pids=pids, vocabulary=vocab, mode="finetune")
@@ -156,35 +169,8 @@ class DatasetPreparer:
         data.add_index_dates(index_dates)
         data.check_lengths()
 
-        # 9. Exclude patients with less than k concepts
-        data = Utilities.process_data(
-            data, self.patient_filter.filter_by_min_sequence_length
-        )
-
-        # 10. Optional: Patient selection
-        if data_cfg.get("num_patients") and not predefined_splits:
-            data = Utilities.process_data(
-                data,
-                self.patient_filter.select_random_subset,
-                args_for_func={"num_patients": data_cfg.num_patients},
-            )
-
-        # 12. Truncation
-        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = Utilities.process_data(
-            data,
-            self.data_modifier.truncate,
-            args_for_func={"truncation_len": data_cfg.truncation_len},
-        )
-
         # 13. Normalize segments
         data = Utilities.process_data(data, self.data_modifier.normalize_segments)
-
-        # 14. Optional: Remove any unwanted features
-        if "remove_features" in data_cfg:
-            for feature in data_cfg.remove_features:
-                logger.info(f"Removing {feature}")
-                data.features.pop(feature, None)
 
         # Verify and save
         data.check_lengths()
