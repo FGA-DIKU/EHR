@@ -6,7 +6,6 @@ from typing import Union, List, Tuple, Callable
 
 # New stuff
 import dask.dataframe as dd
-from corebehrt.functional.load import load_pids
 import logging
 
 logger = logging.getLogger(__name__)
@@ -116,6 +115,9 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
     return df[df.PID.isin(pids)]
 
+def exclude_pids(data: dd.DataFrame, pids_to_exclude: str) -> dd.DataFrame:
+    """Excludes pids from data."""
+    return data[~data["PID"].isin(pids_to_exclude)]
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -125,12 +127,12 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.TIMESTAMP.notna()]
 
 
-def get_first_event_by_pid(df: pd.DataFrame):
+def get_first_event_by_pid(df: pd.DataFrame, timestamp_column: str) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID and TIMESTAMP.
+    Assumes that the table has a column named PID and abspos.
     Get the first event for each PID in the table.
     """
-    return df.groupby("PID").TIMESTAMP.min()
+    return df.groupby("PID")[timestamp_column].min()
 
 def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
     """
@@ -188,4 +190,8 @@ def get_gender_token(gender: str, vocabulary: dict) -> int:
         return vocabulary[gender_key]
     except KeyError:
         raise ValueError(f"No gender token found in vocabulary. Searched for {gender_key}")
+
+def get_pids(data: dd.DataFrame) -> List[str]:
+    """Get unique pids from data."""
+    return data['PID'].unique().compute().tolist()
 

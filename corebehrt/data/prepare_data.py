@@ -11,7 +11,6 @@ from corebehrt.common.loader import (
     FeaturesLoader,
     get_pids_file,
     load_and_select_splits,
-    load_exclude_pids,
 )
 from corebehrt.common.saver import Saver
 from corebehrt.common.utils import Data
@@ -24,11 +23,10 @@ from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
 from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids, filter_patients_by_gender
-from corebehrt.functional.split import split_pids_into_train_val
 from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.load import load_pids, load_predefined_pids
+from corebehrt.functional.load import load_predefined_pids
 from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
-
+from corebehrt.functional.filter import censor_data
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 PID_KEY = "PID"
@@ -91,7 +89,8 @@ class DatasetPreparer:
 
         initial_pids = data['PID'].unique().compute().tolist()
         data = filter_table_by_exclude_pids(data, paths_cfg.get("filter_table_by_exclude_pids", None))
-        predefined_splits = self.cfg.paths.get("predefined_splits", False)
+        
+        predefined_splits = paths_cfg.get("predefined_splits", False)
         if predefined_splits:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             logger.warning("Use original censoring time. Overwrite n_hours parameter.")
@@ -106,52 +105,53 @@ class DatasetPreparer:
                     join(predefined_splits, "finetune_config.yaml")
                 )
             else:
-                if "model_path" not in self.cfg.paths:
+                if "model_path" not in paths_cfg:
                     raise ValueError(
                         "Model path must be provided if no finetune_config in predefined splits folder."
                     )
                 original_config = load_config(
-                    join(self.cfg.paths.model_path, "finetune_config.yaml")
+                    join(paths_cfg.model_path, "finetune_config.yaml")
                 )
             self.cfg.outcome.n_hours = original_config.outcome.n_hours
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
             outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
-            censor_outcomes = pd.read_csv(join(predefined_splits, "censor_outcomes.csv"))
+            exposures = pd.read_csv(join(predefined_splits, "censor_outcomes.csv"))
 
-        if not predefined_splits:
+        else:
             # 2. Optional: Select gender group
             data = filter_patients_by_gender(data, vocab, self.cfg.data.get('gender', None))
-            # Convert to sequences
-            features, pids = convert_to_sequences(data)
-            data = Data(features, pids, vocabulary=vocab, mode="finetune")
-
 
             # 4. Loading and processing outcomes
-            outcome_dates, exposure_dates = self.loader.load_outcomes_and_exposures()
+            outcomes = pd.read_csv(paths_cfg.outcome)
+            exposures = pd.read_csv(paths_cfg.exposure)
+            
             outcomehandler = OutcomeHandler(
-                index_date=self.cfg.outcome.get('index_date', None),
+                index_date=self.cfg.outcome.get("index_date", None),
                 select_patient_group=data_cfg.get("select_patient_group", None), # exposed/unexposed
                 exclude_pre_followup_outcome_patients=self.cfg.outcome.get("first_time_outcomes_only", False),
             )
-            data = outcomehandler.handle(
+            data, index_dates, outcomes = outcomehandler.handle(
                 data,
-                outcome_dates, 
-                exposure_dates, 
-                )
-            # 7. Optional: Filter code types
-            if data_cfg.get("code_types"):
-                data = Utilities.process_data(data, self.code_type_filter.filter)
-                data = Utilities.process_data(
-                    data, self.patient_filter.filter_by_min_sequence_length
+                outcomes=outcomes, 
+                exposures=exposures, 
                 )
 
         # 8. Data censoring
-        data = Utilities.process_data(
+        censor_dates = index_dates + self.cfg.outcome.n_hours
+        data = censor_data(
             data,
-            self.data_modifier.censor_data,
-            args_for_func={"n_hours": self.cfg.outcome.n_hours},
+            censor_dates, 
         )
+        
+        features, pids = convert_to_sequences(data)
+        data = Data(features=features, 
+                    pids=pids, vocabulary=vocab, mode="finetune")
+        data.add_outcomes(outcomes)
+        data.add_index_dates(index_dates)
+        data.check_lengths()
+
+
         if not predefined_splits:
             # 3. Optional: Select Patients By Age
             if data_cfg.get("min_age") or data_cfg.get("max_age"):

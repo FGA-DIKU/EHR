@@ -78,10 +78,10 @@ class TestOutcomeMaker(unittest.TestCase):
             },
             index=[1],
         )
-        expected_outcome["TIMESTAMP"] = Utilities.get_abspos_from_origin_point(
+        expected_outcome["abspos"] = Utilities.get_abspos_from_origin_point(
             expected_outcome["TIMESTAMP"], self.origin_point
         )
-        expected_outcome["TIMESTAMP"] = expected_outcome["TIMESTAMP"].astype(int)
+        expected_outcome["abspos"] = expected_outcome["abspos"].astype(int)
         # Check that the outcome table matches the expected result
         pd.testing.assert_frame_equal(
             result["TEST_OUTCOME"], expected_outcome, check_index_type=False
@@ -91,10 +91,10 @@ class TestOutcomeMaker(unittest.TestCase):
         expected_censor = pd.DataFrame(
             {"PID": ["P1"], "TIMESTAMP": [pd.Timestamp("2020-01-10")]}, index=[0]
         )
-        expected_censor["TIMESTAMP"] = Utilities.get_abspos_from_origin_point(
+        expected_censor["abspos"] = Utilities.get_abspos_from_origin_point(
             expected_censor["TIMESTAMP"], self.origin_point
         )
-        expected_censor["TIMESTAMP"] = expected_censor["TIMESTAMP"].astype(int)
+        expected_censor["abspos"] = expected_censor["abspos"].astype(int)
         # Check that the censor table matches the expected result
         pd.testing.assert_frame_equal(
             result["TEST_CENSOR"], expected_censor, check_index_type=False

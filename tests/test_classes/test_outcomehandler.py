@@ -1,14 +1,15 @@
 import unittest
-
 import pandas as pd
+import numpy as np
+import dask.dataframe as dd
+from datetime import datetime
 
-from corebehrt.classes.outcomes import (
-    OutcomeHandler,
-)  # Import your OutcomeHandler class accordingly
-from corebehrt.common.utils import (
-    Data,
-)  # Assuming Data is imported from the right module
+# Import your OutcomeHandler class accordingly
+from corebehrt.classes.outcomes import OutcomeHandler
 
+# Mock logger
+import logging
+logger = logging.getLogger(__name__)
 
 class TestOutcomeHandler(unittest.TestCase):
     def setUp(self):
@@ -20,26 +21,20 @@ class TestOutcomeHandler(unittest.TestCase):
             n_hours_start_followup=0,
         )
 
-        # Mock data for Data class
-        self.data = Data()
-        self.data.pids = ["P1", "P2", "P3", "P4"]
+        # Create mock data as Dask DataFrame
+        self.data = dd.from_pandas(pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1)
 
         # Create mock outcomes DataFrame with abspos (absolute positions)
         self.outcomes = pd.DataFrame(
             {
                 "PID": ["P1", "P2", "P3", "P4"],
-                "TIMESTAMP": [
-                    1000,
-                    2000,
-                    1500,
-                    4000,
-                ],  # Abspos values instead of timestamps
+                "abspos": [1000, 2000, 1500, 4000],  # Abspos values instead of timestamps
             }
         )
 
         # Create mock exposures DataFrame with abspos
         self.exposures = pd.DataFrame(
-            {"PID": ["P1", "P2", "P3"], "TIMESTAMP": [500, 1200, 800]}  # Abspos values
+            {"PID": ["P1", "P2", "P3"], "abspos": [500, 1200, 800]}  # Abspos values
         )
 
     def test_check_input_valid(self):
@@ -50,58 +45,75 @@ class TestOutcomeHandler(unittest.TestCase):
             self.fail(f"check_input raised ValueError unexpectedly: {str(e)}")
 
     def test_check_input_invalid(self):
-        # Test the check_input method with invalid DataFrame (missing 'TIMESTAMP')
-        invalid_outcomes = self.outcomes.drop(columns=["TIMESTAMP"])
+        # Test the check_input method with invalid DataFrame (missing 'abspos')
+        invalid_outcomes = self.outcomes.drop(columns=["abspos"])
         with self.assertRaises(ValueError):
             self.handler.check_input(invalid_outcomes, self.exposures)
 
     def test_handle(self):
         # Test the full handle method
-        updated_data = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
 
-        # Check that the outcomes and index dates are added to the data
-        self.assertIsNotNone(updated_data.outcomes)
-        self.assertIsNotNone(updated_data.censor_outcomes)
+        # Check that index_dates and outcomes are not None
+        self.assertIsNotNone(index_dates)
+        self.assertIsNotNone(outcomes)
 
     def test_select_exposed_patients(self):
         # Test selecting only exposed patients
         self.handler.select_patient_group = "exposed"
-        updated_data = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
+
+        # Get the PIDs from updated_data
+        updated_pids = updated_data['PID'].compute().tolist()
 
         # Check that the unexposed patients were excluded (P4 is unexposed)
-        self.assertNotIn("P4", updated_data.pids)
+        self.assertNotIn("P4", updated_pids)
 
     def test_select_unexposed_patients(self):
         # Test selecting only unexposed patients
         self.handler.select_patient_group = "unexposed"
-        updated_data = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
+
+        # Get the PIDs from updated_data
+        updated_pids = updated_data['PID'].compute().tolist()
 
         # Check that the exposed patients were excluded (P1, P2, P3 are exposed)
-        self.assertNotIn("P1", updated_data.pids)
-        self.assertNotIn("P2", updated_data.pids)
-        self.assertNotIn("P3", updated_data.pids)
-        self.assertIn("P4", updated_data.pids)
+        self.assertNotIn("P1", updated_pids)
+        self.assertNotIn("P2", updated_pids)
+        self.assertNotIn("P3", updated_pids)
+        self.assertIn("P4", updated_pids)
 
     def test_remove_outcomes_before_start_of_follow_up(self):
         # Test removing outcomes before the start of follow-up
         self.handler.exclude_pre_followup_outcome_patients = True
-        self.handler.n_hours_start_followup = (
-            24  # Example: follow-up starts 24 hours after exposure (in abspos units)
+        self.handler.n_hours_start_followup = 24  # Follow-up starts 24 hours after exposure
+
+        # Modify outcomes to have an outcome before follow-up start for P1
+        test_outcomes = pd.DataFrame(
+            {
+                "PID": ["P1", "P2", "P3", "P4"],
+                "abspos": [520, 2000, 1500, 4000],  # P1's outcome is before follow-up
+            }
         )
 
         # Exclude patients with outcomes before follow-up start
-        updated_data = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(self.data, test_outcomes, self.exposures)
 
-        # Check that patients with outcomes before follow-up are removed
-        # For instance, if follow-up starts at abspos + 24, we can assert accordingly
-        self.assertIn("P1", updated_data.pids)
-        # Adjust assertions based on your follow-up logic and expected behavior
+        # Get updated PIDs
+        updated_pids = updated_data['PID'].compute().tolist()
 
-    def test_assign_exposures_and_outcomes_to_data(self):
-        # Test the assignment of exposures and outcomes to the Data object
-        # Mock data for Data class
-        data = Data()
-        data.pids = ["P1", "P2", "P3", "P4"]
+        # P1 should be removed because outcome is before follow-up start (500 + 24 = 524)
+        self.assertNotIn("P1", updated_pids)
+        # P2, P3, P4 should be in updated_data
+        self.assertIn("P2", updated_pids)
+        self.assertIn("P3", updated_pids)
+        self.assertIn("P4", updated_pids)
+
+    def test_synchronize_patients(self):
+        # Test the synchronize_patients method
+        # Mock data as Dask DataFrame
+        data = dd.from_pandas(pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1)
+        data_pids = data['PID'].compute().tolist()
 
         index_dates = pd.Series(
             {
@@ -119,31 +131,19 @@ class TestOutcomeHandler(unittest.TestCase):
             }
         )
 
+        expected_index_dates = pd.Series(
+            [500, 1200, 800, pd.NA], index=["P1", "P2", "P3", "P4"], dtype=pd.Int64Dtype()
+        )
         expected_outcomes = pd.Series(
-            {"P1": 1000, "P2": 2000, "P3": 1500, "P4": pd.NA}, dtype=pd.Int64Dtype()
-        )
-        expected_censor_outcomes = pd.Series(
-            {"P1": 500, "P2": 1200, "P3": 800, "P4": pd.NA}, dtype=pd.Int64Dtype()
-        )
-        updated_data = self.handler.assign_exposures_and_outcomes_to_data(
-            data, index_dates, outcomes
-        )
-        # Check that outcomes and censor outcomes were properly assigned
-        # assert that values are close
-        self.assert_outcomes_equal(
-            updated_data.outcomes, list(expected_outcomes.values)
-        )
-        self.assert_outcomes_equal(
-            updated_data.censor_outcomes, list(expected_censor_outcomes.values)
+            [1000, 2000, 1500, pd.NA], index=["P1", "P2", "P3", "P4"], dtype=pd.Int64Dtype()
         )
 
-    def assert_outcomes_equal(self, actual, expected):
-        """Helper function to compare lists of outcomes, including pd.NA and None."""
-        for act, exp in zip(actual, expected):
-            if pd.isna(act) and pd.isna(exp):
-                continue  # Both are missing values
-            else:
-                self.assertEqual(act, exp, f"Expected {exp} but got {act}")
+        index_dates = self.handler.synchronize_patients(data, index_dates)
+        outcomes = self.handler.synchronize_patients(data, outcomes)
+
+        # Check that index_dates and outcomes are as expected
+        pd.testing.assert_series_equal(index_dates, expected_index_dates)
+        pd.testing.assert_series_equal(outcomes, expected_outcomes)
 
 
 if __name__ == "__main__":
