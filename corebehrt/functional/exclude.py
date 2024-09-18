@@ -6,7 +6,7 @@ from typing import Union, List, Tuple
 # New stuff
 import dask.dataframe as dd
 from corebehrt.functional.load import load_pids
-from corebehrt.functional.utils import filter_table_by_pids, get_gender_token
+from corebehrt.functional.utils import filter_table_by_pids, get_gender_token, exclude_pids
 
 
 def exclude_incorrect_event_ages(
@@ -94,12 +94,12 @@ def filter_table_by_exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that do not have a PID in pids
     """
-    if pids_path is not None:
-        excluded_pids = load_pids(pids_path)
-        data = data[~data["PID"].isin(excluded_pids)]
+    if pids_path is None:
         return data
-    else:
-        return data
+    
+    excluded_pids = load_pids(pids_path)
+    data = exclude_pids(data, excluded_pids)
+    return data
     
 def filter_patients_by_gender(data: dd.DataFrame, vocab: dict, gender: str=None) -> dd.DataFrame:
     """
