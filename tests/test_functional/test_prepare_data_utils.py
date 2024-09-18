@@ -36,21 +36,5 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
             len(subset_data), 5
         )  # Should return all data because n > len(data)
 
-    def test_get_gender_token(self):
-        # Sample vocabulary dictionary
-        vocabulary = {
-            "BG_GENDER_Male": 1,
-            "BG_GENDER_Female": 2,
-        }
-        
-        # Test cases for different gender tokens
-        self.assertEqual(get_gender_token("Male", vocabulary), 1)
-        self.assertEqual(get_gender_token("Female", vocabulary), 2)
-        
-        # Test case for a gender not in vocabulary
-        with self.assertRaises(ValueError) as context:
-            get_gender_token("Unknown", vocabulary)
-        self.assertEqual(str(context.exception), "No gender token found in vocabulary. Searched for BG_GENDER_Unknown")
-    
 if __name__ == "__main__":
     unittest.main()

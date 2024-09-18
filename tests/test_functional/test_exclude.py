@@ -42,11 +42,9 @@ class TestExcludeFunctions(unittest.TestCase):
         }
         
         # Filtering by a gender not in the data
-        filtered_data = filter_patients_by_gender(self.data_dd, vocabulary, "Other")
-        filtered_data_pd = filtered_data.compute()
+        with self.assertRaises(ValueError):
+            filter_patients_by_gender(self.data_dd, vocabulary, "Other")
 
-        # No PIDs should match the gender token 30 ("Other") in the sample data
-        self.assertEqual(len(filtered_data_pd), 0)
 
     def test_filter_patients_by_gender_without_gender(self):
         # Without specifying gender, the data should be returned as is

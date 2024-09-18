@@ -11,6 +11,7 @@ from corebehrt.common.loader import (
     FeaturesLoader,
     get_pids_file,
     load_and_select_splits,
+    load_exclude_pids,
 )
 from corebehrt.common.saver import Saver
 from corebehrt.common.utils import Data
@@ -19,14 +20,30 @@ from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.data.utils import Utilities
 from corebehrt.data_fixes.truncate import Truncator
 from corebehrt.classes.outcomes import OutcomeHandler
+
 # New stuff
-from corebehrt.functional.utils import normalize_segments, get_background_length_dd
 import dask.dataframe as dd
-from corebehrt.functional.exclude import exclude_short_sequences, filter_table_by_exclude_pids, filter_patients_by_gender
+from corebehrt.functional.exclude import (
+    exclude_short_sequences,
+    filter_table_by_exclude_pids,
+)
+from corebehrt.functional.split import split_pids_into_train_val, load_train_val_split
 from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.load import load_predefined_pids
-from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
+from corebehrt.functional.load import load_pids, load_predefined_pids
+from corebehrt.functional.utils import (
+    filter_table_by_pids,
+    select_random_subset,
+    truncate_data,
+    truncate_patient,
+    normalize_segments,
+    get_background_length_dd,
+)
+from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
+from corebehrt.functional.save import save_sequence_lengths, save_data, save_pids_splits
+
 from corebehrt.functional.filter import censor_data, filter_patients_by_age_at_last_event
+from corebehrt.functional.exclude import filter_patients_by_gender
+
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 PID_KEY = "PID"
@@ -49,25 +66,14 @@ class DatasetPreparer:
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
-
-        data = self._prepare_mlm_features()
-        if "predefined_splits" in self.cfg.paths:
-            train_data, val_data = load_and_select_splits(
-                self.cfg.paths.predefined_splits, data
-            )
-        else:
-            train_data, val_data = data.split(val_ratio)
-        self.saver.save_train_val_pids(train_data.pids, val_data.pids)
-
+        predefined_splits = self.cfg.paths.get("predefined_pids", False)
+        train_data, val_data = self._prepare_mlm_features(predefined_splits)
         train_dataset = MLMDataset(
             train_data.features, train_data.vocabulary, **self.cfg.data.dataset
         )
         val_dataset = MLMDataset(
             val_data.features, train_data.vocabulary, **self.cfg.data.dataset
         )
-
-        train_dataset = MLMDataset(train_data.features, train_data.vocabulary, **self.cfg.data.dataset)
-        val_dataset = MLMDataset(val_data.features, train_data.vocabulary, **self.cfg.data.dataset)
         return train_dataset, val_dataset
 
     def prepare_finetune_data(self) -> Data:
@@ -183,7 +189,7 @@ class DatasetPreparer:
         self._log_features(data)
         return data
 
-    def _prepare_mlm_features(self) -> Data:
+    def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
         """
         1. Load tokenized data
         2. Optional: Remove background tokens
@@ -210,7 +216,7 @@ class DatasetPreparer:
         )
 
         # 2. Exclude pids
-        data = filter_table_by_exclude_pids(data, paths_cfg.get("filter_table_by_exclude_pids", None))
+        data = filter_table_by_exclude_pids(data, paths_cfg.get("exclude_pids", None))
 
         # 3. Select predefined pids, remove the rest
         predefined_pids = self.cfg.paths.get("predefined_pids", False)
@@ -231,23 +237,35 @@ class DatasetPreparer:
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
 
-        # Convert to sequences
-        features, pids = convert_to_sequences(data)
-        data = Data(features, pids, vocabulary=vocab, mode="pretrain")
-
         # 6. Normalize segments
-        data = Utilities.process_data(data, self.data_modifier.normalize_segments)
+        data = normalize_segments(data)
 
-        # Adjust max segment if needed
-        Utilities.check_and_adjust_max_segment(data, model_cfg)
+        # Check if max segment is larger than type_vocab_size
+        check_max_segment(data, model_cfg.type_vocab_size)
 
-        # Verify and save
-        data.check_lengths()
-        data = Utilities.process_data(data, self.saver.save_sequence_lengths)
+        # Save
+        save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
+        save_sequence_lengths(data, save_dir, desc="_pretrain")
+        save_data(data, vocab, save_dir, desc="_pretrain")
 
-        self.saver.save_data(data)
-        self._log_features(data)
-        return data
+        # Splitting data
+        if predefined_splits:
+            train_data, val_data = load_train_val_split(data, predefined_splits)
+        else:
+            train_data, val_data = split_pids_into_train_val(data, val_ratio)
+
+        # Save split
+        save_pids_splits(train_data, val_data, save_dir)
+
+        # Convert to sequences
+        train_features, train_pids = convert_to_sequences(train_data)
+        train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
+        val_features, val_pids = convert_to_sequences(val_data)
+        val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
+
+        log_features_in_sequence(train_data)
+
+        return train_data, val_data
 
     def _retrieve_and_assign_outcomes(
         self, data: Data, outcomes: Dict, censor_outcomes: Dict

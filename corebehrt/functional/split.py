@@ -5,6 +5,7 @@ import dask.dataframe as dd
 import random
 
 from corebehrt.functional.utils import filter_table_by_pids
+from corebehrt.functional.load import load_predefined_splits
 
 
 def split_pids_into_pt_ft_test(
@@ -43,6 +44,18 @@ def split_pids_into_train_val(data: dd.DataFrame, split: float) -> Tuple[list, l
     random.shuffle(pids)
     train_pids = pids[: int(len(pids) * split)]
     val_pids = pids[int(len(pids) * split) :]
+    train_data = filter_table_by_pids(data, train_pids)
+    val_data = filter_table_by_pids(data, val_pids)
+    return train_data, val_data
+
+
+def load_train_val_split(data: dd.DataFrame, split_path: str) -> dd.DataFrame:
+    """
+    Load the train/val split from the given split path and return the corresponding data.
+    """
+    splits = ["train", "val"]
+    pids = load_predefined_splits(split_path, splits)
+    train_pids, val_pids = pids
     train_data = filter_table_by_pids(data, train_pids)
     val_data = filter_table_by_pids(data, val_pids)
     return train_data, val_data

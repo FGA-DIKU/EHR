@@ -11,6 +11,14 @@ import logging
 logger = logging.getLogger(__name__)
 import random
 
+# New stuff
+import dask.dataframe as dd
+from corebehrt.functional.load import load_pids
+import logging
+
+logger = logging.getLogger(__name__)
+import random
+
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -21,6 +29,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
         return normalize_segments_list(x)
     elif isinstance(x, dict):
         return normalize_segments_dict(x)
+    elif isinstance(x, dd.DataFrame):
+        return normalize_segments_dask(x)
     else:
         raise TypeError(
             "Invalid type for x, only pd.DataFrame, list, and dict are supported."
@@ -32,6 +42,16 @@ def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: normalize_segments_series(x)
     )
 
+
+def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
+    def normalize_group(partition):
+        partition["segment"] = partition.groupby("PID")["segment"].transform(
+            normalize_segments_series
+        )
+        return partition
+
+    normalized_df = df.map_partitions(normalize_group, meta=df)
+    return normalized_df
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     # Convert to string to ensure consistent types and avoid warnings
@@ -65,14 +85,14 @@ def get_background_length(features: dict, vocabulary) -> int:
 
 
 def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
-    """Get the length of the background sentence"""
-    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_") or k.startswith("[")])
+    """Get the length of the background sentence, first SEP token included."""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
     first_pid_value = features["PID"].compute().iloc[0]
     first_pid = features[features["PID"] == first_pid_value]
     all_concepts_first_pid = first_pid["concept"].compute().tolist()
     background_length = len(set(all_concepts_first_pid) & background_tokens)
 
-    return background_length
+    return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
 def get_abspos_from_origin_point(
@@ -117,6 +137,8 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
 
 def exclude_pids(data: dd.DataFrame, pids_to_exclude: List[str]) -> dd.DataFrame:
     """Excludes pids from data."""
+    if not pids_to_exclude:
+        return data
     return data[~data["PID"].isin(set(pids_to_exclude))]
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
