@@ -26,7 +26,7 @@ from corebehrt.functional.exclude import exclude_short_sequences, filter_table_b
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.load import load_predefined_pids
 from corebehrt.functional.utils import filter_table_by_pids, select_random_subset, truncate_data, truncate_patient
-from corebehrt.functional.filter import censor_data
+from corebehrt.functional.filter import censor_data, filter_patients_by_age_at_last_event
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 PID_KEY = "PID"
@@ -144,18 +144,17 @@ class DatasetPreparer:
             censor_dates, 
         )
         
+        if not predefined_splits:
+            # 3. Optional: Select Patients By Age
+            if data_cfg.get("min_age") or data_cfg.get("max_age"):
+                data = filter_patients_by_age_at_last_event(data, data_cfg.min_age, data_cfg.max_age)
+
         features, pids = convert_to_sequences(data)
         data = Data(features=features, 
                     pids=pids, vocabulary=vocab, mode="finetune")
         data.add_outcomes(outcomes)
         data.add_index_dates(index_dates)
         data.check_lengths()
-
-
-        if not predefined_splits:
-            # 3. Optional: Select Patients By Age
-            if data_cfg.get("min_age") or data_cfg.get("max_age"):
-                data = Utilities.process_data(data, self.patient_filter.select_by_age)
 
         # 9. Exclude patients with less than k concepts
         data = Utilities.process_data(
