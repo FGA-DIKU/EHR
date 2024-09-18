@@ -1,15 +1,15 @@
 import unittest
 import pandas as pd
-import numpy as np
 import dask.dataframe as dd
-from datetime import datetime
 
 # Import your OutcomeHandler class accordingly
 from corebehrt.classes.outcomes import OutcomeHandler
 
 # Mock logger
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class TestOutcomeHandler(unittest.TestCase):
     def setUp(self):
@@ -22,13 +22,20 @@ class TestOutcomeHandler(unittest.TestCase):
         )
 
         # Create mock data as Dask DataFrame
-        self.data = dd.from_pandas(pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1)
+        self.data = dd.from_pandas(
+            pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1
+        )
 
         # Create mock outcomes DataFrame with abspos (absolute positions)
         self.outcomes = pd.DataFrame(
             {
                 "PID": ["P1", "P2", "P3", "P4"],
-                "abspos": [1000, 2000, 1500, 4000],  # Abspos values instead of timestamps
+                "abspos": [
+                    1000,
+                    2000,
+                    1500,
+                    4000,
+                ],  # Abspos values instead of timestamps
             }
         )
 
@@ -52,7 +59,9 @@ class TestOutcomeHandler(unittest.TestCase):
 
     def test_handle(self):
         # Test the full handle method
-        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(
+            self.data, self.outcomes, self.exposures
+        )
 
         # Check that index_dates and outcomes are not None
         self.assertIsNotNone(index_dates)
@@ -61,10 +70,12 @@ class TestOutcomeHandler(unittest.TestCase):
     def test_select_exposed_patients(self):
         # Test selecting only exposed patients
         self.handler.select_patient_group = "exposed"
-        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(
+            self.data, self.outcomes, self.exposures
+        )
 
         # Get the PIDs from updated_data
-        updated_pids = updated_data['PID'].compute().tolist()
+        updated_pids = updated_data["PID"].compute().tolist()
 
         # Check that the unexposed patients were excluded (P4 is unexposed)
         self.assertNotIn("P4", updated_pids)
@@ -72,10 +83,12 @@ class TestOutcomeHandler(unittest.TestCase):
     def test_select_unexposed_patients(self):
         # Test selecting only unexposed patients
         self.handler.select_patient_group = "unexposed"
-        updated_data, index_dates, outcomes = self.handler.handle(self.data, self.outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(
+            self.data, self.outcomes, self.exposures
+        )
 
         # Get the PIDs from updated_data
-        updated_pids = updated_data['PID'].compute().tolist()
+        updated_pids = updated_data["PID"].compute().tolist()
 
         # Check that the exposed patients were excluded (P1, P2, P3 are exposed)
         self.assertNotIn("P1", updated_pids)
@@ -86,7 +99,9 @@ class TestOutcomeHandler(unittest.TestCase):
     def test_remove_outcomes_before_start_of_follow_up(self):
         # Test removing outcomes before the start of follow-up
         self.handler.exclude_pre_followup_outcome_patients = True
-        self.handler.n_hours_start_followup = 24  # Follow-up starts 24 hours after exposure
+        self.handler.n_hours_start_followup = (
+            24  # Follow-up starts 24 hours after exposure
+        )
 
         # Modify outcomes to have an outcome before follow-up start for P1
         test_outcomes = pd.DataFrame(
@@ -97,10 +112,12 @@ class TestOutcomeHandler(unittest.TestCase):
         )
 
         # Exclude patients with outcomes before follow-up start
-        updated_data, index_dates, outcomes = self.handler.handle(self.data, test_outcomes, self.exposures)
+        updated_data, index_dates, outcomes = self.handler.handle(
+            self.data, test_outcomes, self.exposures
+        )
 
         # Get updated PIDs
-        updated_pids = updated_data['PID'].compute().tolist()
+        updated_pids = updated_data["PID"].compute().tolist()
 
         # P1 should be removed because outcome is before follow-up start (500 + 24 = 524)
         self.assertNotIn("P1", updated_pids)
@@ -112,8 +129,9 @@ class TestOutcomeHandler(unittest.TestCase):
     def test_synchronize_patients(self):
         # Test the synchronize_patients method
         # Mock data as Dask DataFrame
-        data = dd.from_pandas(pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1)
-        data_pids = data['PID'].compute().tolist()
+        data = dd.from_pandas(
+            pd.DataFrame({"PID": ["P1", "P2", "P3", "P4"]}), npartitions=1
+        )
 
         index_dates = pd.Series(
             {
@@ -132,10 +150,14 @@ class TestOutcomeHandler(unittest.TestCase):
         )
 
         expected_index_dates = pd.Series(
-            [500, 1200, 800, pd.NA], index=["P1", "P2", "P3", "P4"], dtype=pd.Int64Dtype()
+            [500, 1200, 800, pd.NA],
+            index=["P1", "P2", "P3", "P4"],
+            dtype=pd.Int64Dtype(),
         )
         expected_outcomes = pd.Series(
-            [1000, 2000, 1500, pd.NA], index=["P1", "P2", "P3", "P4"], dtype=pd.Int64Dtype()
+            [1000, 2000, 1500, pd.NA],
+            index=["P1", "P2", "P3", "P4"],
+            dtype=pd.Int64Dtype(),
         )
 
         index_dates = self.handler.synchronize_patients(data, index_dates)

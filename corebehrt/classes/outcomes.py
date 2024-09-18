@@ -13,7 +13,7 @@ from corebehrt.functional.utils import (
     remove_missing_timestamps,
     get_first_event_by_pid,
     get_pids,
-    exclude_pids
+    exclude_pids,
 )
 from corebehrt.functional.filter import filter_events_by_abspos
 
@@ -85,6 +85,7 @@ class OutcomeMaker:
 class OutcomeHandler:
     # !TODO: Move this to separate file and make it a constant
     ORIGIN_POINT = datetime(2020, 1, 26)
+
     def __init__(
         self,
         index_date: Dict[str, int] = None,
@@ -132,12 +133,12 @@ class OutcomeHandler:
         index_dates = filter_table_by_pids(exposures, data_pids)
 
         # Step 2: Pick earliest exposure ts as index date for each patient
-        index_dates = get_first_event_by_pid(exposures, 'abspos')
+        index_dates = get_first_event_by_pid(exposures, "abspos")
 
         # Step 3 (Optional): Use a specific index date for all
         if self.index_date:
             index_dates = self.compute_abspos_for_index_date(get_pids(data))
-        
+
         exposed_patients = set(index_dates.index)
         # Step 4 (Optional): Select only exposed/unexposed patients
         if self.select_patient_group:
@@ -147,9 +148,10 @@ class OutcomeHandler:
         if self.select_patient_group != "exposed":
             # Step 5: Assign censoring to patients without it (random assignment)
             logger.info(f"Number of exposed patients: {len(exposed_patients)}")
-            index_dates = self.draw_index_dates_for_unexposed(index_dates, get_pids(data))
-        
-        
+            index_dates = self.draw_index_dates_for_unexposed(
+                index_dates, get_pids(data)
+            )
+
         # Step 6: Select first outcome after censoring for each patient
         follow_up_dates = index_dates + self.n_hours_start_followup
         outcomes, pids_outcome_pre_followup = self.get_first_outcome_in_follow_up(
@@ -167,18 +169,22 @@ class OutcomeHandler:
         outcomes = self.synchronize_patients(data, outcomes)
         return data, index_dates, outcomes
 
-    def synchronize_patients(self, data: dd.DataFrame, timestamps: pd.Series) -> pd.Series:
+    def synchronize_patients(
+        self, data: dd.DataFrame, timestamps: pd.Series
+    ) -> pd.Series:
         """
         Synchronize patients in timestamps with data.
         timestamps should be indexed by PID.
-        PIDs in timestamps that are not present in data will be assigned nan as timestamp. 
+        PIDs in timestamps that are not present in data will be assigned nan as timestamp.
         """
         logger.info("Synchronizing patients in data with timestamps.")
         pids = get_pids(data)
         timestamps = timestamps.reindex(pids)
-        timestamps = timestamps.astype(pd.Int64Dtype()) # ensure that abspos is int even if there are NaNs
+        timestamps = timestamps.astype(
+            pd.Int64Dtype()
+        )  # ensure that abspos is int even if there are NaNs
         return timestamps
-    
+
     def check_input(self, outcomes, exposures):
         """Check that outcomes and exposures have columns PID and abspos."""
         required_columns = {"PID", "abspos"}
@@ -238,7 +244,9 @@ class OutcomeHandler:
     ) -> Tuple[pd.Series, set]:
         """Get the first outcome event occurring at or after the follow_up date for each PID."""
         # First filter the outcomes based on the censor timestamps
-        filtered_outcomes = filter_events_by_abspos(outcomes, follow_up_dates, '>=')
-        pids_w_outcome_pre_followup = set(outcomes["PID"].unique()) - set(filtered_outcomes["PID"].unique())
-        first_outcome = get_first_event_by_pid(filtered_outcomes, 'abspos')
+        filtered_outcomes = filter_events_by_abspos(outcomes, follow_up_dates, ">=")
+        pids_w_outcome_pre_followup = set(outcomes["PID"].unique()) - set(
+            filtered_outcomes["PID"].unique()
+        )
+        first_outcome = get_first_event_by_pid(filtered_outcomes, "abspos")
         return first_outcome, pids_w_outcome_pre_followup

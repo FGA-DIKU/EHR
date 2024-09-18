@@ -1,11 +1,9 @@
 import unittest
-from unittest.mock import patch
 import pandas as pd
 import dask.dataframe as dd
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     select_random_subset,
-    get_gender_token
 )
 import random
 
@@ -35,6 +33,7 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
         self.assertEqual(
             len(subset_data), 5
         )  # Should return all data because n > len(data)
+
 
 if __name__ == "__main__":
     unittest.main()

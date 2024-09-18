@@ -11,14 +11,6 @@ import logging
 logger = logging.getLogger(__name__)
 import random
 
-# New stuff
-import dask.dataframe as dd
-from corebehrt.functional.load import load_pids
-import logging
-
-logger = logging.getLogger(__name__)
-import random
-
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
@@ -52,6 +44,7 @@ def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
 
     normalized_df = df.map_partitions(normalize_group, meta=df)
     return normalized_df
+
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     # Convert to string to ensure consistent types and avoid warnings
@@ -135,11 +128,13 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
     return df[df.PID.isin(set(pids))]
 
+
 def exclude_pids(data: dd.DataFrame, pids_to_exclude: List[str]) -> dd.DataFrame:
     """Excludes pids from data."""
     if not pids_to_exclude:
         return data
     return data[~data["PID"].isin(set(pids_to_exclude))]
+
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -156,6 +151,7 @@ def get_first_event_by_pid(df: pd.DataFrame, timestamp_column: str) -> pd.DataFr
     """
     return df.groupby("PID")[timestamp_column].min()
 
+
 def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.
@@ -169,8 +165,10 @@ def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
     pids = pids[:n]
     return filter_table_by_pids(data, pids)
 
-def truncate_patient(patient: pd.DataFrame, background_length: 
-    int, max_len: int, sep_token: str) -> pd.DataFrame:
+
+def truncate_patient(
+    patient: pd.DataFrame, background_length: int, max_len: int, sep_token: str
+) -> pd.DataFrame:
     """
     Assumes patient is pd.DataFrame.
     Truncate patient to max_len, keeping background.
@@ -182,12 +180,20 @@ def truncate_patient(patient: pd.DataFrame, background_length:
     if patient["concept"].iloc[-truncation_length] == sep_token:
         truncation_length -= 1
 
-    truncated_patient = pd.concat([patient.iloc[:background_length], patient.iloc[-truncation_length:]], ignore_index=True)
+    truncated_patient = pd.concat(
+        [patient.iloc[:background_length], patient.iloc[-truncation_length:]],
+        ignore_index=True,
+    )
 
     return truncated_patient
 
 
-def truncate_data(data: dd.DataFrame, max_len:int, vocabulary: dict, truncate_function: Callable = truncate_patient) -> dd.DataFrame:
+def truncate_data(
+    data: dd.DataFrame,
+    max_len: int,
+    vocabulary: dict,
+    truncate_function: Callable = truncate_patient,
+) -> dd.DataFrame:
     """
     Assumes table has a column named PID.
     Truncate the data to max_len. CLS and SEP tokens are kept if present.
@@ -195,12 +201,19 @@ def truncate_data(data: dd.DataFrame, max_len:int, vocabulary: dict, truncate_fu
     """
     background_length = get_background_length_dd(data, vocabulary)
 
-    truncated_data = data.groupby("PID")[list(data.columns)].apply(
-        lambda x: truncate_function(x, background_length, max_len, vocabulary.get("[SEP]")),
-        meta={col: dtype for col, dtype in data.dtypes.items()},
-    ).reset_index(drop=True)
-    
+    truncated_data = (
+        data.groupby("PID")[list(data.columns)]
+        .apply(
+            lambda x: truncate_function(
+                x, background_length, max_len, vocabulary.get("[SEP]")
+            ),
+            meta={col: dtype for col, dtype in data.dtypes.items()},
+        )
+        .reset_index(drop=True)
+    )
+
     return truncated_data
+
 
 def get_gender_token(gender: str, vocabulary: dict) -> int:
     """
@@ -211,9 +224,11 @@ def get_gender_token(gender: str, vocabulary: dict) -> int:
     try:
         return vocabulary[gender_key]
     except KeyError:
-        raise ValueError(f"No gender token found in vocabulary. Searched for {gender_key}")
+        raise ValueError(
+            f"No gender token found in vocabulary. Searched for {gender_key}"
+        )
+
 
 def get_pids(data: dd.DataFrame) -> List[str]:
     """Get unique pids from data."""
-    return data['PID'].unique().compute().tolist()
-
+    return data["PID"].unique().compute().tolist()

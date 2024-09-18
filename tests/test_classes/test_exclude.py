@@ -115,5 +115,6 @@ class TestExcluder(unittest.TestCase):
         self.assertEqual(len(result), 3)
         self.assertEqual(result["PID"].nunique(), 2)
 
+
 if __name__ == "__main__":
     unittest.main()

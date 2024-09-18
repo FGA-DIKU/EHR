@@ -6,7 +6,11 @@ from typing import Union, List, Tuple
 # New stuff
 import dask.dataframe as dd
 from corebehrt.functional.load import load_pids
-from corebehrt.functional.utils import filter_table_by_pids, get_gender_token, exclude_pids
+from corebehrt.functional.utils import (
+    filter_table_by_pids,
+    get_gender_token,
+    exclude_pids,
+)
 
 
 def exclude_incorrect_event_ages(
@@ -54,7 +58,7 @@ def exclude_short_sequences_df(
     df: pd.DataFrame, min_len: int, background_length: int
 ) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID and concept. 
+    Assumes that the table has a column named PID and concept.
     Returns a new table with only the rows that have a concept with a length greater than min_len.
     """
     filtered_df = df.groupby("PID").filter(
@@ -89,32 +93,31 @@ def exclude_short_sequences_dict(
     return filtered_x, kept_indices
 
 
-def filter_table_by_exclude_pids(data: dd.DataFrame, pids_path: Union[None, str]) -> dd.DataFrame:
+def filter_table_by_exclude_pids(
+    data: dd.DataFrame, pids_path: Union[None, str]
+) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that do not have a PID in pids
     """
     if pids_path is None:
         return data
-    
+
     excluded_pids = load_pids(pids_path)
     data = exclude_pids(data, excluded_pids)
     return data
-    
-def filter_patients_by_gender(data: dd.DataFrame, vocab: dict, gender: str=None) -> dd.DataFrame:
+
+
+def filter_patients_by_gender(
+    data: dd.DataFrame, vocab: dict, gender: str = None
+) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID and concept.
     Returns a new table with only the rows that have a concept with
     """
     if gender is None:
         return data
-    
+
     gender_token = get_gender_token(gender, vocab)
-    patients = data[data.concept==gender_token].PID.unique()
+    patients = data[data.concept == gender_token].PID.unique()
     return filter_table_by_pids(data, patients)
-
-            
-
-
-
-
