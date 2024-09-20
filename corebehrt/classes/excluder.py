@@ -1,14 +1,17 @@
 """ Excluder class for excluding incorrect events and patients """
 
+from typing import Optional
+
 import pandas as pd
-from typing import Union, List, Optional
-from corebehrt.functional.exclude import (
-    exclude_incorrect_event_ages,
-    exclude_event_nans,
-)
-from corebehrt.functional import exclude
-from corebehrt.functional.utils import normalize_segments
 from dask import dataframe as dd
+
+from corebehrt.functional.exclude import (
+    exclude_event_nans,
+    exclude_incorrect_event_ages,
+    exclude_short_sequences,
+    filter_table_by_exclude_pids,
+)
+from corebehrt.functional.utils import normalize_segments
 
 
 class Excluder:
@@ -32,15 +35,14 @@ class Excluder:
         return df.reset_index(drop=True)
 
     def exclude_short_sequences(
-        self, x: Union[pd.DataFrame, List[list], dict, dd.DataFrame]
-    ) -> Union[
-        pd.DataFrame, List[list], dict
-    ]:  # TODO: Currently doesn't support outcomes
+        self,
+        x: dd.DataFrame,
+    ) -> dd.DataFrame:
         """Exclude patients with less than k events (taken background into account)"""
-        return exclude.exclude_short_sequences(x, self.min_len, self.background_length)
+        return exclude_short_sequences(x, self.min_len, self.background_length)
 
     def exclude_pids(
         self, data: dd.DataFrame, pids_path: Optional[str] = None
     ) -> dd.DataFrame:
         """Exclude pids from data."""
-        return exclude.filter_table_by_exclude_pids(data, pids_path)
+        return filter_table_by_exclude_pids(data, pids_path)

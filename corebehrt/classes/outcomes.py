@@ -133,11 +133,11 @@ class OutcomeHandler:
         index_dates = filter_table_by_pids(exposures, data_pids)
 
         # Step 2: Pick earliest exposure ts as index date for each patient
-        index_dates = get_first_event_by_pid(exposures, "abspos")
+        index_dates = get_first_event_by_pid(exposures)
 
         # Step 3 (Optional): Use a specific index date for all
         if self.index_date:
-            index_dates = self.compute_abspos_for_index_date(get_pids(data))
+            index_dates = self.compute_abspos_for_index_date(data_pids)
 
         exposed_patients = set(index_dates.index)
         # Step 4 (Optional): Select only exposed/unexposed patients
@@ -248,5 +248,5 @@ class OutcomeHandler:
         pids_w_outcome_pre_followup = set(outcomes["PID"].unique()) - set(
             filtered_outcomes["PID"].unique()
         )
-        first_outcome = get_first_event_by_pid(filtered_outcomes, "abspos")
+        first_outcome = get_first_event_by_pid(filtered_outcomes)
         return first_outcome, pids_w_outcome_pre_followup

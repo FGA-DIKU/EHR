@@ -144,12 +144,12 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.TIMESTAMP.notna()]
 
 
-def get_first_event_by_pid(df: pd.DataFrame, timestamp_column: str) -> pd.DataFrame:
+def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
     """
     Assumes that the table has a column named PID and abspos.
     Get the first event for each PID in the table.
     """
-    return df.groupby("PID")[timestamp_column].min()
+    return df.groupby("PID")["abspos"].min()
 
 
 def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
@@ -221,12 +221,7 @@ def get_gender_token(gender: str, vocabulary: dict) -> int:
     Assumes that the gender starts with BG_GENDER_.
     """
     gender_key = f"BG_GENDER_{gender}"
-    try:
-        return vocabulary[gender_key]
-    except KeyError:
-        raise ValueError(
-            f"No gender token found in vocabulary. Searched for {gender_key}"
-        )
+    return vocabulary[gender_key]
 
 
 def get_pids(data: dd.DataFrame) -> List[str]:
