@@ -44,7 +44,7 @@ class TestExcludeFunctions(unittest.TestCase):
         }
 
         # Filtering by a gender not in the data
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             filter_patients_by_gender(self.data_dd, vocabulary, "Other")
 
     def test_filter_patients_by_gender_without_gender(self):
