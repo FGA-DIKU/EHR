@@ -180,9 +180,7 @@ class OutcomeHandler:
         logger.info("Synchronizing patients in data with timestamps.")
         pids = get_pids(data)
         timestamps = timestamps.reindex(pids)
-        timestamps = timestamps.astype(
-            pd.Int64Dtype()
-        )  # ensure that abspos is int even if there are NaNs
+        timestamps = timestamps.astype(pd.Float64Dtype())
         return timestamps
 
     def check_input(self, outcomes, exposures):
@@ -191,9 +189,6 @@ class OutcomeHandler:
         for df, name in [(outcomes, "outcomes"), (exposures, "exposures")]:
             if not required_columns.issubset(set(df.columns)):
                 raise ValueError(f"{name} must have columns PID and abspos.")
-        # make sure that timestamp can be represented as int
-        if not np.issubdtype(outcomes["abspos"], np.integer):
-            raise ValueError("abspos must be of type int.")
 
     @staticmethod
     def select_exposed_or_unexposed_patients(

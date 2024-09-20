@@ -31,7 +31,7 @@ class TestOutcomeHandler(unittest.TestCase):
             {
                 "PID": ["P1", "P2", "P3", "P4"],
                 "abspos": [
-                    1000,
+                    1000.0,
                     2000,
                     1500,
                     4000,
@@ -41,7 +41,7 @@ class TestOutcomeHandler(unittest.TestCase):
 
         # Create mock exposures DataFrame with abspos
         self.exposures = pd.DataFrame(
-            {"PID": ["P1", "P2", "P3"], "abspos": [500, 1200, 800]}  # Abspos values
+            {"PID": ["P1", "P2", "P3"], "abspos": [500.0, 1200, 800]}  # Abspos values
         )
 
     def test_check_input_valid(self):
@@ -107,7 +107,7 @@ class TestOutcomeHandler(unittest.TestCase):
         test_outcomes = pd.DataFrame(
             {
                 "PID": ["P1", "P2", "P3", "P4"],
-                "abspos": [520, 2000, 1500, 4000],  # P1's outcome is before follow-up
+                "abspos": [520.0, 2000, 1500, 4000],  # P1's outcome is before follow-up
             }
         )
 
@@ -135,7 +135,7 @@ class TestOutcomeHandler(unittest.TestCase):
 
         index_dates = pd.Series(
             {
-                "P1": 500,  # Abspos values
+                "P1": 500.0,  # Abspos values
                 "P2": 1200,
                 "P3": 800,
             }
@@ -143,26 +143,24 @@ class TestOutcomeHandler(unittest.TestCase):
 
         outcomes = pd.Series(
             {
-                "P1": 1000,  # Abspos values
+                "P1": 1000.0,  # Abspos values
                 "P2": 2000,
                 "P3": 1500,
             }
         )
-
+        import numpy as np
         expected_index_dates = pd.Series(
-            [500, 1200, 800, pd.NA],
+            [500.0, 1200.0, 800.0, np.nan],
             index=["P1", "P2", "P3", "P4"],
-            dtype=pd.Int64Dtype(),
+            dtype=pd.Float64Dtype(),
         )
         expected_outcomes = pd.Series(
-            [1000, 2000, 1500, pd.NA],
+            [1000.0, 2000, 1500, pd.NA],
             index=["P1", "P2", "P3", "P4"],
-            dtype=pd.Int64Dtype(),
+            dtype=pd.Float64Dtype(),
         )
-
         index_dates = self.handler.synchronize_patients(data, index_dates)
         outcomes = self.handler.synchronize_patients(data, outcomes)
-
         # Check that index_dates and outcomes are as expected
         pd.testing.assert_series_equal(index_dates, expected_index_dates)
         pd.testing.assert_series_equal(outcomes, expected_outcomes)
