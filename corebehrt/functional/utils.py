@@ -129,13 +129,6 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     return df[df.PID.isin(set(pids))]
 
 
-def exclude_pids(data: dd.DataFrame, pids_to_exclude: List[str]) -> dd.DataFrame:
-    """Excludes pids from data."""
-    if not pids_to_exclude:
-        return data
-    return data[~data["PID"].isin(set(pids_to_exclude))]
-
-
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     """
     Assumes that the table has a column named TIMESTAMP.

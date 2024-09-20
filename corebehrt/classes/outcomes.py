@@ -8,12 +8,12 @@ import dask.dataframe as dd
 
 from corebehrt.data.utils import Utilities
 from corebehrt.functional.matching import get_col_booleans
+from corebehrt.functional.exclude import exclude_pids_from_data
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     remove_missing_timestamps,
     get_first_event_by_pid,
     get_pids,
-    exclude_pids,
 )
 from corebehrt.functional.filter import filter_events_by_abspos
 
@@ -162,7 +162,7 @@ class OutcomeHandler:
             logger.info(
                 f"Remove {len(pids_outcome_pre_followup)} patients with outcome before start of follow-up."
             )
-            data = exclude_pids(data, pids_outcome_pre_followup)
+            data = exclude_pids_from_data(data, pids_outcome_pre_followup)
 
         # Step 8: Assign outcomes and censor outcomes to data
         index_dates = self.synchronize_patients(data, index_dates)
@@ -199,7 +199,7 @@ class OutcomeHandler:
         if select_patient_group == "exposed":
             data = filter_table_by_pids(data, exposed_patients)
         elif select_patient_group == "unexposed":
-            data = exclude_pids(data, exposed_patients)
+            data = exclude_pids_from_data(data, exposed_patients)
         else:
             raise ValueError(
                 f"select_patient_group must be one of None, exposed or unexposed, not {select_patient_group}"

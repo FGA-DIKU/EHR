@@ -9,7 +9,7 @@ from corebehrt.functional.exclude import (
     exclude_event_nans,
     exclude_incorrect_event_ages,
     exclude_short_sequences,
-    filter_table_by_exclude_pids,
+    exclude_pids_from_data,
 )
 from corebehrt.functional.utils import normalize_segments
 
@@ -45,4 +45,4 @@ class Excluder:
         self, data: dd.DataFrame, pids_path: Optional[str] = None
     ) -> dd.DataFrame:
         """Exclude pids from data."""
-        return filter_table_by_exclude_pids(data, pids_path)
+        return exclude_pids_from_data(data, pids_path)

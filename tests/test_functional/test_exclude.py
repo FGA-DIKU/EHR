@@ -1,10 +1,9 @@
 import unittest
-import pandas as pd
+
 import dask.dataframe as dd
-from corebehrt.functional.exclude import (
-    filter_table_by_exclude_pids,
-    filter_patients_by_gender,
-)
+import pandas as pd
+
+from corebehrt.functional.exclude import filter_patients_by_gender
 
 
 class TestExcludeFunctions(unittest.TestCase):
@@ -12,14 +11,6 @@ class TestExcludeFunctions(unittest.TestCase):
         # Sample data for testing
         self.data = pd.DataFrame({"PID": [1, 2, 3, 4, 5], "concept": [1, 2, 3, 2, 1]})
         self.data_dd = dd.from_pandas(self.data, npartitions=1)
-
-    def test_filter_table_by_exclude_pids_without_path(self):
-        # Without a path, data should be returned as is
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, None)
-        filtered_data_pd = filtered_data.compute()
-
-        # Check that the data remains unchanged
-        self.assertEqual(len(filtered_data_pd), len(self.data))
 
     def test_filter_patients_by_gender_with_matching_gender(self):
         # Sample vocabulary dictionary

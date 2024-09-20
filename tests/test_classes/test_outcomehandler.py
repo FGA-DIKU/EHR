@@ -149,6 +149,7 @@ class TestOutcomeHandler(unittest.TestCase):
             }
         )
         import numpy as np
+
         expected_index_dates = pd.Series(
             [500.0, 1200.0, 800.0, np.nan],
             index=["P1", "P2", "P3", "P4"],
