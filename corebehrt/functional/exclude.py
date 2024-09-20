@@ -30,11 +30,15 @@ def exclude_short_sequences(
     valid_pids = counts_df[counts_df["count"] >= min_len]["PID"]
     return filter_table_by_pids(df, valid_pids)
 
-def exclude_short_sequences_df(df: pd.DataFrame, min_len: int = 3, background_length: int = 0) -> pd.DataFrame:
+
+def exclude_short_sequences_df(
+    df: pd.DataFrame, min_len: int = 3, background_length: int = 0
+) -> pd.DataFrame:
     min_len = min_len + background_length
     counts_df = df.groupby("PID").size().reset_index(name="count")
     valid_pids = counts_df[counts_df["count"] >= min_len]["PID"]
     return df[df["PID"].isin(valid_pids)]
+
 
 def exclude_pids_from_data(data: dd.DataFrame, pids_to_exclude: list) -> dd.DataFrame:
     """
