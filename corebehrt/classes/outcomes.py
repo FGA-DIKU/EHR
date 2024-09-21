@@ -1,21 +1,22 @@
 import logging
+import operator
 from datetime import datetime
 from typing import Dict, List, Tuple
 
+import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-import dask.dataframe as dd
 
 from corebehrt.data.utils import Utilities
-from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.exclude import exclude_pids_from_data
+from corebehrt.functional.filter import filter_events_by_abspos
+from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
-    remove_missing_timestamps,
     get_first_event_by_pid,
     get_pids,
+    remove_missing_timestamps,
 )
-from corebehrt.functional.filter import filter_events_by_abspos
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +240,9 @@ class OutcomeHandler:
     ) -> Tuple[pd.Series, set]:
         """Get the first outcome event occurring at or after the follow_up date for each PID."""
         # First filter the outcomes based on the censor timestamps
-        filtered_outcomes = filter_events_by_abspos(outcomes, follow_up_dates, ">=")
+        filtered_outcomes = filter_events_by_abspos(
+            outcomes, follow_up_dates, operator.ge
+        )
         pids_w_outcome_pre_followup = set(outcomes["PID"].unique()) - set(
             filtered_outcomes["PID"].unique()
         )
