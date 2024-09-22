@@ -7,7 +7,6 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
-from corebehrt.data.utils import Utilities
 from corebehrt.functional.exclude import exclude_pids_from_data
 from corebehrt.functional.filter import filter_events_by_abspos
 from corebehrt.functional.matching import get_col_booleans
@@ -16,6 +15,7 @@ from corebehrt.functional.utils import (
     get_first_event_by_pid,
     get_pids,
     remove_missing_timestamps,
+    get_abspos_from_origin_point,
 )
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,12 @@ logger = logging.getLogger(__name__)
 class OutcomeMaker:
     def __init__(self, outcomes: dict, origin_point: dict):
         self.outcomes = outcomes
-        self.origin_point = origin_point
+        self.origin_point = self.get_origin_point(origin_point)
+
+    def get_origin_point(self, origin_point: dict) -> datetime:
+        if isinstance(origin_point, datetime):
+            return origin_point
+        return datetime(**origin_point)
 
     def __call__(
         self,
@@ -45,7 +50,7 @@ class OutcomeMaker:
                 timestamps = self.match_patient_info(patients_info, matches)
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
-            timestamps["abspos"] = Utilities.get_abspos_from_origin_point(
+            timestamps["abspos"] = get_abspos_from_origin_point(
                 timestamps["TIMESTAMP"], self.origin_point
             )
             timestamps["abspos"] = timestamps["abspos"].astype(int)
@@ -230,7 +235,7 @@ class OutcomeHandler:
         logger.warning(
             f"Using {self.ORIGIN_POINT} as origin point. Make sure is the same as used for feature creation."
         )
-        outcome_abspos = Utilities.get_abspos_from_origin_point(
+        outcome_abspos = get_abspos_from_origin_point(
             [index_datetime], self.ORIGIN_POINT
         )
         return pd.Series(outcome_abspos * len(pids), index=pids)

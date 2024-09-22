@@ -3,7 +3,8 @@ import unittest
 import pandas as pd
 
 from corebehrt.classes.outcomes import OutcomeMaker
-from corebehrt.data.utils import Utilities
+from corebehrt.functional.utils import get_abspos_from_origin_point
+from datetime import datetime
 
 
 class TestOutcomeMaker(unittest.TestCase):
@@ -26,7 +27,7 @@ class TestOutcomeMaker(unittest.TestCase):
         }
 
         # Mock origin point
-        self.origin_point = {"year": 2020, "month": 1, "day": 26}
+        self.origin_point = datetime(**{"year": 2020, "month": 1, "day": 26})
 
         # Create a mock concepts_plus DataFrame
         self.concepts_plus = pd.DataFrame(
@@ -78,7 +79,7 @@ class TestOutcomeMaker(unittest.TestCase):
             },
             index=[1],
         )
-        expected_outcome["abspos"] = Utilities.get_abspos_from_origin_point(
+        expected_outcome["abspos"] = get_abspos_from_origin_point(
             expected_outcome["TIMESTAMP"], self.origin_point
         )
         expected_outcome["abspos"] = expected_outcome["abspos"].astype(int)
@@ -91,7 +92,7 @@ class TestOutcomeMaker(unittest.TestCase):
         expected_censor = pd.DataFrame(
             {"PID": ["P1"], "TIMESTAMP": [pd.Timestamp("2020-01-10")]}, index=[0]
         )
-        expected_censor["abspos"] = Utilities.get_abspos_from_origin_point(
+        expected_censor["abspos"] = get_abspos_from_origin_point(
             expected_censor["TIMESTAMP"], self.origin_point
         )
         expected_censor["abspos"] = expected_censor["abspos"].astype(int)
