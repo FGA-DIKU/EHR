@@ -12,25 +12,28 @@ from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
 from corebehrt.common.utils import Data
 from corebehrt.data.dataset import MLMDataset
-from corebehrt.data.filter import CodeTypeFilter, PatientFilter
 from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.data_check import (check_max_segment,
-                                             log_features_in_sequence)
-from corebehrt.functional.exclude import (exclude_short_sequences,
-                                          filter_patients_by_gender,
-                                          exclude_pids_from_data)
-from corebehrt.functional.filter import (censor_data,
-                                         filter_patients_by_age_at_last_event)
+from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
+from corebehrt.functional.exclude import (
+    exclude_short_sequences,
+    filter_patients_by_gender,
+    exclude_pids_from_data,
+)
+from corebehrt.functional.filter import (
+    censor_data,
+    filter_patients_by_age_at_last_event,
+)
 from corebehrt.functional.load import load_pids, load_predefined_pids
-from corebehrt.functional.save import (save_data, save_pids_splits,
-                                       save_sequence_lengths)
-from corebehrt.functional.split import (load_train_val_split,
-                                        split_pids_into_train_val)
-from corebehrt.functional.utils import (filter_table_by_pids,
-                                        get_background_length_dd,
-                                        normalize_segments,
-                                        select_random_subset, truncate_data,
-                                        truncate_patient)
+from corebehrt.functional.save import save_data, save_pids_splits, save_sequence_lengths
+from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
+from corebehrt.functional.utils import (
+    filter_table_by_pids,
+    get_background_length_dd,
+    normalize_segments,
+    select_random_subset,
+    truncate_data,
+    truncate_patient,
+)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -45,9 +48,6 @@ class DatasetPreparer:
 
         run_folder = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
         self.saver = Saver(run_folder)
-
-        self.patient_filter = PatientFilter(cfg)
-        self.code_type_filter = CodeTypeFilter(cfg)
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
@@ -79,9 +79,7 @@ class DatasetPreparer:
         )
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
-            data = exclude_pids_from_data(
-                data, pids_to_exclude
-            )
+            data = exclude_pids_from_data(data, pids_to_exclude)
 
         predefined_splits = paths_cfg.get("predefined_splits", False)
         if predefined_splits:
@@ -215,9 +213,7 @@ class DatasetPreparer:
         # 2. Exclude pids
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
-            data = exclude_pids_from_data(
-                data, pids_to_exclude
-            )
+            data = exclude_pids_from_data(data, pids_to_exclude)
 
         # 3. Select predefined pids, remove the rest
         predefined_pids = self.cfg.paths.get("predefined_pids", False)
