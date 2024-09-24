@@ -29,7 +29,6 @@ from corebehrt.classes.excluder import Excluder
 from corebehrt.classes.tokenizer import EHRTokenizer
 
 from corebehrt.functional.split import split_pids_into_pt_ft_test
-from corebehrt.functional.convert import convert_to_sequences
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
@@ -100,29 +99,32 @@ def main_data(config_path):
     df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
 
-    # Convert to sequences for downstream pipeline steps
-    feats_pt, pids_pt = convert_to_sequences(df_pt)
-    feats_ft, pids_ft = convert_to_sequences(df_ft)
-    feats_test, pids_test = convert_to_sequences(df_test)
-
-    # Save all sequences
+    df_pt.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"),
+        index=False,
+    )
+    df_ft.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_finetune", "*.csv"),
+        index=False,
+    )
+    df_test.to_csv(
+        join(cfg.output_dir, tokenized_dir_name, "features_test", "*.csv"), index=False
+    )
+    torch.save(
+        df_pt.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"),
+    )
+    torch.save(
+        df_ft.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"),
+    )
+    torch.save(
+        df_test.compute()["PID"].unique().tolist(),
+        join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"),
+    )
     torch.save(
         tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
     )
-
-    torch.save(
-        feats_pt, join(cfg.output_dir, tokenized_dir_name, "features_pretrain.pt")
-    )
-    torch.save(pids_pt, join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"))
-
-    torch.save(
-        feats_ft, join(cfg.output_dir, tokenized_dir_name, "features_finetune.pt")
-    )
-    torch.save(pids_ft, join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"))
-
-    torch.save(feats_test, join(cfg.output_dir, tokenized_dir_name, "features_test.pt"))
-    torch.save(pids_test, join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"))
-    logger.info("Finished tokenizing")
 
     if cfg.env == "azure":
         features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
@@ -167,14 +169,14 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
             columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
         )
         concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
+        concept_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.to_csv(
             join(cfg.output_dir, "features", f"features.csv"),
             index=False,
             mode="a" if i > 0 else "w",
             header=i == 0,
         )
-        pids.extend(pids_batch)
+        pids.extend(concept_batch.PID.unique().tolist())
 
 
 if __name__ == "__main__":

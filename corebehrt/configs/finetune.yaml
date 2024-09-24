@@ -29,8 +29,6 @@ data:
   min_age: 0
   max_age: 70
   # min_len: null
-  # code_types:
-   # - D
   min_len: 2
   censorer:
    _target_: corebehrt.data_fixes.censor.EQ_Censorer

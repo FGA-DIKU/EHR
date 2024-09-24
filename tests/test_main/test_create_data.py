@@ -101,12 +101,3 @@ class TestCreateData(unittest.TestCase):
                 f"./tests/data/prepped/tokenized/pids_{suffix}.pt"
             )
             self.assertEqual(pids, expected_pids)
-
-            features_path = join(self.tokenized_dir, f"features_{suffix}.pt")
-            self.assertTrue(exists(features_path))
-            features = torch.load(features_path)
-            expected_features = torch.load(
-                f"./tests/data/prepped/tokenized/features_{suffix}.pt"
-            )
-            for key in features.keys() - {"concept"}:
-                self.assertEqual(features[key], expected_features[key])
