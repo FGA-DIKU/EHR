@@ -1,46 +1,74 @@
 import unittest
 
-import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 
-from corebehrt.functional.exclude import filter_patients_by_gender
+from corebehrt.classes.excluder import Excluder
 
 import dask.dataframe as dd
 
 
-class TestExcludeFunctions(unittest.TestCase):
+class TestExcluder(unittest.TestCase):
     def setUp(self):
+        self.excluder = Excluder(min_age=0, max_age=100, min_len=3, background_length=1)
+
         # Sample data for testing
-        self.data = pd.DataFrame({"PID": [1, 2, 3, 4, 5], "concept": [1, 2, 3, 2, 1]})
-        self.data_dd = dd.from_pandas(self.data, npartitions=1)
+        self.sample_df = pd.DataFrame(
+            {
+                "PID": [1, 1, 1, 2, 2, 3],
+                "age": [-1, 50, 120, 30, 80, np.nan],
+                "concept": ["A", "B", "C", "D", "E", "F"],
+                "segment": [0, 1, 2, 0, 1, 0],
+            }
+        )
 
-    def test_filter_patients_by_gender_with_matching_gender(self):
-        # Sample vocabulary dictionary
-        vocabulary = {
-            "BG_GENDER_Male": 1,
-            "BG_GENDER_Female": 2,
+        self.sample_list = [["A", "B", "C", "D"], ["E"], ["F", "G", "H", "I", "J"]]
+
+        self.sample_dict = {
+            "concept": [["A", "B", "C", "D"], ["E"], ["F", "G", "H", "I", "J"]],
+            "value": [[1, 2, 3, 4], [5], [6, 7, 8, 9, 10]],
         }
 
-        # Filtering by gender "Male"
-        filtered_data = filter_patients_by_gender(self.data_dd, vocabulary, "Male")
-        filtered_data_pd = filtered_data.compute()
+    def test_exclude_incorrect_events(self):
+        result = self.excluder.exclude_incorrect_events(self.sample_df)
+        self.assertEqual(len(result), 3)
+        self.assertTrue(all(result["age"].between(0, 100)))
+        self.assertFalse(result["age"].isnull().any())
 
-        # Only PIDs with the gender token 10 ("Male") should be included
-        self.assertTrue(set(filtered_data_pd["PID"]).issubset({1, 5}))
-        self.assertEqual(len(filtered_data_pd), 2)
+    def test_exclude_short_sequences_df(self):
+        df = pd.DataFrame(
+            {
+                "PID": [1, 1, 1, 1, 2, 2, 3],
+                "concept": ["A", "B", "C", "D", "E", "F", "G"],
+            }
+        )
+        result, kept_indices = self.excluder.exclude_short_sequences(df)
+        self.assertEqual(len(result), 4)
+        self.assertEqual(result["PID"].nunique(), 1)
+        self.assertEqual(len(kept_indices), 4)
 
-    def test_filter_patients_by_gender_with_no_matching_gender(self):
-        # Sample vocabulary dictionary
-        vocabulary = {
-            "BG_GENDER_Male": 1,
-            "BG_GENDER_Female": 2,
-        }
+    def test_exclude_short_sequences_list(self):
+        result, kept_indices = self.excluder.exclude_short_sequences(self.sample_list)
+        self.assertEqual(len(result), 2)
+        self.assertTrue(
+            all(
+                len(seq) >= self.excluder.min_len + self.excluder.background_length
+                for seq in result
+            )
+        )
+        self.assertEqual(len(kept_indices), 2)
 
-        # Filtering by a gender not in the data
-        with self.assertRaises(KeyError):
-            filter_patients_by_gender(self.data_dd, vocabulary, "Other")
+    def test_exclude_short_sequences_dict(self):
+        result, kept_indices = self.excluder.exclude_short_sequences(self.sample_dict)
+        self.assertEqual(len(result["concept"]), 2)
+        self.assertTrue(
+            all(
+                len(seq) >= self.excluder.min_len + self.excluder.background_length
+                for seq in result["concept"]
+            )
+        )
+        self.assertEqual(len(kept_indices), 2)
 
-<<<<<<<< HEAD:tests/test_classes/test_exclude.py
     def test_exclude_short_sequences_dd(self):
         df = pd.DataFrame(
             {
@@ -65,20 +93,10 @@ class TestExcludeFunctions(unittest.TestCase):
         result = self.excluder.exclude_incorrect_events(df)
         self.assertEqual(len(result), 3)
         self.assertEqual(result["segment"].tolist(), [0, 1, 0])
-========
-    def test_filter_patients_by_gender_without_gender(self):
-        # Without specifying gender, the data should be returned as is
-        vocabulary = {
-            "BG_GENDER_Male": 1,
-            "BG_GENDER_Female": 2,
-        }
->>>>>>>> main:tests/test_functional/test_exclude.py
 
-        filtered_data = filter_patients_by_gender(self.data_dd, vocabulary)
-        filtered_data_pd = filtered_data.compute()
-
-        # Check that the data remains unchanged
-        self.assertEqual(len(filtered_data_pd), len(self.data))
+    def test_invalid_input_type(self):
+        with self.assertRaises(TypeError):
+            self.excluder.exclude_short_sequences("invalid input")
 
     def test_exclude_pids(self):
         df = pd.DataFrame(
