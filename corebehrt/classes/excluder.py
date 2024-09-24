@@ -6,7 +6,7 @@ from corebehrt.functional.exclude import (
     exclude_incorrect_event_ages,
     exclude_event_nans,
     filter_table_by_exclude_pids,
-    exclude_short_sequences
+    exclude_short_sequences,
 )
 from corebehrt.functional.utils import normalize_segments
 from dask import dataframe as dd

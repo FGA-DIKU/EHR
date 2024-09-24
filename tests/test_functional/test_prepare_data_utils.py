@@ -48,7 +48,6 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
         self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd["PID"])))
         self.assertEqual(len(filtered_data_pd), 3)
 
-
     def test_normalize_segments_dask(self):
         sample_data = pd.DataFrame(
             {"PID": [1, 1, 1, 2, 2, 3], "segment": [10, 20, 30, 5, 7, 8]}

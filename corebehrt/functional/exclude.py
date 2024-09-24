@@ -5,8 +5,6 @@ from typing import Union, List, Tuple
 
 # New stuff
 import dask.dataframe as dd
-from corebehrt.functional.load import load_pids
-
 
 def exclude_incorrect_event_ages(
     df: pd.DataFrame, min_age: int = -1, max_age: int = 120
@@ -40,6 +38,7 @@ def exclude_short_sequences(
 def min_len_condition(c: list, min_len: int, background_length: int) -> bool:
     return len(c) >= min_len + background_length
 
+
 def exclude_short_sequences_dd(
     data: dd.DataFrame, min_len: int, background_length: int
 ) -> dd.DataFrame:
@@ -51,11 +50,12 @@ def exclude_short_sequences_dd(
         exclude_short_sequences_partition, min_len, background_length, meta=data
     )
 
+
 def exclude_short_sequences_partition(
     df: pd.DataFrame, min_len: int, background_length: int
 ) -> pd.DataFrame:
-    counts = df.groupby('PID').transform('count') 
-    df[counts['concept']>(min_len+background_length)]
+    counts = df.groupby("PID").transform("count")
+    df[counts["concept"] > (min_len + background_length)]
     return df
 
 
@@ -98,9 +98,7 @@ def exclude_short_sequences_dict(
     return filtered_x, kept_indices
 
 
-def filter_table_by_exclude_pids(
-    data: dd.DataFrame, excluded_pids
-) -> dd.DataFrame:
+def filter_table_by_exclude_pids(data: dd.DataFrame, excluded_pids) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that do not have a PID in pids

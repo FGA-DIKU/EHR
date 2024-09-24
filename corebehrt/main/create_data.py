@@ -125,7 +125,7 @@ def main_data(config_path):
     torch.save(
         tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
     )
-   
+
     if cfg.env == "azure":
         features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
         save_to_blobstore(
