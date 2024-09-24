@@ -38,8 +38,7 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
             len(subset_data), 5
         )  # Should return all data because n > len(data)
 
-    @patch("corebehrt.functional.exclude.load_pids")
-    def test_filter_table_by_exclude_pids_with_path(self, mock_load_pids):
+    def test_filter_table_by_exclude_pids_with_path(self):
         # Mock load_pids to return a list of PIDs to exclude
         loaded_pids = [1, 2]
         filtered_data = filter_table_by_exclude_pids(self.data_dd, loaded_pids)
