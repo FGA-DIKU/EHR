@@ -169,14 +169,14 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
             columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
         )
         concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch, pids_batch = excluder.exclude_short_sequences(concept_batch)
+        concept_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.to_csv(
             join(cfg.output_dir, "features", f"features.csv"),
             index=False,
             mode="a" if i > 0 else "w",
             header=i == 0,
         )
-        pids.extend(pids_batch)
+        pids.extend(concept_batch.PID.unique().tolist())
 
 
 if __name__ == "__main__":

@@ -77,17 +77,15 @@ def get_background_length(features: dict, vocabulary) -> int:
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
-def get_background_length_dd(features: dd.DataFrame, vocabulary: dict) -> int:
-    """Get the length of the background sentence"""
-    background_tokens = set(
-        [v for k, v in vocabulary.items() if k.startswith("BG_") or k.startswith("[")]
-    )
+def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
+    """Get the length of the background sentence, first SEP token included."""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
     first_pid_value = features["PID"].compute().iloc[0]
     first_pid = features[features["PID"] == first_pid_value]
     all_concepts_first_pid = first_pid["concept"].compute().tolist()
     background_length = len(set(all_concepts_first_pid) & background_tokens)
 
-    return background_length
+    return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
 def get_abspos_from_origin_point(
@@ -128,7 +126,7 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that have a PID in pids
     """
-    return df[df.PID.isin(pids)]
+    return df[df.PID.isin(set(pids))]
 
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
@@ -139,12 +137,12 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.TIMESTAMP.notna()]
 
 
-def get_first_event_by_pid(df: pd.DataFrame):
+def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID and TIMESTAMP.
+    Assumes that the table has a column named PID and abspos.
     Get the first event for each PID in the table.
     """
-    return df.groupby("PID").TIMESTAMP.min()
+    return df.groupby("PID")["abspos"].min()
 
 
 def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
@@ -208,3 +206,17 @@ def truncate_data(
     )
 
     return truncated_data
+
+
+def get_gender_token(gender: str, vocabulary: dict) -> int:
+    """
+    Retrieves the token for the specified gender from the vocabulary.
+    Assumes that the gender starts with BG_GENDER_.
+    """
+    gender_key = f"BG_GENDER_{gender}"
+    return vocabulary[gender_key]
+
+
+def get_pids(data: dd.DataFrame) -> List[str]:
+    """Get unique pids from data."""
+    return data["PID"].unique().compute().tolist()

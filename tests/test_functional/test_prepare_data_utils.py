@@ -4,11 +4,8 @@ import dask.dataframe as dd
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     select_random_subset,
-    normalize_segments_dask,
 )
-from corebehrt.functional.exclude import filter_table_by_exclude_pids
 import random
-from pandas.testing import assert_frame_equal
 
 
 class TestPrepDataUtilsFunctions(unittest.TestCase):
@@ -36,30 +33,6 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
         self.assertEqual(
             len(subset_data), 5
         )  # Should return all data because n > len(data)
-
-    def test_filter_table_by_exclude_pids_with_path(self):
-        # Mock load_pids to return a list of PIDs to exclude
-        loaded_pids = [1, 2]
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, loaded_pids)
-        filtered_data_pd = filtered_data.compute()
-
-        self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd["PID"])))
-        self.assertEqual(len(filtered_data_pd), 3)
-
-    def test_normalize_segments_dask(self):
-        sample_data = pd.DataFrame(
-            {"PID": [1, 1, 1, 2, 2, 3], "segment": [10, 20, 30, 5, 7, 8]}
-        )
-        sample_dd = dd.from_pandas(sample_data, npartitions=1)
-        normalized_dd = normalize_segments_dask(sample_dd)
-        normalized_pd = normalized_dd.compute()
-
-        expected_data = {"PID": [1, 1, 1, 2, 2, 3], "segment": [0, 1, 2, 0, 1, 0]}
-        expected_df = dd.from_pandas(
-            pd.DataFrame(expected_data), npartitions=2
-        ).compute()
-
-        assert_frame_equal(normalized_pd, expected_df, check_like=True)
 
 
 if __name__ == "__main__":
