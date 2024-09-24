@@ -207,7 +207,7 @@ class DatasetPreparer:
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
         if exclude_pids_path:
             excluded_pids = load_pids(exclude_pids_path)
-            data = filter_table_by_exclude_pids(
+            data = exclude_pids_from_data(
                 data, excluded_pids
             )
 
@@ -262,37 +262,3 @@ class DatasetPreparer:
 
         return train_data, val_data
 
-    def _retrieve_and_assign_outcomes(
-        self, data: Data, outcomes: Dict, censor_outcomes: Dict
-    ) -> Data:
-        """Retrieve outcomes and assign them to the data instance"""
-        data.outcomes = Utilities.select_and_order_outcomes_for_patients(
-            outcomes, data.pids, self.cfg.outcome.type
-        )
-        if self.cfg.outcome.get("censor_type") is not None:
-            data.censor_outcomes = Utilities.select_and_order_outcomes_for_patients(
-                censor_outcomes, data.pids, self.cfg.outcome.censor_type
-            )
-        # Save
-        save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
-        save_sequence_lengths(data, save_dir, desc="_pretrain")
-        save_data(data, vocab, save_dir, desc="_pretrain")
-
-        # Splitting data
-        if predefined_splits:
-            train_data, val_data = load_train_val_split(data, predefined_splits)
-        else:
-            train_data, val_data = split_pids_into_train_val(data, val_ratio)
-
-        # Save split
-        save_pids_splits(train_data, val_data, save_dir)
-
-        # Convert to sequences
-        train_features, train_pids = convert_to_sequences(train_data)
-        train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
-        val_features, val_pids = convert_to_sequences(val_data)
-        val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-
-        log_features_in_sequence(train_data)
-
-        return train_data, val_data
