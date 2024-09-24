@@ -41,17 +41,13 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
     @patch("corebehrt.functional.exclude.load_pids")
     def test_filter_table_by_exclude_pids_with_path(self, mock_load_pids):
         # Mock load_pids to return a list of PIDs to exclude
-        mock_load_pids.return_value = [1, 2]
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, "dummy_path")
+        loaded_pids = [1, 2]
+        filtered_data = filter_table_by_exclude_pids(self.data_dd, loaded_pids)
         filtered_data_pd = filtered_data.compute()
 
         self.assertFalse(set([1, 2]).intersection(set(filtered_data_pd["PID"])))
         self.assertEqual(len(filtered_data_pd), 3)
 
-    def test_filter_table_by_exclude_pids_without_path(self):
-        filtered_data = filter_table_by_exclude_pids(self.data_dd, None)
-        filtered_data_pd = filtered_data.compute()
-        self.assertEqual(len(filtered_data_pd), 5)
 
     def test_normalize_segments_dask(self):
         sample_data = pd.DataFrame(

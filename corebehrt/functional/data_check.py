@@ -12,10 +12,3 @@ def check_max_segment(data: dd.DataFrame, vocab_size: int) -> None:
             f"You've set vocab too low. Max segment {max_segment} >= type_vocab_size {vocab_size}\
                          Change it to {max_segment+1}."
         )
-
-
-def log_features_in_sequence(data: dict) -> None:
-    logger.info(f"Final features: {data.features.keys()}")
-    logger.info("Example features: ")
-    for k, v in data.features.items():
-        logger.info(f"{k}: {v[0]}")

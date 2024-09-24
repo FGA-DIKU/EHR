@@ -38,7 +38,7 @@ from corebehrt.functional.utils import (
     normalize_segments,
     get_background_length_dd,
 )
-from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
+from corebehrt.functional.data_check import check_max_segment
 from corebehrt.functional.save import save_sequence_lengths, save_data, save_pids_splits
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -235,9 +235,12 @@ class DatasetPreparer:
         )
 
         # 2. Exclude pids
-        data = filter_table_by_exclude_pids(
-            data, paths_cfg.get("filter_table_by_exclude_pids", None)
-        )
+        exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
+        if exclude_pids_path:
+            excluded_pids = load_pids(exclude_pids_path)
+            data = filter_table_by_exclude_pids(
+                data, excluded_pids
+            )
 
         # 3. Select predefined pids, remove the rest
         if predefined_splits:
@@ -282,8 +285,6 @@ class DatasetPreparer:
         train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
         val_features, val_pids = convert_to_sequences(val_data)
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-
-        log_features_in_sequence(train_data)
 
         return train_data, val_data
 

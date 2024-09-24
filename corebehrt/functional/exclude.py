@@ -26,9 +26,7 @@ def exclude_short_sequences(
     background_length: int = 0,
 ) -> Tuple[Union[pd.DataFrame, List[list], dict], List[int]]:
     if isinstance(x, dd.DataFrame):
-        return x.map_partitions(
-            exclude_short_sequences_dd, min_len, background_length, meta=x
-        )
+        return exclude_short_sequences_dd(x, min_len, background_length)
     elif isinstance(x, pd.DataFrame):
         return exclude_short_sequences_df(x, min_len, background_length)
     elif isinstance(x, list) and isinstance(x[0], list):
@@ -42,16 +40,28 @@ def exclude_short_sequences(
 def min_len_condition(c: list, min_len: int, background_length: int) -> bool:
     return len(c) >= min_len + background_length
 
-
-def exclude_short_sequences_dd(df, min_len, background_length):
-    return df.groupby("PID").filter(
-        lambda x: min_len_condition(x["concept"], min_len, background_length)
+def exclude_short_sequences_dd(
+    data: dd.DataFrame, min_len: int, background_length: int
+) -> dd.DataFrame:
+    """
+    Assumes that the table has a column named PID and concept.
+    Returns a new table with only the rows that have a concept with a length greater than min_len.
+    """
+    return data.map_partitions(
+        exclude_short_sequences_partition, min_len, background_length, meta=data
     )
+
+def exclude_short_sequences_partition(
+    df: pd.DataFrame, min_len: int, background_length: int
+) -> pd.DataFrame:
+    counts = df.groupby('PID').transform('count') 
+    df[counts['concept']>(min_len+background_length)]
+    return df
 
 
 def exclude_short_sequences_df(
-    df: pd.DataFrame, min_len: int, background_length: int
-) -> pd.DataFrame:
+    df: dd.DataFrame, min_len: int, background_length: int
+) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID and concept.
     Returns a new table with only the rows that have a concept with a length greater than min_len.
@@ -89,15 +99,11 @@ def exclude_short_sequences_dict(
 
 
 def filter_table_by_exclude_pids(
-    data: dd.DataFrame, pids_path: Union[None, str]
+    data: dd.DataFrame, excluded_pids
 ) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that do not have a PID in pids
     """
-    if pids_path is not None:
-        excluded_pids = load_pids(pids_path)
-        data = data[~data["PID"].isin(excluded_pids)]
-        return data
-    else:
-        return data
+    data = data[~data["PID"].isin(excluded_pids)]
+    return data

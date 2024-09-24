@@ -125,34 +125,7 @@ def main_data(config_path):
     torch.save(
         tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
     )
-    # torch.save(df_pt, join(cfg.output_dir, tokenized_dir_name, "features_pretrain.pt"))
-    # torch.save(df_ft, join(cfg.output_dir, tokenized_dir_name, "features_finetune.pt"))
-    # torch.save(df_test, join(cfg.output_dir, tokenized_dir_name, "features_test.pt"))
-
-    # # Convert to sequences for downstream pipeline steps
-    # feats_pt, pids_pt = convert_to_sequences(df_pt)
-    # feats_ft, pids_ft = convert_to_sequences(df_ft)
-    # feats_test, pids_test = convert_to_sequences(df_test)
-
-    # # Save all sequences
-    # torch.save(
-    #     tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
-    # )
-
-    # torch.save(
-    #     feats_pt, join(cfg.output_dir, tokenized_dir_name, "features_pretrain.pt")
-    # )
-    # torch.save(pids_pt, join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"))
-
-    # torch.save(
-    #     feats_ft, join(cfg.output_dir, tokenized_dir_name, "features_finetune.pt")
-    # )
-    # torch.save(pids_ft, join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"))
-
-    # torch.save(feats_test, join(cfg.output_dir, tokenized_dir_name, "features_test.pt"))
-    # torch.save(pids_test, join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"))
-    # logger.info("Finished tokenizing")
-
+   
     if cfg.env == "azure":
         features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
         save_to_blobstore(
