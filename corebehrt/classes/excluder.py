@@ -8,11 +8,10 @@ from dask import dataframe as dd
 from corebehrt.functional.exclude import (
     exclude_event_nans,
     exclude_incorrect_event_ages,
-    exclude_short_sequences_df,
     exclude_pids_from_data,
+    exclude_short_sequences_df,
 )
 from corebehrt.functional.utils import normalize_segments
-from dask import dataframe as dd
 
 
 class Excluder:
