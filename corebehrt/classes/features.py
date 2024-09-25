@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Union
 import pandas as pd
+import dask.dataframe as dd
 
 from corebehrt.functional.creators import (
     create_abspos,
@@ -8,6 +9,13 @@ from corebehrt.functional.creators import (
     create_background,
     create_death,
     create_segments,
+)
+from corebehrt.functional.creators_dask import (
+    create_abspos_dask,
+    create_age_in_years_dask,
+    create_background_dask,
+    create_death_dask,
+    create_segments_dask_fast,
 )
 
 
@@ -52,3 +60,35 @@ class FeatureCreator:
             concepts = pd.concat([concepts, death])
 
         return concepts
+
+class FeatureCreatorDask:
+    def __init__(
+        self,
+        save_path: str,
+        origin_point: Union[datetime, dict] = datetime(
+            2020, 1, 26
+        ),  # If given, compute ABSPOS
+        background_vars: list = ["GENDER"],
+    ):  # If given, add background variables
+        self.save_path = save_path
+        self.origin_point = (
+            datetime(**origin_point) if isinstance(origin_point, dict) else origin_point
+        )
+        self.background_vars = background_vars
+
+    def __call__(self, patients_info: dd.DataFrame, concepts: dd.DataFrame) -> dd.DataFrame:
+        background = create_background_dask(patients_info, self.background_vars)
+
+        death = create_death_dask(patients_info)
+
+        features = dd.concat([concepts, background, death])
+        features = create_age_in_years_dask(features)
+        features = create_abspos_dask(features, self.origin_point)
+
+        features = features.set_index('PID')
+        features.groupby('PID').apply(lambda x: x.sort_values('abspos'), meta=features)
+        features = create_segments_dask_fast(features)    
+        
+        result = features.groupby('PID').apply(lambda x: x.sort_values('abspos'), meta=features)
+        result.to_csv(self.save_path, index=False)
+
