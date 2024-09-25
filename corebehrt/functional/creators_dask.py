@@ -1,7 +1,7 @@
 import dask.dataframe as dd
 from datetime import datetime
 import pandas as pd
-import numpy as np
+
 
 def create_abspos_dask(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
     concepts['abspos'] = (concepts['TIMESTAMP'] - origin_point).dt.days*24
@@ -13,33 +13,6 @@ def create_age_in_years_dask(concepts: dd.DataFrame) -> dd.DataFrame:
     meta['age'] = 'timedelta64[ns]'
     concepts = concepts.map_partitions(assign_age, meta=meta) 
     concepts = concepts.drop(columns=['BIRTHDATE'])  
-    return concepts
-
-def create_segments_dask(concepts: dd.DataFrame) -> dd.DataFrame:
-    meta = concepts.dtypes.to_dict() 
-    meta['segment'] = 'int64'
-    concepts = concepts.map_partitions(assign_segment, meta=meta)   
-    #concepts = concepts.drop(columns=['ADMISSION_ID'])
-
-    # Step 2: Set 'PID' as the index for efficient merging
-    concepts = concepts.set_index('PID').persist()
-
-    # Step 3: Compute the maximum segment per 'PID'
-    max_segment = concepts[['segment']].groupby('PID').max()
-    max_segment = max_segment.rename(columns={'segment': 'max_segment'})
-
-    # Step 4: Merge using the index
-    concepts = concepts.merge(max_segment, left_index=True, right_index=True, how='left')
-
-    # Step 5: Assign maximum segment to 'Death' concepts
-    concepts['segment'] = concepts['segment'].where(
-        concepts['concept'] != 'Death', concepts['max_segment']
-    )
-
-    # Step 6: Reset index if necessary and drop columns
-    concepts = concepts.reset_index()
-    concepts = concepts.drop(columns=['max_segment', 'ADMISSION_ID'])
-
     return concepts
 
 def create_death_dask(patients_info: dd.DataFrame) -> dd.DataFrame:
@@ -62,54 +35,42 @@ def create_background_dask(patients_info: dd.DataFrame, background_vars: list) -
 
     return background_dask
 
+def create_segments_dask(concepts: dd.DataFrame) -> dd.DataFrame:
+    # We need to properly sort by abspos for correct segment creation
+    # Ensure Dask uses the 'tasks' shuffle method
+    concepts = concepts.shuffle(on='PID')
+    # Apply the function using map_partitions
+    concepts = concepts.map_partitions(sort_within_pid)    
+    concepts = concepts.map_partitions(assign_segments)
 
-def sort_within_partition(df):
-    return df.sort_values('abspos')
+    concepts = assign_segments_to_death(concepts)
+    concepts = concepts.drop(columns=['ADMISSION_ID'])
+    return concepts
+
+def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
+    # Compute the maximum segment per 'PID'
+    max_segment = df.groupby('PID')['segment'].max().reset_index()
+    max_segment = max_segment.rename(columns={'segment': 'max_segment'})
+    df = df.merge(max_segment, on='PID', how='left')
+    # Assign maximum segment to 'Death' concepts
+    df['segment'] = df['segment'].where(
+        df['concept'] != 'Death', df['max_segment']
+    )
+    df = df.drop(columns=['max_segment'])
+    return df
 
 def assign_age(df):
     df['age'] = (df['TIMESTAMP'] - df['BIRTHDATE']).dt.days // 365.25
     return df
 
-def create_segments_dask_fast(concepts: dd.DataFrame) -> dd.DataFrame:
-    # Step 1: Repartition data by 'PID'
-    concepts = concepts.repartition(partition_on='PID')
+def sort_within_pid(df):
+    # Sort by 'PID' and 'abspos' to ensure correct ordering
+    return df.sort_values(['PID', 'abspos'])
 
-    # Step 2: Assign segments within each partition
-    meta = concepts._meta.copy()
-    meta['segment'] = 'int64'
-    concepts = concepts.map_partitions(assign_segment_fast, meta=meta)
-
-    # Step 3: Compute the maximum segment per 'PID'
-    max_segment = concepts.groupby('PID')['segment'].max().reset_index()
-    max_segment = max_segment.rename(columns={'segment': 'max_segment'})
-
-    # Step 4: Merge the maximum segment back to the original DataFrame
-    concepts = concepts.merge(max_segment, on='PID', how='left')
-
-    # Step 5: Assign maximum segment to 'Death' concepts
-    concepts['segment'] = concepts['segment'].where(
-        concepts['concept'] != 'Death', concepts['max_segment']
-    )
-
-    # Step 6: Drop unnecessary columns
-    concepts = concepts.drop(columns=['max_segment', 'ADMISSION_ID'])
-
-    return concepts
-
-def assign_segment_fast(df):
-    # Since data is partitioned by 'PID', all rows in df have the same 'PID'
-    df = df.sort_values('abspos')
-    # Assign segments by factorizing 'ADMISSION_ID' in the order of 'abspos'
-    df['segment'] = pd.factorize(df['ADMISSION_ID'])[0]
-    return df
-
-
-
-def assign_segment(df):
+def assign_segments(df):
+    # Group by 'PID' and apply factorize to 'ADMISSION_ID'
     df['segment'] = df.groupby('PID')['ADMISSION_ID'].transform(lambda x: pd.factorize(x)[0])
     return df
-
-
 
 def death_partition(partition):
     # Filter rows where DEATHDATE is not NaT
@@ -152,7 +113,3 @@ def background_partition(partition, background_vars):
     return background
 
 
-def sort_partition(df):
-    return df.sort_values(by=['PID', 'TIMESTAMP'])
-def sort_partition_abspos(df):
-    return df.sort_values(by=['PID', 'abspos'])
