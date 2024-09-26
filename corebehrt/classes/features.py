@@ -10,7 +10,24 @@ from corebehrt.functional.creators import (
     create_segments,
 )
 
+
 class FeatureCreator:
+    """
+    A class to create features from patient information and concepts DataFrames.
+
+    Parameters
+    ----------
+    origin_point : datetime or dict, optional
+        The origin point for calculating absolute positions. If a dict is provided, it's used to create a datetime object.
+    background_vars : list, optional
+        List of background variable names to include.
+
+    Examples
+    --------
+    >>> feature_creator = FeatureCreator(origin_point=datetime(2020, 1, 26), background_vars=["GENDER", "AGE"])
+    >>> features = feature_creator(patients_info, concepts)
+    """
+
     def __init__(
         self,
         origin_point: Union[datetime, dict] = datetime(
@@ -23,7 +40,9 @@ class FeatureCreator:
         )
         self.background_vars = background_vars
 
-    def __call__(self, patients_info: dd.DataFrame, concepts: dd.DataFrame) -> dd.DataFrame:
+    def __call__(
+        self, patients_info: dd.DataFrame, concepts: dd.DataFrame
+    ) -> dd.DataFrame:
         background = create_background(patients_info, self.background_vars)
 
         death = create_death(patients_info)
@@ -31,7 +50,8 @@ class FeatureCreator:
         features = dd.concat([concepts, background, death])
         features = create_age_in_years(features)
         features = create_abspos(features, self.origin_point)
-        features = create_segments(features)    
-        
-        return features
+        features = create_segments(features)
 
+        features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
+
+        return features
