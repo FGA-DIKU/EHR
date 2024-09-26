@@ -124,18 +124,16 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
     """
     Assign the maximum segment to 'Death' concepts within each 'PID'.
     Parameters:
-        concepts with 'PID', 'concept', and 'segment' columns.
+        df with 'PID', 'concept', and 'segment' columns.
     Returns:
-        concepts with 'Death' concepts assigned to the maximum segment.
+        df with 'Death' concepts assigned to the maximum segment.
     """
     # Compute the maximum segment per 'PID'
-    max_segment = df.groupby("PID")["segment"].max().reset_index()
-    max_segment = max_segment.rename(columns={"segment": "max_segment"})
-    df = df.merge(max_segment, on="PID", how="left")
-    # Assign maximum segment to 'Death' concepts
+    max_segment = df.groupby("PID")["segment"].max().rename("max_segment")
+    # Merge and assign
+    df = df.merge(max_segment.reset_index(), on="PID", how="left")
     df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
-    df = df.drop(columns=["max_segment"])
-    return df
+    return df.drop(columns=["max_segment"])
 
 
 def _sort_and_assign_segments(df):
