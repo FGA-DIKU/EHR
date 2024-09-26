@@ -6,13 +6,12 @@ paths:
   save_features_dir_name: "features" # saves in this directory on azure. If not provided use run_name.
 loader:
   # can provide formatted data or features
-  data_dir:  ./example_data # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
+  features_dir: null # ./outputs/features/features
+  data_dir: ./example_data #./outputs/features_dask #./example_data #./outputs/features_dask # ./example_data # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
   concepts: [
-    diagnosis,
+    diagnose,
     medication,
   ]
-  batchsize: 64
-  chunksize: 300
 
 features:
   #ages: true
