@@ -43,6 +43,10 @@ class FeatureCreator:
     def __call__(
         self, patients_info: dd.DataFrame, concepts: dd.DataFrame
     ) -> dd.DataFrame:
+        concepts = concepts.merge(
+            patients_info[['PID', 'BIRTHDATE']], 
+            on='PID', how='left', broadcast=True)  # for age calculation
+        concepts = concepts.rename(columns={"CONCEPT": "concept"}) # use lowercase for feature names
         background = create_background(patients_info, self.background_vars)
 
         death = create_death(patients_info)
@@ -55,3 +59,4 @@ class FeatureCreator:
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
 
         return features
+    

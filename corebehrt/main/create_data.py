@@ -7,7 +7,7 @@ Input: Formatted Data
 - Tokenize
 - truncate train and val
 """
-import glob
+
 import os
 import shutil
 from os.path import join
@@ -23,6 +23,7 @@ from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.classes.loader import FormattedDataLoader
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
@@ -45,7 +46,7 @@ def main_data(config_path):
     ).azure_data_pretrain_setup()
     logger = DirectoryPreparer(config_path).prepare_directory(cfg)
 
-    if cfg.loader.get('features_dir', None) is None:
+    if cfg.loader.get("features_dir", None) is None:
         logger.info("Create and process features")
         create_and_save_features(
             Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
@@ -57,10 +58,7 @@ def main_data(config_path):
         features_dir = cfg.loader.features_dir
 
     logger.info(f"Load features from {features_dir}")
-    df = dd.read_csv(
-        join(features_dir,'*.part'), 
-        dtype={"concept": "str"}
-    )
+    df = dd.read_csv(join(features_dir, "*.part"), dtype={"concept": "str"})
     pids = df.PID.unique().compute().tolist()
     logger.info("Split into pretrain and finetune.")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -151,56 +149,23 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Returns a list of lists of pids for each batch
     """
     save_path = join(cfg.output_dir, cfg.paths.save_features_dir_name)
-    concepts, patients_info = load_concepts_and_patients_info(
-        cfg.loader.data_dir, cfg.loader.concepts)
-    
+    concepts, patients_info = FormattedDataLoader(
+        cfg.loader.data_dir, cfg.loader.concept_types
+    ).load()
+
     feature_creator = FeatureCreator(**cfg.features)
     features = feature_creator(patients_info, concepts)
 
     # features = excluder.exclude_incorrect_events(features)
-    # features = excluder.exclude_short_sequences(features)    
-    
-    result = features.groupby('PID').apply(lambda x: x.sort_values('abspos'), meta=features)
+    # features = excluder.exclude_short_sequences(features)
+
+    result = features.groupby("PID").apply(
+        lambda x: x.sort_values("abspos"), meta=features
+    )
     with ProgressBar():
         result.to_csv(save_path, index=False)
 
 
-def load_concepts_and_patients_info(data_dir, concepts):
-    concepts = dd.concat(
-        [load_concept(data_dir, concept) for concept in concepts]
-    ).set_index('PID')
-    patients_info = load_patients_info(data_dir)
-    concepts = concepts.merge(
-        patients_info[['PID', 'BIRTHDATE']], 
-        on='PID', how='left', broadcast=True)  # for age calculation
-    return concepts, patients_info
-
-def load_concept(data_dir, concept):
-    for file in glob.glob(join(data_dir, f"concept.{concept}.*")):
-        if file.endswith('.parquet'):
-            df = dd.read_parquet(file, parse_dates=['TIMESTAMP'])
-        elif file.endswith('.csv'):
-            df = dd.read_csv(file, parse_dates=['TIMESTAMP'])
-        else:
-            raise ValueError(f"Unknown file type: {file}")
-        df['TIMESTAMP'] = df['TIMESTAMP'].dt.tz_localize(None) # to prevent some strange error with timezone
-        df = df.rename(columns={"CONCEPT": "concept"})
-
-        return df
-
-def load_patients_info(data_dir):
-    for file in glob.glob(join(data_dir, "patients_info.*")):
-        kwargs = {'parse_dates':['BIRTHDATE'],
-        'dtype':{'DEATHDATE': 'object'},
-        'assume_missing':True
-          }  # This helps with missing values in integer columns 
-        if file.endswith('.parquet'):
-            df = dd.read_parquet(file, **kwargs)
-        elif file.endswith('.csv'):
-            df = dd.read_csv(file, **kwargs)
-        df["DEATHDATE"] = dd.to_datetime(df["DEATHDATE"], errors='coerce', infer_datetime_format=True)
-        return df
-    
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)
     main_data(args.config_path)
