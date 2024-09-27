@@ -17,6 +17,7 @@ warnings.filterwarnings(
     "ignore", category=DeprecationWarning, module="pandas.core.frame"
 )
 
+
 class TestCreateData(unittest.TestCase):
     def setUp(self):
         # Create tmp directory to use for output
