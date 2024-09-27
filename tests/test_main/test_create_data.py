@@ -7,7 +7,7 @@ import torch
 import numpy as np
 import random
 import shutil
-
+import logging
 from corebehrt.main.create_data import main_data
 
 
@@ -51,6 +51,9 @@ class TestCreateData(unittest.TestCase):
 
     def tearDown(self):
         # Remove all outputs
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+            handler.close()
         shutil.rmtree(self.root_dir)
 
     def test_create_data(self):
