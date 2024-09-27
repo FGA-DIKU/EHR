@@ -1,8 +1,8 @@
-from glob import glob
-from os.path import join
 from typing import List, Tuple
 
 import dask.dataframe as dd
+
+from corebehrt.functional.load import load_concept, load_patients_info
 
 
 class FormattedDataLoader:
@@ -30,9 +30,10 @@ class FormattedDataLoader:
 
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
-        concepts = dd.concat(
-            [self.load_concept(concept_type) for concept_type in self.concept_types]
-        )
+        concepts = [
+            self.load_concept(concept_type) for concept_type in self.concept_types
+        ]
+        concepts = dd.concat(concepts)
         self.check_concepts_columns(concepts)
 
         patients_info = self.load_patients_info()
@@ -60,20 +61,7 @@ class FormattedDataLoader:
         Expects BIRTHDATE and DEATHDATE columns to be present.
         Returns a dask dataframe.
         """
-        for file in glob(join(self.folder, "patients_info.*")):
-            kwargs = {
-                "parse_dates": ["BIRTHDATE"],
-                "dtype": {"DEATHDATE": "object"},
-                "assume_missing": True,
-            }  # This helps with missing values in integer columns
-            if file.endswith(".parquet"):
-                df = dd.read_parquet(file, **kwargs)
-            elif file.endswith(".csv"):
-                df = dd.read_csv(file, **kwargs)
-            df["DEATHDATE"] = dd.to_datetime(
-                df["DEATHDATE"], errors="coerce", infer_datetime_format=True
-            )
-            return df
+        return load_patients_info(self.folder)
 
     def load_concept(self, concept_type: str):
         """
@@ -81,14 +69,4 @@ class FormattedDataLoader:
         Expects TIMESTAMP column to be present.
         Returns a dask dataframe.
         """
-        for file in glob(join(self.folder, f"concept.{concept_type}.*")):
-            if file.endswith(".parquet"):
-                df = dd.read_parquet(file, parse_dates=["TIMESTAMP"])
-            elif file.endswith(".csv"):
-                df = dd.read_csv(file, parse_dates=["TIMESTAMP"])
-            else:
-                raise ValueError(f"Unknown file type: {file}")
-            df["TIMESTAMP"] = df["TIMESTAMP"].dt.tz_localize(
-                None
-            )  # to prevent tz-naive/tz-aware issues
-            return df
+        return load_concept(self.folder, concept_type)
