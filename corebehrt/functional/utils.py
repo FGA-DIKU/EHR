@@ -1,12 +1,12 @@
 """ Random utils, should be structered later """
 
-import pandas as pd
+import logging
 from datetime import datetime
-from typing import Union, List, Tuple, Callable
+from typing import Callable, List, Tuple, Union
 
 # New stuff
 import dask.dataframe as dd
-import logging
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 import random
@@ -15,12 +15,6 @@ import random
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
     if isinstance(x, pd.Series):
         return normalize_segments_series(x)
-    elif isinstance(x, pd.DataFrame):
-        return normalize_segments_df(x)
-    elif isinstance(x, list):
-        return normalize_segments_list(x)
-    elif isinstance(x, dict):
-        return normalize_segments_dict(x)
     elif isinstance(x, dd.DataFrame):
         return normalize_segments_dask(x)
     else:
@@ -29,21 +23,16 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
         )
 
 
-def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
-    return df.groupby("PID")["segment"].transform(
-        lambda x: normalize_segments_series(x)
-    )
-
-
 def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
-    def normalize_group(partition):
-        partition["segment"] = partition.groupby("PID")["segment"].transform(
-            normalize_segments_series
-        )
-        return partition
-
-    normalized_df = df.map_partitions(normalize_group, meta=df)
+    normalized_df = df.map_partitions(_normalize_group, meta=df)
     return normalized_df
+
+
+def _normalize_group(partition):
+    partition["segment"] = partition.groupby("PID")["segment"].transform(
+        normalize_segments_series
+    )
+    return partition
 
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
