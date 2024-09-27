@@ -13,7 +13,6 @@ import yaml
 from corebehrt.main.create_data import main_data
 
 
-
 class TestCreateData(unittest.TestCase):
     def setUp(self):
         # Create tmp directory to use for output
@@ -77,7 +76,7 @@ class TestCreateData(unittest.TestCase):
         # 2: Check that the features file is created as expected
         path = join(self.output_dir, "features")
         self.assertTrue(exists(path))
-        features = dd.read_csv(path)
+        features = dd.read_csv(join(path, "*.csv"))
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )

@@ -58,7 +58,7 @@ def main_data(config_path):
         features_dir = cfg.loader.features_dir
 
     logger.info(f"Load features from {features_dir}")
-    df = dd.read_csv(join(features_dir, "*.part"), dtype={"concept": "str"})
+    df = dd.read_csv(join(features_dir, "*.csv"), dtype={"concept": "str"})
     pids = df.PID.unique().compute().tolist()
     logger.info("Split into pretrain and finetune.")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -165,7 +165,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     )  # this can potentially be improved
 
     with ProgressBar():
-        result.to_csv(save_path, index=False)
+        result.to_csv(join(save_path, "*.csv"), index=False)
 
 
 if __name__ == "__main__":
