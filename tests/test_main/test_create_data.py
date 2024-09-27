@@ -2,7 +2,6 @@ import logging
 import random
 import shutil
 import unittest
-import warnings
 from os import makedirs
 from os.path import exists, join
 
@@ -13,9 +12,6 @@ import yaml
 
 from corebehrt.main.create_data import main_data
 
-warnings.filterwarnings(
-    "ignore", category=DeprecationWarning, module="pandas.core.frame"
-)
 
 
 class TestCreateData(unittest.TestCase):

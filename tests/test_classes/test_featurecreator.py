@@ -3,12 +3,6 @@ import pandas as pd
 import dask.dataframe as dd
 from datetime import datetime
 from corebehrt.classes.features import FeatureCreator
-import warnings
-
-# Suppress specific DeprecationWarnings from pandas
-warnings.filterwarnings(
-    "ignore", category=DeprecationWarning, module="pandas.core.frame"
-)
 
 
 class TestFeatureCreator(unittest.TestCase):
