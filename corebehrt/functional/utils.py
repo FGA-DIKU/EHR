@@ -81,7 +81,7 @@ def get_abspos_from_origin_point(
     timestamps: Union[pd.Series, List[datetime]], origin_point: datetime
 ) -> Union[pd.Series, List[float]]:
     """Get the absolute position in hours from the origin point"""
-    if isinstance(timestamps, dd.Series): # len can cause issues with dask
+    if isinstance(timestamps, dd.Series):  # len can cause issues with dask
         return (timestamps - origin_point).dt.total_seconds() / 60 / 60
     if isinstance(timestamps, pd.Series):
         if len(timestamps) == 0:

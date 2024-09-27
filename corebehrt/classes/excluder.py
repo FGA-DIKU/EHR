@@ -4,9 +4,11 @@ from typing import Optional
 
 from dask import dataframe as dd
 
-from corebehrt.functional.exclude import (exclude_incorrect_event_ages,
-                                          exclude_pids_from_data,
-                                          exclude_short_sequences)
+from corebehrt.functional.exclude import (
+    exclude_incorrect_event_ages,
+    exclude_pids_from_data,
+    exclude_short_sequences,
+)
 
 
 class Excluder:

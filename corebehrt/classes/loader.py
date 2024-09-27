@@ -34,10 +34,10 @@ class FormattedDataLoader:
             [self.load_concept(concept_type) for concept_type in self.concept_types]
         )
         self.check_concepts_columns(concepts)
-        
+
         patients_info = self.load_patients_info()
         self.check_patients_info_columns(patients_info)
-        
+
         return concepts, patients_info
 
     def check_concepts_columns(self, concepts: dd.DataFrame):
