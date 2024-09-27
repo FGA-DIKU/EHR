@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union
+from typing import Union, Set
 
 import dask.dataframe as dd
 
@@ -45,6 +45,10 @@ class FeatureCreator:
     def __call__(
         self, patients_info: dd.DataFrame, concepts: dd.DataFrame
     ) -> dd.DataFrame:
+
+        self.check_required_columns_concept(concepts)
+        self.check_required_columns_patients_info(patients_info)
+
         concepts = self.prepare_concepts(concepts, patients_info)
 
         background = create_background(patients_info, self.background_vars)
@@ -74,3 +78,23 @@ class FeatureCreator:
             columns={"CONCEPT": "concept"}
         )  # use lowercase for feature names
         return concepts
+
+    def check_required_columns_concept(self, df: dd.DataFrame) -> None:
+        """Check if required columns are present in concepts."""
+        required_columns = {"PID", "CONCEPT", "TIMESTAMP", "ADMISSION_ID"}
+        self.check_required_columns(df, required_columns, "concepts")
+
+    def check_required_columns_patients_info(self, df: dd.DataFrame) -> None:
+        """Check if required columns are present in patients_info."""
+        required_columns = {"PID", "BIRTHDATE", "DEATHDATE"}.union(
+            set(self.background_vars)
+        )
+        self.check_required_columns(df, required_columns, "patients_info")
+
+    @staticmethod
+    def check_required_columns(
+        df: dd.DataFrame, required_columns: Set[str], type_: str
+    ) -> None:
+        if not required_columns.issubset(set(df.columns)):
+            missing_columns = required_columns - set(df.columns)
+            raise ValueError(f"Missing columns in {type_}: {missing_columns}")
