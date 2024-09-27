@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Union
+
 import dask.dataframe as dd
 
 from corebehrt.functional.creators import (
@@ -9,6 +10,7 @@ from corebehrt.functional.creators import (
     create_death,
     create_segments,
 )
+from corebehrt.functional.exclude import exclude_event_nans
 
 
 class FeatureCreator:
@@ -48,22 +50,27 @@ class FeatureCreator:
         background = create_background(patients_info, self.background_vars)
         death = create_death(patients_info)
         features = dd.concat([concepts, background, death])
-        
+
         features = create_age_in_years(features)
         features = create_abspos(features, self.origin_point)
+
+        features = exclude_event_nans(features)
         features = create_segments(features)
 
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
 
         return features
 
-    def prepare_concepts(self, concepts: dd.DataFrame, patients_info: dd.DataFrame) -> dd.DataFrame:
+    def prepare_concepts(
+        self, concepts: dd.DataFrame, patients_info: dd.DataFrame
+    ) -> dd.DataFrame:
         """Set index, add BIRTHDATE to concepts for age calculation + renaming."""
-        concepts = concepts.set_index("PID") # for merging
-        
+        concepts = concepts.set_index("PID")  # for merging
+
         concepts = concepts.merge(
-            patients_info[['PID', 'BIRTHDATE']], 
-            on='PID', how='left', broadcast=True)  # for age calculation, each worker gets a copy of patients_info
-        concepts = concepts.rename(columns={"CONCEPT": "concept"}) # use lowercase for feature names
+            patients_info[["PID", "BIRTHDATE"]], on="PID", how="left", broadcast=True
+        )  # for age calculation, each worker gets a copy of patients_info
+        concepts = concepts.rename(
+            columns={"CONCEPT": "concept"}
+        )  # use lowercase for feature names
         return concepts
-    

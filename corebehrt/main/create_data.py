@@ -155,13 +155,15 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
 
     feature_creator = FeatureCreator(**cfg.features)
     features = feature_creator(patients_info, concepts)
-    # !TODO: Excluder should be adapted to dask
-    # features = excluder.exclude_incorrect_events(features)
-    # features = excluder.exclude_short_sequences(features)
+
+    features = excluder.exclude_incorrect_events(features)
+    #! Should we keep this? We're also excluding short sequences in prepare_data
+    features = excluder.exclude_short_sequences(features)
 
     result = features.groupby("PID").apply(
         lambda x: x.sort_values("abspos"), meta=features
-    )
+    )  # this can potentially be improved
+
     with ProgressBar():
         result.to_csv(save_path, index=False)
 

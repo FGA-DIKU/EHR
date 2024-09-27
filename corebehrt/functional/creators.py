@@ -1,8 +1,11 @@
-import dask.dataframe as dd
 from datetime import datetime
-import pandas as pd
 
-from corebehrt.functional.utils import get_abspos_from_origin_point
+import dask.dataframe as dd
+
+from corebehrt.functional.utils import (
+    get_abspos_from_origin_point,
+    normalize_segments_series,
+)
 
 
 def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
@@ -140,11 +143,7 @@ def _sort_and_assign_segments(df):
     """Sort by 'PID' and 'abspos' to ensure correct ordering and assign segments."""
     df = df.sort_values(["PID", "abspos"])
     # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(_factorize_admission_id)
+    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
+        normalize_segments_series
+    )
     return df
-
-
-def _factorize_admission_id(x):
-    """Factorize 'ADMISSION_ID' within each 'PID'."""
-    segments, _ = pd.factorize(x)
-    return segments
