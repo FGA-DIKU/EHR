@@ -1,15 +1,21 @@
-from os import makedirs
-from os.path import join, exists
-import yaml
-import unittest
-import pandas as pd
-import torch
-import numpy as np
+import logging
 import random
 import shutil
-import logging
+import unittest
+import warnings
+from os import makedirs
+from os.path import exists, join
+
+import dask.dataframe as dd
+import numpy as np
+import torch
+import yaml
+
 from corebehrt.main.create_data import main_data
 
+warnings.filterwarnings(
+    "ignore", category=DeprecationWarning, module="pandas.core.frame"
+)
 
 class TestCreateData(unittest.TestCase):
     def setUp(self):
@@ -26,10 +32,12 @@ class TestCreateData(unittest.TestCase):
             "env": "local",
             "output_dir": self.output_dir,
             "tokenized_dir_name": "tokenized",
-            "paths": {},
+            "paths": {
+                "save_features_dir_name": "features",
+            },
             "loader": {
                 "data_dir": "./tests/data/raw",
-                "concepts": ["diagnosis", "medication"],
+                "concept_types": ["diagnose", "medication"],
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},
@@ -70,14 +78,14 @@ class TestCreateData(unittest.TestCase):
         self.assertEqual(config, self.config)
 
         # 2: Check that the features file is created as expected
-        path = join(self.output_dir, "features", "features.csv")
+        path = join(self.output_dir, "features")
         self.assertTrue(exists(path))
-        features = pd.read_csv(path)
+        features = dd.read_csv(path)
         self.assertEqual(
-            features.columns.to_list(), ["PID", "concept", "age", "segment", "abspos"]
+            features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = pd.read_csv("./tests/data/prepped/features/features.csv")
+        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv")
         for idx, ((_, row), (_, expected_row)) in enumerate(
             zip(features.iterrows(), expected_features.iterrows())
         ):
