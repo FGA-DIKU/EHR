@@ -32,10 +32,12 @@ class FormattedDataLoader:
         """Loads the concepts and patients_info DataFrames."""
         concepts = dd.concat(
             [self.load_concept(concept_type) for concept_type in self.concept_types]
-        ).set_index("PID")
-        patients_info = self.load_patients_info(self.folder)
+        )
         self.check_concepts_columns(concepts)
+        
+        patients_info = self.load_patients_info()
         self.check_patients_info_columns(patients_info)
+        
         return concepts, patients_info
 
     def check_concepts_columns(self, concepts: dd.DataFrame):
@@ -58,7 +60,7 @@ class FormattedDataLoader:
         Expects BIRTHDATE and DEATHDATE columns to be present.
         Returns a dask dataframe.
         """
-        for file in glob.glob(join(self.folder, "patients_info.*")):
+        for file in glob(join(self.folder, "patients_info.*")):
             kwargs = {
                 "parse_dates": ["BIRTHDATE"],
                 "dtype": {"DEATHDATE": "object"},
@@ -79,7 +81,7 @@ class FormattedDataLoader:
         Expects TIMESTAMP column to be present.
         Returns a dask dataframe.
         """
-        for file in glob.glob(join(self.folder, f"concept.{concept_type}.*")):
+        for file in glob(join(self.folder, f"concept.{concept_type}.*")):
             if file.endswith(".parquet"):
                 df = dd.read_parquet(file, parse_dates=["TIMESTAMP"])
             elif file.endswith(".csv"):
@@ -88,5 +90,5 @@ class FormattedDataLoader:
                 raise ValueError(f"Unknown file type: {file}")
             df["TIMESTAMP"] = df["TIMESTAMP"].dt.tz_localize(
                 None
-            )  # to prevent some strange error with timezone
+            )  # to prevent tz-naive/tz-aware issues
             return df

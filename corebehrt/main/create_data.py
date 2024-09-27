@@ -155,7 +155,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
 
     feature_creator = FeatureCreator(**cfg.features)
     features = feature_creator(patients_info, concepts)
-
+    # !TODO: Excluder should be adapted to dask
     # features = excluder.exclude_incorrect_events(features)
     # features = excluder.exclude_short_sequences(features)
 

@@ -14,7 +14,7 @@ from corebehrt.functional.creators import (
 class FeatureCreator:
     """
     A class to create features from patient information and concepts DataFrames.
-
+    We create background, death, age, absolute position, and segments features.
     Parameters
     ----------
     origin_point : datetime or dict, optional
@@ -43,15 +43,12 @@ class FeatureCreator:
     def __call__(
         self, patients_info: dd.DataFrame, concepts: dd.DataFrame
     ) -> dd.DataFrame:
-        concepts = concepts.merge(
-            patients_info[['PID', 'BIRTHDATE']], 
-            on='PID', how='left', broadcast=True)  # for age calculation
-        concepts = concepts.rename(columns={"CONCEPT": "concept"}) # use lowercase for feature names
+        concepts = self.prepare_concepts(concepts, patients_info)
+
         background = create_background(patients_info, self.background_vars)
-
         death = create_death(patients_info)
-
         features = dd.concat([concepts, background, death])
+        
         features = create_age_in_years(features)
         features = create_abspos(features, self.origin_point)
         features = create_segments(features)
@@ -59,4 +56,14 @@ class FeatureCreator:
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
 
         return features
+
+    def prepare_concepts(self, concepts: dd.DataFrame, patients_info: dd.DataFrame) -> dd.DataFrame:
+        """Set index, add BIRTHDATE to concepts for age calculation + renaming."""
+        concepts = concepts.set_index("PID") # for merging
+        
+        concepts = concepts.merge(
+            patients_info[['PID', 'BIRTHDATE']], 
+            on='PID', how='left', broadcast=True)  # for age calculation, each worker gets a copy of patients_info
+        concepts = concepts.rename(columns={"CONCEPT": "concept"}) # use lowercase for feature names
+        return concepts
     
