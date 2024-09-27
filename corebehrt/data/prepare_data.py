@@ -101,7 +101,7 @@ class DatasetPreparer:
                 original_config = load_config(
                     join(paths_cfg.model_path, "finetune_config.yaml")
                 )
-            self.cfg.outcome.n_hours = original_config.outcome.n_hours
+            self.cfg.outcome.n_hours_censoring = original_config.outcome.n_hours_censoring
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
             outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
@@ -133,7 +133,7 @@ class DatasetPreparer:
             )
 
         # 4. Data censoring
-        censor_dates = index_dates + self.cfg.outcome.n_hours
+        censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data = censor_data(
             data,
             censor_dates,
