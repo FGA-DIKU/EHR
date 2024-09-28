@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pandas as pd
+
 
 class ConfigMock(Mock):
     def __contains__(self, item):
@@ -28,3 +30,12 @@ class ConfigMock(Mock):
 
     def get(self, item, default=None):
         return self.__getitem__(item) if self.__contains__(item) else default
+
+
+def compute_column_checksum(df: pd.DataFrame, column: str) -> str:
+    """
+    Compute a checksum for a specified column in the DataFrame.
+    """
+    encoded = df[column].apply(str)
+    encoded = encoded.apply(lambda x: hash(x))
+    return encoded.sum()

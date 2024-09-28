@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import torch
 import yaml
+from tests.helpers import compute_column_checksum
 
 from corebehrt.main.create_data import main_data
 
@@ -100,18 +101,14 @@ class TestCreateData(unittest.TestCase):
             check_names=False,
             obj="Event counts per PID do not match.",
         )
+
         # 2.3: checksum
-        features_checksum = features.drop(columns=["PID"]).apply(
-            lambda row: hash(tuple(row)), axis=1
-        )
-        expected_checksum = expected_features.drop(columns=["PID"]).apply(
-            lambda row: hash(tuple(row)), axis=1
-        )
-        self.assertListEqual(
-            features_checksum.tolist(),
-            expected_checksum.tolist(),
-            "Checksums of features do not match.",
-        )
+        for col in features.columns:
+            checksum = compute_column_checksum(features, col)
+            expected_checksum = compute_column_checksum(expected_features, col)
+            self.assertEqual(
+                checksum, expected_checksum, f"Checksum for {col} does not match."
+            )
 
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
