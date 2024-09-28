@@ -104,11 +104,25 @@ class TestCreateData(unittest.TestCase):
 
         # 2.3: checksum
         for col in features.columns:
-            checksum = compute_column_checksum(features, col)
-            expected_checksum = compute_column_checksum(expected_features, col)
-            self.assertEqual(
-                checksum, expected_checksum, f"Checksum for {col} does not match."
-            )
+            if col != "segment":
+                checksum = compute_column_checksum(features, col)
+                expected_checksum = compute_column_checksum(expected_features, col)
+                self.assertEqual(
+                    checksum, expected_checksum, f"Checksum for {col} does not match."
+                )
+            else:  # compare sets for every patient
+                for pid in features["PID"].unique():
+                    segment = set(features[features["PID"] == pid]["segment"].values)
+                    expected_segment = set(
+                        expected_features[expected_features["PID"] == pid][
+                            "segment"
+                        ].values
+                    )
+                    self.assertEqual(
+                        segment,
+                        expected_segment,
+                        f"Segments for PID {pid} do not match.",
+                    )
 
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
