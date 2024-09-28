@@ -7,6 +7,7 @@ from os.path import exists, join
 
 import dask.dataframe as dd
 import numpy as np
+import pandas as pd
 import torch
 import yaml
 
@@ -76,21 +77,41 @@ class TestCreateData(unittest.TestCase):
         # 2: Check that the features file is created as expected
         path = join(self.output_dir, "features")
         self.assertTrue(exists(path))
-        features = dd.read_csv(join(path, "*.csv"))
+        features = dd.read_csv(join(path, "*.csv")).compute()
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv")
-        for idx, ((_, row), (_, expected_row)) in enumerate(
-            zip(features.iterrows(), expected_features.iterrows())
-        ):
-            for column in features.columns:
-                self.assertEqual(
-                    row[column],
-                    expected_row[column],
-                    f"Unexpected value at row {idx}, column {column}",
-                )
+        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv").compute()
+
+        # 2.1: check patients
+        self.assertListEqual(
+            features["PID"].tolist(),
+            expected_features["PID"].tolist(),
+            "PID lists do not match.",
+        )
+
+        # 2.2: check number of entries per patient
+        features_group = features.groupby("PID").size()
+        expected_group = expected_features.groupby("PID").size()
+        pd.testing.assert_series_equal(
+            features_group,
+            expected_group,
+            check_names=False,
+            obj="Event counts per PID do not match.",
+        )
+        # 2.3: checksum
+        features_checksum = features.drop(columns=["PID"]).apply(
+            lambda row: hash(tuple(row)), axis=1
+        )
+        expected_checksum = expected_features.drop(columns=["PID"]).apply(
+            lambda row: hash(tuple(row)), axis=1
+        )
+        self.assertListEqual(
+            features_checksum.tolist(),
+            expected_checksum.tolist(),
+            "Checksums of features do not match.",
+        )
 
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
