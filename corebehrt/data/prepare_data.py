@@ -51,7 +51,7 @@ class DatasetPreparer:
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
-        predefined_splits = self.cfg.paths.get("predefined_pids", False)
+        predefined_splits = self.cfg.paths.get("predefined_splits", False)
         train_data, val_data = self._prepare_mlm_features(predefined_splits)
         train_dataset = MLMDataset(
             train_data.features, train_data.vocabulary, **self.cfg.data.dataset
@@ -185,14 +185,6 @@ class DatasetPreparer:
         return data
 
     def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
-        """
-        1. Load tokenized data
-        2. Optional: Remove background tokens
-        3. Exclude short sequences
-        4. Optional: Select subset of patients
-        5. Truncation
-        6. Normalize segments
-        """
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
@@ -211,15 +203,17 @@ class DatasetPreparer:
         )
 
         # 2. Exclude pids
-        if paths_cfg.get("exclude_pids", None):
-            pids_to_exclude = load_pids(paths_cfg.exclude_pids)
-            data = exclude_pids_from_data(data, pids_to_exclude)
+        exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
+        if exclude_pids_path:
+            excluded_pids = load_pids(exclude_pids_path)
+            data = exclude_pids_from_data(
+                data, excluded_pids
+            )
 
         # 3. Select predefined pids, remove the rest
-        predefined_pids = self.cfg.paths.get("predefined_pids", False)
-        if predefined_pids:
+        if predefined_splits:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = filter_table_by_pids(data, load_predefined_pids(predefined_pids))
+            data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
         data = exclude_short_sequences(
@@ -227,7 +221,7 @@ class DatasetPreparer:
         )
 
         # 4. Optional: Patient Subset Selection
-        if not predefined_pids and data_cfg.get("num_patients"):
+        if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 5. Truncation
@@ -239,7 +233,7 @@ class DatasetPreparer:
 
         # Check if max segment is larger than type_vocab_size
         check_max_segment(data, model_cfg.type_vocab_size)
-
+   
         # Save
         save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
         save_sequence_lengths(data, save_dir, desc="_pretrain")
@@ -260,6 +254,5 @@ class DatasetPreparer:
         val_features, val_pids = convert_to_sequences(val_data)
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
 
-        log_features_in_sequence(train_data)
-
         return train_data, val_data
+

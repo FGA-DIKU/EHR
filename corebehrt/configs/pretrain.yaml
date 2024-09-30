@@ -6,7 +6,7 @@ paths:
   type: diag
   run_name: test
   tokenized_dir: tokenized
-  # predefined_splits: outputs/pretraining/behrt_base
+  #predefined_splits: ./outputs/pretraining/test/
   
 data:
   dataset:
