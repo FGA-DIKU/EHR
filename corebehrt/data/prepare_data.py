@@ -188,7 +188,6 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
-        paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
         data = dd.read_csv(
