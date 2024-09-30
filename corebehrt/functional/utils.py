@@ -2,7 +2,14 @@
 
 import pandas as pd
 from datetime import datetime
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Callable
+
+# New stuff
+import dask.dataframe as dd
+import logging
+
+logger = logging.getLogger(__name__)
+import random
 
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
@@ -14,6 +21,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
         return normalize_segments_list(x)
     elif isinstance(x, dict):
         return normalize_segments_dict(x)
+    elif isinstance(x, dd.DataFrame):
+        return normalize_segments_dask(x)
     else:
         raise TypeError(
             "Invalid type for x, only pd.DataFrame, list, and dict are supported."
@@ -24,6 +33,17 @@ def normalize_segments_df(df: pd.DataFrame) -> pd.DataFrame:
     return df.groupby("PID")["segment"].transform(
         lambda x: normalize_segments_series(x)
     )
+
+
+def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
+    def normalize_group(partition):
+        partition["segment"] = partition.groupby("PID")["segment"].transform(
+            normalize_segments_series
+        )
+        return partition
+
+    normalized_df = df.map_partitions(normalize_group, meta=df)
+    return normalized_df
 
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
@@ -53,6 +73,17 @@ def get_background_length(features: dict, vocabulary) -> int:
         0
     ]  # Assume that all patients have the same background length
     background_length = len(set(example_concepts) & background_tokens)
+
+    return background_length + 2  # +2 for [CLS] and [SEP] tokens
+
+
+def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
+    """Get the length of the background sentence, first SEP token included."""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
+    first_pid_value = features["PID"].compute().iloc[0]
+    first_pid = features[features["PID"] == first_pid_value]
+    all_concepts_first_pid = first_pid["concept"].compute().tolist()
+    background_length = len(set(all_concepts_first_pid) & background_tokens)
 
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
@@ -95,7 +126,7 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that have a PID in pids
     """
-    return df[df.PID.isin(pids)]
+    return df[df.PID.isin(set(pids))]
 
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
@@ -106,9 +137,86 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.TIMESTAMP.notna()]
 
 
-def get_first_event_by_pid(df: pd.DataFrame):
+def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Assumes that the table has a column named PID and TIMESTAMP.
+    Assumes that the table has a column named PID and abspos.
     Get the first event for each PID in the table.
     """
-    return df.groupby("PID").TIMESTAMP.min()
+    return df.groupby("PID")["abspos"].min()
+
+
+def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
+    """
+    Assumes that the table has a column named PID.
+    Returns a new table with a random subset of n PIDs.
+    """
+    if n >= len(data):
+        return data
+    pids = data["PID"].unique().compute().tolist()
+    random.seed(42)
+    random.shuffle(pids)
+    pids = pids[:n]
+    return filter_table_by_pids(data, pids)
+
+
+def truncate_patient(
+    patient: pd.DataFrame, background_length: int, max_len: int, sep_token: str
+) -> pd.DataFrame:
+    """
+    Assumes patient is pd.DataFrame.
+    Truncate patient to max_len, keeping background.
+    """
+    if len(patient["concept"]) <= max_len:
+        return patient
+
+    truncation_length = max_len - background_length
+    if patient["concept"].iloc[-truncation_length] == sep_token:
+        truncation_length -= 1
+
+    truncated_patient = pd.concat(
+        [patient.iloc[:background_length], patient.iloc[-truncation_length:]],
+        ignore_index=True,
+    )
+
+    return truncated_patient
+
+
+def truncate_data(
+    data: dd.DataFrame,
+    max_len: int,
+    vocabulary: dict,
+    truncate_function: Callable = truncate_patient,
+) -> dd.DataFrame:
+    """
+    Assumes table has a column named PID.
+    Truncate the data to max_len. CLS and SEP tokens are kept if present.
+    Uses truncate_patient as default truncate function.
+    """
+    background_length = get_background_length_dd(data, vocabulary)
+
+    truncated_data = (
+        data.groupby("PID")[list(data.columns)]
+        .apply(
+            lambda x: truncate_function(
+                x, background_length, max_len, vocabulary.get("[SEP]")
+            ),
+            meta={col: dtype for col, dtype in data.dtypes.items()},
+        )
+        .reset_index(drop=True)
+    )
+
+    return truncated_data
+
+
+def get_gender_token(gender: str, vocabulary: dict) -> int:
+    """
+    Retrieves the token for the specified gender from the vocabulary.
+    Assumes that the gender starts with BG_GENDER_.
+    """
+    gender_key = f"BG_GENDER_{gender}"
+    return vocabulary[gender_key]
+
+
+def get_pids(data: dd.DataFrame) -> List[str]:
+    """Get unique pids from data."""
+    return data["PID"].unique().compute().tolist()
