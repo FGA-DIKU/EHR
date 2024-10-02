@@ -16,7 +16,7 @@ def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
     return df.dropna()
 
 
-def exclude_short_sequences(
+def exclude_short_sequences_dask(
     df: dd.DataFrame,
     min_len: int = 3,
     background_length: int = 0,
