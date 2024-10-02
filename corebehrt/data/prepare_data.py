@@ -15,7 +15,7 @@ from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
 from corebehrt.functional.exclude import (
-    exclude_short_sequences,
+    exclude_short_sequences_dask,
     filter_patients_by_gender,
     exclude_pids_from_data,
 )
@@ -147,7 +147,7 @@ class DatasetPreparer:
                 )
 
         # 6. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
@@ -217,7 +217,7 @@ class DatasetPreparer:
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
