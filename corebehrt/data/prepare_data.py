@@ -51,7 +51,7 @@ class DatasetPreparer:
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
-        predefined_splits = self.cfg.paths.get("predefined_pids", False)
+        predefined_splits = self.cfg.paths.get("predefined_splits", False)
         train_data, val_data = self._prepare_mlm_features(predefined_splits)
         train_dataset = MLMDataset(
             train_data.features, train_data.vocabulary, **self.cfg.data.dataset
@@ -235,11 +235,7 @@ class DatasetPreparer:
 
         # Check if max segment is larger than type_vocab_size
         check_max_segment(data, model_cfg.type_vocab_size)
-        data = normalize_segments(data)
-
-        # Check if max segment is larger than type_vocab_size
-        check_max_segment(data, model_cfg.type_vocab_size)
-
+   
         # Save
         save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
         save_sequence_lengths(data, save_dir, desc="_pretrain")
