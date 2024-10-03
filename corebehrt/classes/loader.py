@@ -3,6 +3,10 @@ from typing import List, Tuple
 import dask.dataframe as dd
 
 from corebehrt.functional.load import load_concept, load_patients_info
+from corebehrt.functional.utils import (
+    check_concepts_columns,
+    check_patients_info_columns,
+)
 
 
 class FormattedDataLoader:
@@ -31,31 +35,17 @@ class FormattedDataLoader:
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
         concepts = [
-            self.load_concept(concept_type) for concept_type in self.concept_types
+            self._load_concept(concept_type) for concept_type in self.concept_types
         ]
         concepts = dd.concat(concepts)
-        self.check_concepts_columns(concepts)
+        check_concepts_columns(concepts)
 
-        patients_info = self.load_patients_info()
-        self.check_patients_info_columns(patients_info)
+        patients_info = self._load_patients_info()
+        check_patients_info_columns(patients_info)
 
         return concepts, patients_info
 
-    def check_concepts_columns(self, concepts: dd.DataFrame):
-        """Checks if the concepts DataFrame has the required columns."""
-        required_columns = ["PID", "TIMESTAMP", "CONCEPT", "ADMISSION_ID"]
-        for column in required_columns:
-            if column not in concepts.columns:
-                raise ValueError(f"{column} not found in concepts columns.")
-
-    def check_patients_info_columns(self, patients_info: dd.DataFrame):
-        """Checks if the patients_info DataFrame has the required columns."""
-        required_columns = ["PID", "BIRTHDATE", "DEATHDATE"]
-        for column in required_columns:
-            if column not in patients_info.columns:
-                raise ValueError(f"{column} not found in patients_info columns.")
-
-    def load_patients_info(self) -> dd.DataFrame:
+    def _load_patients_info(self) -> dd.DataFrame:
         """
         Load patients_info data from formatted_data_dir.
         Expects BIRTHDATE and DEATHDATE columns to be present.
@@ -63,7 +53,7 @@ class FormattedDataLoader:
         """
         return load_patients_info(self.folder)
 
-    def load_concept(self, concept_type: str):
+    def _load_concept(self, concept_type: str):
         """
         Load concept data from formatted_data_dir.
         Expects TIMESTAMP column to be present.

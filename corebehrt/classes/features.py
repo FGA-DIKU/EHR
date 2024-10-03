@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, Set
+from typing import Union
 
 import dask.dataframe as dd
 
@@ -11,6 +11,10 @@ from corebehrt.functional.creators import (
     create_segments,
 )
 from corebehrt.functional.exclude import exclude_event_nans
+from corebehrt.functional.utils import (
+    check_concepts_columns,
+    check_patients_info_columns,
+)
 
 
 class FeatureCreator:
@@ -46,8 +50,8 @@ class FeatureCreator:
         self, patients_info: dd.DataFrame, concepts: dd.DataFrame
     ) -> dd.DataFrame:
 
-        self.check_required_columns_concept(concepts)
-        self.check_required_columns_patients_info(patients_info)
+        check_concepts_columns(concepts)
+        check_patients_info_columns(patients_info, self.background_vars)
 
         concepts = self.prepare_concepts(concepts, patients_info)
 
@@ -78,23 +82,3 @@ class FeatureCreator:
             columns={"CONCEPT": "concept"}
         )  # use lowercase for feature names
         return concepts
-
-    def check_required_columns_concept(self, df: dd.DataFrame) -> None:
-        """Check if required columns are present in concepts."""
-        required_columns = {"PID", "CONCEPT", "TIMESTAMP", "ADMISSION_ID"}
-        self.check_required_columns(df, required_columns, "concepts")
-
-    def check_required_columns_patients_info(self, df: dd.DataFrame) -> None:
-        """Check if required columns are present in patients_info."""
-        required_columns = {"PID", "BIRTHDATE", "DEATHDATE"}.union(
-            set(self.background_vars)
-        )
-        self.check_required_columns(df, required_columns, "patients_info")
-
-    @staticmethod
-    def check_required_columns(
-        df: dd.DataFrame, required_columns: Set[str], type_: str
-    ) -> None:
-        if not required_columns.issubset(set(df.columns)):
-            missing_columns = required_columns - set(df.columns)
-            raise ValueError(f"Missing columns in {type_}: {missing_columns}")
