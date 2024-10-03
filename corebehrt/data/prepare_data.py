@@ -101,7 +101,9 @@ class DatasetPreparer:
                 original_config = load_config(
                     join(paths_cfg.model_path, "finetune_config.yaml")
                 )
-            self.cfg.outcome.n_hours_censoring = original_config.outcome.n_hours_censoring
+            self.cfg.outcome.n_hours_censoring = (
+                original_config.outcome.n_hours_censoring
+            )
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
             outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
@@ -188,7 +190,6 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
-        paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
         data = dd.read_csv(
@@ -207,9 +208,7 @@ class DatasetPreparer:
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
         if exclude_pids_path:
             excluded_pids = load_pids(exclude_pids_path)
-            data = exclude_pids_from_data(
-                data, excluded_pids
-            )
+            data = exclude_pids_from_data(data, excluded_pids)
 
         # 3. Select predefined pids, remove the rest
         if predefined_splits:
@@ -228,14 +227,13 @@ class DatasetPreparer:
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
-        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
 
         # 6. Normalize segments
         data = normalize_segments(data)
 
         # Check if max segment is larger than type_vocab_size
         check_max_segment(data, model_cfg.type_vocab_size)
-   
+
         # Save
         save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
         save_sequence_lengths(data, save_dir, desc="_pretrain")
@@ -257,4 +255,3 @@ class DatasetPreparer:
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
 
         return train_data, val_data
-
