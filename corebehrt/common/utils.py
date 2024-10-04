@@ -37,18 +37,6 @@ def check_existing_splits(data_dir: str)-> bool:
         return True
     else:
         return False
-        
-def check_directory_for_features(dir_: str)-> bool:
-    """Check if features already exist in directory."""
-    features_dir = join(dir_, 'features')
-    if os.path.exists(features_dir):
-        if len(glob.glob(join(features_dir, 'features*.pt')))>0:
-            logger.warning(f"Features already exist in {features_dir}.")
-            logger.warning(f"Skipping feature creation.")
-        return True
-    else:
-        return False
-    
     
 def split_path(path_str: str) -> list:
     """Split path into its components."""

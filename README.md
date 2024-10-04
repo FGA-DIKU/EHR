@@ -1,4 +1,11 @@
-# EHR
+# COREBEHRT
+[![Pipeline test](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml)
+[![Unittests](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml)
+[![Formatting using black](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml)
+[![Lint using flake8](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml)
+
+
+**COREBEHRT** 
 
 ## Virtual environment
 For running the tests and pipelines, it is adviced to create a virtual environment, enable it, and install the requirements.

@@ -1,25 +1,22 @@
 import dask.dataframe as dd
 import pandas as pd
 
-from corebehrt.functional.utils import (
-    filter_table_by_pids,
-    get_gender_token,
-)
+from corebehrt.functional.utils import filter_table_by_pids, get_gender_token
 
 
 def exclude_incorrect_event_ages(
-    df: pd.DataFrame, min_age: int = -1, max_age: int = 120
-) -> pd.DataFrame:
+    df: dd.DataFrame, min_age: int = -1, max_age: int = 120
+) -> dd.DataFrame:
     """Exclude patients with incorrect ages (outside defined range)"""
     return df[(df["age"] >= min_age) & (df["age"] <= max_age)]
 
 
-def exclude_event_nans(df: pd.DataFrame) -> pd.DataFrame:
+def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
     """Exclude events (row) with (any) NaNs"""
     return df.dropna()
 
 
-def exclude_short_sequences(
+def exclude_short_sequences_dask(
     df: dd.DataFrame,
     min_len: int = 3,
     background_length: int = 0,

@@ -12,23 +12,18 @@ import os
 import shutil
 from os.path import join
 
-import torch
 import dask.dataframe as dd
+import torch
+from dask.diagnostics import ProgressBar
 
+from corebehrt.classes.excluder import Excluder
+from corebehrt.classes.features import FeatureCreator
+from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
-from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.common.utils import check_directory_for_features
-from corebehrt.data.concept_loader import ConceptLoaderLarge
-from tqdm import tqdm
-
-# New stuff
-from corebehrt.classes.features import FeatureCreator
-from corebehrt.classes.excluder import Excluder
-from corebehrt.classes.tokenizer import EHRTokenizer
-
 from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.classes.loader import FormattedDataLoader
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 BLOBSTORE = "PHAIR"
@@ -49,27 +44,23 @@ def main_data(config_path):
     cfg, _, mount_context = AzurePathContext(
         cfg, dataset_name=BLOBSTORE
     ).azure_data_pretrain_setup()
-
     logger = DirectoryPreparer(config_path).prepare_directory(cfg)
-    logger.info("Mount Dataset")
 
-    logger.info("Initialize Processors")
-    logger.info("Starting feature creation and processing")
-    if not check_directory_for_features(cfg.loader.data_dir):
+    if cfg.loader.get("features_dir", None) is None:
+        logger.info("Create and process features")
         create_and_save_features(
-            ConceptLoaderLarge(**cfg.loader),
             Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
             cfg,
-            logger,
         )
         logger.info("Finished feature creation and processing")
+        features_dir = join(cfg.output_dir, cfg.paths.save_features_dir_name)
     else:
-        logger.info("Using existing features!")
+        features_dir = cfg.loader.features_dir
 
-    df = dd.read_csv(
-        join(cfg.output_dir, "features", f"features.csv"), dtype={"concept": "str"}
-    )
+    logger.info(f"Load features from {features_dir}")
+    df = dd.read_csv(join(features_dir, "*.csv"), dtype={"concept": "str"})
     pids = df.PID.unique().compute().tolist()
+    logger.info("Split into pretrain and finetune.")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
         pids, **cfg.split_ratios
     )
@@ -98,7 +89,7 @@ def main_data(config_path):
     df_ft_and_test = tokenizer(df_ft_and_test)
     df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
-
+    logger.info("Save tokenized features")
     df_pt.to_csv(
         join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"),
         index=False,
@@ -152,31 +143,29 @@ def check_and_clear_directory(cfg, logger, tokenized_dir_name="tokenized"):
                 shutil.rmtree(file_path)
 
 
-def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> None:
+def create_and_save_features(excluder: Excluder, cfg) -> None:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
-    pids = []
-    for i, (concept_batch, patient_batch) in enumerate(
-        tqdm(conceptloader(), desc="Batch Process Data", file=TqdmToLogger(logger))
-    ):
-        feature_maker = FeatureCreator(
-            **cfg.features
-        )  # Otherwise appended to old features
-        concept_batch = feature_maker(concept_batch, patient_batch)
-        concept_batch.drop(
-            columns=["TIMESTAMP", "ADMISSION_ID"], inplace=True, errors="ignore"
-        )
-        concept_batch = excluder.exclude_incorrect_events(concept_batch)
-        concept_batch = excluder.exclude_short_sequences(concept_batch)
-        concept_batch.to_csv(
-            join(cfg.output_dir, "features", f"features.csv"),
-            index=False,
-            mode="a" if i > 0 else "w",
-            header=i == 0,
-        )
-        pids.extend(concept_batch.PID.unique().tolist())
+    save_path = join(cfg.output_dir, cfg.paths.save_features_dir_name)
+    concepts, patients_info = FormattedDataLoader(
+        cfg.loader.data_dir, cfg.loader.concept_types
+    ).load()
+
+    feature_creator = FeatureCreator(**cfg.features)
+    features = feature_creator(patients_info, concepts)
+
+    features = excluder.exclude_incorrect_events(features)
+    #! Should we keep this? We're also excluding short sequences in prepare_data
+    features = excluder.exclude_short_sequences(features)
+
+    result = features.groupby("PID").apply(
+        lambda x: x.sort_values("abspos"), meta=features
+    )  # this can potentially be improved
+
+    with ProgressBar():
+        result.to_csv(join(save_path, "*.csv"), index=False)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,16 @@
-from os import makedirs
-from os.path import join, exists
-import yaml
-import unittest
-import pandas as pd
-import torch
-import numpy as np
+import logging
 import random
 import shutil
+import unittest
+from os import makedirs
+from os.path import exists, join
+
+import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+import torch
+import yaml
+from tests.helpers import compute_column_checksum
 
 from corebehrt.main.create_data import main_data
 
@@ -26,10 +30,12 @@ class TestCreateData(unittest.TestCase):
             "env": "local",
             "output_dir": self.output_dir,
             "tokenized_dir_name": "tokenized",
-            "paths": {},
+            "paths": {
+                "save_features_dir_name": "features",
+            },
             "loader": {
                 "data_dir": "./tests/data/raw",
-                "concepts": ["diagnosis", "medication"],
+                "concept_types": ["diagnose", "medication"],
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},
@@ -51,6 +57,9 @@ class TestCreateData(unittest.TestCase):
 
     def tearDown(self):
         # Remove all outputs
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+            handler.close()
         shutil.rmtree(self.root_dir)
 
     def test_create_data(self):
@@ -67,23 +76,53 @@ class TestCreateData(unittest.TestCase):
         self.assertEqual(config, self.config)
 
         # 2: Check that the features file is created as expected
-        path = join(self.output_dir, "features", "features.csv")
+        path = join(self.output_dir, "features")
         self.assertTrue(exists(path))
-        features = pd.read_csv(path)
+        features = dd.read_csv(join(path, "*.csv")).compute()
         self.assertEqual(
-            features.columns.to_list(), ["PID", "concept", "age", "segment", "abspos"]
+            features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = pd.read_csv("./tests/data/prepped/features/features.csv")
-        for idx, ((_, row), (_, expected_row)) in enumerate(
-            zip(features.iterrows(), expected_features.iterrows())
-        ):
-            for column in features.columns:
+        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv").compute()
+
+        # 2.1: check patients
+        self.assertListEqual(
+            features["PID"].tolist(),
+            expected_features["PID"].tolist(),
+            "PID lists do not match.",
+        )
+
+        # 2.2: check number of entries per patient
+        features_group = features.groupby("PID").size()
+        expected_group = expected_features.groupby("PID").size()
+        pd.testing.assert_series_equal(
+            features_group,
+            expected_group,
+            check_names=False,
+            obj="Event counts per PID do not match.",
+        )
+
+        # 2.3: checksum
+        for col in features.columns:
+            if col != "segment":
+                checksum = compute_column_checksum(features, col)
+                expected_checksum = compute_column_checksum(expected_features, col)
                 self.assertEqual(
-                    row[column],
-                    expected_row[column],
-                    f"Unexpected value at row {idx}, column {column}",
+                    checksum, expected_checksum, f"Checksum for {col} does not match."
                 )
+            else:  # compare sets for every patient
+                for pid in features["PID"].unique():
+                    segment = set(features[features["PID"] == pid]["segment"].values)
+                    expected_segment = set(
+                        expected_features[expected_features["PID"] == pid][
+                            "segment"
+                        ].values
+                    )
+                    self.assertEqual(
+                        segment,
+                        expected_segment,
+                        f"Segments for PID {pid} do not match.",
+                    )
 
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")

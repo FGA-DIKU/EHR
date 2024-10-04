@@ -76,7 +76,6 @@ class DirectoryPreparer:
     def prepare_directory(self, cfg: Config):
         """Creates output directory and copies config file"""
         logger = self.create_directory_and_copy_config(cfg.output_dir, 'data_config.yaml')
-        os.makedirs(join(cfg.output_dir, 'features'), exist_ok=True)
         os.makedirs(join(cfg.output_dir, cfg.tokenized_dir_name), exist_ok=True)
         copyfile(self.config_path, join(cfg.output_dir, cfg.tokenized_dir_name, 'data_config.yaml'))
         return logger

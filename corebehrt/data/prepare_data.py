@@ -15,7 +15,7 @@ from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
 from corebehrt.functional.exclude import (
-    exclude_short_sequences,
+    exclude_short_sequences_dask,
     filter_patients_by_gender,
     exclude_pids_from_data,
 )
@@ -101,7 +101,9 @@ class DatasetPreparer:
                 original_config = load_config(
                     join(paths_cfg.model_path, "finetune_config.yaml")
                 )
-            self.cfg.outcome.n_hours = original_config.outcome.n_hours
+            self.cfg.outcome.n_hours_censoring = (
+                original_config.outcome.n_hours_censoring
+            )
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
             outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
@@ -133,7 +135,7 @@ class DatasetPreparer:
             )
 
         # 4. Data censoring
-        censor_dates = index_dates + self.cfg.outcome.n_hours
+        censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data = censor_data(
             data,
             censor_dates,
@@ -147,7 +149,7 @@ class DatasetPreparer:
                 )
 
         # 6. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
@@ -206,9 +208,7 @@ class DatasetPreparer:
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
         if exclude_pids_path:
             excluded_pids = load_pids(exclude_pids_path)
-            data = exclude_pids_from_data(
-                data, excluded_pids
-            )
+            data = exclude_pids_from_data(data, excluded_pids)
 
         # 3. Select predefined pids, remove the rest
         if predefined_splits:
@@ -216,7 +216,7 @@ class DatasetPreparer:
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
@@ -233,7 +233,7 @@ class DatasetPreparer:
 
         # Check if max segment is larger than type_vocab_size
         check_max_segment(data, model_cfg.type_vocab_size)
-   
+
         # Save
         save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
         save_sequence_lengths(data, save_dir, desc="_pretrain")
@@ -255,4 +255,3 @@ class DatasetPreparer:
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
 
         return train_data, val_data
-
