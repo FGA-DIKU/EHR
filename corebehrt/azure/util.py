@@ -54,9 +54,6 @@ def setup_job(
     inputs = flatten_definitions(inputs)
     outputs = flatten_definitions(outputs)
 
-    # Append to command
-    cmd += "".join(" --" + a + " ${{inputs." + a + "}}" for a in inputs)
-
     # Set values from config or default
     def _lookup_cfg(arg, cfg, default=None):
         for step in arg.split("."):
@@ -69,16 +66,16 @@ def setup_job(
     input_values = dict()
     for arg, definition in inputs.items():
         value = _lookup_cfg(arg, config, definition.get("default"))
-        if definition["type"] == "uri_folder":
-            # Create Azure Input object
-            value = Input(path=value, type="uri_folder")
-        elif definition.get("action") == "append":
+        if definition.get("action") == "append":
             assert type(value) is list
             for i, value_i in enumerate(value):
                 arg_i = arg + "_" + str(i)
-                cmd += " --" + arg_i + " ${{inputs." + arg_i + "}}"
+                cmd += " --" + arg + " ${{inputs." + arg_i + "}}"
                 input_values[arg_i] = value_i
         else:
+            if definition["type"] == "uri_folder":
+                # Create Azure Input object
+                value = Input(path=value, type="uri_folder")
             cmd += " --" + arg + " ${{inputs." + arg + "}}"
             input_values[arg] = value
     ## Outputs
@@ -96,9 +93,9 @@ def setup_job(
     return command(
         code=".",
         command=cmd,
-        inputs=inputs,
-        outputs=outputs,
-        environment="PHAIR",
+        inputs=input_values,
+        outputs=output_values,
+        environment="PHAIR:26",
         compute="CPU-20-LP",
         name=name,
     )

@@ -3,6 +3,8 @@ import argparse
 from corebehrt.common.config import load_config
 from corebehrt.azure import components as C
 
+from . import util
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="corebehrt.azure", description="Run corebehrt jobs and pipelines in Azure"
