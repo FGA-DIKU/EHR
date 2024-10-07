@@ -56,7 +56,6 @@ def setup_job(
 
     # Append to command
     cmd += "".join(" --" + a + " ${{inputs." + a + "}}" for a in inputs)
-    cmd += "".join(" --" + a + " ${{inputs." + a + "}}" for a in outputs)
 
     # Set values from config or default
     def _lookup_cfg(arg, cfg, default=None):
@@ -73,7 +72,7 @@ def setup_job(
         if definition["type"] == "uri_folder":
             # Create Azure Input object
             value = Input(path=value, type="uri_folder")
-        if definition["action"] == "append":
+        elif definition.get("action") == "append":
             assert type(value) is list
             for i, value_i in enumerate(value):
                 arg_i = arg + "_" + str(i)
@@ -91,6 +90,7 @@ def setup_job(
             value = Output(path=value, type="uri_folder")
             if register_output is not None:
                 value.name = register_output
+        cmd += " --" + arg + " ${{outputs." + arg + "}}"
         output_values[arg] = value
 
     return command(
