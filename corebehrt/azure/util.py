@@ -2,11 +2,32 @@ import argparse
 import os
 import yaml
 
-from azure.ai.ml import MLClient, command, Input, Output
-from azure.identity import DefaultAzureCredential
+AZURE_AVAILABLE = False
+
+try:
+    from azure.ai.ml import MLClient, command, Input, Output
+    from azure.identity import DefaultAzureCredential
+
+    AZURE_AVAILABLE = True
+except:
+    pass
 
 
-def ml_client() -> MLClient:
+def is_azure_available() -> bool:
+    global AZURE_AVAILABLE
+    return AZURE_AVAILABLE
+
+
+def check_azure() -> None:
+    if not is_azure_available():
+        raise Exception("Azure modules not found!")
+
+
+CFG_SEP = "__"
+
+
+def ml_client() -> "MLClient":
+    check_azure()
     return MLClient.from_config(DefaultAzureCredential())
 
 
@@ -18,7 +39,7 @@ def flatten_definitions(definition_dct: dict):
         else:
             flat_sub = flatten_definitions(definition)
             for subkey, subdef in flat_sub.items():
-                result[f"{key}.{subkey}"] = subdef
+                result[f"{key}{CFG_SEP}{subkey}"] = subdef
     return result
 
 
@@ -26,7 +47,7 @@ def unflatten(dct: dict) -> dict:
     tree = dict()
     for key, value in dct.items():
         node = tree
-        path = key.split(".")
+        path = key.split(CFG_SEP)
         for step in path[:-1]:
             if step not in node:
                 node[step] = dict()
@@ -36,6 +57,7 @@ def unflatten(dct: dict) -> dict:
 
 
 def setup_component(args):
+    check_azure()
     pass
 
 
@@ -47,6 +69,8 @@ def setup_job(
     config: any,
     register_output: str = None,
 ):
+    check_azure()
+
     # Prepare command
     cmd = f"python -m corebehrt.azure.components.{job}"
 
@@ -56,7 +80,7 @@ def setup_job(
 
     # Set values from config or default
     def _lookup_cfg(arg, cfg, default=None):
-        for step in arg.split("."):
+        for step in arg.split(CFG_SEP):
             if step not in cfg:
                 return default
             cfg = cfg[step]
@@ -102,6 +126,7 @@ def setup_job(
 
 
 def run_job(job, experiment: str):
+    check_azure()
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
