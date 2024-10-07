@@ -1,6 +1,7 @@
 import argparse
 import os
 import yaml
+from datetime import datetime
 
 AZURE_AVAILABLE = False
 
@@ -114,14 +115,15 @@ def setup_job(
         cmd += " --" + arg + " ${{outputs." + arg + "}}"
         output_values[arg] = value
 
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     return command(
         code=".",
         command=cmd,
         inputs=input_values,
         outputs=output_values,
-        environment="PHAIR:26",
+        environment="PHAIR:23",
         compute="CPU-20-LP",
-        name=name,
+        name=f"{name}_{ts}",
     )
 
 

@@ -75,7 +75,7 @@ def component():
 
 def job(config, register_output: str = None):
     return util.setup_job(
-        "CoreBEHRT: Create data",
+        "create_data",
         job="create_data",
         inputs=INPUTS,
         outputs=OUTPUTS,
