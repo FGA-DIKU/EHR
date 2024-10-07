@@ -11,7 +11,6 @@ if __name__ == "__main__":
     )
 
     # Global options
-    parser.add_argument("EXPERIMENT", type=str, help="Experiment to run the job in.")
     parser.add_argument("-l", "--loglevel", metavar="LVL", type=str, help="Log level")
     parser.add_argument(
         "-r",
@@ -20,6 +19,25 @@ if __name__ == "__main__":
         const=True,
         default=False,
         help="Forces re-run of all jobs, even if inputs have not changed.",
+    )
+    parser.add_argument(
+        "-e",
+        "--experiment",
+        type=str,
+        default="corebehrt_runs",
+        help="Experiment to run the job in.",
+    )
+    parser.add_argument(
+        "-c",
+        "--compute",
+        type=str,
+        help="Compute target to use. Default depends on job/component.",
+    )
+    parser.add_argument(
+        "-o",
+        "--register_output",
+        type=str,
+        help="If set, it is used as a name for registering the output as a data asset.",
     )
 
     # Sub-parsers
@@ -55,11 +73,14 @@ if __name__ == "__main__":
             else args.config
         )
         cfg = load_config(cfg_path)
+
         # Setup job
-        job = {"create_data": C.create_data.job}[args.JOB](cfg)
+        job = {"create_data": C.create_data.job}[args.JOB](
+            cfg, compute=args.compute, register_output=args.register_output
+        )
 
         # Start job
-        util.run_job(job, args.EXPERIMENT)
+        util.run_job(job, args.experiment)
     elif args.call_type == "pipeline":
         assert False
     else:

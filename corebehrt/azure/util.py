@@ -68,9 +68,11 @@ def setup_job(
     inputs: dict,
     outputs: dict,
     config: any,
+    compute: str = None,
     register_output: str = None,
 ):
     check_azure()
+    assert compute is not None
 
     # Prepare command
     cmd = f"python -m corebehrt.azure.components.{job}"
@@ -122,7 +124,7 @@ def setup_job(
         inputs=input_values,
         outputs=output_values,
         environment="PHAIR:23",
-        compute="CPU-20-LP",
+        compute=compute,
         name=f"{name}_{ts}",
     )
 

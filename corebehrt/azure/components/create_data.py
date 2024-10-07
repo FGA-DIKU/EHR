@@ -73,14 +73,15 @@ def component():
     return util.setup_component(ARGS)
 
 
-def job(config, register_output: str = None):
+def job(config, **kwargs):
+    kwargs["compute"] = kwargs.get("compute", "CPU-20-LP")
     return util.setup_job(
         "create_data",
         job="create_data",
         inputs=INPUTS,
         outputs=OUTPUTS,
         config=config,
-        register_output=register_output,
+        **kwargs,
     )
 
 
