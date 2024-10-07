@@ -73,7 +73,15 @@ def setup_job(
         if definition["type"] == "uri_folder":
             # Create Azure Input object
             value = Input(path=value, type="uri_folder")
-        input_values[arg] = value
+        if definition["action"] == "append":
+            assert type(value) is list
+            for i, value_i in enumerate(value):
+                arg_i = arg + "_" + str(i)
+                cmd += " --" + arg_i + " ${{inputs." + arg_i + "}}"
+                input_values[arg_i] = value_i
+        else:
+            cmd += " --" + arg + " ${{inputs." + arg + "}}"
+            input_values[arg] = value
     ## Outputs
     output_values = dict()
     for arg, definition in outputs.items():
