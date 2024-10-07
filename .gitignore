@@ -2,3 +2,5 @@
 outputs/
 corebehrt.egg-info/
 .venv
+.amlignore
+**.amltmp
