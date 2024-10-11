@@ -19,44 +19,49 @@ class BaseEHRDataset(Dataset):
     def __getitem__(self, index):
         return self._getpatient(index)
 
+
 class MLMDataset(BaseEHRDataset):
     def __init__(
         self,
         features: dict,
         vocabulary: dict,
-        select_ratio:float,
-        masking_ratio:float=0.8,
-        replace_ratio:float=0.1,
-        ignore_special_tokens:bool=True,
+        select_ratio: float,
+        masking_ratio: float = 0.8,
+        replace_ratio: float = 0.1,
+        ignore_special_tokens: bool = True,
     ):
         super().__init__(features)
         self.vocabulary = vocabulary
-        self.masker = ConceptMasker(self.vocabulary, select_ratio, masking_ratio, replace_ratio, ignore_special_tokens)
+        self.masker = ConceptMasker(
+            self.vocabulary,
+            select_ratio,
+            masking_ratio,
+            replace_ratio,
+            ignore_special_tokens,
+        )
 
-    def __getitem__(self, index: int)->dict:
+    def __getitem__(self, index: int) -> dict:
         patient = super().__getitem__(index)
         masked_concepts, target = self.masker.mask_patient_concepts(patient["concept"])
         patient["concept"] = masked_concepts
         patient["target"] = target
         return patient
 
-    
+
 class BinaryOutcomeDataset(BaseEHRDataset):
     """
-    outcomes: absolute position when outcome occured for each patient 
+    outcomes: absolute position when outcome occured for each patient
     outcomes is a list of the outcome timestamps to predict
     """
 
     def __init__(self, features: dict, outcomes: list):
         super().__init__(features)
         self.outcomes = outcomes
-        
+
     def __getitem__(self, index: int) -> dict:
         patient = super().__getitem__(index)
         patient["target"] = float(pd.notna(self.outcomes[index]))
-        patient['attention_mask'] = torch.ones(len(patient['concept']), dtype=torch.long) # Require attention mask for bi-gru head
+        patient["attention_mask"] = torch.ones(
+            len(patient["concept"]), dtype=torch.long
+        )  # Require attention mask for bi-gru head
         return patient
-
-
-
-
