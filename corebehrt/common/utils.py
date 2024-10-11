@@ -20,12 +20,6 @@ def iter_patients(features: dict) -> Generator[dict, None, None]:
     for i in range(len(features["concept"])):
         yield {key: values[i] for key, values in features.items()}
 
-def check_patient_counts(concepts: pd.DataFrame, patients_info: pd.DataFrame, logger)->None:
-    """Check that the number of patients in concepts and patients_info match."""
-    if concepts.PID.nunique() != patients_info.PID.nunique():
-            logger.warning(f"patients info contains {patients_info.PID.nunique()} patients != \
-                        {concepts.PID.nunique()} unique patients in concepts")
-
 def check_existing_splits(data_dir: str)-> bool:
     """Check if train, val, and test splits already exist in data_dir."""
     if os.path.exists(join(data_dir, 'train_pids.pt')) and\

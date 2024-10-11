@@ -11,7 +11,7 @@ from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.common.utils import check_patient_counts
+from corebehrt.functional.data_check import check_patient_counts
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 
 BLOBSTORE = "PHAIR"

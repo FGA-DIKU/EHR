@@ -1,5 +1,7 @@
-import dask.dataframe as dd
 import logging
+
+import dask.dataframe as dd
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -19,3 +21,12 @@ def log_features_in_sequence(data: dict) -> None:
     logger.info("Example features: ")
     for k, v in data.features.items():
         logger.info(f"{k}: {v[0]}")
+
+def check_patient_counts(concepts: pd.DataFrame, patients_info: pd.DataFrame, logger)->None:
+    """
+    Check that the number of patients in concepts and patients_info match.
+    Issue a warning if they don't.
+    """
+    if concepts.PID.nunique() != patients_info.PID.nunique():
+            logger.warning(f"patients info contains {patients_info.PID.nunique()} patients != \
+                        {concepts.PID.nunique()} unique patients in concepts")
