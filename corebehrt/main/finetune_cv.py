@@ -12,7 +12,8 @@ from corebehrt.common.setup import (
     copy_pretrain_config,
     get_args,
 )
-from corebehrt.common.utils import Data, compute_number_of_warmup_steps
+from corebehrt.common.utils import Data
+from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.data.dataset import BinaryOutcomeDataset
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
@@ -133,8 +134,11 @@ def finetune_fold(
 ) -> None:
     """Finetune model on one fold"""
     if "scheduler" in cfg:
-        logger.info("Computing number of warmup steps")
-        compute_number_of_warmup_steps(cfg, len(train_data))
+        logger.info("Replacing steps with epochs in scheduler config")
+        cfg.scheduler = replace_steps_with_epochs(
+            cfg.scheduler, cfg.trainer_args.batch_size, len(train_data)
+        )
+
     fold_folder = join(finetune_folder, f"fold_{fold}")
     os.makedirs(fold_folder, exist_ok=True)
     os.makedirs(join(fold_folder, "checkpoints"), exist_ok=True)
