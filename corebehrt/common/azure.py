@@ -5,7 +5,7 @@ from os.path import join
 from typing import Dict, List, Tuple, Union
 
 from corebehrt.common.config import Config, load_config
-from corebehrt.common.utils import split_path
+from corebehrt.functional.files_and_folders import split_path
 
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

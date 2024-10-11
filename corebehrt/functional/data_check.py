@@ -22,11 +22,16 @@ def log_features_in_sequence(data: dict) -> None:
     for k, v in data.features.items():
         logger.info(f"{k}: {v[0]}")
 
-def check_patient_counts(concepts: pd.DataFrame, patients_info: pd.DataFrame, logger)->None:
+
+def check_patient_counts(
+    concepts: pd.DataFrame, patients_info: pd.DataFrame, logger
+) -> None:
     """
     Check that the number of patients in concepts and patients_info match.
     Issue a warning if they don't.
     """
     if concepts.PID.nunique() != patients_info.PID.nunique():
-            logger.warning(f"patients info contains {patients_info.PID.nunique()} patients != \
-                        {concepts.PID.nunique()} unique patients in concepts")
+        logger.warning(
+            f"patients info contains {patients_info.PID.nunique()} patients != \
+                        {concepts.PID.nunique()} unique patients in concepts"
+        )
