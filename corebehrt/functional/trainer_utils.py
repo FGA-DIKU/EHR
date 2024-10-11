@@ -5,12 +5,16 @@ def replace_steps_with_epochs(
     scheduler_cfg: Config, batch_size: int, num_patients: int
 ) -> Config:
     """Replace steps with epochs in scheduler config"""
+    new_cfg = Config({})
     for key, value in scheduler_cfg.items():
         if key.endswith("_epochs"):
-            scheduler_cfg[key.replace("_epochs", "_steps")] = convert_epochs_to_steps(
+            new_key = key.replace("_epochs", "_steps")
+            new_cfg[new_key] = convert_epochs_to_steps(
                 num_epochs=value, num_patients=num_patients, batch_size=batch_size
             )
-    return scheduler_cfg
+        else:
+            new_cfg[key] = value
+    return new_cfg
 
 
 def convert_epochs_to_steps(num_epochs: int, num_patients: int, batch_size: int) -> int:
