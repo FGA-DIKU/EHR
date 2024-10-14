@@ -3,7 +3,7 @@ import argparse
 
 from corebehrt.common.config import load_config
 
-from corebehrt.azure.components import create_data
+from corebehrt.azure.components import create_data, create_outcomes
 
 from . import util
 
@@ -83,8 +83,10 @@ if __name__ == "__main__":
         # Setup job
         job = {
             "create_data": create_data.job,
-            # "create_outcomes": C.create_outcomes.job,
-        }[args.JOB](cfg, compute=args.compute, register_output=register_output)
+            "create_outcomes": create_outcomes.job,
+        }[
+            args.JOB
+        ](cfg, compute=args.compute, register_output=register_output)
 
         # Start job
         util.run_job(job, args.experiment)
