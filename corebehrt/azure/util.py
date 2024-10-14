@@ -50,22 +50,22 @@ def setup_job(
 
     # Input paths
     input_values = dict()
-    for arg, cfg_path in inputs.items():
+    for arg, arg_cfg in inputs.items():
         value = config
-        for step in cfg_path:
+        for step in arg_cfg["key"].split("."):
             value = value[step]
-        input_values[arg] = Input(path=value, type="uri_folder")
+        input_values[arg] = Input(path=value, type=arg_cfg["type"])
 
         # Update command
         cmd += " --" + arg + " ${{inputs." + arg + "}}"
 
     # Output paths
     output_values = dict()
-    for arg, cfg_path in outputs.items():
+    for arg, arg_cfg in outputs.items():
         value = config
-        for step in cfg_path:
+        for step in arg_cfg["key"].split("."):
             value = value[step]
-        output_values[arg] = Output(path=value, type="uri_folder")
+        output_values[arg] = Output(path=value, type=arg_cfg["type"])
 
         # Update command
         cmd += " --" + arg + " ${{outputs." + arg + "}}"
@@ -100,9 +100,10 @@ def prepare_config(cmd: str, inputs: set, outputs: set) -> None:
     args = parse_args(cmd, inputs | outputs)
 
     # Update input arguments in config file
-    for arg, cfg_path in (inputs | outputs).items():
+    for arg, arg_cfg in (inputs | outputs).items():
         assert args[arg] is not None, f"Missing argument '{arg}'"
         _cfg = cfg
+        cfg_path = arg_cfg["key"].split(".")
         for step in cfg_path[:-1]:
             _cfg = _cfg[step]
         _cfg[cfg_path[-1]] = args[arg]

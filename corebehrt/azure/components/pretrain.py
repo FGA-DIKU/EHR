@@ -1,14 +1,15 @@
 from corebehrt.azure import util
-from corebehrt.main import create_data
+
+from corebehrt.main import pretrain
 import argparse
 
-INPUTS = {"data": {"type": "uri_folder", "key": "loader.data_dir"}}
-OUTPUTS = {"output": {"type": "uri_folder", "key": "output_dir"}}
+INPUTS = {"data": {"type": "uri_folder", "key": "paths.data_path"}}
+OUTPUTS = {"model": {"type": "mlflow_model", "key": "paths.output_path"}}
 
 
 def job(config, compute=None, register_output=dict()):
     return util.setup_job(
-        "create_data",
+        "pretrain",
         inputs=INPUTS,
         outputs=OUTPUTS,
         config=config,
@@ -19,6 +20,6 @@ def job(config, compute=None, register_output=dict()):
 
 if __name__ == "__main__":
     # Parse args and update config
-    util.prepare_config("create_data", INPUTS, OUTPUTS)
+    util.prepare_config("pretrain", INPUTS, OUTPUTS)
     # Run command
-    create_data.main_data(util.AZURE_CONFIG_FILE)
+    pretrain.main_train(util.AZURE_CONFIG_FILE)
