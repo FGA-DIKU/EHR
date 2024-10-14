@@ -16,8 +16,6 @@ from corebehrt.trainer.trainer import EHRTrainer
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 BLOBSTORE = "PHAIR"
 
-args = get_args(CONFIG_PATH)
-config_path = args.config_path
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
@@ -63,4 +61,6 @@ def main_train(config_path):
 
 
 if __name__ == "__main__":
+    args = get_args(CONFIG_PATH)
+    config_path = args.config_path
     main_train(config_path)
