@@ -1,7 +1,9 @@
 import sys
 import argparse
+
 from corebehrt.common.config import load_config
-from corebehrt.azure import components as C
+
+from corebehrt.azure.components import create_data
 
 from . import util
 
@@ -37,7 +39,9 @@ if __name__ == "__main__":
         "-o",
         "--register_output",
         type=str,
-        help="If set, it is used as a name for registering the output as a data asset.",
+        action="append",
+        default=[],
+        help="If an output should be registered, provide a name for the Azure asset using the format '--register_output <input>=<name>'.",
     )
 
     # Sub-parsers
@@ -57,15 +61,17 @@ if __name__ == "__main__":
         help="Path to configuration file. Default is file from repo.",
     )
 
-    # Pipeline parser
-    pl_parser = subparsers.add_parser("pipeline", help="Run a pipeline.")
-    pl_parser.add_argument("PIPELINE", type=str, choices=("pretrain", "finetune"))
-
     # Parse args
     args = parser.parse_args()
 
+    # Parse register_output
+    register_output = [o.split("=") for o in args.register_output]
+    assert all(len(o) == 2 for o in register_output), "Invalid arg for register_output"
+    register_output = dict(register_output)
+
     # Handle job
     if args.call_type == "job":
+
         # Path to config file
         cfg_path = (
             f"./corebehrt/configs/{args.JOB}.yaml"
@@ -75,14 +81,13 @@ if __name__ == "__main__":
         cfg = load_config(cfg_path)
 
         # Setup job
-        job = {"create_data": C.create_data.job}[args.JOB](
-            cfg, compute=args.compute, register_output=args.register_output
-        )
+        job = {
+            "create_data": create_data.job,
+            # "create_outcomes": C.create_outcomes.job,
+        }[args.JOB](cfg, compute=args.compute, register_output=register_output)
 
         # Start job
         util.run_job(job, args.experiment)
-    elif args.call_type == "pipeline":
-        assert False
     else:
         parser.print_help()
         sys.exit(1)

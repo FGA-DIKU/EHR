@@ -2,7 +2,9 @@ import argparse
 import os
 import yaml
 from datetime import datetime
+from corebehrt.common.config import Config, load_config
 
+AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
 
 try:
@@ -24,52 +26,18 @@ def check_azure() -> None:
         raise Exception("Azure modules not found!")
 
 
-CFG_SEP = "__"
-
-
 def ml_client() -> "MLClient":
     check_azure()
     return MLClient.from_config(DefaultAzureCredential())
 
 
-def flatten_definitions(definition_dct: dict):
-    result = dict()
-    for key, definition in definition_dct.items():
-        if "type" in definition:
-            result[key] = dict(definition)
-        else:
-            flat_sub = flatten_definitions(definition)
-            for subkey, subdef in flat_sub.items():
-                result[f"{key}{CFG_SEP}{subkey}"] = subdef
-    return result
-
-
-def unflatten(dct: dict) -> dict:
-    tree = dict()
-    for key, value in dct.items():
-        node = tree
-        path = key.split(CFG_SEP)
-        for step in path[:-1]:
-            if step not in node:
-                node[step] = dict()
-            node = node[step]
-        node[path[-1]] = value
-    return tree
-
-
-def setup_component(args):
-    check_azure()
-    pass
-
-
 def setup_job(
-    name: str,
     job: str,
-    inputs: dict,
-    outputs: dict,
-    config: any,
+    inputs: set,
+    outputs: set,
+    config: Config,
     compute: str = None,
-    register_output: str = None,
+    register_output: dict = dict(),
 ):
     check_azure()
     assert compute is not None
@@ -77,46 +45,36 @@ def setup_job(
     # Prepare command
     cmd = f"python -m corebehrt.azure.components.{job}"
 
-    # Prepare inputs and outputs
-    inputs = flatten_definitions(inputs)
-    outputs = flatten_definitions(outputs)
+    # Make sure config is read-able -> save it in the root folder.
+    config.save_to_yaml(AZURE_CONFIG_FILE)
 
-    # Set values from config or default
-    def _lookup_cfg(arg, cfg, default=None):
-        for step in arg.split(CFG_SEP):
-            if step not in cfg:
-                return default
-            cfg = cfg[step]
-        return cfg
-
-    ## inputs
+    # Input paths
     input_values = dict()
-    for arg, definition in inputs.items():
-        value = _lookup_cfg(arg, config, definition.get("default"))
-        if definition.get("action") == "append":
-            assert type(value) is list
-            for i, value_i in enumerate(value):
-                arg_i = arg + "_" + str(i)
-                cmd += " --" + arg + " ${{inputs." + arg_i + "}}"
-                input_values[arg_i] = value_i
-        else:
-            if definition["type"] == "uri_folder":
-                # Create Azure Input object
-                value = Input(path=value, type="uri_folder")
-            cmd += " --" + arg + " ${{inputs." + arg + "}}"
-            input_values[arg] = value
-    ## Outputs
-    output_values = dict()
-    for arg, definition in outputs.items():
-        value = _lookup_cfg(arg, config, definition.get("default"))
-        if definition["type"] == "uri_folder":
-            # Create Azure Input object
-            value = Output(path=value, type="uri_folder")
-            if register_output is not None:
-                value.name = register_output
-        cmd += " --" + arg + " ${{outputs." + arg + "}}"
-        output_values[arg] = value
+    for arg, cfg_path in inputs.items():
+        value = config
+        for step in cfg_path:
+            value = value[step]
+        input_values[arg] = Input(path=value, type="uri_folder")
 
+        # Update command
+        cmd += " --" + arg + " ${{inputs." + arg + "}}"
+
+    # Output paths
+    output_values = dict()
+    for arg, cfg_path in outputs.items():
+        value = config
+        for step in cfg_path:
+            value = value[step]
+        output_values[arg] = Output(path=value, type="uri_folder")
+
+        # Update command
+        cmd += " --" + arg + " ${{outputs." + arg + "}}"
+
+        # Must we register the output?
+        if arg in register_output:
+            output_values[arg].name = register_output[arg]
+
+    # Create job
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     return command(
         code=".",
@@ -125,7 +83,7 @@ def setup_job(
         outputs=output_values,
         environment="PHAIR:23",
         compute=compute,
-        name=f"{name}_{ts}",
+        name=f"{job}_{ts}",
     )
 
 
@@ -134,29 +92,27 @@ def run_job(job, experiment: str):
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-def parse_config(cmd: str, arg_cfg: dict, save_to_dir: str = None) -> "config":
-    args = parse_args(cmd, arg_cfg)
-    config = unflatten(vars(args))
-    if save_to_dir is None:
-        return config
-    else:
-        file_path = os.path.join(save_to_dir, f"{cmd}.yaml")
-        os.makedirs(save_to_dir, exist_ok=True)
-        with open(file_path, "w") as f:
-            yaml.dump(config, f)
-        return file_path
+def prepare_config(cmd: str, inputs: set, outputs: set) -> None:
+    # Read the config file
+    cfg = load_config(AZURE_CONFIG_FILE)
+
+    # Parse command line args
+    args = parse_args(cmd, inputs | outputs)
+
+    # Update input arguments in config file
+    for arg, cfg_path in (inputs | outputs).items():
+        assert args[arg] is not None, f"Missing argument '{arg}'"
+        _cfg = cfg
+        for step in cfg_path[:-1]:
+            _cfg = _cfg[step]
+        _cfg[cfg_path[-1]] = args[arg]
+
+    # Overwrite config file
+    cfg.save_to_yaml(AZURE_CONFIG_FILE)
 
 
-def parse_args(cmd: str, args: dict) -> None:
+def parse_args(cmd: str, args: set) -> dict:
     parser = argparse.ArgumentParser(prog=f"corebehrt.azure.{cmd}")
-    args = flatten_definitions(args)
-    for arg, definition in args.items():
-        _type = {"uri_folder": str}.get(definition["type"], definition["type"])
-        parser.add_argument(
-            f"--{arg}",
-            type=_type,
-            action=definition.get("action"),
-            default=definition.get("default"),
-            choices=definition.get("choices"),
-        )
-    return parser.parse_args()
+    for arg in args:
+        parser.add_argument(f"--{arg}", type=str)
+    return vars(parser.parse_args())
