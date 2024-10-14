@@ -37,7 +37,8 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
 
 def main_data(config_path):
     cfg = load_config(config_path)
-    cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
+    if "outcome_dir" not in cfg.paths:
+        cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
 
     logger = DirectoryPreparer(config_path).prepare_directory_outcomes(
         cfg.paths.outcome_dir, cfg.outcomes_name

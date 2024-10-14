@@ -1,12 +1,9 @@
-env: local
 output_dir: ./outputs/features
 tokenized_dir_name: "tokenized"
 paths:
-  run_name: "_test"
   save_features_dir_name: "features" 
 loader:
-  # can provide formatted data or features
-  data_dir:  ./example_data # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
+  data_dir:  ./example_data
   concepts: [
     diagnosis,
     medication,
@@ -39,12 +36,3 @@ split_ratios:
   pretrain: 0.72 # 80% of 90%
   finetune: 0.18 # 20% of 90%
   test: 0.1
-
-# can be a list
-# exclude_pids: outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test/test_pids.pt
-# assigned_pids: 
-  # can be a list
-  # pretrain: 
-  #  - outputs/pretraining/behrt_test/finetune_TEST_OUTCOME_censored_4_days_post_TEST_OUTCOME_test/fold_1/val_pids.pt
-#predefined_splits_dir: ../outputs/data_icd10/tokenized #../outputs/features_test/tokenized
-

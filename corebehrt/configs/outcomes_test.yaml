@@ -1,6 +1,5 @@
-env: local
 paths:
-  run_name: _test
+  outcome_dir: ./outputs/outcomes
 outcomes_name: "TEST_OUTCOME"
 features_dir: ./outputs/features
 loader:
