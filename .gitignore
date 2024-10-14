@@ -2,5 +2,7 @@
 outputs/
 corebehrt.egg-info/
 .venv
+.azure
+azure_job_config.yaml
 .amlignore
 **.amltmp
