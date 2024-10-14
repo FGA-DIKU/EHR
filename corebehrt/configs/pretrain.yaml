@@ -1,6 +1,4 @@
-env: local
 paths:
-  # data_path: 'pretrain_datasets/diagnosis_medication/070623/outputs/data' # inside mounted datastore
   data_path: ./outputs/features
   output_path: ./outputs/pretraining
   type: diag
