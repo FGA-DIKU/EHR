@@ -7,7 +7,7 @@ class MLMHead(torch.nn.Module):
         # BertPredictionHeadTransform
         self.dense = torch.nn.Linear(hidden_size, hidden_size)
         self.activation = torch.nn.GELU()
-        self.LayerNorm = torch.nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.layer_norm = torch.nn.LayerNorm(hidden_size, eps=layer_norm_eps)
 
         # BertLMPredictionHead
         self.decoder = torch.nn.Linear(hidden_size, vocab_size, bias=False)
@@ -17,7 +17,7 @@ class MLMHead(torch.nn.Module):
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         x = self.dense(hidden_states)
         x = self.activation(x)
-        x = self.LayerNorm(x)
+        x = self.layer_norm(x)
 
         # project back to size of vocabulary with bias
         x = self.decoder(x)
