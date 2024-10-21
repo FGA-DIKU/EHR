@@ -1,9 +1,9 @@
+from typing import Dict
+
 import torch
 import torch.nn as nn
-from typing import Dict
-from transformers import BertConfig
 
-from corebehrt.embeddings.time2vec import Time2Vec
+from corebehrt.classes.embeddings import Time2Vec
 
 # Constants (data dependent) for Time2Vec
 TIME2VEC_AGE_MULTIPLIER = 1e-2
@@ -27,16 +27,16 @@ class EhrEmbeddings(nn.Module):
             layer_norm_eps: float                   - epsilon for layer normalization
             hidden_dropout_prob: float              - dropout probability
     """
-    def __init__(self, config: BertConfig):
+    def __init__(self, vocab_size: int, hidden_size: int, type_vocab_size: int, layer_norm_eps: float, hidden_dropout_prob: float):
         super().__init__()
-        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.to_dict().get('layer_norm_eps', 1e-12))
-        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.dropout = nn.Dropout(hidden_dropout_prob)
 
         # Initalize embeddings
-        self.concept_embeddings = nn.Embedding(config.vocab_size, config.hidden_size)
-        self.age_embeddings = Time2Vec(1, config.hidden_size, init_scale=TIME2VEC_AGE_MULTIPLIER, clip_min=TIME2VEC_MIN_CLIP, clip_max=TIME2VEC_MAX_CLIP)
-        self.abspos_embeddings = Time2Vec(1, config.hidden_size, init_scale=TIME2VEC_ABSPOS_MULTIPLIER, clip_min=TIME2VEC_MIN_CLIP, clip_max=TIME2VEC_MAX_CLIP)
-        self.segment_embeddings = nn.Embedding(config.type_vocab_size, config.hidden_size)
+        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
+        self.age_embeddings = Time2Vec(1, hidden_size, init_scale=TIME2VEC_AGE_MULTIPLIER, clip_min=TIME2VEC_MIN_CLIP, clip_max=TIME2VEC_MAX_CLIP)
+        self.abspos_embeddings = Time2Vec(1, hidden_size, init_scale=TIME2VEC_ABSPOS_MULTIPLIER, clip_min=TIME2VEC_MIN_CLIP, clip_max=TIME2VEC_MAX_CLIP)
+        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
         
     def forward(
         self,
