@@ -43,14 +43,12 @@ class EhrEmbeddings(nn.Module):
         # Initalize embeddings
         self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
         self.age_embeddings = Time2Vec(
-            1,
             hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
         self.abspos_embeddings = Time2Vec(
-            1,
             hidden_size,
             init_scale=TIME2VEC_ABSPOS_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
@@ -84,7 +82,6 @@ class EhrEmbeddings(nn.Module):
 class Time2Vec(torch.nn.Module):
     def __init__(
         self,
-        input_dim: int = 1,
         output_dim: int = 768,
         function: callable = torch.cos,
         init_scale: float = 1,
@@ -96,10 +93,10 @@ class Time2Vec(torch.nn.Module):
         self.clip_min = clip_min
         self.clip_max = clip_max
         # for i = 0
-        self.w0 = torch.nn.Parameter(torch.randn(input_dim, 1))
+        self.w0 = torch.nn.Parameter(torch.randn(1, 1))
         self.phi0 = torch.nn.Parameter(torch.randn(1))
-        # for 1 <= i <= k (input_size)
-        self.w = torch.nn.Parameter(torch.randn(input_dim, output_dim - 1))
+        # for 1 <= i <= k (output_dim)
+        self.w = torch.nn.Parameter(torch.randn(1, output_dim - 1))
         self.phi = torch.nn.Parameter(torch.randn(output_dim - 1))
 
         self.init_scale = init_scale
