@@ -1,12 +1,16 @@
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
 import dask.dataframe as dd
 
-from corebehrt.functional.load import load_concept, load_patients_info
+from corebehrt.functional.load import (
+    load_concept,
+    load_patients_info,
+)
 from corebehrt.functional.utils import (
     check_concepts_columns,
     check_patients_info_columns,
 )
+from corebehrt.functional.values import add_binned_values, add_quantile_values
 
 
 class FormattedDataLoader:
@@ -28,14 +32,29 @@ class FormattedDataLoader:
             Returns a tuple containing the concepts DataFrame and the patients_info DataFrame.
     """
 
-    def __init__(self, folder: str, concept_types: List[str]):
+    def __init__(
+        self,
+        folder: str,
+        concept_types: List[str],
+        include_values: List[str] = [],
+        value_type: str = None,
+        normalise_func: Callable = None,
+    ):
         self.folder = folder
         self.concept_types = concept_types
+        self.include_values = include_values
+        self.value_type = value_type
+        self.normalise_func = normalise_func
 
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
         concepts = [
-            self._load_concept(concept_type) for concept_type in self.concept_types
+            (
+                self._apply_values(self._load_concept(concept_type))
+                if concept_type in self.include_values
+                else self._load_concept(concept_type)
+            )
+            for concept_type in self.concept_types
         ]
         concepts = dd.concat(concepts)
         check_concepts_columns(concepts)
@@ -52,6 +71,18 @@ class FormattedDataLoader:
         Returns a dask dataframe.
         """
         return load_patients_info(self.folder)
+
+    def _apply_values(self, concepts: dd.DataFrame) -> dd.DataFrame:
+        """
+        Adds values to concepts from "RESULT" column.
+        Returns a dask dataframe.
+        """
+        if self.value_type == "binned_value":
+            return add_binned_values(concepts, self.normalise_func)
+        elif self.value_type == "quantile_value":
+            return add_quantile_values(concepts)
+        else:
+            raise NotImplementedError(f"Value type '{value_type}' is not supported.")
 
     def _load_concept(self, concept_type: str):
         """

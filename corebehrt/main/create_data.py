@@ -23,6 +23,8 @@ from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.classes.loader import FormattedDataLoader
+from corebehrt.classes.normalizer import ValuesNormalizer
+from corebehrt.functional.utils import init_function
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
@@ -117,7 +119,10 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Returns a list of lists of pids for each batch
     """
     concepts, patients_info = FormattedDataLoader(
-        cfg.paths.data, cfg.loader.concept_types
+        cfg.loader.data_dir, cfg.loader.concept_types,
+        include_values = cfg.loader.include_values if hasattr(cfg.loader, 'include_values') and cfg.loader.include_values else [],
+        value_type = cfg.loader.value_type if hasattr(cfg.loader, 'value_type') and cfg.loader.value_type else None,
+        normalise_func = init_function(cfg.loader.normalise_func) if hasattr(cfg.loader, 'normalise_func') and cfg.loader.normalise_func else None
     ).load()
 
     feature_creator = FeatureCreator(**cfg.features)
@@ -127,12 +132,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     #! Should we keep this? We're also excluding short sequences in prepare_data
     features = excluder.exclude_short_sequences(features)
 
-    result = features.groupby("PID").apply(
-        lambda x: x.sort_values("abspos"), meta=features
-    )  # this can potentially be improved
-
     with ProgressBar():
-        result.to_csv(join(cfg.paths.features, "*.csv"), index=False)
+        features.to_csv(join(save_path, "*.csv"), index=False)
 
 
 if __name__ == "__main__":

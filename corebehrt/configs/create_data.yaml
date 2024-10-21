@@ -8,10 +8,17 @@ paths:
   features: ./outputs/features
   
 loader:
+  # can provide formatted data or features
+  features_dir: null # ./outputs/features/features
+  data_dir: ./example_data/example_data_w_labs #./outputs/features_dask #./example_data #./outputs/features_dask # ./example_data # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
   concept_types: [
     diagnose,
     medication,
+    labtest
   ]
+  include_values: [labtest]
+  value_type: binned_value
+  # normalise_func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results
 
 features:
   #ages: true

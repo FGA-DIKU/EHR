@@ -10,6 +10,7 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 import random
+import importlib
 
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
@@ -103,13 +104,6 @@ def get_time_difference(now: pd.Series, then: pd.Series) -> pd.Series:
     if len(now) == 0:
         return pd.Series([])
     return (now - then).dt.days / 365.25
-
-
-def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
-    return (
-        concepts.groupby("PID").agg(list).to_dict("list"),
-        concepts["PID"].sort_values().unique().tolist(),
-    )
 
 
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
@@ -233,3 +227,28 @@ def check_required_columns(
     if not required_columns.issubset(set(df.columns)):
         missing_columns = required_columns - set(df.columns)
         raise ValueError(f"Missing columns in {type_}: {missing_columns}")
+
+
+def init_function(func_path: str):
+    """Initializes a function or a class method from a path string."""
+    parts = func_path.rsplit(".", 2)  # Split into module, class (optional), and function/method
+    
+    if len(parts) == 3:
+        # If there are three parts, it includes a class
+        module_path, class_name, func_name = parts
+        module = importlib.import_module(module_path)
+        klass = getattr(module, class_name)
+        # Check if klass is a class and func_name is a static method
+        if isinstance(klass, type) and hasattr(klass, func_name):
+            method = getattr(klass, func_name)
+            if callable(method):
+                return method
+        else:
+            raise ValueError(f"{func_name} is not a static method of {class_name}")
+    elif len(parts) == 2:
+        # If there are two parts, it's a function in a module
+        module_path, func_name = parts
+        module = importlib.import_module(module_path)
+        return getattr(module, func_name)
+    else:
+        raise ValueError("Function path must be in the format 'module.Class.method' or 'module.function'")

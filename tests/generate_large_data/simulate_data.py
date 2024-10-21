@@ -10,16 +10,16 @@ import pandas as pd
 from tqdm import tqdm
 
 
-N = 100_000
-BATCH_SIZE = 100_000
+N = 1000
+BATCH_SIZE = 5
 N_CONCEPTS = 10  # Number of concepts per patient
-WRITE_DIR = "example_data_large_100k"
+WRITE_DIR = "data/raw_w_labs"
 
 
 def main_write(
     n_patients=10000,
     batch_size_patients=5000,
-    n_concepts=10,
+    n_concepts=20,
     write_dir="../example_data_large",
 ):
     os.makedirs(write_dir, exist_ok=True)
@@ -41,6 +41,14 @@ def main_write(
         concepts_m = generate_concepts_batch(patients_info, n_concepts)
         concepts_m.to_csv(
             f"{write_dir}/concept.medication.csv",
+            index=False,
+            mode="w" if i == 0 else "a",
+            header=i == 0,
+        )
+
+        concepts_l = generate_concepts_batch(patients_info, n_concepts, result_col=True)
+        concepts_l.to_csv(
+            f"{write_dir}/concept.labtest.csv",
             index=False,
             mode="w" if i == 0 else "a",
             header=i == 0,
@@ -102,7 +110,7 @@ def generate_patients_info_batch(n_patients):
     )
 
 
-def generate_concepts_batch(patients_info, n_records_per_pid):
+def generate_concepts_batch(patients_info, n_records_per_pid, result_col=False):
     # Repeat each row n_records_per_pid times
     repeated_patients_info = patients_info.loc[
         patients_info.index.repeat(n_records_per_pid)
@@ -122,7 +130,7 @@ def generate_concepts_batch(patients_info, n_records_per_pid):
     deathdates[~valid_mask] = birthdates[~valid_mask] + 1
     # Generate random timestamps between birthdates and deathdates
     random_timestamps = np.random.randint(birthdates, deathdates, dtype=np.int64)
-    timestamps = pd.to_datetime(random_timestamps, unit="s")
+    timestamps = pd.to_datetime(random_timestamps+10**9, unit="s")
 
     # Generate ADMISSION_ID column using vectorized operations
     admission_ids = np.array(
@@ -130,7 +138,7 @@ def generate_concepts_batch(patients_info, n_records_per_pid):
     )
 
     # Generate CONCEPT column using vectorized operations
-    concepts = np.random.randint(100000000, 999999999, size=len(repeated_patients_info))
+    concepts = np.random.randint(0, 1000, size=len(repeated_patients_info))
 
     # Create the DataFrame
     concepts_data = pd.DataFrame(
@@ -141,6 +149,10 @@ def generate_concepts_batch(patients_info, n_records_per_pid):
             "CONCEPT": concepts,
         }
     )
+
+    if result_col:
+        results = np.random.randint(100, 200, size=len(repeated_patients_info))
+        concepts_data["RESULT"] = results
 
     return concepts_data
 
