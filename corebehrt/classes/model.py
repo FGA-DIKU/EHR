@@ -11,11 +11,13 @@ from corebehrt.classes.heads import FineTuneHead, MLMHead
 class BertEHREncoder(BertModel):
     def __init__(self, config):
         super().__init__(config)
-        self.embeddings = EhrEmbeddings(vocab_size=config.vocab_size,
-                                        hidden_size=config.hidden_size,
-                                        type_vocab_size=config.type_vocab_size,
-                                        layer_norm_eps=config.layer_norm_eps,
-                                        hidden_dropout_prob=config.hidden_dropout_prob)
+        self.embeddings = EhrEmbeddings(
+            vocab_size=config.vocab_size,
+            hidden_size=config.hidden_size,
+            type_vocab_size=config.type_vocab_size,
+            layer_norm_eps=config.layer_norm_eps,
+            hidden_dropout_prob=config.hidden_dropout_prob,
+        )
 
         # Activate transformer++ recipe
         config.rotary_value = False
