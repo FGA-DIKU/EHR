@@ -40,7 +40,11 @@ class BertEHRModel(BertEHREncoder):
     def __init__(self, config):
         super().__init__(config)
         self.loss_fct = nn.CrossEntropyLoss()
-        self.cls = MLMHead(hidden_size=config.hidden_size)
+        self.cls = MLMHead(
+            hidden_size=config.hidden_size,
+            vocab_size=config.vocab_size,
+            layer_norm_eps=config.layer_norm_eps,
+        )
 
     def forward(self, batch: dict):
         outputs = super().forward(batch)

@@ -42,10 +42,10 @@ class BiGRU(torch.nn.Module):
         super().__init__()
         self.hidden_size = hidden_size
         self.rnn = torch.nn.GRU(
-            self.hidden_size, self.hidden_size, batch_first=True, bidirectional=True
+            hidden_size, hidden_size, batch_first=True, bidirectional=True
         )
         # Adjust the input size of the classifier based on the bidirectionality
-        classifier_input_size = self.hidden_size * 2
+        classifier_input_size = hidden_size * 2
         self.classifier = torch.nn.Linear(classifier_input_size, 1)
 
     def forward(
