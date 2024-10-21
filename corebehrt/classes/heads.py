@@ -2,20 +2,16 @@ import torch
 
 
 class MLMHead(torch.nn.Module):
-    def __init__(self, config):
+    def __init__(self, hidden_size: int, vocab_size: int, layer_norm_eps: float):
         super().__init__()
         # BertPredictionHeadTransform
-        self.dense = torch.nn.Linear(config.hidden_size, config.hidden_size)
+        self.dense = torch.nn.Linear(hidden_size, hidden_size)
         self.activation = torch.nn.GELU()
-        self.LayerNorm = torch.nn.LayerNorm(
-            config.hidden_size, eps=config.layer_norm_eps
-        )
+        self.LayerNorm = torch.nn.LayerNorm(hidden_size, eps=layer_norm_eps)
 
         # BertLMPredictionHead
-        self.decoder = torch.nn.Linear(
-            config.hidden_size, config.vocab_size, bias=False
-        )
-        self.bias = torch.nn.Parameter(torch.zeros(config.vocab_size))
+        self.decoder = torch.nn.Linear(hidden_size, vocab_size, bias=False)
+        self.bias = torch.nn.Parameter(torch.zeros(vocab_size))
         self.decoder.bias = self.bias
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -30,10 +26,10 @@ class MLMHead(torch.nn.Module):
 
 
 class FineTuneHead(torch.nn.Module):
-    def __init__(self, config):
+    def __init__(self, hidden_size: int):
         super().__init__()
-        self.classifier = torch.nn.Linear(config.hidden_size, 1)
-        self.pool = BiGRU(config.hidden_size)
+        self.classifier = torch.nn.Linear(hidden_size, 1)
+        self.pool = BiGRU(hidden_size)
 
     def forward(
         self, hidden_states: torch.Tensor, attention_mask: torch.Tensor
