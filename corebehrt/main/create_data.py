@@ -119,10 +119,23 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Returns a list of lists of pids for each batch
     """
     concepts, patients_info = FormattedDataLoader(
-        cfg.loader.data_dir, cfg.loader.concept_types,
-        include_values = cfg.loader.include_values if hasattr(cfg.loader, 'include_values') and cfg.loader.include_values else [],
-        value_type = cfg.loader.value_type if hasattr(cfg.loader, 'value_type') and cfg.loader.value_type else None,
-        normalise_func = init_function(cfg.loader.normalise_func) if hasattr(cfg.loader, 'normalise_func') and cfg.loader.normalise_func else None
+        cfg.loader.data_dir,
+        cfg.loader.concept_types,
+        include_values=(
+            cfg.loader.include_values
+            if hasattr(cfg.loader, "include_values") and cfg.loader.include_values
+            else []
+        ),
+        value_type=(
+            cfg.loader.value_type
+            if hasattr(cfg.loader, "value_type") and cfg.loader.value_type
+            else None
+        ),
+        normalise_func=(
+            init_function(cfg.loader.normalise_func)
+            if hasattr(cfg.loader, "normalise_func") and cfg.loader.normalise_func
+            else None
+        ),
     ).load()
 
     feature_creator = FeatureCreator(**cfg.features)

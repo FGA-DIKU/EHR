@@ -33,6 +33,7 @@ from corebehrt.functional.utils import (
     select_random_subset,
     truncate_data,
     truncate_patient,
+    prioritized_truncate_patient,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -156,7 +157,13 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+        if data_cfg.get("priority_truncation", False):
+            logger.info(f"Truncating using priority truncation with low priority prefixes: {data_cfg.priority_truncation.low_priority_prefixes}")
+            truncation_args = data_cfg.get("priority_truncation")
+            truncation_args["vocabulary"] = vocab
+            data = truncate_data(data, data_cfg.truncation_len, vocab, prioritized_truncate_patient, kwargs=truncation_args)
+        else:
+            data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
 
         # 9. Normalize segments
         data = normalize_segments(data)
@@ -219,7 +226,14 @@ class DatasetPreparer:
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+        if data_cfg.get("priority_truncation", False):
+            logger.info(f"Truncating using priority truncation with low priority prefixes: {data_cfg.priority_truncation.low_priority_prefixes}")
+            truncation_args = data_cfg.get("priority_truncation")
+            truncation_args["vocabulary"] = vocab
+            print(truncation_args)
+            data = truncate_data(data, data_cfg.truncation_len, vocab, prioritized_truncate_patient, kwargs=truncation_args)
+        else:
+            data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
 
         # 6. Normalize segments
         data = normalize_segments(data)

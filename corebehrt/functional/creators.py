@@ -138,6 +138,7 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
     df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
     return df.drop(columns=["max_segment"])
 
+
 def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
     """
     Assign 'index' and 'order' columns to ensure correct ordering.
@@ -148,9 +149,10 @@ def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
         df with 'index' and 'order' columns.
     """
     if "index" in df.columns and "order" in df.columns:
-        df['index'] = df['index'].fillna(0)
-        df['order'] = df['order'].fillna(0)
+        df["index"] = df["index"].fillna(0)
+        df["order"] = df["order"].fillna(0)
     return df
+
 
 def _sort_and_assign_segments(df):
     """
@@ -158,8 +160,10 @@ def _sort_and_assign_segments(df):
     Added "index" and "order" columns to ensure correct ordering if they exist.
     """
     if "index" in df.columns and "order" in df.columns:
-        df = df.sort_values(["PID", "abspos", "index", "order"]) #could maybe be done more optimally, is a bit slow
-        df = df.drop(columns=["index", "order"])   
+        df = df.sort_values(
+            ["PID", "abspos", "index", "order"]
+        )  # could maybe be done more optimally, is a bit slow
+        df = df.drop(columns=["index", "order"])
     else:
         df = df.sort_values(["PID", "abspos"])
 

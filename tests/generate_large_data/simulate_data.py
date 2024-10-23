@@ -46,7 +46,9 @@ def main_write(
             header=i == 0,
         )
 
-        concepts_l = generate_concepts_batch(patients_info, n_concepts, result_col=True)
+        concepts_l = generate_concepts_batch(
+            patients_info, n_concepts, prefix="LAB", result_col=True
+        )
         concepts_l.to_csv(
             f"{write_dir}/concept.labtest.csv",
             index=False,
@@ -110,7 +112,9 @@ def generate_patients_info_batch(n_patients):
     )
 
 
-def generate_concepts_batch(patients_info, n_records_per_pid, result_col=False):
+def generate_concepts_batch(
+    patients_info, n_records_per_pid, prefix="", result_col=False
+):
     # Repeat each row n_records_per_pid times
     repeated_patients_info = patients_info.loc[
         patients_info.index.repeat(n_records_per_pid)
@@ -130,7 +134,7 @@ def generate_concepts_batch(patients_info, n_records_per_pid, result_col=False):
     deathdates[~valid_mask] = birthdates[~valid_mask] + 1
     # Generate random timestamps between birthdates and deathdates
     random_timestamps = np.random.randint(birthdates, deathdates, dtype=np.int64)
-    timestamps = pd.to_datetime(random_timestamps+10**9, unit="s")
+    timestamps = pd.to_datetime(random_timestamps + 10**9, unit="s")
 
     # Generate ADMISSION_ID column using vectorized operations
     admission_ids = np.array(
@@ -139,7 +143,8 @@ def generate_concepts_batch(patients_info, n_records_per_pid, result_col=False):
 
     # Generate CONCEPT column using vectorized operations
     concepts = np.random.randint(0, 1000, size=len(repeated_patients_info))
-
+    if prefix != "":
+        concepts = [f"{prefix}_{c}" for c in concepts]
     # Create the DataFrame
     concepts_data = pd.DataFrame(
         {

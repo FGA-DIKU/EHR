@@ -37,7 +37,6 @@ class TestCreateData(unittest.TestCase):
                 "concept_types": ["diagnose", "medication"], #, "labtest"],
                 "include_values": ["labtest"],
                 "value_type": "binned_value"
-
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},

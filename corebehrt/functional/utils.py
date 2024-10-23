@@ -166,11 +166,54 @@ def truncate_patient(
     return truncated_patient
 
 
+def prioritized_truncate_patient(
+    patient: pd.DataFrame,
+    background_length: int,
+    max_len: int,
+    sep_token: str,
+    low_priority_prefixes: List[str],
+    vocabulary: dict,
+    unit: bool = False,
+) -> pd.DataFrame:
+    if len(patient["concept"]) <= max_len:
+        return patient
+
+    truncation_length = max_len - background_length
+    non_priority_tokens = {
+        v
+        for k, v in vocabulary.items()
+        if any(k.startswith(prefix) for prefix in low_priority_prefixes)
+    }
+    patient["non_priority"] = patient["concept"].isin(non_priority_tokens)
+
+    non_priority_indices = patient[patient["non_priority"]].index
+    if len(patient) - len(non_priority_indices) > truncation_length:
+        patient.drop(non_priority_indices, inplace=True)
+    else:
+        non_priority_truncation_len = truncation_length - (
+            len(patient) - len(non_priority_indices) - background_length
+        )
+        patient.drop(non_priority_indices[:-non_priority_truncation_len], inplace=True)
+
+        if unit:
+            unit_len = len(low_priority_prefixes)
+            positions = patient[patient["non_priority"]]["abspos"]
+            invalid_positions = (
+                positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
+            )
+            if not invalid_positions.empty:
+                patient.drop(invalid_positions, inplace=True)
+
+    patient.drop(columns=["non_priority"], inplace=True)
+    return truncate_patient(patient, background_length, max_len, sep_token)
+
+
 def truncate_data(
     data: dd.DataFrame,
     max_len: int,
     vocabulary: dict,
     truncate_function: Callable = truncate_patient,
+    kwargs: dict = {},
 ) -> dd.DataFrame:
     """
     Assumes table has a column named PID.
@@ -178,12 +221,11 @@ def truncate_data(
     Uses truncate_patient as default truncate function.
     """
     background_length = get_background_length_dd(data, vocabulary)
-
     truncated_data = (
         data.groupby("PID")[list(data.columns)]
         .apply(
             lambda x: truncate_function(
-                x, background_length, max_len, vocabulary.get("[SEP]")
+                x, background_length, max_len, vocabulary.get("[SEP]"), **kwargs
             ),
             meta={col: dtype for col, dtype in data.dtypes.items()},
         )
@@ -231,8 +273,10 @@ def check_required_columns(
 
 def init_function(func_path: str):
     """Initializes a function or a class method from a path string."""
-    parts = func_path.rsplit(".", 2)  # Split into module, class (optional), and function/method
-    
+    parts = func_path.rsplit(
+        ".", 2
+    )  # Split into module, class (optional), and function/method
+
     if len(parts) == 3:
         # If there are three parts, it includes a class
         module_path, class_name, func_name = parts
@@ -251,4 +295,6 @@ def init_function(func_path: str):
         module = importlib.import_module(module_path)
         return getattr(module, func_name)
     else:
-        raise ValueError("Function path must be in the format 'module.Class.method' or 'module.function'")
+        raise ValueError(
+            "Function path must be in the format 'module.Class.method' or 'module.function'"
+        )

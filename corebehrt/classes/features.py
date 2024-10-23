@@ -9,7 +9,7 @@ from corebehrt.functional.creators import (
     create_background,
     create_death,
     create_segments,
-    assign_index_and_order
+    assign_index_and_order,
 )
 from corebehrt.functional.exclude import exclude_event_nans
 from corebehrt.functional.utils import (
@@ -59,7 +59,7 @@ class FeatureCreator:
         background = create_background(patients_info, self.background_vars)
         death = create_death(patients_info)
         features = dd.concat([concepts, background, death])
-        
+
         features = assign_index_and_order(features)
 
         features = create_age_in_years(features)

@@ -2,6 +2,7 @@ import dask.dataframe as dd
 from typing import Optional, Callable
 import pandas as pd
 
+
 def add_binned_values(
     concepts: dd.DataFrame,
     normalise: Optional[Callable[[pd.Series], pd.Series]] = None,
