@@ -1,12 +1,30 @@
 import unittest
 import pandas as pd
 import dask.dataframe as dd
-from corebehrt.functional.utils import truncate_patient, truncate_data, prioritized_truncate_patient
+from corebehrt.functional.utils import (
+    truncate_patient,
+    truncate_data,
+    prioritized_truncate_patient,
+)
 import random
+
 
 class TestTruncationFunctions(unittest.TestCase):
     def setUp(self):
-        self.vocabulary = {"[CLS]": 1, "[SEP]": 2, "D_A": 3, "D_B": 4, "D_C": 5, "LAB_A": 6, "VAL_60": 7, "VAL_70": 8, "VAL_80": 9, "VAL_90": 10, "VAL_100": 11, "BG_Gender": 12}
+        self.vocabulary = {
+            "[CLS]": 1,
+            "[SEP]": 2,
+            "D_A": 3,
+            "D_B": 4,
+            "D_C": 5,
+            "LAB_A": 6,
+            "VAL_60": 7,
+            "VAL_70": 8,
+            "VAL_80": 9,
+            "VAL_90": 10,
+            "VAL_100": 11,
+            "BG_Gender": 12,
+        }
         self.background_len = 3
         self.sep_token = self.vocabulary.get("[SEP]")
         self.cls_token = self.vocabulary.get("[CLS]")
@@ -62,7 +80,7 @@ class TestTruncationFunctions(unittest.TestCase):
                 "concept": [self.cls_token, self.gender_token, self.sep_token]
                 + [6 if i % 2 == 0 else random.randint(7, 11) for i in range(20)],
                 "abspos": [-100, -100, -100]
-                + [num for num in [i for i in range(15,25)] for _ in range(2)]
+                + [num for num in [i for i in range(15, 25)] for _ in range(2)],
             }
         )
 
@@ -181,15 +199,28 @@ class TestTruncationFunctions(unittest.TestCase):
     def test_truncate_patient_w_priority_drop_all(self):
         max_len = 50
         truncated_patient = prioritized_truncate_patient(
-            self.sample_patient_data_4, self.background_len, max_len, self.sep_token, ["LAB", "VAL"], self.vocabulary
+            self.sample_patient_data_4,
+            self.background_len,
+            max_len,
+            self.sep_token,
+            ["LAB", "VAL"],
+            self.vocabulary,
         )
-        non_priority_tokens = [v for k, v in self.vocabulary.items() if any(k.startswith(prefix) for prefix in ["LAB", "VAL"])]
+        non_priority_tokens = [
+            v
+            for k, v in self.vocabulary.items()
+            if any(k.startswith(prefix) for prefix in ["LAB", "VAL"])
+        ]
 
         self.assertTrue(
             len(truncated_patient) <= max_len, "Truncated patient data exceeds max_len"
         )
         self.assertTrue(
-            all(truncated_patient["concept"].apply(lambda x: x not in non_priority_tokens))
+            all(
+                truncated_patient["concept"].apply(
+                    lambda x: x not in non_priority_tokens
+                )
+            )
         )
         self.assertTrue(
             (truncated_patient["concept"].iloc[0] == self.cls_token).any(),
@@ -203,19 +234,30 @@ class TestTruncationFunctions(unittest.TestCase):
             (truncated_patient["concept"].iloc[2] == self.sep_token).any(),
             "Truncated patient data does not contain [SEP] token",
         )
-    
+
     def test_truncate_patient_w_priority_drop_some(self):
         max_len = 60
         truncated_patient = prioritized_truncate_patient(
-            self.sample_patient_data_4, self.background_len, max_len, self.sep_token, ["LAB", "VAL"], self.vocabulary
+            self.sample_patient_data_4,
+            self.background_len,
+            max_len,
+            self.sep_token,
+            ["LAB", "VAL"],
+            self.vocabulary,
         )
-        non_priority_tokens = [v for k, v in self.vocabulary.items() if any(k.startswith(prefix) for prefix in ["LAB", "VAL"])]
+        non_priority_tokens = [
+            v
+            for k, v in self.vocabulary.items()
+            if any(k.startswith(prefix) for prefix in ["LAB", "VAL"])
+        ]
 
-        n_non_priority_tokens = truncated_patient["concept"].apply(lambda x: 1 if x in non_priority_tokens else 0).sum()
-        
-        self.assertEqual(
-                    5, n_non_priority_tokens
-                )
+        n_non_priority_tokens = (
+            truncated_patient["concept"]
+            .apply(lambda x: 1 if x in non_priority_tokens else 0)
+            .sum()
+        )
+
+        self.assertEqual(5, n_non_priority_tokens)
         self.assertTrue(
             len(truncated_patient) <= max_len, "Truncated patient data exceeds max_len"
         )
@@ -235,23 +277,37 @@ class TestTruncationFunctions(unittest.TestCase):
     def test_truncate_patient_w_priority_unit(self):
         max_len = 8
         truncated_patient_unit = prioritized_truncate_patient(
-            self.sample_patient_data_5, self.background_len, max_len, self.sep_token, ["LAB", "VAL"], self.vocabulary, unit=True
+            self.sample_patient_data_5,
+            self.background_len,
+            max_len,
+            self.sep_token,
+            ["LAB", "VAL"],
+            self.vocabulary,
+            unit=True,
         )
 
         self.assertTrue(
-            len(truncated_patient_unit) == 7, "Truncated patient data includes sub-part of unit"
+            len(truncated_patient_unit) == 7,
+            "Truncated patient data includes sub-part of unit",
         )
 
     def test_truncate_patient_w_priority_no_unit(self):
         max_len = 8
         truncated_patient_no_unit = prioritized_truncate_patient(
-            self.sample_patient_data_5, self.background_len, max_len, self.sep_token, ["LAB", "VAL"], self.vocabulary, unit=False
+            self.sample_patient_data_5,
+            self.background_len,
+            max_len,
+            self.sep_token,
+            ["LAB", "VAL"],
+            self.vocabulary,
+            unit=False,
         )
 
         self.assertTrue(
-            len(truncated_patient_no_unit) == 8, "Truncated patient data has incorrect length"
+            len(truncated_patient_no_unit) == 8,
+            "Truncated patient data has incorrect length",
         )
-    
-    
+
+
 if __name__ == "__main__":
     unittest.main()

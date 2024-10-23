@@ -23,7 +23,6 @@ from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.classes.loader import FormattedDataLoader
-from corebehrt.classes.normalizer import ValuesNormalizer
 from corebehrt.functional.utils import init_function
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"

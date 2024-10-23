@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Callable, List, Tuple, Union, Set
+from typing import Callable, List, Union, Set
 
 # New stuff
 import dask.dataframe as dd

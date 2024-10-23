@@ -82,7 +82,7 @@ class FormattedDataLoader:
         elif self.value_type == "quantile_value":
             return add_quantile_values(concepts)
         else:
-            raise NotImplementedError(f"Value type '{value_type}' is not supported.")
+            raise NotImplementedError(f"Value type '{self.value_type}' is not supported.")
 
     def _load_concept(self, concept_type: str):
         """

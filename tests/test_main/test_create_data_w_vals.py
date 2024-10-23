@@ -14,6 +14,7 @@ import yaml
 from corebehrt.main.create_data import main_data
 from corebehrt.functional.convert import convert_to_sequences
 
+
 class TestCreateData(unittest.TestCase):
     def setUp(self):
         # Create tmp directory to use for output
@@ -34,9 +35,9 @@ class TestCreateData(unittest.TestCase):
             },
             "loader": {
                 "data_dir": "./tests/data/raw_w_labs",
-                "concept_types": ["diagnose", "medication"], #, "labtest"],
+                "concept_types": ["diagnose", "medication"],  # , "labtest"],
                 "include_values": ["labtest"],
-                "value_type": "binned_value"
+                "value_type": "binned_value",
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},
@@ -85,9 +86,13 @@ class TestCreateData(unittest.TestCase):
         )
 
         # 3: Check patients
-        expected_pids = pd.read_csv("./tests/data/raw_w_labs/patients_info.csv")["PID"].tolist()
-        self.assertEqual(sorted(features["PID"].unique().tolist()), sorted(expected_pids))
-       
+        expected_pids = pd.read_csv("./tests/data/raw_w_labs/patients_info.csv")[
+            "PID"
+        ].tolist()
+        self.assertEqual(
+            sorted(features["PID"].unique().tolist()), sorted(expected_pids)
+        )
+
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
         self.assertTrue(exists(vocab_path))
@@ -95,23 +100,25 @@ class TestCreateData(unittest.TestCase):
         bg_tokens = [v for k, v in vocab.items() if k.startswith("BG")]
         self.assertEqual(len(bg_tokens), 2)
         val_tokens = [v for k, v in vocab.items() if k.startswith("VAL")]
-        
-        inv_vocab = {v: k for k, v in vocab.items()}
+
         # Check tokenisation
         for mode in ["pretrain", "finetune", "test"]:
-            tokenised_features  = dd.read_csv(
-                    join(
-                        self.tokenized_dir,
-                        f"features_{mode}",
-                        "*.csv",
-                    )
+            tokenised_features = dd.read_csv(
+                join(
+                    self.tokenized_dir,
+                    f"features_{mode}",
+                    "*.csv",
                 )
+            )
             sequences, _ = convert_to_sequences(tokenised_features)
             for cons, positions in zip(sequences["concept"], sequences["abspos"]):
-                self.assertTrue(cons[0] == vocab['[CLS]'])
+                self.assertTrue(cons[0] == vocab["[CLS]"])
                 self.assertTrue((cons[1] in bg_tokens))
-               
+
                 index_vals = [i for i, x in enumerate(cons) if x in val_tokens]
                 for i in range(len(index_vals) - 1):
-                    self.assertNotEqual(index_vals[i] + 1, index_vals[i + 1], 
-                                        f"Indices {index_vals[i]} and {index_vals[i + 1]} are next to each other")
+                    self.assertNotEqual(
+                        index_vals[i] + 1,
+                        index_vals[i + 1],
+                        f"Indices {index_vals[i]} and {index_vals[i + 1]} are next to each other",
+                    )
