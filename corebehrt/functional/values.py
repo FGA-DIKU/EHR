@@ -8,9 +8,20 @@ def add_binned_values(
     normalise: Optional[Callable[[pd.Series], pd.Series]] = None,
 ) -> dd.DataFrame:
     """
-    Includes binning values for the concepts DataFrame. Only includes numeric values.
-    Expects 'RESULT' and 'CONCEPT' column to be present.
-    Optionally normalises the 'RESULT' column using the provided normalise function.
+    Adds binned values to the 'concepts' DataFrame for numeric columns.
+
+    This function processes the 'RESULT' column, converting it to numeric values,
+    and creates binned values scaled by 100. These are concatenated back to the original 
+    DataFrame, with new concept labels prefixed by 'VAL_'.
+
+    Parameters:
+    ----------
+    concepts : 
+        A Dask DataFrame containing at least 'RESULT' and 'CONCEPT' columns. The 'RESULT' column
+        should have numeric data to be binned.
+    normalise : 
+        A function that normalises the 'RESULT' column. This function should take a Pandas 
+        Series and return a transformed Series. If None, no normalisation is applied.
     """
     concepts["RESULT"] = dd.to_numeric(concepts["RESULT"], errors="coerce")
     concepts["index"] = concepts.index + 1
@@ -31,9 +42,16 @@ def add_quantile_values(
     concepts: dd.DataFrame,
 ) -> dd.DataFrame:
     """
-    Includes quantile values for the concepts DataFrame.
-    Expects 'RESULT' and 'CONCEPT' column to be present.
-    Excepts values in 'RESULT' column to be quantiles starting with Q.
+    Adds quantile values to the 'concepts' DataFrame.
+
+    This function extracts quantile values the 'RESULT' column as values starting with Q. 
+    These are concatenated back to the original DataFrame, with new concept labels prefixed by 'VAL_'.
+
+    Parameters:
+    ----------
+    concepts : 
+        A Dask DataFrame containing at least 'RESULT' and 'CONCEPT' columns. The 'RESULT' column
+        should have quantile values starting with Q. 
     """
     concepts["index"] = concepts.index + 1
     values = concepts[concepts["RESULT"].astype(str).str.startswith("Q")]

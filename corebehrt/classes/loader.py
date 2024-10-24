@@ -25,6 +25,9 @@ class FormattedDataLoader:
     Attributes:
         folder (str): The path to the folder containing data files.
         concept_types (List[str]): A list of concept types to load e.g. ['diagnosis', 'medication'].
+        include_values (List[str]): A list of concept types to include values for e.g. ['labtest', 'medication']. The given concept file is excepted to have a 'RESULT' column.
+        value_type (str): The type of value to add to the concepts e.g. 'binned_value', 'quantile_value'.
+        normalise_func (Callable): A function to normalise values e.g. min-max normalisation.
 
     Methods:
         load() -> Tuple[dd.DataFrame, dd.DataFrame]:

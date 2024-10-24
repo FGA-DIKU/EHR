@@ -142,7 +142,9 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
 def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
     """
     Assign 'index' and 'order' columns to ensure correct ordering.
-    Initialises 'index' and 'order' columns with 0 to prioritise unassigned rows in sorting.
+    - The 'index' column represents the position of each row within its partition.  
+    - The 'order' column can be used for additional custom ordering if needed.
+    - Both columns are initialized with 0 to ensure consistent behavior across partitions.  
     Parameters:
         df: dd.DataFrame with 'PID' column.
     Returns:
