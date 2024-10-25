@@ -38,6 +38,10 @@ class TestCreateData(unittest.TestCase):
                 "concept_types": ["diagnose", "medication"],  # , "labtest"],
                 "include_values": ["labtest"],
                 "value_type": "binned_value",
+                "normalize_args": {
+                    "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
+                    "kwargs": {"min_count": 3},
+                },
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},

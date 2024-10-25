@@ -18,7 +18,10 @@ loader:
   ]
   include_values: [labtest]
   value_type: binned_value
-  # normalise_func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results
+  normalize: 
+    func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results
+    kwargs: 
+      min_count: 3
 
 features:
   #ages: true

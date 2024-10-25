@@ -117,7 +117,11 @@ class TestCreators(unittest.TestCase):
 
     def test_normalise_and_create_binned_value(self):
         binned_values = add_binned_values(
-            self.concepts, normalise=ValuesNormalizer.min_max_normalize_results
+            self.concepts,
+            normalize_args={
+                "func": ValuesNormalizer.min_max_normalize_results,
+                "kwargs": {"min_count": 3},
+            },
         ).compute()
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]

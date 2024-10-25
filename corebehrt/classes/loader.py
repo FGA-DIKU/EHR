@@ -41,13 +41,13 @@ class FormattedDataLoader:
         concept_types: List[str],
         include_values: List[str] = [],
         value_type: str = None,
-        normalise_func: Callable = None,
+        normalize_args: dict = None,
     ):
         self.folder = folder
         self.concept_types = concept_types
         self.include_values = include_values
         self.value_type = value_type
-        self.normalise_func = normalise_func
+        self.normalize_args = normalize_args
 
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
@@ -81,7 +81,7 @@ class FormattedDataLoader:
         Returns a dask dataframe.
         """
         if self.value_type == "binned_value":
-            return add_binned_values(concepts, self.normalise_func)
+            return add_binned_values(concepts, self.normalize_args)
         elif self.value_type == "quantile_value":
             return add_quantile_values(concepts)
         else:

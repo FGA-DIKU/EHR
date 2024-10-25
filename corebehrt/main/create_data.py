@@ -130,9 +130,12 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             if hasattr(cfg.loader, "value_type") and cfg.loader.value_type
             else None
         ),
-        normalise_func=(
-            init_function(cfg.loader.normalise_func)
-            if hasattr(cfg.loader, "normalise_func") and cfg.loader.normalise_func
+        normalize_args=(
+            {
+                "func": init_function(cfg.loader.normalize_args.func),
+                "kwargs": cfg.loader.normalize_args.kwargs,
+            }
+            if hasattr(cfg.loader, "normalize_args") and cfg.loader.normalize_args
             else None
         ),
     ).load()
