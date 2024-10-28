@@ -205,8 +205,8 @@ def map_azure_path(path: str) -> str:
     dstore, tail = path.split(":", 1)
     dstore = dstore.replace("-", "_")
     if dstore in ("researcher_data", "sp_data"):
-        # Assumed to be path on datastore, format: <dstore>:<path>
-        return join("azureml://datastores", dstore, "paths", path)
+        # Assumed to be path on datastore, format: <dstore>:<tail>
+        return join("azureml://datastores", dstore, "paths", tail)
     else:
         # Assumed to be an asset, format <asset_name>:<asset_version>
         return f"azureml:{path}"
