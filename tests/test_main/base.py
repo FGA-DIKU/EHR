@@ -59,4 +59,6 @@ class TestMainScript(unittest.TestCase):
             with open(compare_cfg_path) as f:
                 compare_cfg = yaml.safe_load(f)
 
-        self.assertEqual(cfg, compare_cfg)
+        self.assertEqual(cfg.keys(), compare_cfg.keys())
+        for key in cfg.keys():
+            self.assertEqual(cfg[key], compare_cfg[key])

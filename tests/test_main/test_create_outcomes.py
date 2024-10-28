@@ -53,7 +53,7 @@ class TestCreateOutcomes(TestMainScript):
         )
 
     def test_create_outcomes(self):
-        ### Call create data script
+        ### Call create outcomes script
 
         main_data(self.config_path)
 

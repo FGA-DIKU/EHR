@@ -1,0 +1,55 @@
+data:
+  dataset:
+    ignore_special_tokens: true
+    masking_ratio: 0.8
+    replace_ratio: 0.1
+    select_ratio: 1.0
+  min_len: 2
+  num_train_patients: 100
+  num_val_patients: 20
+  truncation_len: 20
+  val_ratio: 0.2
+logging:
+  level: 20
+  path: ./.test_tmp/logs
+metrics:
+  mlm_loss:
+    _target_: corebehrt.evaluation.metrics.LossAccessor
+    loss_name: loss
+  top1:
+    _target_: corebehrt.evaluation.metrics.PrecisionAtK
+    topk: 1
+  top10:
+    _target_: corebehrt.evaluation.metrics.PrecisionAtK
+    topk: 10
+model:
+  abspos_embeddings: false
+  hidden_size: 96
+  intermediate_size: 64
+  linear: true
+  num_attention_heads: 3
+  num_hidden_layers: 3
+  plusplus: true
+  type_vocab_size: 240
+optimizer:
+  eps: 1.0e-06
+  lr: 0.0005
+paths:
+  data: ./tests/data/raw
+  features: ./tests/data/features
+  model: ./.test_tmp/pretrain
+  tokenized: ./tests/data/tokenized
+scheduler:
+  _target_: transformers.get_linear_schedule_with_warmup
+  num_training_steps: 0
+  num_warmup_steps: 0
+trainer_args:
+  batch_size: 32
+  early_stopping: null
+  effective_batch_size: 32
+  epochs: 5
+  gradient_clip:
+    clip_value: 1.0
+  info: true
+  sampler: null
+  shuffle: true

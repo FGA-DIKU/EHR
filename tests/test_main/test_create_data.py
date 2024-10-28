@@ -54,8 +54,8 @@ class TestCreateData(TestMainScript):
         ### Validate generated files.
 
         # 1: Copy of configuration file should be created in the features and tokenized dirs.
-        for _dir in [self.features_dir, self.tokenized_dir]:
-            self.check_config(join(_dir, DATA_CFG))
+        self.check_config(join(self.features_dir, DATA_CFG))
+        self.check_config(join(self.tokenized_dir, DATA_CFG))
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
