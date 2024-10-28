@@ -108,7 +108,7 @@ def setup_job(
 
             path = f"azureml:{path}"
 
-        return value
+        return path
 
     # Input paths
     input_values = dict()
