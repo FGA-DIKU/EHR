@@ -10,17 +10,17 @@ INPUTS = {
         "optional": True,
     },
     "pretrain_model": {
-        "type": "mlflow_model",
+        "type": "uri_folder",
         "optional": True,
     },
     "restart_model": {
-        "type": "mlflow_model",
+        "type": "uri_folder",
         "optional": True,
     },
     "outcome": {"type": "uri_file"},
     "exposure": {"type": "uri_file"},
 }
-OUTPUTS = {"model": {"type": "mlflow_model"}}
+OUTPUTS = {"model": {"type": "uri_folder"}}
 
 
 def job(config, compute=None, register_output=dict()):
