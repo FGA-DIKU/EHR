@@ -8,6 +8,9 @@ AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
 
 try:
+    #
+    # Check if azure is available and set flag.
+    #
     from azure.ai.ml import MLClient, command, Input, Output
     from azure.identity import DefaultAzureCredential
 
@@ -17,28 +20,51 @@ except:
 
 
 def is_azure_available() -> bool:
+    """
+    Checks if Azure modules are available.
+
+    :return: True if available, otherwise False.
+    """
     global AZURE_AVAILABLE
     return AZURE_AVAILABLE
 
 
 def check_azure() -> None:
+    """
+    Checks if Azure modules are available, raises an exception if not.
+    """
     if not is_azure_available():
         raise Exception("Azure modules not found!")
 
 
 def ml_client() -> "MLClient":
+    """
+    Returns the Azure MLClient.
+    """
     check_azure()
     return MLClient.from_config(DefaultAzureCredential())
 
 
 def setup_job(
     job: str,
-    inputs: set,
-    outputs: set,
+    inputs: dict,
+    outputs: dict,
     config: Config,
     compute: str = None,
     register_output: dict = dict(),
 ):
+    """
+    Sets up the Azure job.
+
+    :param job: Name of job.
+    :param inputs: argument configuration for input directories, i.e. a mapping
+        to configuration elements, typically in the paths sub-config.
+    :param outputs: argument configuration for output directories.
+    :param config: The config for the current job.
+    :param compute: The azure compute to use for the job.
+    :register_output: A mapping from output id to name, if the output should be
+        registered as a data asset.
+    """
     check_azure()
     assert compute is not None
 
@@ -109,17 +135,31 @@ def setup_job(
     )
 
 
-def run_job(job, experiment: str):
+def run_job(job: "Job", experiment: str):
+    """
+    Starts the given job in the given experiment.
+    """
     check_azure()
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-def prepare_config(cmd: str, inputs: set, outputs: set) -> None:
+def prepare_config(inputs: dict, outputs: dict) -> None:
+    """
+    Prepares the config on the cluster by substituing any input/output directories
+    passed as arguments in the job setup configuration file:
+    -> The file (AZURE_CONFIG_FILE) is loaded.
+    -> Arguments are read from the cmd-line
+    -> Arguments are substituted into the configuration.
+    -> The file is re-written.
+
+    :param inputs: input argument configuration/mapping.
+    :param outputs: output argument configuration/mapping.
+    """
     # Read the config file
     cfg = load_config(AZURE_CONFIG_FILE)
 
     # Parse command line args
-    args = parse_args(cmd, inputs | outputs)
+    args = parse_args(inputs | outputs)
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
@@ -138,8 +178,16 @@ def prepare_config(cmd: str, inputs: set, outputs: set) -> None:
     cfg.save_to_yaml(AZURE_CONFIG_FILE)
 
 
-def parse_args(cmd: str, args: set) -> dict:
-    parser = argparse.ArgumentParser(prog=f"corebehrt.azure.{cmd}")
+def parse_args(args: set) -> dict:
+    """
+    Parses the arguments from the command line
+
+    :param parse_args: The argument configuration mapping for inputs and outputs.
+
+    :return: A dictionary mapping keys from args to the values passed to the
+        command line.
+    """
+    parser = argparse.ArgumentParser()
     for arg in args:
         parser.add_argument(f"--{arg}", type=str)
     return vars(parser.parse_args())
