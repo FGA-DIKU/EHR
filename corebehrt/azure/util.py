@@ -102,7 +102,7 @@ def setup_job(
             dstore = dstore.replace("-", "_")
             if dstore in ("researcher_data", "sp_data"):
                 # Assumed to be path on datastore, format: <dstore>:<path>
-                path = join("//datastores", dstore, "paths", value)
+                path = join("//datastores", dstore, "paths", path)
 
             # else: Assumed to be an asset, format <asset_name>:<asset_version>
 
