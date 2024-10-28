@@ -297,7 +297,7 @@ class DirectoryPreparer:
         self.create_run_directory("model", base="runs")
 
         # Write config in output directory.
-        self.write_config("model", name=DATA_CFG)
+        self.write_config("model", source="features", name=DATA_CFG)
         self.write_config("model", name=PRETRAIN_CFG)
 
     def setup_finetune(self) -> None:
