@@ -118,18 +118,16 @@ class ModelManager:
         self.pretrain_model_path = self.check_model("pretrain_model")
 
         if self.check_checkpoints(self.model_path):
-            # Given model has checkpoints
+            # Given model has checkpoints -> restart
             self.restart_model_path = self.model_path
-            old_cfg_path = self.cfg.paths.model
         else:
             # Restart model from other directory (if given)
             self.restart_model_path = self.check_model("restart_model", fold=fold)
-            old_cfg_path = self.cfg.paths.get("restart_model")
 
         # Update config from old model, if relevant
-        if old_cfg_path is not None:
+        if self.restart_model_path is not None:
             self.cfg.model = load_model_cfg_from_checkpoint(
-                old_cfg_path, "finetune_config"
+                self.restart_model_path, "finetune_config"
             )
 
         # Check arguments are valid
