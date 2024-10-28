@@ -10,7 +10,6 @@ paths:
   # tokenized_pids: ...
   
   # predefined_splits: outputs/pretraining/behrt_base
-  
   # restart_model: ... # Use for restarting from checkpoint
 
 ## OUTPUTS

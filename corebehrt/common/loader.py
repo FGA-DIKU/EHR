@@ -79,6 +79,7 @@ class FeaturesLoader:
         ):
             features_temp = torch.load(join(self.paths.tokenized, tokenized_file))
             pids_temp = torch.load(join(self.paths.tokenized, tokenized_pids_file))
+
             # Concatenate features
             for key in features_temp.keys():
                 features.setdefault(key, []).extend(features_temp[key])
@@ -104,13 +105,16 @@ class FeaturesLoader:
                 "No exposure file provided. Using outcomes as censoring timestamps."
             )
             return outcomes, outcomes.copy(deep=True)
+
         logger.info(f"Load exposure timestamps from {self.paths.exposure}")
         exposures = pd.read_csv(self.paths.exposure)
+
         return outcomes, exposures
 
     def load_finetune_data(self, path: str = None, mode: str = None) -> Data:
         """Load features for finetuning"""
         path = self.paths.finetune_features_path if path is None else path
+
         features = torch.load(join(path, f"features.pt"))
         outcomes = torch.load(join(path, f"outcomes.pt"))
         pids = torch.load(join(path, f"pids.pt"))
@@ -149,6 +153,7 @@ class ModelLoader:
             checkpoint["model_state_dict"], strict=False
         )
         missing_keys = load_result.missing_keys
+
         if len([k for k in missing_keys if k.startswith("embeddings")]) > 0:
             pretrained_model_embeddings = model.embeddings.__class__.__name__
             raise ValueError(

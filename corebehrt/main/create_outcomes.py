@@ -11,7 +11,6 @@ from corebehrt.classes.outcomes import OutcomeMaker
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.common.utils import check_patient_counts
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
@@ -22,7 +21,6 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
     for concept_batch, patient_batch in tqdm(
         loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
     ):
-        check_patient_counts(concept_batch, patient_batch, logger)
         pids = concept_batch.PID.unique()
         outcome_tables = OutcomeMaker(cfg.outcomes, features_cfg.features.origin_point)(
             concept_batch, patient_batch, pids

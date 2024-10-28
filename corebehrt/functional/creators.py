@@ -1,73 +1,149 @@
-""" This module contains functions that create new columns in the dataset """
-
-import itertools
 from datetime import datetime
 
-import pandas as pd
-from pandas.core.groupby.generic import DataFrameGroupBy
-
+import dask.dataframe as dd
 
 from corebehrt.functional.utils import (
     get_abspos_from_origin_point,
-    get_time_difference,
     normalize_segments_series,
 )
 
 
-def create_ages(timestamps: pd.Series, birthdates: pd.Series) -> pd.Series:
-    """Returns the AGE column - Functions as a wrapper for get_time_difference"""
-    return get_time_difference(timestamps, birthdates)
+def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
+    """
+    Assign absolute position in hours since origin point to each row in concepts.
+    Parameters:
+        concepts: concepts with 'TIMESTAMP' column.
+        origin_point: The origin point for calculating absolute position.
+    Returns:
+        concepts with a new 'abspos' column
+    """
+    concepts["abspos"] = get_abspos_from_origin_point(
+        concepts["TIMESTAMP"], origin_point
+    )
+    return concepts
 
 
-def create_abspos(timestamps: pd.Series, origin_point: datetime) -> pd.Series:
-    """Returns the ABSPOS column - Functions as a wrapper for get_abspos_from_origin_point"""
-    return get_abspos_from_origin_point(timestamps, origin_point)
+def create_age_in_years(concepts: dd.DataFrame) -> dd.DataFrame:
+    """
+    Compute age in years for each row in concepts
+    Parameters:
+        concepts: concepts with 'TIMESTAMP' and 'BIRTHDATE' columns.
+    Returns:
+        dd.DataFrame: concepts with a new 'age' column
+    """
+    concepts["age"] = (concepts["TIMESTAMP"] - concepts["BIRTHDATE"]).dt.days // 365.25
+    return concepts
 
 
-def create_segments(groupby: DataFrameGroupBy) -> pd.Series:
-    """Creates the SEGMENT column - Functions as a wrapper for normalize_segments_series"""
-    return groupby.transform(normalize_segments_series)
+def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
+    """
+    Create a Dask DataFrame containing death events for patients with known death dates.
+    Parameters:
+        patients_info: containing patient information, including 'PID', 'BIRTHDATE', and 'DEATHDATE'.
+    Returns:
+        patients_info with death events, including 'PID', 'concept', 'TIMESTAMP', 'ADMISSION_ID', and 'BIRTHDATE' columns.
+    """
+    # Filter patients who have both BIRTHDATE and DEATHDATE
+    death_events = patients_info[
+        (~patients_info["BIRTHDATE"].isna()) & (~patients_info["DEATHDATE"].isna())
+    ][["PID", "BIRTHDATE", "DEATHDATE"]]
+
+    # Rename 'DEATHDATE' to 'TIMESTAMP' and add necessary columns
+    death_events = death_events.rename(columns={"DEATHDATE": "TIMESTAMP"})
+    death_events = death_events.assign(
+        concept="Death",
+        ADMISSION_ID=-1,  # Segment for death event
+    )
+
+    # Reorder columns if necessary
+    death_events = death_events[
+        ["PID", "concept", "TIMESTAMP", "ADMISSION_ID", "BIRTHDATE"]
+    ]
+
+    return death_events
 
 
 def create_background(
-    patients_info: pd.DataFrame, background_vars: list
-) -> pd.DataFrame:
-    """Creates the BACKGROUND column"""
-    background = pd.DataFrame(
-        {
-            "PID": patients_info["PID"].tolist() * len(background_vars),
-            "concept": itertools.chain.from_iterable(
-                [
-                    (patients_info[col].map(lambda x: f"BG_{col}_{x}")).tolist()
-                    for col in background_vars
-                ]
-            ),
-            "TIMESTAMP": patients_info["BIRTHDATE"].tolist() * len(background_vars),
-        }
+    patients_info: dd.DataFrame, background_vars: list
+) -> dd.DataFrame:
+    """
+    Create background concepts for each patient based on static background variables.
+    Parameters:
+        patients_info: containing patient information, including 'PID', 'BIRTHDATE', and background variables.
+        background_vars: static background variables column names to include.
+    Returns:
+        table with background concepts, including 'PID', 'concept', 'TIMESTAMP', 'ADMISSION_ID', and 'BIRTHDATE' columns.
+    """
+    # Filter patients with non-null BIRTHDATE
+    patients_info = patients_info[~patients_info["BIRTHDATE"].isna()]
+
+    # Melt the DataFrame to transform background variables into rows
+    background = patients_info[["PID", "BIRTHDATE"] + background_vars].melt(
+        id_vars=["PID", "BIRTHDATE"],
+        value_vars=background_vars,
+        var_name="variable",
+        value_name="value",
     )
+
+    # Create 'concept' column
+    background["concept"] = (
+        "BG_" + background["variable"] + "_" + background["value"].astype(str)
+    )
+
+    # Assign additional columns
+    background["TIMESTAMP"] = background["BIRTHDATE"]
+    background["ADMISSION_ID"] = 0
+
+    # Select and reorder the required columns
+    background = background[
+        ["PID", "concept", "TIMESTAMP", "ADMISSION_ID", "BIRTHDATE"]
+    ]
 
     return background
 
 
-def create_death(
-    patients_info: pd.DataFrame,
-    segments_with_pids: pd.DataFrame,
-    origin_point: datetime,
-) -> pd.DataFrame:
-    """Creates the DEATH concept"""
-    patients_info = patients_info[
-        patients_info["DEATHDATE"].notna()
-    ]  # Only consider patients with death info
+def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
+    """
+    Assign segments to the concepts DataFrame based on 'ADMISSION_ID', ensuring that
+    events are ordered correctly within each 'PID'.
+    Parameters:
+        concepts: concepts with 'PID', 'ADMISSION_ID', and 'abspos' columns.
+    Returns:
+        concepts with a new 'segment' column
+    """
+    # Shuffle data by 'PID' to ensure that all data for a PID is in the same partition
+    concepts = concepts.shuffle(on="PID")
 
-    last_segments = segments_with_pids.groupby("PID")["segment"].last().to_dict()
-    death_info = pd.DataFrame(
-        {
-            "PID": patients_info["PID"],
-            "concept": ["Death"] * len(patients_info),
-            "age": create_ages(patients_info["DEATHDATE"], patients_info["BIRTHDATE"]),
-            "abspos": create_abspos(patients_info["DEATHDATE"], origin_point),
-            "segment": patients_info["PID"].map(last_segments),
-        }
+    # Sort within partitions by 'PID' and 'abspos'
+    concepts = concepts.map_partitions(_sort_and_assign_segments)
+
+    # Assign maximum segment to 'Death' concepts
+    concepts = assign_segments_to_death(concepts)
+
+    return concepts
+
+
+def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
+    """
+    Assign the maximum segment to 'Death' concepts within each 'PID'.
+    Parameters:
+        df with 'PID', 'concept', and 'segment' columns.
+    Returns:
+        df with 'Death' concepts assigned to the maximum segment.
+    """
+    # Compute the maximum segment per 'PID'
+    max_segment = df.groupby("PID")["segment"].max().rename("max_segment")
+    # Merge and assign
+    df = df.merge(max_segment.reset_index(), on="PID", how="left")
+    df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
+    return df.drop(columns=["max_segment"])
+
+
+def _sort_and_assign_segments(df):
+    """Sort by 'PID' and 'abspos' to ensure correct ordering and assign segments."""
+    df = df.sort_values(["PID", "abspos"])
+    # Group by 'PID' and apply factorize to 'ADMISSION_ID'
+    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
+        normalize_segments_series
     )
-
-    return death_info
+    return df

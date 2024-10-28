@@ -10,7 +10,7 @@ from corebehrt.common.loader import (
     load_model_cfg_from_checkpoint,
 )
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.common.utils import compute_number_of_warmup_steps
+from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
@@ -40,8 +40,10 @@ def main_train(config_path):
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
 
     if "scheduler" in cfg:
-        logger.info("Computing number of warmup steps")
-        compute_number_of_warmup_steps(cfg, len(train_dataset))
+        logger.info("Replacing steps with epochs in scheduler config")
+        cfg.scheduler = replace_steps_with_epochs(
+            cfg.scheduler, cfg.trainer_args.batch_size, len(train_dataset)
+        )
 
     checkpoint, epoch = None, None
     if restarted:

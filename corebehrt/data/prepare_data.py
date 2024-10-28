@@ -15,7 +15,7 @@ from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
 from corebehrt.functional.exclude import (
-    exclude_short_sequences,
+    exclude_short_sequences_dask,
     filter_patients_by_gender,
     exclude_pids_from_data,
 )
@@ -51,7 +51,7 @@ class DatasetPreparer:
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
-        predefined_splits = self.cfg.paths.get("predefined_pids", False)
+        predefined_splits = self.cfg.paths.get("predefined_splits", False)
         train_data, val_data = self._prepare_mlm_features(predefined_splits)
         train_dataset = MLMDataset(
             train_data.features, train_data.vocabulary, **self.cfg.data.dataset
@@ -98,7 +98,9 @@ class DatasetPreparer:
                 original_config = load_config(
                     join(paths_cfg.model_path, "finetune_config.yaml")
                 )
-            self.cfg.outcome.n_hours = original_config.outcome.n_hours
+            self.cfg.outcome.n_hours_censoring = (
+                original_config.outcome.n_hours_censoring
+            )
             logger.warning("Using predefined splits. Ignoring test_split parameter")
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
             outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
@@ -130,7 +132,7 @@ class DatasetPreparer:
             )
 
         # 4. Data censoring
-        censor_dates = index_dates + self.cfg.outcome.n_hours
+        censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data = censor_data(
             data,
             censor_dates,
@@ -144,7 +146,7 @@ class DatasetPreparer:
                 )
 
         # 6. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
@@ -181,14 +183,6 @@ class DatasetPreparer:
         return data
 
     def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
-        """
-        1. Load tokenized data
-        2. Optional: Remove background tokens
-        3. Exclude short sequences
-        4. Optional: Select subset of patients
-        5. Truncation
-        6. Normalize segments
-        """
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
@@ -204,23 +198,23 @@ class DatasetPreparer:
         vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
 
         # 2. Exclude pids
-        if paths_cfg.get("exclude_pids", None):
-            pids_to_exclude = load_pids(paths_cfg.exclude_pids)
-            data = exclude_pids_from_data(data, pids_to_exclude)
+        exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
+        if exclude_pids_path:
+            excluded_pids = load_pids(exclude_pids_path)
+            data = exclude_pids_from_data(data, excluded_pids)
 
         # 3. Select predefined pids, remove the rest
-        predefined_pids = paths_cfg.get("predefined_pids", False)
-        if predefined_pids:
+        if predefined_splits:
             logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = filter_table_by_pids(data, load_predefined_pids(predefined_pids))
+            data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
-        data = exclude_short_sequences(
+        data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
         # 4. Optional: Patient Subset Selection
-        if not predefined_pids and data_cfg.get("num_patients"):
+        if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 5. Truncation
@@ -251,7 +245,5 @@ class DatasetPreparer:
         train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
         val_features, val_pids = convert_to_sequences(val_data)
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-
-        log_features_in_sequence(train_data)
 
         return train_data, val_data

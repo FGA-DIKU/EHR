@@ -8,12 +8,10 @@ paths:
   features: ./outputs/features
   
 loader:
-  concepts: [
-    diagnosis,
+  concept_types: [
+    diagnose,
     medication,
   ]
-  batchsize: 64
-  chunksize: 300
 
 features:
   #ages: true

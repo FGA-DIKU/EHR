@@ -13,7 +13,7 @@ from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import DirectoryPreparer, CHECKPOINTS_DIR
 from corebehrt.data.utils import Utilities
 from corebehrt.evaluation.utils import get_sampler
-from corebehrt.model.model import BertEHRModel, BertForFineTuning
+from corebehrt.classes.model import BertEHRModel, BertForFineTuning
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
