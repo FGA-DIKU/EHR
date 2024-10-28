@@ -3,7 +3,7 @@ import argparse
 
 from corebehrt.common.config import load_config
 
-from corebehrt.azure.components import create_data, create_outcomes, pretrain
+from corebehrt.azure.components import create_data, create_outcomes, pretrain, finetune
 
 from . import util
 
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     job_parser.add_argument(
         "JOB",
         type=str,
-        choices=("create_data", "create_outcomes", "pretrain", "finetune"),
+        choices=("create_data", "create_outcomes", "pretrain", "finetune_cv"),
         help="Job to run.",
     )
     job_parser.add_argument(
@@ -85,6 +85,7 @@ if __name__ == "__main__":
             "create_data": create_data.job,
             "create_outcomes": create_outcomes.job,
             "pretrain": pretrain.job,
+            "finetune_cv": finetune.job,
         }[args.JOB](cfg, compute=args.compute, register_output=register_output)
 
         # Start job

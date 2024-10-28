@@ -48,27 +48,47 @@ def setup_job(
     # Make sure config is read-able -> save it in the root folder.
     config.save_to_yaml(AZURE_CONFIG_FILE)
 
+    # Helper for reading a config value from config (cfg), given
+    # the argument name (arg) and configuration (arg_cfg)
+    def _get_from_cfg(cfg, arg, arg_cfg):
+        path = arg_cfg.get("key", f"paths.{arg}").split(".")
+        # Traverse config path
+        for step in path:
+            # Check if present
+            if step not in cfg:
+                if arg_cfg.get("optional", False):
+                    # Return None if optional
+                    return None
+                else:
+                    # Raise error
+                    raise Exception("Missing required configuration item {path}.")
+            # Next step
+            cfg = cfg[step]
+
+        # Resulting value
+        value = cfg
+
+        # Check if found and raise error if not
+
+        return value
+
     # Input paths
     input_values = dict()
     for arg, arg_cfg in inputs.items():
-        value = config
-        for step in arg_cfg["key"].split("."):
-            value = value[step]
-        input_values[arg] = Input(path=value, type=arg_cfg["type"])
+        if value := _get_from_cfg(config, arg, arg_cfg):
+            input_values[arg] = Input(path=value, type=arg_cfg["type"])
 
-        # Update command
-        cmd += " --" + arg + " ${{inputs." + arg + "}}"
+            # Update command
+            cmd += " --" + arg + " ${{inputs." + arg + "}}"
 
     # Output paths
     output_values = dict()
     for arg, arg_cfg in outputs.items():
-        value = config
-        for step in arg_cfg["key"].split("."):
-            value = value[step]
-        output_values[arg] = Output(path=value, type=arg_cfg["type"])
+        if value := _get_from_cfg(config, arg, arg_cfg):
+            output_values[arg] = Output(path=value, type=arg_cfg["type"])
 
-        # Update command
-        cmd += " --" + arg + " ${{outputs." + arg + "}}"
+            # Update command
+            cmd += " --" + arg + " ${{outputs." + arg + "}}"
 
         # Must we register the output?
         if arg in register_output:

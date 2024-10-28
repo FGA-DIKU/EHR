@@ -3,10 +3,10 @@ from corebehrt.main import create_outcomes
 import argparse
 
 INPUTS = {
-    "data": {"type": "uri_folder", "key": "loader.data_dir"},
-    "features": {"type": "uri_folder", "key": "features_dir"},
+    "data": {"type": "uri_folder"},
+    "features": {"type": "uri_folder"},
 }
-OUTPUTS = {"output": {"type": "uri_folder", "key": "paths.outcome_dir"}}
+OUTPUTS = {"outcomes": {"type": "uri_folder"}}
 
 
 def job(config, compute=None, register_output=dict()):

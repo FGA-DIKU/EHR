@@ -2,8 +2,11 @@ from corebehrt.azure import util
 from corebehrt.main import create_data
 import argparse
 
-INPUTS = {"data": {"type": "uri_folder", "key": "loader.data_dir"}}
-OUTPUTS = {"output": {"type": "uri_folder", "key": "output_dir"}}
+INPUTS = {"data": {"type": "uri_folder"}}
+OUTPUTS = {
+    "tokenized": {"type": "uri_folder"},
+    "features": {"type": "uri_folder"},
+}
 
 
 def job(config, compute=None, register_output=dict()):

@@ -1,6 +1,5 @@
 from corebehrt.azure import util
-
-from corebehrt.main import pretrain
+from corebehrt.main import create_data
 import argparse
 
 INPUTS = {
@@ -10,17 +9,23 @@ INPUTS = {
         "type": "uri_folder",
         "optional": True,
     },
+    "pretrain_model": {
+        "type": "mlflow_model",
+        "optional": True,
+    },
     "restart_model": {
         "type": "mlflow_model",
         "optional": True,
     },
+    "outcome": {"type": "uri_file"},
+    "exposure": {"type": "uri_file"},
 }
 OUTPUTS = {"model": {"type": "mlflow_model"}}
 
 
 def job(config, compute=None, register_output=dict()):
     return util.setup_job(
-        "pretrain",
+        "create_data",
         inputs=INPUTS,
         outputs=OUTPUTS,
         config=config,
@@ -31,6 +36,6 @@ def job(config, compute=None, register_output=dict()):
 
 if __name__ == "__main__":
     # Parse args and update config
-    util.prepare_config("pretrain", INPUTS, OUTPUTS)
+    util.prepare_config("create_data", INPUTS, OUTPUTS)
     # Run command
-    pretrain.main_train(util.AZURE_CONFIG_FILE)
+    create_data.main_data(util.AZURE_CONFIG_FILE)
