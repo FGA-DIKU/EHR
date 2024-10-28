@@ -70,3 +70,7 @@ Results are saved in a table.
 Currently, still operates on sequences.
 Adds SEP and CLS tokens
 Create vocabulary based on pretrain_data
+
+
+## Azure
+Use the submodule `corebehrt.azure` for running on Azure with SDK v2. See [how-to](corebehrt/azure/README.md).

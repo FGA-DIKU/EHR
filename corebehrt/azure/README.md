@@ -3,12 +3,12 @@
 ## Configuration files in Azure
 The normal configuration files can be used when running in Azure with only minor changes to the `paths` sub-configuration. Specifically, paths must be either paths on data stores (`research-data` or `sp-data`) or data asset identifiers:
 
-A path on the data store must be specified as `<datastore>:<path>`, while an asset must be specified as `<asset_name>:<asset_version>`.
+A path on the data store must be specified as `<datastore>:<path>`, while an asset must be specified as `<asset_name>:<asset_version>` or `<asset_name>@<asset_label>`.
 
-Example from `create_data.yaml`, using the CoreBEHRT example data directory registered Azure asset (`CoreBEHRT_example_data`) version 1 as input, and folders on `researcher-data` for output:
+Example from `create_data.yaml`, using the CoreBEHRT example data directory registered Azure asset (`CoreBEHRT_example_data`, latest version) as input, and folders on `researcher-data` for output:
 ```
 paths:
-    data: "CoreBEHRT_example_data:1"
+    data: "CoreBEHRT_example_data@latest"
     features: "researher-data:unit_tests/corebehrt/output/features"
     tokenized: "researher-data:unit_tests/corebehrt/output/tokenized"
 ```
