@@ -1,5 +1,5 @@
 import argparse
-import os
+from os.path import join
 import yaml
 from datetime import datetime
 from corebehrt.common.config import Config, load_config
