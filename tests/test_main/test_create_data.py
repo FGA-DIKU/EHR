@@ -15,53 +15,36 @@ from tests.helpers import compute_column_checksum
 from corebehrt.main.create_data import main_data
 from corebehrt.common.setup import DATA_CFG
 
+from .base import TestMainScript
 
-class TestCreateData(unittest.TestCase):
+
+class TestCreateData(TestMainScript):
     def setUp(self):
-        # Create tmp directory to use for output
-        self.root_dir = "./.test_create_data"
-        makedirs(self.root_dir, exist_ok=True)
+        super().setUp()
 
-        # Create config file
-        self.output_dir = join(self.root_dir, "outputs")
-        self.config_path = join(self.root_dir, "create_data.yaml")
-        self.features_dir = join(self.output_dir, "features")
-        self.tokenized_dir = join(self.output_dir, "tokenized")
+        # Paths
+        self.features_dir = join(self.tmp_dir, "features")
+        self.tokenized_dir = join(self.tmp_dir, "tokenized")
 
-        self.config = {
-            "logging": {"level": logging.INFO, "path": join(self.root_dir, "logs")},
-            "paths": {
-                "data": "./tests/data/raw",
-                "features": self.features_dir,
-                "tokenized": self.tokenized_dir,
-            },
-            "loader": {
-                "concept_types": ["diagnose", "medication"],
-            },
-            "features": {
-                "origin_point": {"year": 2020, "month": 1, "day": 26},
-                "background_vars": ["GENDER"],
-            },
-            "tokenizer": {"sep_tokens": True, "cls_token": True},
-            "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
-            "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
-        }
-
-        with open(self.config_path, "w") as config_file:
-            yaml.dump(self.config, config_file)
-
-        # Set seed
-        seed = 42
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        random.seed(seed)
-
-    def tearDown(self):
-        # Remove all outputs
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-            handler.close()
-        shutil.rmtree(self.root_dir)
+        self.set_config(
+            {
+                "paths": {
+                    "data": "./tests/data/raw",
+                    "features": self.features_dir,
+                    "tokenized": self.tokenized_dir,
+                },
+                "loader": {
+                    "concept_types": ["diagnose", "medication"],
+                },
+                "features": {
+                    "origin_point": {"year": 2020, "month": 1, "day": 26},
+                    "background_vars": ["GENDER"],
+                },
+                "tokenizer": {"sep_tokens": True, "cls_token": True},
+                "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
+                "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
+            }
+        )
 
     def test_create_data(self):
         ### Call create data script
@@ -72,11 +55,7 @@ class TestCreateData(unittest.TestCase):
 
         # 1: Copy of configuration file should be created in the features and tokenized dirs.
         for _dir in [self.features_dir, self.tokenized_dir]:
-            cfg_file = join(_dir, DATA_CFG)
-            self.assertTrue(exists(cfg_file))
-            with open(cfg_file) as f:
-                config = yaml.safe_load(f)
-            self.assertEqual(config, self.config)
+            self.check_config(join(_dir, DATA_CFG))
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
