@@ -44,7 +44,7 @@ class DirectoryPreparer:
 
         # Set logging defaults
         if not hasattr(cfg, "logging") or not hasattr(cfg.logging, "level"):
-            cfg.logging.level = logging.INFO
+            cfg.logging = {"level": logging.INFO}
 
     def setup_logging(
         self, log_name: str, log_dir: str = None, log_level: str = None

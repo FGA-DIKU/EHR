@@ -7,8 +7,11 @@ import torch
 import numpy as np
 import random
 import shutil
+import logging
 
 from corebehrt.main.create_data import main_data
+
+DATA_CFG = "data_config.yaml"
 
 
 class TestCreateData(unittest.TestCase):
@@ -20,15 +23,17 @@ class TestCreateData(unittest.TestCase):
         # Create config file
         self.output_dir = join(self.root_dir, "outputs")
         self.config_path = join(self.root_dir, "create_data.yaml")
+        self.features_dir = join(self.output_dir, "features")
         self.tokenized_dir = join(self.output_dir, "tokenized")
 
         self.config = {
-            "env": "local",
-            "output_dir": self.output_dir,
-            "tokenized_dir_name": "tokenized",
-            "paths": {},
+            "logging": {"level": logging.INFO, "path": join(self.root_dir, "logs")},
+            "paths": {
+                "data": "./tests/data/raw",
+                "features": self.features_dir,
+                "tokenized": self.tokenized_dir,
+            },
             "loader": {
-                "data_dir": "./tests/data/raw",
                 "concepts": ["diagnosis", "medication"],
             },
             "features": {
@@ -60,14 +65,16 @@ class TestCreateData(unittest.TestCase):
 
         ### Validate generated files.
 
-        # 1: Copy of configuration file should be created in the output dir.
-        self.assertTrue(exists(join(self.output_dir, "data_config.yaml")))
-        with open(join(self.output_dir, "data_config.yaml")) as f:
-            config = yaml.safe_load(f)
-        self.assertEqual(config, self.config)
+        # 1: Copy of configuration file should be created in the features and tokenized dirs.
+        for _dir in [self.features_dir, self.tokenized_dir]:
+            cfg_file = join(_dir, DATA_CFG)
+            self.assertTrue(exists(cfg_file))
+            with open(cfg_file) as f:
+                config = yaml.safe_load(f)
+            self.assertEqual(config, self.config)
 
         # 2: Check that the features file is created as expected
-        path = join(self.output_dir, "features", "features.csv")
+        path = join(self.features_dir, "features.csv")
         self.assertTrue(exists(path))
         features = pd.read_csv(path)
         self.assertEqual(
