@@ -47,6 +47,9 @@ def main_data(config_path):
     logger.info("Initialize Processors")
     logger.info("Starting feature creation and processing")
 
+    # TODO: temporary fix/check until we split the script into two.
+    # As cfg.paths.features is always set, its value cannot be used to decide
+    # if features are present.
     if os.path.exists(join(cfg.paths.features, "0.csv")):
         logger.info("Reusing existing features")
     else:
