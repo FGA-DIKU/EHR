@@ -4,19 +4,26 @@ import logging
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
-PID_KEY = 'PID'
+PID_KEY = "PID"
 BG_GENDER_KEYS = {
-    'male': ['M', 'Mand',  'male', 'Male', 'man', 'MAN', '1'],
-    'female': ['W', 'Kvinde', 'F', 'female', 'Female', 'woman', 'WOMAN', '0']
+    "male": ["M", "Mand", "male", "Male", "man", "MAN", "1"],
+    "female": ["W", "Kvinde", "F", "female", "Female", "woman", "WOMAN", "0"],
 }
-MIN_POSITIVES = {'finetune': 1, None: 1}
-CHECKPOINT_FOLDER = 'checkpoints'
-ORIGIN_POINT = {'year': 2020, 'month': 1, 'day': 26, 'hour': 0, 'minute': 0, 'second': 0}
+MIN_POSITIVES = {"finetune": 1, None: 1}
+CHECKPOINT_FOLDER = "checkpoints"
+ORIGIN_POINT = {
+    "year": 2020,
+    "month": 1,
+    "day": 26,
+    "hour": 0,
+    "minute": 0,
+    "second": 0,
+}
 
 
 class Utilities:
     @staticmethod
-    def get_last_checkpoint_epoch(checkpoint_folder: str)->int:
+    def get_last_checkpoint_epoch(checkpoint_folder: str) -> int:
         """Returns the epoch of the last checkpoint."""
         # Regular expression to match the pattern retry_XXX
         pattern = re.compile(r"checkpoint_epoch(\d+)_end\.pt$")
@@ -29,8 +36,8 @@ class Utilities:
                     max_epoch = epoch
         # Return the folder with the maximum retry number
         if max_epoch is None:
-            raise ValueError("No checkpoint found in folder {}".format(checkpoint_folder))
+            raise ValueError(
+                "No checkpoint found in folder {}".format(checkpoint_folder)
+            )
 
         return max_epoch
-
-
