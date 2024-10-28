@@ -1,0 +1,29 @@
+loader:
+  batchsize: 50
+  chunksize: 300
+  concepts:
+  - diagnose
+logging:
+  level: 20
+  path: ./.test_create_outcomes/logs
+outcomes:
+  TEST_CENSOR:
+    case_sensitive: false
+    match:
+    - - '10509'
+    match_how: startswith
+    type:
+    - CONCEPT
+  TEST_OUTCOME:
+    case_sensitive: true
+    exclude:
+    - '157141000119108'
+    match:
+    - - '157'
+    match_how: contains
+    type:
+    - CONCEPT
+paths:
+  data: ./tests/data/raw
+  features: ./tests/data/features
+  outcomes: ./.test_create_outcomes/outputs/outcomes

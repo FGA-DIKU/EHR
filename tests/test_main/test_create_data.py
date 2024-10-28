@@ -13,8 +13,7 @@ import yaml
 from tests.helpers import compute_column_checksum
 
 from corebehrt.main.create_data import main_data
-
-DATA_CFG = "data_config.yaml"
+from corebehrt.common.setup import DATA_CFG
 
 
 class TestCreateData(unittest.TestCase):
@@ -86,7 +85,7 @@ class TestCreateData(unittest.TestCase):
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv").compute()
+        expected_features = dd.read_csv("./tests/data/features/*.csv").compute()
 
         # 2.1: check patients
         self.assertListEqual(
@@ -131,7 +130,7 @@ class TestCreateData(unittest.TestCase):
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
         self.assertTrue(exists(vocab_path))
         vocab = torch.load(vocab_path)
-        expected_vocab = torch.load("./tests/data/prepped/tokenized/vocabulary.pt")
+        expected_vocab = torch.load("./tests/data/tokenized/vocabulary.pt")
         self.assertEqual(len(vocab), len(expected_vocab))
 
         # 4: Check the tokenized files
@@ -139,7 +138,5 @@ class TestCreateData(unittest.TestCase):
             pids_path = join(self.tokenized_dir, f"pids_{suffix}.pt")
             self.assertTrue(exists(pids_path))
             pids = torch.load(pids_path)
-            expected_pids = torch.load(
-                f"./tests/data/prepped/tokenized/pids_{suffix}.pt"
-            )
+            expected_pids = torch.load(f"./tests/data/tokenized/pids_{suffix}.pt")
             self.assertEqual(pids, expected_pids)
