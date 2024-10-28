@@ -8,9 +8,9 @@ from torch.optim import AdamW
 from torch.utils.data import Sampler
 from transformers import BertConfig
 
-from corebehrt.common.config import Config, instantiate, load_config
+from corebehrt.common.config import Config, instantiate
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
-from corebehrt.common.setup import DirectoryPreparer, CHECKPOINTS_DIR
+from corebehrt.common.setup import CHECKPOINTS_DIR
 from corebehrt.data.utils import Utilities
 from corebehrt.evaluation.utils import get_sampler
 from corebehrt.classes.model import BertEHRModel, BertForFineTuning

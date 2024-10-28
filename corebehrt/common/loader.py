@@ -71,8 +71,7 @@ class FeaturesLoader:
 
         return Data(features, pids, vocabulary=vocabulary, mode=mode)
 
-    @staticmethod
-    def load_features_and_pids(tokenized_files: list, tokenized_pids_files: list):
+    def load_features_and_pids(self, tokenized_files: list, tokenized_pids_files: list):
         """Load features and pids from multiple files."""
         features = {}
         pids = []

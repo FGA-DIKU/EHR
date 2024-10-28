@@ -4,7 +4,6 @@ import os
 import uuid
 from os.path import join, split
 from shutil import rmtree, copyfile
-from typing import Tuple
 
 from corebehrt.common.config import Config, load_config
 
