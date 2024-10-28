@@ -24,7 +24,7 @@ OUTPUTS = {"model": {"type": "uri_folder"}}
 
 def job(config, compute=None, register_output=dict()):
     return util.setup_job(
-        "finetune_cv",
+        "finetune",
         inputs=INPUTS,
         outputs=OUTPUTS,
         config=config,
