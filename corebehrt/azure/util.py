@@ -123,9 +123,13 @@ def prepare_config(cmd: str, inputs: set, outputs: set) -> None:
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
-        assert args[arg] is not None, f"Missing argument '{arg}'"
+        if args[arg] is None:
+            if arg_cfg.get("optional", False):
+                continue
+            else:
+                raise Exception(f"Missing argument '{arg}'")
         _cfg = cfg
-        cfg_path = arg_cfg["key"].split(".")
+        cfg_path = arg_cfg.get("key", f"paths.{arg}").split(".")
         for step in cfg_path[:-1]:
             _cfg = _cfg[step]
         _cfg[cfg_path[-1]] = args[arg]

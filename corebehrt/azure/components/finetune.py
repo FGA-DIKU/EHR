@@ -1,5 +1,5 @@
 from corebehrt.azure import util
-from corebehrt.main import create_data
+from corebehrt.main import finetune_cv
 import argparse
 
 INPUTS = {
@@ -38,4 +38,4 @@ if __name__ == "__main__":
     # Parse args and update config
     util.prepare_config("create_data", INPUTS, OUTPUTS)
     # Run command
-    create_data.main_data(util.AZURE_CONFIG_FILE)
+    finetune_cv.main_finetune(util.AZURE_CONFIG_FILE)
