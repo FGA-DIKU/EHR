@@ -1,16 +1,16 @@
 import os
 from os.path import join, split
 
+import logging
 import torch
 
 from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import (
     DirectoryPreparer,
-    copy_data_config,
-    copy_pretrain_config,
     get_args,
 )
+from corebehrt.common.config import load_config
 from corebehrt.common.utils import Data, compute_number_of_warmup_steps
 from corebehrt.data.dataset import BinaryOutcomeDataset
 from corebehrt.data.prepare_data import DatasetPreparer
@@ -31,16 +31,13 @@ DEAFAULT_VAL_SPLIT = 0.2
 
 
 def main_finetune(config_path):
-    (cfg, pretrain_model_path) = Initializer.initialize_configuration_finetune(
-        config_path
-    )
+    cfg = load_config(config_path)
 
-    logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
+    # Setup directories
+    DirectoryPreparer(cfg).setup_finetune()
 
-    copy_data_config(cfg, finetune_folder)
-    copy_pretrain_config(cfg, finetune_folder)
-
-    cfg.save_to_yaml(join(finetune_folder, "finetune_config.yaml"))
+    # Logger
+    logger = logging.getLogger("finetune_cv")
 
     dataset_preparer = DatasetPreparer(cfg)
     data = dataset_preparer.prepare_finetune_data()
@@ -70,12 +67,12 @@ def main_finetune(config_path):
         test_data, train_val_indices = split_into_test_data_and_train_val_indices(
             cfg, data
         )
-        save_data(test_data, finetune_folder)
+        save_data(test_data, cfg.paths.model)
         if cv_splits > 1:
             cv_loop(
                 cfg,
                 logger,
-                finetune_folder,
+                cfg.paths.model,
                 dataset_preparer,
                 data,
                 train_val_indices,
@@ -85,16 +82,16 @@ def main_finetune(config_path):
             finetune_without_cv(
                 cfg,
                 logger,
-                finetune_folder,
+                cfg.paths.model,
                 dataset_preparer,
                 data,
                 train_val_indices,
                 test_data,
             )
 
-    compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="val")
+    compute_and_save_scores_mean_std(cv_splits, cfg.paths.model, mode="val")
     if len(test_data) > 0:
-        compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="test")
+        compute_and_save_scores_mean_std(cv_splits, cfg.paths.model, mode="test")
 
     logger.info("Done")
 
@@ -135,7 +132,6 @@ def finetune_fold(
     )
     modelmanager = ModelManager(cfg, fold)
     checkpoint = modelmanager.load_checkpoint()
-    modelmanager.load_model_config()
     model = modelmanager.initialize_finetune_model(checkpoint, train_dataset)
 
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
@@ -162,9 +158,8 @@ def finetune_fold(
     trainer.train()
 
     logger.info("Load best finetuned model to compute test scores")
-    modelmanager_trained = ModelManager(cfg, model_path=fold_folder)
+    modelmanager_trained = ModelManager(cfg, fold)
     checkpoint = modelmanager_trained.load_checkpoint()
-    modelmanager.load_model_config()
     model = modelmanager_trained.initialize_finetune_model(checkpoint, train_dataset)
     trainer.model = model
     trainer.test_dataset = test_dataset

@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from os.path import join
+import logging
 
 import pandas as pd
 from tqdm import tqdm
@@ -37,21 +38,22 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
 
 def main_data(config_path):
     cfg = load_config(config_path)
-    if "outcome_dir" not in cfg.paths:
-        cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
 
-    logger = DirectoryPreparer(config_path).prepare_directory_outcomes(
-        cfg.paths.outcome_dir, cfg.outcomes_name
-    )
-    logger.info("Mount Dataset")
+    prepper = DirectoryPreparer(cfg)
+    prepper.setup_create_outcomes()
+
+    logger = logging.getLogger("create_outcomes")
     logger.info("Starting outcomes creation")
-    features_cfg = load_config(join(cfg.features_dir, "data_config.yaml"))
+    features_cfg = prepper.get_config("features")
     outcome_tables = process_data(
-        ConceptLoaderLarge(**cfg.loader), cfg, features_cfg, logger
+        ConceptLoaderLarge(data_dir=cfg.paths.data, **cfg.loader),
+        cfg,
+        features_cfg,
+        logger,
     )
 
     for key, df in outcome_tables.items():
-        df.to_csv(join(cfg.paths.outcome_dir, f"{key}.csv"), index=False)
+        df.to_csv(join(cfg.paths.outcomes, f"{key}.csv"), index=False)
 
     logger.info("Finish outcomes creation")
     logger.info("Done")

@@ -1,9 +1,13 @@
-output_dir: ./outputs/features
-tokenized_dir_name: "tokenized"
+logging:
+  level: INFO
+  path: ./outputs/logs
+
 paths:
-  save_features_dir_name: "features" 
+  data: ./example_data
+  tokenized: ./outputs/tokenized
+  features: ./outputs/features
+  
 loader:
-  data_dir:  ./example_data
   concepts: [
     diagnosis,
     medication,

@@ -12,6 +12,7 @@ import os
 import shutil
 from os.path import join
 
+import logging
 import torch
 import dask.dataframe as dd
 
@@ -30,7 +31,6 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
-BLOBSTORE = "PHAIR"
 
 
 def main_data(config_path):
@@ -46,15 +46,15 @@ def main_data(config_path):
     """
     cfg = load_config(config_path)
 
-    logger = DirectoryPreparer(config_path).prepare_directory(cfg)
-    logger.info("Mount Dataset")
+    DirectoryPreparer(cfg).setup_create_data()
 
+    logger = logging.getLogger("create_data")
     logger.info("Initialize Processors")
     logger.info("Starting feature creation and processing")
-    if not check_directory_for_features(cfg.loader.data_dir):
+    if not check_directory_for_features(cfg.paths.features):
         create_and_save_features(
-            ConceptLoaderLarge(**cfg.loader),
-            Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
+            ConceptLoaderLarge(data_dir=cfg.paths.data, **cfg.loader),
+            Excluder(**cfg.excluder),
             cfg,
             logger,
         )
@@ -63,7 +63,7 @@ def main_data(config_path):
         logger.info("Using existing features!")
 
     df = dd.read_csv(
-        join(cfg.output_dir, "features", f"features.csv"), dtype={"concept": "str"}
+        join(cfg.paths.features, f"features.csv"), dtype={"concept": "str"}
     )
     pids = df.PID.unique().compute().tolist()
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -78,11 +78,6 @@ def main_data(config_path):
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = torch.load(cfg.paths.vocabulary)
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
-    tokenized_dir_name = cfg.get("tokenized_dir_name", "tokenized")
-    check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
-
-    # TODO: config file is already copied by DirectoryPreparer but deleted again by check_and_clear_directory
-    shutil.copy(config_path, join(cfg.output_dir, tokenized_dir_name, "data_cfg.yaml"))
 
     # Train tokenizer and tokenzie pt
     df_pt = tokenizer(df_pt)
@@ -96,47 +91,27 @@ def main_data(config_path):
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
 
     df_pt.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"),
+        join(cfg.paths.tokenized, "features_pretrain", "*.csv"),
         index=False,
     )
     df_ft.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_finetune", "*.csv"),
+        join(cfg.paths.tokenized, "features_finetune", "*.csv"),
         index=False,
     )
-    df_test.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_test", "*.csv"), index=False
-    )
+    df_test.to_csv(join(cfg.paths.tokenized, "features_test", "*.csv"), index=False)
     torch.save(
         df_pt.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"),
+        join(cfg.paths.tokenized, "pids_pretrain.pt"),
     )
     torch.save(
         df_ft.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"),
+        join(cfg.paths.tokenized, "pids_finetune.pt"),
     )
     torch.save(
         df_test.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"),
+        join(cfg.paths.tokenized, "pids_test.pt"),
     )
-    torch.save(
-        tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
-    )
-
-
-# TODO: Move to functional.tokenize (appears to be specific to tokenize)
-def check_and_clear_directory(cfg, logger, tokenized_dir_name="tokenized"):
-    tokenized_dir = join(cfg.output_dir, tokenized_dir_name)
-    tokenized_files = os.listdir(tokenized_dir)
-    if len(tokenized_files) > 0:
-        # TODO: config file is copied by DirectoryPreparer, so this warning is always raised.
-        logger.warning(f"The directory {tokenized_dir} is not empty.")
-        logger.warning(f"Deleting tokenized files.")
-        for file in tokenized_files:
-            file_path = join(tokenized_dir, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            else:
-                shutil.rmtree(file_path)
+    torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
 
 
 def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> None:
@@ -158,7 +133,7 @@ def create_and_save_features(conceptloader, excluder: Excluder, cfg, logger) -> 
         concept_batch = excluder.exclude_incorrect_events(concept_batch)
         concept_batch = excluder.exclude_short_sequences(concept_batch)
         concept_batch.to_csv(
-            join(cfg.output_dir, "features", f"features.csv"),
+            join(cfg.paths.features, f"features.csv"),
             index=False,
             mode="a" if i > 0 else "w",
             header=i == 0,

@@ -1,14 +1,19 @@
+logging:
+  level: INFO
+  path: ./outputs/logs
+
 paths:
-  outcome_dir: ./outputs/outcomes
-outcomes_name: "TEST_OUTCOME"
-features_dir: ./outputs/features
+  data: ./example_data
+  features: ./outputs/features
+  outcomes: ./outputs/outcomes
+
 loader:
-  data_dir: ./example_data
   concepts: [
     diagnose
   ]
   batchsize: 50
   chunksize: 300
+
 outcomes:
   TEST_OUTCOME: 
     type: [CONCEPT]

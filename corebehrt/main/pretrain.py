@@ -1,6 +1,7 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
 from os.path import join
+import logging
 
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import Initializer
@@ -8,13 +9,12 @@ from corebehrt.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
 )
-from corebehrt.common.setup import DirectoryPreparer, copy_data_config, get_args
+from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import compute_number_of_warmup_steps
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
-BLOBSTORE = "PHAIR"
 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -22,19 +22,31 @@ BLOBSTORE = "PHAIR"
 def main_train(config_path):
     cfg = load_config(config_path)
 
-    logger, run_folder = DirectoryPreparer.setup_run_folder(cfg)
-    copy_data_config(cfg, run_folder)
+    # Setup directories
+    DirectoryPreparer(cfg).setup_pretrain()
 
-    loaded_from_checkpoint = load_model_cfg_from_checkpoint(
-        cfg, "pretrain_config.yaml"
-    )  # if we are training from checkpoint, we need to load the old config
+    logger = logging.getLogger("pretrain")
+
+    # Are we restarting training from checkpoint?
+    restarted = hasattr(cfg.paths, "restart_model")
+
+    # Check if we are training from checkpoint, if so, reload config
+    if restarted:
+        cfg.model = load_model_cfg_from_checkpoint(
+            cfg.paths.restart_model, "pretrain_config"
+        )
+
+    # Prepare dataset
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
 
     if "scheduler" in cfg:
         logger.info("Computing number of warmup steps")
         compute_number_of_warmup_steps(cfg, len(train_dataset))
 
-    checkpoint, epoch = load_checkpoint_and_epoch(cfg)
+    checkpoint, epoch = None, None
+    if restarted:
+        checkpoint, epoch = load_checkpoint_and_epoch(cfg)
+
     logger.info(f"Continue training from epoch {epoch}")
     initializer = Initializer(cfg, checkpoint=checkpoint)
     model = initializer.initialize_pretrain_model(train_dataset)
