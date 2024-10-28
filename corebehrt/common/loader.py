@@ -24,7 +24,9 @@ def load_checkpoint_and_epoch(cfg: Config) -> Tuple:
     if checkpoint is not None:
         epoch = checkpoint["epoch"]
     else:
-        epoch = Utilities.get_last_checkpoint_epoch(join(model_path, CHECKPOINT_FOLDER))
+        epoch = Utilities.get_last_checkpoint_epoch(
+            join(cfg.paths.restart_model, CHECKPOINT_FOLDER)
+        )
     return checkpoint, epoch
 
 
