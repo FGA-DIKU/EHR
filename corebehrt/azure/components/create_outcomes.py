@@ -1,6 +1,5 @@
 from corebehrt.azure import util
 from corebehrt.main import create_outcomes
-import argparse
 
 INPUTS = {
     "data": {"type": "uri_folder"},

@@ -1,6 +1,5 @@
 from corebehrt.azure import util
 from corebehrt.main import finetune_cv
-import argparse
 
 INPUTS = {
     "features": {"type": "uri_folder"},

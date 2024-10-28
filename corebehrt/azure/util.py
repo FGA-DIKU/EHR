@@ -1,6 +1,5 @@
 import argparse
 from os.path import join
-import yaml
 from datetime import datetime
 from corebehrt.common.config import Config, load_config
 
@@ -131,7 +130,7 @@ def setup_job(
     )
 
 
-def run_job(job: "Job", experiment: str):
+def run_job(job, experiment: str):
     """
     Starts the given job in the given experiment.
     """
