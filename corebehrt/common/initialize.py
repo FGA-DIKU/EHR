@@ -25,7 +25,7 @@ class Initializer:
         self.cfg = cfg
         self.checkpoint = checkpoint
         if checkpoint:
-            self.loader = ModelLoader(cfg, model_path)
+            self.loader = ModelLoader(model_path, cfg.paths.get("checkpoint_epoch"))
         self.device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
 
     def initialize_pretrain_model(self, train_dataset):
@@ -175,7 +175,7 @@ class ModelManager:
         return path is not None and len(os.listdir(join(path, CHECKPOINTS_DIR))) > 0
 
     def load_checkpoint(self):
-        return ModelLoader(self.cfg, self.checkpoint_model_path).load_checkpoint()
+        return ModelLoader(self.checkpoint_model_path).load_checkpoint()
 
     def initialize_finetune_model(self, checkpoint, train_dataset):
         logger.info("Initializing model")

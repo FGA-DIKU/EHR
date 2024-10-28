@@ -18,15 +18,15 @@ CHECKPOINT_FOLDER = "checkpoints"
 VAL_RATIO = 0.2
 
 
-def load_checkpoint_and_epoch(cfg: Config) -> Tuple:
+def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> Tuple:
     """Load checkpoint and epoch from config."""
-    checkpoint = ModelLoader(cfg).load_checkpoint()
+    checkpoint = ModelLoader(
+        model_dir, checkpoint_epoch=checkpoint_epoch
+    ).load_checkpoint()
     if checkpoint is not None:
         epoch = checkpoint["epoch"]
     else:
-        epoch = Utilities.get_last_checkpoint_epoch(
-            join(cfg.paths.restart_model, CHECKPOINT_FOLDER)
-        )
+        epoch = Utilities.get_last_checkpoint_epoch(join(model_dir, CHECKPOINT_FOLDER))
     return checkpoint, epoch
 
 
@@ -124,15 +124,10 @@ class FeaturesLoader:
 
 
 class ModelLoader:
-    def __init__(self, cfg: Config, model_path: str = None):
+    def __init__(self, model_path: str, checkpoint_epoch: str = None):
         """Load model from config and checkpoint."""
-        self.cfg = cfg
-        if model_path is not None:
-            self.model_path = model_path
-        elif self.cfg.paths.get("model_path", None) is not None:
-            self.model_path = self.cfg.paths.model_path
-        else:
-            self.model_path = None
+        self.model_path = model_path
+        self.checkpoint_epoch = checkpoint_epoch
 
     def load_model(
         self, model_class, add_config: dict = {}, checkpoint: dict = None, kwargs={}
@@ -175,14 +170,13 @@ class ModelLoader:
         return torch.load(checkpoint_path, map_location=device)
 
     def get_checkpoint_epoch(self) -> int:
-        """Get checkpoint epoch from config or return the last checkpoint_epoch for this model."""
-        checkpoint_epoch = self.cfg.paths.get("checkpoint_epoch", None)
-        if checkpoint_epoch is None:
+        """Get checkpoint if set or return the last checkpoint_epoch for this model."""
+        if self.checkpoint_epoch is None:
             logger.info("No checkpoint provided. Loading last checkpoint.")
-            checkpoint_epoch = Utilities.get_last_checkpoint_epoch(
+            self.checkpoint_epoch = Utilities.get_last_checkpoint_epoch(
                 join(self.model_path, CHECKPOINT_FOLDER)
             )
-        return checkpoint_epoch
+        return self.checkpoint_epoch
 
 
 def load_exclude_pids(cfg) -> List:

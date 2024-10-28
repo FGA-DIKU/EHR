@@ -3,7 +3,7 @@
 import logging
 
 from corebehrt.common.config import load_config
-from corebehrt.common.initialize import Initializer
+from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
@@ -27,13 +27,16 @@ def main_train(config_path):
     logger = logging.getLogger("pretrain")
 
     # Are we restarting training from checkpoint?
-    restarted = hasattr(cfg.paths, "restart_model")
+    restart_path = cfg.paths.get("restart_model")
 
-    # Check if we are training from checkpoint, if so, reload config
-    if restarted:
-        cfg.model = load_model_cfg_from_checkpoint(
-            cfg.paths.restart_model, "pretrain_config"
-        )
+    if not restart_path and ModelManager.check_checkpoints(cfg.paths.model):
+        # No restart path provided, but model @ cfg.paths.model has checkpoints
+        # so we restart from them
+        restart_path = cfg.paths.model
+
+    # Check if we are training from checkpoint, if so, update model config
+    if restart_path:
+        cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
     # Prepare dataset
     train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
@@ -45,11 +48,13 @@ def main_train(config_path):
         )
 
     checkpoint, epoch = None, None
-    if restarted:
-        checkpoint, epoch = load_checkpoint_and_epoch(cfg)
+    if restart_path:
+        checkpoint, epoch = load_checkpoint_and_epoch(
+            restart_path, cfg.paths.get("checkpoint_epoch")
+        )
 
     logger.info(f"Continue training from epoch {epoch}")
-    initializer = Initializer(cfg, checkpoint=checkpoint)
+    initializer = Initializer(cfg, checkpoint=checkpoint, model_path=restart_path)
     model = initializer.initialize_pretrain_model(train_dataset)
     logger.info("Initializing optimizer")
     optimizer = initializer.initialize_optimizer(model)
