@@ -66,7 +66,7 @@ class TestCreateOutcomes(unittest.TestCase):
         # Remove all outputs
         shutil.rmtree(self.root_dir)
 
-    def test_create_data(self):
+    def test_create_outcomes(self):
         ### Call create data script
 
         main_data(self.config_path)
