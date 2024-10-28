@@ -76,10 +76,10 @@ def setup_job(
 
     # Helper for reading a config value from config (cfg), given
     # the argument name (arg) and configuration (arg_cfg)
-    def _get_from_cfg(cfg, arg, arg_cfg):
-        path = arg_cfg.get("key", f"paths.{arg}").split(".")
+    def _get_path_from_cfg(cfg, arg, arg_cfg):
+        steps = arg_cfg.get("key", f"paths.{arg}").split(".")
         # Traverse config path
-        for step in path:
+        for step in steps:
             # Check if present
             if step not in cfg:
                 if arg_cfg.get("optional", False):
@@ -88,22 +88,32 @@ def setup_job(
                 else:
                     # Raise error
                     raise Exception(
-                        f"Missing required configuration item '{'.'.join(path)}'."
+                        f"Missing required configuration item '{'.'.join(steps)}'."
                     )
             # Next step
             cfg = cfg[step]
 
         # Resulting value
-        value = cfg
+        path = cfg
 
-        # Check if found and raise error if not
+        # Do path mapping. Presence of ":" indicates Azure path mapping.
+        if ":" in path:
+            dstore, tail = path.split(":", 1)
+            dstore = dstore.replace("-", "_")
+            if dstore in ("researcher_data", "sp_data"):
+                # Assumed to be path on datastore, format: <dstore>:<path>
+                path = join("//datastores", dstore, "paths", value)
+
+            # else: Assumed to be an asset, format <asset_name>:<asset_version>
+
+            path = f"azureml:{path}"
 
         return value
 
     # Input paths
     input_values = dict()
     for arg, arg_cfg in inputs.items():
-        if value := _get_from_cfg(config, arg, arg_cfg):
+        if value := _get_path_from_cfg(config, arg, arg_cfg):
             input_values[arg] = Input(path=value, type=arg_cfg["type"])
 
             # Update command
@@ -112,7 +122,7 @@ def setup_job(
     # Output paths
     output_values = dict()
     for arg, arg_cfg in outputs.items():
-        if value := _get_from_cfg(config, arg, arg_cfg):
+        if value := _get_path_from_cfg(config, arg, arg_cfg):
             output_values[arg] = Output(path=value, type=arg_cfg["type"])
 
             # Update command
