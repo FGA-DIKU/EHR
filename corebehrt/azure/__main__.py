@@ -1,3 +1,8 @@
+"""
+Command-line utility for starting CoreBEHRT jobs on Azure clusters.
+Requires installation of azure-ml-ai python package and a valid Azure workspace. 
+"""
+
 import sys
 import argparse
 
@@ -13,15 +18,6 @@ if __name__ == "__main__":
     )
 
     # Global options
-    parser.add_argument("-l", "--loglevel", metavar="LVL", type=str, help="Log level")
-    parser.add_argument(
-        "-r",
-        "--rerun",
-        action="store_const",
-        const=True,
-        default=False,
-        help="Forces re-run of all jobs, even if inputs have not changed.",
-    )
     parser.add_argument(
         "-e",
         "--experiment",
