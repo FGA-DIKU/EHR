@@ -61,7 +61,9 @@ def setup_job(
                     return None
                 else:
                     # Raise error
-                    raise Exception("Missing required configuration item {path}.")
+                    raise Exception(
+                        f"Missing required configuration item '{'.'.join(path)}'."
+                    )
             # Next step
             cfg = cfg[step]
 
