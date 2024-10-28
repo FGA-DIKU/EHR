@@ -9,7 +9,6 @@ Input: Formatted Data
 """
 
 import os
-import shutil
 from os.path import join
 
 import logging

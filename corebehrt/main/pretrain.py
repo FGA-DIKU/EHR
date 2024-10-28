@@ -1,6 +1,5 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
-from os.path import join
 import logging
 
 from corebehrt.common.config import load_config

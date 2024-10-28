@@ -4,7 +4,7 @@ from os.path import join, split
 import logging
 import torch
 
-from corebehrt.common.initialize import Initializer, ModelManager
+from corebehrt.common.initialize import ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import (
     DirectoryPreparer,
@@ -51,12 +51,12 @@ def main_finetune(config_path):
         )
         test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
-        save_data(test_data, finetune_folder)
+        save_data(test_data, cfg.paths.model)
 
         cv_splits = cv_loop_predefined_splits(
             cfg,
             logger,
-            finetune_folder,
+            cfg.paths.model,
             data,
             cfg.paths.predefined_splits,
             test_data,
