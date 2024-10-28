@@ -93,22 +93,8 @@ def setup_job(
             # Next step
             cfg = cfg[step]
 
-        # Resulting value
-        path = cfg
-
-        # Do path mapping. Presence of ":" indicates Azure path mapping.
-        if ":" in path:
-            dstore, tail = path.split(":", 1)
-            dstore = dstore.replace("-", "_")
-            if dstore in ("researcher_data", "sp_data"):
-                # Assumed to be path on datastore, format: <dstore>:<path>
-                path = join("//datastores", dstore, "paths", path)
-
-            # else: Assumed to be an asset, format <asset_name>:<asset_version>
-
-            path = f"azureml:{path}"
-
-        return path
+        # Map resulting value
+        return map_azure_path(cfg)
 
     # Input paths
     input_values = dict()
@@ -201,3 +187,26 @@ def parse_args(args: set) -> dict:
     for arg in args:
         parser.add_argument(f"--{arg}", type=str)
     return vars(parser.parse_args())
+
+
+def map_azure_path(path: str) -> str:
+    """
+    Maps the given path to the correct format. Expect format of input path is:
+
+        azureml:* => Already Azure path, return as is.
+        {researher-data,sp-data}:<path> => map to path on given data storage.
+        {asset_name}:{asset_version} => map to Azure asset.
+        * => assumed local path, return as is.
+    """
+    if ":" not in path or path.startswith("azureml:"):
+        # Nothing to do.
+        return path
+
+    dstore, tail = path.split(":", 1)
+    dstore = dstore.replace("-", "_")
+    if dstore in ("researcher_data", "sp_data"):
+        # Assumed to be path on datastore, format: <dstore>:<path>
+        return join("azureml://datastores", dstore, "paths", path)
+    else:
+        # Assumed to be an asset, format <asset_name>:<asset_version>
+        return f"azureml:{path}"
