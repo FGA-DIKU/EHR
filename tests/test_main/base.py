@@ -5,9 +5,7 @@ import unittest
 from os import makedirs
 from os.path import exists, join
 
-import dask.dataframe as dd
 import numpy as np
-import pandas as pd
 import torch
 import yaml
 
