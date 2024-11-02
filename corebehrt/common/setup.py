@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 import uuid
-from os.path import join, split
+from os.path import join, splitext, basename
 from shutil import rmtree, copyfile
 
 from corebehrt.common.config import Config, load_config
@@ -216,30 +216,30 @@ class DirectoryPreparer:
         return path
 
     def create_run_directory(
-        self, target: str, base: str = None, run_id: str = None
+        self, target: str, base: str = None, run_name: str = None
     ) -> str:
         """
         Creates a run directory for the specified target. If target is not set
         in the config, but the given 'base' config is set, instead generates the
         run directory as a sub-dir of 'base'. The base sub-dir will be named
-        run_id (or generated, if run_id is not set).
+        run_name (or generated, if run_name is not set).
 
         The created folder will have a sub-dir for checkpoints.
 
         :param target: target directory from paths config.
         :param base: base directory from paths config (used as root for generated run
             sub directories, if 'target' is not in the config).
-        :param run_id: name of run sub-directory if generating in base-dir.
+        :param run_name: name of run sub-directory if generating in base-dir.
 
         :return: Path to generated run directory.
         """
         ## Output
         if not hasattr(self.cfg.paths, target) and hasattr(self.cfg.paths, base):
             # Generate a run name / name of run directory
-            run_id = run_id or self.generate_run_id()
+            run_name = run_name or self.generate_run_name()
 
             # Set target dir
-            self.cfg.paths[target] = join(self.cfg.paths[base], run_id)
+            self.cfg.paths[target] = join(self.cfg.paths[base], run_name)
 
             # When generating a run dir, point logs to that dir
             self.setup_logging("run", self.cfg.paths[target])
@@ -314,7 +314,7 @@ class DirectoryPreparer:
         self.check_file("outcome")
         self.check_file("exposure")
         self.create_run_directory(
-            "model", base="runs", run_id=self.generate_finetune_run_id()
+            "model", base="runs", run_name=self.generate_finetune_model_dir_name()
         )
 
         # Write config in output directory.
@@ -332,7 +332,7 @@ class DirectoryPreparer:
     #
     # Directory naming generators
     #
-    def generate_run_id(self) -> str:
+    def generate_run_name(self) -> str:
         """
         Generates a run id for naming run folder.
         If run_name is specified in the paths config, it is returned.
@@ -342,16 +342,12 @@ class DirectoryPreparer:
 
         return uuid.uuid4().hex
 
-    def generate_finetune_run_id(self) -> str:
+    def generate_finetune_model_dir_name(self) -> str:
         """
         Constructs the name of the finetune model directory.
         Based on the outcome type, the censor type, and the number of hours pre- or post- outcome.
         """
-        suffix = (
-            self.cfg.paths.run_name
-            if hasattr(self.cfg.paths, "run_name")
-            else uuid.uuid4().hex
-        )
+        suffix = self.generate_run_name()
 
         outcome_name = self.get_event_name(self.cfg.paths.outcome)
         censor_name = (
@@ -370,7 +366,7 @@ class DirectoryPreparer:
                 self.cfg.outcome.index_date
             )
 
-        run_id = f"finetune_{outcome_name}_censored_{n_hours_str}_{censor_name}"
+        run_name = f"finetune_{outcome_name}_censored_{n_hours_str}_{censor_name}"
 
         n_hours_start_follow_up = self.cfg.outcome.get("n_hours_follow_up", None)
         n_hours_follow_up_str = (
@@ -379,14 +375,14 @@ class DirectoryPreparer:
             else "at"
         )
 
-        return f"{run_id}_followup_start_{n_hours_follow_up_str}_index_date_{suffix}"
+        return f"{run_name}_followup_start_{n_hours_follow_up_str}_index_date_{suffix}"
 
     @staticmethod
     def get_event_name(path: str) -> str:
         """
         Gets the event name from the path to the outcome file.
         """
-        return split(path)[-1].strip(".csv")
+        return splitext(basename(path))[0]
 
     @staticmethod
     def handle_n_hours(n_hours: int) -> str:
