@@ -16,13 +16,13 @@ paths:
 ## Running from the command line
 The `azure` submodule can be run directly from the command line:
 ```
-corebehrt.azure [-h] [-e <experiment>] [-c <compute>] [-o <output_id>=<output_name>] [-o ...] job {create_data,create_outcomes,pretrain,finetune_cv} [-c <path_to_config>]
+corebehrt.azure [-h] [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] <compute> job {create_data,create_outcomes,pretrain,finetune_cv} [-c <path_to_config>]
 ```
 The command starts the specified job using the specified `experiment` and `compute`. Passing pairs `<ouput_id>=<output_name>` using `-o` allows for registering outputs as data assets. The default configuration path (`corebehrt/configs/<job_name>.yaml`) can be overridden with the `-c`/`--config` option.
 
 Example of running `create_data` and registering outputs:
 ```
-corebehrt.azure -e "CBTest" -c "CPU-20-LP" -o features=CBFeatures -o tokenized=CBTokenized job create_data -c create_data_on_azure.yaml
+corebehrt.azure -e "CBTest" -o features=CBFeatures -o tokenized=CBTokenized CPU-20-LP job create_data -c create_data_on_azure.yaml
 ```
 
 ## Running from a python script.
