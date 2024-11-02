@@ -1,6 +1,7 @@
 import argparse
 from os.path import join
 from datetime import datetime
+from typing import Tuple
 from corebehrt.common.config import Config, load_config
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
@@ -49,7 +50,7 @@ def setup_job(
     inputs: dict,
     outputs: dict,
     config: Config,
-    compute: str = None,
+    compute: str,
     register_output: dict = dict(),
 ):
     """
@@ -65,7 +66,6 @@ def setup_job(
         registered as a data asset.
     """
     check_azure()
-    assert compute is not None
 
     # Prepare command
     cmd = f"python -m corebehrt.azure.components.{job}"
@@ -73,49 +73,14 @@ def setup_job(
     # Make sure config is read-able -> save it in the root folder.
     config.save_to_yaml(AZURE_CONFIG_FILE)
 
-    # Helper for reading a config value from config (cfg), given
-    # the argument name (arg) and configuration (arg_cfg)
-    def _get_path_from_cfg(cfg, arg, arg_cfg):
-        steps = arg_cfg.get("key", f"paths.{arg}").split(".")
-        # Traverse config path
-        for step in steps:
-            # Check if present
-            if step not in cfg:
-                if arg_cfg.get("optional", False):
-                    # Return None if optional
-                    return None
-                else:
-                    # Raise error
-                    raise Exception(
-                        f"Missing required configuration item '{'.'.join(steps)}'."
-                    )
-            # Next step
-            cfg = cfg[step]
+    # Prepare input and output paths
+    input_values, input_cmds = prepare_job_command_args(inputs, "inputs")
+    output_values, output_cmds = prepare_job_command_args(
+        inputs, "outputs", register_output=register_output
+    )
 
-        # Map resulting value
-        return map_azure_path(cfg)
-
-    # Input paths
-    input_values = dict()
-    for arg, arg_cfg in inputs.items():
-        if value := _get_path_from_cfg(config, arg, arg_cfg):
-            input_values[arg] = Input(path=value, type=arg_cfg["type"])
-
-            # Update command
-            cmd += " --" + arg + " ${{inputs." + arg + "}}"
-
-    # Output paths
-    output_values = dict()
-    for arg, arg_cfg in outputs.items():
-        if value := _get_path_from_cfg(config, arg, arg_cfg):
-            output_values[arg] = Output(path=value, type=arg_cfg["type"])
-
-            # Update command
-            cmd += " --" + arg + " ${{outputs." + arg + "}}"
-
-        # Must we register the output?
-        if arg in register_output:
-            output_values[arg].name = register_output[arg]
+    # Add input and output arguments to cmd.
+    cmd += input_cmds + output_cmds
 
     # Create job
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -186,6 +151,64 @@ def parse_args(args: set) -> dict:
     for arg in args:
         parser.add_argument(f"--{arg}", type=str)
     return vars(parser.parse_args())
+
+
+def prepare_job_command_args(
+    config: Config, args: dict, _type: str, register_output: dict = dict()
+) -> Tuple[dict, str]:
+    """
+    Prepare the input/output dictionary and construct the input/output
+    part of the job command string.
+
+    :param config: Configuration object.
+    :param args: Job args configuration.
+    :param _type: "inputs" or "outputs"
+    :param register_output: Register output mapping for _type="outputs"
+
+    :return: Tuple with input/output dictionary and argument part of command.
+    """
+    assert _type in ("inputs", "outputs")
+
+    job_args = dict()
+    cmd = ""
+    azure_arg_cls = Input if _type == "inputs" else Output
+    for arg, arg_cfg in args.items():
+        if value := get_path_from_cfg(config, arg, arg_cfg):
+            job_args[arg] = azure_arg_class(path=value, type=arg_cfg["type"])
+
+            # Update command
+            cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
+
+        # Must we register the output?
+        if _type == "outputs" and arg in register_output:
+            job_args[arg].name = register_output[arg]
+
+    return job_args, cmd
+
+
+def get_path_from_cfg(cfg: Config, arg: str, arg_cfg: dict):
+    """
+    Helper for reading a config value from config (cfg), given
+    the argument name (arg) and configuration (arg_cfg)
+    """
+    steps = arg_cfg.get("key", f"paths.{arg}").split(".")
+    # Traverse config path
+    for step in steps:
+        # Check if present
+        if step not in cfg:
+            if arg_cfg.get("optional", False):
+                # Return None if optional
+                return None
+            else:
+                # Raise error
+                raise Exception(
+                    f"Missing required configuration item '{'.'.join(steps)}'."
+                )
+        # Next step
+        cfg = cfg[step]
+
+    # Map resulting value
+    return map_azure_path(cfg)
 
 
 def map_azure_path(path: str) -> str:

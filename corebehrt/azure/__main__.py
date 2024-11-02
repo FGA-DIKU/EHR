@@ -12,6 +12,50 @@ from corebehrt.azure.components import create_data, create_outcomes, pretrain, f
 
 from . import util
 
+COMPONENTS = {
+    "create_data": create_data,
+    "create_outcomes": create_outcomes,
+    "pretrain": pretrain,
+    "finetune_cv": finetune,
+}
+
+
+def parse_register_output(register_output_args: list) -> dict:
+    """
+    Parses the register output append argument.
+    Each argument is expected to be of the form <output_id>=<asset_name>
+
+    :param args: List of arguments to be parsed.
+
+    :return: a dict/mapping from output_id to asset_name
+    """
+    register_output = [o.split("=") for o in register_output_args]
+    assert all(len(o) == 2 for o in register_output), "Invalid arg for register_output"
+    return dict(register_output)
+
+
+def get_job_initializer(name: str) -> callable:
+    """
+    Returns the initializer for the Azure job for the given
+    component name.
+    """
+    return COMPONENTS[name].job
+
+
+def create_and_run_job(args) -> None:
+    """
+    Run the job from the given arguments.
+    """
+    cfg = load_config(args.config or f"./corebehrt/configs/{args.JOB}.yaml")
+    register_output = parse_register_output(args.register_output)
+    job_initializer = get_job_initializer(args.JOB)
+
+    job = job_initializer(cfg, compute=args.COMPUTE, register_output=register_output)
+
+    # Start job
+    util.run_job(job, args.experiment)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="corebehrt.azure", description="Run corebehrt jobs and pipelines in Azure"
@@ -19,17 +63,16 @@ if __name__ == "__main__":
 
     # Global options
     parser.add_argument(
+        "COMPUTE",
+        type=str,
+        help="Compute target to use.",
+    )
+    parser.add_argument(
         "-e",
         "--experiment",
         type=str,
         default="corebehrt_runs",
         help="Experiment to run the job in.",
-    )
-    parser.add_argument(
-        "-c",
-        "--compute",
-        type=str,
-        help="Compute target to use. Default depends on job/component.",
     )
     parser.add_argument(
         "-o",
@@ -47,7 +90,7 @@ if __name__ == "__main__":
     job_parser.add_argument(
         "JOB",
         type=str,
-        choices=("create_data", "create_outcomes", "pretrain", "finetune_cv"),
+        choices=COMPONENTS.keys(),
         help="Job to run.",
     )
     job_parser.add_argument(
@@ -67,25 +110,7 @@ if __name__ == "__main__":
 
     # Handle job
     if args.call_type == "job":
-
-        # Path to config file
-        cfg_path = (
-            f"./corebehrt/configs/{args.JOB}.yaml"
-            if args.config is None
-            else args.config
-        )
-        cfg = load_config(cfg_path)
-
-        # Setup job
-        job = {
-            "create_data": create_data.job,
-            "create_outcomes": create_outcomes.job,
-            "pretrain": pretrain.job,
-            "finetune_cv": finetune.job,
-        }[args.JOB](cfg, compute=args.compute, register_output=register_output)
-
-        # Start job
-        util.run_job(job, args.experiment)
+        create_and_run_job(args)
     else:
         parser.print_help()
         sys.exit(1)
