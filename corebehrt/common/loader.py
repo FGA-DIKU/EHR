@@ -40,13 +40,13 @@ def load_model_cfg_from_checkpoint(model_dir: str, config_name: str) -> Config:
 
 class FeaturesLoader:
     def __init__(self, cfg):
-        self.paths = cfg.paths
+        self.paths_cfg = cfg.paths
         self.cfg = cfg
 
     def load_tokenized_data(self, mode: str = None) -> Data:
         """Load features for finetuning"""
-        tokenized_files = self.paths.get("tokenized_file", f"features_{mode}.pt")
-        tokenized_pids_files = self.paths.get("tokenized_pids", f"pids_{mode}.pt")
+        tokenized_files = self.paths_cfg.get("tokenized_file", f"features_{mode}.pt")
+        tokenized_pids_files = self.paths_cfg.get("tokenized_pids", f"pids_{mode}.pt")
 
         # Ensure the files are in a list. We might want to load multiple files.
         tokenized_files = (
@@ -78,8 +78,8 @@ class FeaturesLoader:
         for tokenized_file, tokenized_pids_file in zip(
             tokenized_files, tokenized_pids_files
         ):
-            features_temp = torch.load(join(self.paths.tokenized, tokenized_file))
-            pids_temp = torch.load(join(self.paths.tokenized, tokenized_pids_file))
+            features_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_file))
+            pids_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_pids_file))
 
             # Concatenate features
             for key in features_temp.keys():
@@ -92,29 +92,29 @@ class FeaturesLoader:
 
     def load_vocabulary(self):
         """Load vocabulary from file."""
-        return torch.load(join(self.paths.tokenized, VOCABULARY_FILE))
+        return torch.load(join(self.paths_cfg.tokenized, VOCABULARY_FILE))
 
     def load_outcomes_and_exposures(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Load outcomes and censoring timestamps from file.
         If no censoring timestamps provided, use outcomes as censoring timestamps.
         """
-        logger.info(f"Load outcomes from {self.paths.outcomes}")
-        outcomes = pd.read_csv(self.paths.outcomes)
-        if not self.paths.get("exposure", False):
+        logger.info(f"Load outcomes from {self.paths_cfg.outcomes}")
+        outcomes = pd.read_csv(self.paths_cfg.outcomes)
+        if not self.paths_cfg.get("exposure", False):
             logger.warning(
                 "No exposure file provided. Using outcomes as censoring timestamps."
             )
             return outcomes, outcomes.copy(deep=True)
 
-        logger.info(f"Load exposure timestamps from {self.paths.exposure}")
-        exposures = pd.read_csv(self.paths.exposure)
+        logger.info(f"Load exposure timestamps from {self.paths_cfg.exposure}")
+        exposures = pd.read_csv(self.paths_cfg.exposure)
 
         return outcomes, exposures
 
     def load_finetune_data(self, path: str = None, mode: str = None) -> Data:
         """Load features for finetuning"""
-        path = self.paths.finetune_features_path if path is None else path
+        path = self.paths_cfg.finetune_features_path if path is None else path
 
         features = torch.load(join(path, f"features.pt"))
         outcomes = torch.load(join(path, f"outcomes.pt"))
