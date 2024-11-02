@@ -174,7 +174,7 @@ def prepare_job_command_args(
     azure_arg_cls = Input if _type == "inputs" else Output
     for arg, arg_cfg in args.items():
         if value := get_path_from_cfg(config, arg, arg_cfg):
-            job_args[arg] = azure_arg_class(path=value, type=arg_cfg["type"])
+            job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
 
             # Update command
             cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
