@@ -76,7 +76,7 @@ def setup_job(
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
     output_values, output_cmds = prepare_job_command_args(
-        config, inputs, "outputs", register_output=register_output
+        config, outputs, "outputs", register_output=register_output
     )
 
     # Add input and output arguments to cmd.
