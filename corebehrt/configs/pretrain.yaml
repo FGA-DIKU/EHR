@@ -23,9 +23,10 @@ data:
     replace_ratio: .1
     ignore_special_tokens: true
   truncation_len: 20
-  priority_truncation: 
-    low_priority_prefixes: ['LAB', 'VAL']
-    unit: true
+
+  priority_truncation: # if you want to prioritize certain prefixes
+    low_priority_prefixes: ['LAB', 'VAL'] # prefixes to set at low-priority
+    unit: true # if you want treat low-priority prefixes as units
   num_train_patients: 100
   num_val_patients: 20
   val_ratio: 0.2

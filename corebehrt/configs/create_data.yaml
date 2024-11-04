@@ -27,15 +27,15 @@ features:
   #segment: true
   background_vars: ['GENDER']
 
+# Arguments for adding values to the data
 values:
-  value_type: binned
-  value_type_kwargs:
+  value_type: binned # How you want the values. Either binned or quantile are supported.
+  value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
     multiplication_factor: 100
-  normalize: 
-    func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results
-    kwargs: 
+  normalize: # Dict with the function and kwargs for normalizing the values.
+    func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
+    kwargs: # Example kwargs
       min_count: 3
-
 
 tokenizer:
   sep_tokens: true
