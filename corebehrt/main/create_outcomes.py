@@ -2,18 +2,17 @@
 
 from collections import defaultdict
 from os.path import join
+import logging
 
 import pandas as pd
 from tqdm import tqdm
 
 from corebehrt.classes.outcomes import OutcomeMaker
-from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 
-BLOBSTORE = "PHAIR"
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
 
@@ -37,33 +36,24 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
 
 def main_data(config_path):
     cfg = load_config(config_path)
-    cfg.paths.outcome_dir = join(cfg.features_dir, "outcomes", cfg.outcomes_name)
 
-    cfg, _, mount_context = AzurePathContext(
-        cfg, dataset_name=BLOBSTORE
-    ).azure_outcomes_setup()
+    prepper = DirectoryPreparer(cfg)
+    prepper.setup_create_outcomes()
 
-    logger = DirectoryPreparer(config_path).prepare_directory_outcomes(
-        cfg.paths.outcome_dir, cfg.outcomes_name
-    )
-    logger.info("Mount Dataset")
+    logger = logging.getLogger("create_outcomes")
     logger.info("Starting outcomes creation")
-    features_cfg = load_config(join(cfg.features_dir, "data_config.yaml"))
+    features_cfg = prepper.get_config("features")
     outcome_tables = process_data(
-        ConceptLoaderLarge(**cfg.loader), cfg, features_cfg, logger
+        ConceptLoaderLarge(data_dir=cfg.paths.data, **cfg.loader),
+        cfg,
+        features_cfg,
+        logger,
     )
 
     for key, df in outcome_tables.items():
-        df.to_csv(join(cfg.paths.outcome_dir, f"{key}.csv"), index=False)
+        df.to_csv(join(cfg.paths.outcomes, f"{key}.csv"), index=False)
 
     logger.info("Finish outcomes creation")
-
-    if cfg.env == "azure":
-        save_to_blobstore(
-            local_path="outcomes",
-            remote_path=join(BLOBSTORE, "outcomes", cfg.paths.run_name),
-        )
-        mount_context.stop()
     logger.info("Done")
 
 

@@ -6,7 +6,6 @@ from collections import namedtuple
 from torch.utils.data import DataLoader, Dataset
 from corebehrt.common.config import Config, instantiate
 from corebehrt.dataloader.collate_fn import dynamic_padding
-from corebehrt.trainer.utils import compute_avg_metrics, get_tqdm
 from corebehrt.trainer.utils import (
     compute_avg_metrics,
     get_tqdm,
@@ -57,9 +56,7 @@ class EHRTrainer:
         )
         self._set_default_args(args)
         self.logger = logger
-        self.run_folder = run_folder or os.path.join(
-            self.cfg.paths.output_path, self.cfg.paths.run_name
-        )
+        self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
         self.metrics = (
             {k: instantiate(v) for k, v in metrics.items()} if metrics else {}

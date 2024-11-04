@@ -1,66 +1,43 @@
-import logging
-import random
-import shutil
-import unittest
-from os import makedirs
 from os.path import exists, join
 
 import dask.dataframe as dd
-import numpy as np
-import pandas as pd
-import torch
-import yaml
 from tests.helpers import compute_column_checksum
+import torch
+import pandas as pd
 
 from corebehrt.main.create_data import main_data
+from corebehrt.common.setup import DATA_CFG
+
+from .base import TestMainScript
 
 
-class TestCreateData(unittest.TestCase):
+class TestCreateData(TestMainScript):
     def setUp(self):
-        # Create tmp directory to use for output
-        self.root_dir = "./.test_create_data"
-        makedirs(self.root_dir, exist_ok=True)
+        super().setUp()
 
-        # Create config file
-        self.output_dir = join(self.root_dir, "outputs")
-        self.config_path = join(self.root_dir, "create_data.yaml")
-        self.tokenized_dir = join(self.output_dir, "tokenized")
+        # Paths
+        self.features_dir = join(self.tmp_dir, "features")
+        self.tokenized_dir = join(self.tmp_dir, "tokenized")
 
-        self.config = {
-            "env": "local",
-            "output_dir": self.output_dir,
-            "tokenized_dir_name": "tokenized",
-            "paths": {
-                "save_features_dir_name": "features",
-            },
-            "loader": {
-                "data_dir": "./tests/data/raw",
-                "concept_types": ["diagnose", "medication"],
-            },
-            "features": {
-                "origin_point": {"year": 2020, "month": 1, "day": 26},
-                "background_vars": ["GENDER"],
-            },
-            "tokenizer": {"sep_tokens": True, "cls_token": True},
-            "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
-            "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
-        }
-
-        with open(self.config_path, "w") as config_file:
-            yaml.dump(self.config, config_file)
-
-        # Set seed
-        seed = 42
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-        random.seed(seed)
-
-    def tearDown(self):
-        # Remove all outputs
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-            handler.close()
-        shutil.rmtree(self.root_dir)
+        self.set_config(
+            {
+                "paths": {
+                    "data": "./tests/data/raw",
+                    "features": self.features_dir,
+                    "tokenized": self.tokenized_dir,
+                },
+                "loader": {
+                    "concept_types": ["diagnose", "medication"],
+                },
+                "features": {
+                    "origin_point": {"year": 2020, "month": 1, "day": 26},
+                    "background_vars": ["GENDER"],
+                },
+                "tokenizer": {"sep_tokens": True, "cls_token": True},
+                "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
+                "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
+            }
+        )
 
     def test_create_data(self):
         ### Call create data script
@@ -69,21 +46,18 @@ class TestCreateData(unittest.TestCase):
 
         ### Validate generated files.
 
-        # 1: Copy of configuration file should be created in the output dir.
-        self.assertTrue(exists(join(self.output_dir, "data_config.yaml")))
-        with open(join(self.output_dir, "data_config.yaml")) as f:
-            config = yaml.safe_load(f)
-        self.assertEqual(config, self.config)
+        # 1: Copy of configuration file should be created in the features and tokenized dirs.
+        self.check_config(join(self.features_dir, DATA_CFG))
+        self.check_config(join(self.tokenized_dir, DATA_CFG))
 
         # 2: Check that the features file is created as expected
-        path = join(self.output_dir, "features")
-        self.assertTrue(exists(path))
-        features = dd.read_csv(join(path, "*.csv")).compute()
+        self.assertTrue(exists(self.features_dir))
+        features = dd.read_csv(join(self.features_dir, "*.csv")).compute()
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = dd.read_csv("./tests/data/prepped/features/*.csv").compute()
+        expected_features = dd.read_csv("./tests/data/features/*.csv").compute()
 
         # 2.1: check patients
         self.assertListEqual(
@@ -128,7 +102,7 @@ class TestCreateData(unittest.TestCase):
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
         self.assertTrue(exists(vocab_path))
         vocab = torch.load(vocab_path)
-        expected_vocab = torch.load("./tests/data/prepped/tokenized/vocabulary.pt")
+        expected_vocab = torch.load("./tests/data/tokenized/vocabulary.pt")
         self.assertEqual(len(vocab), len(expected_vocab))
 
         # 4: Check the tokenized files
@@ -136,7 +110,5 @@ class TestCreateData(unittest.TestCase):
             pids_path = join(self.tokenized_dir, f"pids_{suffix}.pt")
             self.assertTrue(exists(pids_path))
             pids = torch.load(pids_path)
-            expected_pids = torch.load(
-                f"./tests/data/prepped/tokenized/pids_{suffix}.pt"
-            )
+            expected_pids = torch.load(f"./tests/data/tokenized/pids_{suffix}.pt")
             self.assertEqual(pids, expected_pids)

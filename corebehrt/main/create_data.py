@@ -9,9 +9,9 @@ Input: Formatted Data
 """
 
 import os
-import shutil
 from os.path import join
 
+import logging
 import dask.dataframe as dd
 import torch
 from dask.diagnostics import ProgressBar
@@ -19,14 +19,12 @@ from dask.diagnostics import ProgressBar
 from corebehrt.classes.excluder import Excluder
 from corebehrt.classes.features import FeatureCreator
 from corebehrt.classes.tokenizer import EHRTokenizer
-from corebehrt.common.azure import AzurePathContext, save_to_blobstore
 from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.classes.loader import FormattedDataLoader
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
-BLOBSTORE = "PHAIR"
 
 
 def main_data(config_path):
@@ -41,24 +39,28 @@ def main_data(config_path):
     Saves
     """
     cfg = load_config(config_path)
-    cfg, _, mount_context = AzurePathContext(
-        cfg, dataset_name=BLOBSTORE
-    ).azure_data_pretrain_setup()
-    logger = DirectoryPreparer(config_path).prepare_directory(cfg)
 
-    if cfg.loader.get("features_dir", None) is None:
+    DirectoryPreparer(cfg).setup_create_data()
+
+    logger = logging.getLogger("create_data")
+    logger.info("Initialize Processors")
+    logger.info("Starting feature creation and processing")
+
+    # TODO: temporary fix/check until we split the script into two.
+    # As cfg.paths.features is always set, its value cannot be used to decide
+    # if features are present.
+    if os.path.exists(join(cfg.paths.features, "0.csv")):
+        logger.info("Reusing existing features")
+    else:
         logger.info("Create and process features")
         create_and_save_features(
             Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
             cfg,
         )
         logger.info("Finished feature creation and processing")
-        features_dir = join(cfg.output_dir, cfg.paths.save_features_dir_name)
-    else:
-        features_dir = cfg.loader.features_dir
 
-    logger.info(f"Load features from {features_dir}")
-    df = dd.read_csv(join(features_dir, "*.csv"), dtype={"concept": "str"})
+    logger.info(f"Load features from {cfg.paths.features}")
+    df = dd.read_csv(join(cfg.paths.features, "*.csv"), dtype={"concept": "str"})
     pids = df.PID.unique().compute().tolist()
     logger.info("Split into pretrain and finetune.")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -73,11 +75,6 @@ def main_data(config_path):
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = torch.load(cfg.paths.vocabulary)
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
-    tokenized_dir_name = cfg.get("tokenized_dir_name", "tokenized")
-    check_and_clear_directory(cfg, logger, tokenized_dir_name=tokenized_dir_name)
-
-    # TODO: config file is already copied by DirectoryPreparer but deleted again by check_and_clear_directory
-    shutil.copy(config_path, join(cfg.output_dir, tokenized_dir_name, "data_cfg.yaml"))
 
     # Train tokenizer and tokenzie pt
     df_pt = tokenizer(df_pt)
@@ -91,56 +88,27 @@ def main_data(config_path):
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
     logger.info("Save tokenized features")
     df_pt.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_pretrain", "*.csv"),
+        join(cfg.paths.tokenized, "features_pretrain", "*.csv"),
         index=False,
     )
     df_ft.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_finetune", "*.csv"),
+        join(cfg.paths.tokenized, "features_finetune", "*.csv"),
         index=False,
     )
-    df_test.to_csv(
-        join(cfg.output_dir, tokenized_dir_name, "features_test", "*.csv"), index=False
-    )
+    df_test.to_csv(join(cfg.paths.tokenized, "features_test", "*.csv"), index=False)
     torch.save(
         df_pt.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_pretrain.pt"),
+        join(cfg.paths.tokenized, "pids_pretrain.pt"),
     )
     torch.save(
         df_ft.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_finetune.pt"),
+        join(cfg.paths.tokenized, "pids_finetune.pt"),
     )
     torch.save(
         df_test.compute()["PID"].unique().tolist(),
-        join(cfg.output_dir, tokenized_dir_name, "pids_test.pt"),
+        join(cfg.paths.tokenized, "pids_test.pt"),
     )
-    torch.save(
-        tokenizer.vocabulary, join(cfg.output_dir, tokenized_dir_name, "vocabulary.pt")
-    )
-
-    if cfg.env == "azure":
-        features_dir_name = cfg.paths.get("save_features_dir_name", cfg.paths.run_name)
-        save_to_blobstore(
-            local_path="data/",
-            remote_path=join(BLOBSTORE, "features", features_dir_name),
-        )
-        mount_context.stop()
-    logger.info("Finished")
-
-
-# TODO: Move to functional.tokenize (appears to be specific to tokenize)
-def check_and_clear_directory(cfg, logger, tokenized_dir_name="tokenized"):
-    tokenized_dir = join(cfg.output_dir, tokenized_dir_name)
-    tokenized_files = os.listdir(tokenized_dir)
-    if len(tokenized_files) > 0:
-        # TODO: config file is copied by DirectoryPreparer, so this warning is always raised.
-        logger.warning(f"The directory {tokenized_dir} is not empty.")
-        logger.warning(f"Deleting tokenized files.")
-        for file in tokenized_files:
-            file_path = join(tokenized_dir, file)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            else:
-                shutil.rmtree(file_path)
+    torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
 
 
 def create_and_save_features(excluder: Excluder, cfg) -> None:
@@ -148,9 +116,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
-    save_path = join(cfg.output_dir, cfg.paths.save_features_dir_name)
     concepts, patients_info = FormattedDataLoader(
-        cfg.loader.data_dir, cfg.loader.concept_types
+        cfg.paths.data, cfg.loader.concept_types
     ).load()
 
     feature_creator = FeatureCreator(**cfg.features)
@@ -165,7 +132,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     )  # this can potentially be improved
 
     with ProgressBar():
-        result.to_csv(join(save_path, "*.csv"), index=False)
+        result.to_csv(join(cfg.paths.features, "*.csv"), index=False)
 
 
 if __name__ == "__main__":

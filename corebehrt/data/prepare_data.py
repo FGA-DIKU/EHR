@@ -46,8 +46,8 @@ class DatasetPreparer:
         self.cfg = cfg
         self.loader = FeaturesLoader(cfg)
 
-        run_folder = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
-        self.saver = Saver(run_folder)
+        self.save_dir = cfg.paths.model
+        self.saver = Saver(self.save_dir)
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
@@ -68,15 +68,12 @@ class DatasetPreparer:
         # 1. Loading tokenized data
         data = dd.read_csv(
             join(
-                paths_cfg.data_path,
-                paths_cfg.tokenized_dir,
+                paths_cfg.tokenized,
                 "features_finetune",
                 "*.csv",
             )
         )
-        vocab = torch.load(
-            join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE)
-        )
+        vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
             data = exclude_pids_from_data(data, pids_to_exclude)
@@ -170,11 +167,10 @@ class DatasetPreparer:
         # Previously had issue with it
 
         # save
-        save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
-        save_sequence_lengths(data, save_dir, desc="_finetune")
-        save_data(data, vocab, save_dir, desc="_finetune")
-        outcomes.to_csv(join(save_dir, "outcomes.csv"), index=False)
-        index_dates.to_csv(join(save_dir, "index_dates.csv"), index=False)
+        save_sequence_lengths(data, self.save_dir, desc="_finetune")
+        save_data(data, vocab, self.save_dir, desc="_finetune")
+        outcomes.to_csv(join(self.save_dir, "outcomes.csv"), index=False)
+        index_dates.to_csv(join(self.save_dir, "index_dates.csv"), index=False)
 
         # Convert to sequences
         features, pids = convert_to_sequences(data)
@@ -194,15 +190,12 @@ class DatasetPreparer:
         # 1. Load tokenized data + vocab
         data = dd.read_csv(
             join(
-                paths_cfg.data_path,
-                paths_cfg.tokenized_dir,
+                paths_cfg.tokenized,
                 "features_pretrain",
                 "*.csv",
             )
         )  # self.loader.load_tokenized_data(mode='pretrain')
-        vocab = torch.load(
-            join(paths_cfg.data_path, paths_cfg.tokenized_dir, VOCABULARY_FILE)
-        )
+        vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
 
         # 2. Exclude pids
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
@@ -235,9 +228,8 @@ class DatasetPreparer:
         check_max_segment(data, model_cfg.type_vocab_size)
 
         # Save
-        save_dir = join(self.cfg.paths.output_path, self.cfg.paths.run_name)
-        save_sequence_lengths(data, save_dir, desc="_pretrain")
-        save_data(data, vocab, save_dir, desc="_pretrain")
+        save_sequence_lengths(data, self.save_dir, desc="_pretrain")
+        save_data(data, vocab, self.save_dir, desc="_pretrain")
 
         # Splitting data
         if predefined_splits:
@@ -246,7 +238,7 @@ class DatasetPreparer:
             train_data, val_data = split_pids_into_train_val(data, val_ratio)
 
         # Save split
-        save_pids_splits(train_data, val_data, save_dir)
+        save_pids_splits(train_data, val_data, self.save_dir)
 
         # Convert to sequences
         train_features, train_pids = convert_to_sequences(train_data)

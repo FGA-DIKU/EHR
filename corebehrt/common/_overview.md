@@ -1,8 +1,5 @@
 
 
-### azure.py
-Saved for later, should be revamped with all azure stuff
-
 ### config.py
 Is this possible to simplify?
 
@@ -37,8 +34,6 @@ Notes: Make less dependent on specific naming conventions and inputs
 classes: DirectoryPreparer
 
 functional: Basically all
-
-Notes: Might be simplified via. Azure revamp
 
 ### utils.py
 classes: Data

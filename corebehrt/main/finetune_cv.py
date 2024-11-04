@@ -1,17 +1,16 @@
 import os
 from os.path import join, split
 
+import logging
 import torch
 
-from corebehrt.common.azure import save_to_blobstore
-from corebehrt.common.initialize import Initializer, ModelManager
+from corebehrt.common.initialize import ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import (
     DirectoryPreparer,
-    copy_data_config,
-    copy_pretrain_config,
     get_args,
 )
+from corebehrt.common.config import load_config
 from corebehrt.common.utils import Data
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.data.dataset import BinaryOutcomeDataset
@@ -25,7 +24,6 @@ from corebehrt.evaluation.utils import (
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
-BLOBSTORE = "PHAIR"
 
 DEFAULT_CV_SPLITS = 2  # You can change this to desired value
 DEAFAULT_VAL_SPLIT = 0.2
@@ -34,21 +32,13 @@ DEAFAULT_VAL_SPLIT = 0.2
 
 
 def main_finetune(config_path):
-    (
-        cfg,
-        run,
-        mount_context,
-        pretrain_model_path,
-    ) = Initializer.initialize_configuration_finetune(
-        config_path, dataset_name=BLOBSTORE
-    )
+    cfg = load_config(config_path)
 
-    logger, finetune_folder = DirectoryPreparer.setup_run_folder(cfg)
+    # Setup directories
+    DirectoryPreparer(cfg).setup_finetune()
 
-    copy_data_config(cfg, finetune_folder)
-    copy_pretrain_config(cfg, finetune_folder)
-
-    cfg.save_to_yaml(join(finetune_folder, "finetune_config.yaml"))
+    # Logger
+    logger = logging.getLogger("finetune_cv")
 
     dataset_preparer = DatasetPreparer(cfg)
     data = dataset_preparer.prepare_finetune_data()
@@ -61,13 +51,12 @@ def main_finetune(config_path):
         )
         test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
-        save_data(test_data, finetune_folder)
+        save_data(test_data, cfg.paths.model)
 
         cv_splits = cv_loop_predefined_splits(
             cfg,
-            run,
             logger,
-            finetune_folder,
+            cfg.paths.model,
             data,
             cfg.paths.predefined_splits,
             test_data,
@@ -79,13 +68,12 @@ def main_finetune(config_path):
         test_data, train_val_indices = split_into_test_data_and_train_val_indices(
             cfg, data
         )
-        save_data(test_data, finetune_folder)
+        save_data(test_data, cfg.paths.model)
         if cv_splits > 1:
             cv_loop(
                 cfg,
-                run,
                 logger,
-                finetune_folder,
+                cfg.paths.model,
                 dataset_preparer,
                 data,
                 train_val_indices,
@@ -94,36 +82,23 @@ def main_finetune(config_path):
         else:
             finetune_without_cv(
                 cfg,
-                run,
                 logger,
-                finetune_folder,
+                cfg.paths.model,
                 dataset_preparer,
                 data,
                 train_val_indices,
                 test_data,
             )
 
-    compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="val")
+    compute_and_save_scores_mean_std(cv_splits, cfg.paths.model, mode="val")
     if len(test_data) > 0:
-        compute_and_save_scores_mean_std(cv_splits, finetune_folder, mode="test")
+        compute_and_save_scores_mean_std(cv_splits, cfg.paths.model, mode="test")
 
-    if cfg.env == "azure":
-        save_path = (
-            pretrain_model_path
-            if cfg.paths.get("save_folder_path", None) is None
-            else cfg.paths.save_folder_path
-        )
-        save_to_blobstore(
-            local_path=cfg.paths.run_name,
-            remote_path=join(BLOBSTORE, save_path, cfg.paths.run_name),
-        )
-        mount_context.stop()
     logger.info("Done")
 
 
 def finetune_fold(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -161,7 +136,6 @@ def finetune_fold(
     )
     modelmanager = ModelManager(cfg, fold)
     checkpoint = modelmanager.load_checkpoint()
-    modelmanager.load_model_config()
     model = modelmanager.initialize_finetune_model(checkpoint, train_dataset)
 
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
@@ -180,7 +154,6 @@ def finetune_fold(
         sampler=sampler,
         scheduler=scheduler,
         cfg=cfg,
-        run=run,
         logger=logger,
         accumulate_logits=True,
         run_folder=fold_folder,
@@ -189,9 +162,8 @@ def finetune_fold(
     trainer.train()
 
     logger.info("Load best finetuned model to compute test scores")
-    modelmanager_trained = ModelManager(cfg, model_path=fold_folder)
+    modelmanager_trained = ModelManager(cfg, fold)
     checkpoint = modelmanager_trained.load_checkpoint()
-    modelmanager.load_model_config()
     model = modelmanager_trained.initialize_finetune_model(checkpoint, train_dataset)
     trainer.model = model
     trainer.test_dataset = test_dataset
@@ -200,7 +172,6 @@ def finetune_fold(
 
 def split_and_finetune(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -214,7 +185,6 @@ def split_and_finetune(
     val_data = data.select_data_subset_by_indices(val_indices, mode="val")
     finetune_fold(
         cfg,
-        run,
         logger,
         finetune_folder,
         dataset_preparer,
@@ -242,7 +212,6 @@ def _limit_patients(cfg, logger, indices_or_pids: list, split: str) -> list:
 
 def cv_loop(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -262,7 +231,6 @@ def cv_loop(
         val_indices = _limit_patients(cfg, logger, val_indices, "val")
         split_and_finetune(
             cfg,
-            run,
             logger,
             finetune_folder,
             dataset_preparer,
@@ -276,7 +244,6 @@ def cv_loop(
 
 def finetune_without_cv(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
@@ -292,7 +259,6 @@ def finetune_without_cv(
     val_indices = train_val_indices[int(len(train_val_indices) * (1 - val_split)) :]
     split_and_finetune(
         cfg,
-        run,
         logger,
         finetune_folder,
         dataset_preparer,
@@ -306,7 +272,6 @@ def finetune_without_cv(
 
 def cv_loop_predefined_splits(
     cfg,
-    run,
     logger,
     finetune_folder: str,
     data: Data,
@@ -332,7 +297,7 @@ def cv_loop_predefined_splits(
         if len(val_pids) < len(val_data.pids):
             val_data = data.select_data_subset_by_pids(val_pids, mode="val")
         finetune_fold(
-            cfg, run, logger, finetune_folder, train_data, val_data, fold, test_data
+            cfg, logger, finetune_folder, train_data, val_data, fold, test_data
         )
     return cv_splits
 

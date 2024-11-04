@@ -18,43 +18,35 @@ CHECKPOINT_FOLDER = "checkpoints"
 VAL_RATIO = 0.2
 
 
-def load_checkpoint_and_epoch(cfg: Config) -> Tuple:
+def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> Tuple:
     """Load checkpoint and epoch from config."""
-    model_path = cfg.paths.get("model_path", None)
-    checkpoint = ModelLoader(cfg).load_checkpoint() if model_path is not None else None
+    checkpoint = ModelLoader(
+        model_dir, checkpoint_epoch=checkpoint_epoch
+    ).load_checkpoint()
     if checkpoint is not None:
         epoch = checkpoint["epoch"]
     else:
-        epoch = (
-            Utilities.get_last_checkpoint_epoch(join(model_path, CHECKPOINT_FOLDER))
-            if model_path is not None
-            else None
-        )
+        epoch = Utilities.get_last_checkpoint_epoch(join(model_dir, CHECKPOINT_FOLDER))
     return checkpoint, epoch
 
 
-def load_model_cfg_from_checkpoint(cfg: Config, config_name: str) -> bool:
-    """If training from checkpoint, we need to get the old config"""
-    model_path = cfg.paths.get("model_path", None)
-    if (
-        model_path is not None
-    ):  # if we are training from checkpoint, we need to load the old config
-        old_cfg = load_config(join(cfg.paths.model_path, config_name))
-        cfg.model = old_cfg.model
-        return True
-    return False
+def load_model_cfg_from_checkpoint(model_dir: str, config_name: str) -> Config:
+    """
+    Load the model sub section from the configuration file given in the
+    model dir.
+    """
+    return load_config(join(model_dir, f"{config_name}.yaml")).model
 
 
 class FeaturesLoader:
     def __init__(self, cfg):
-        self.path_cfg = cfg.paths
+        self.paths_cfg = cfg.paths
         self.cfg = cfg
 
     def load_tokenized_data(self, mode: str = None) -> Data:
         """Load features for finetuning"""
-        tokenized_dir = self.path_cfg.get("tokenized_dir", "tokenized")
-        tokenized_files = self.path_cfg.get("tokenized_file", f"features_{mode}.pt")
-        tokenized_pids_files = self.path_cfg.get("tokenized_pids", f"pids_{mode}.pt")
+        tokenized_files = self.paths_cfg.get("tokenized_file", f"features_{mode}.pt")
+        tokenized_pids_files = self.paths_cfg.get("tokenized_pids", f"pids_{mode}.pt")
 
         # Ensure the files are in a list. We might want to load multiple files.
         tokenized_files = (
@@ -69,30 +61,26 @@ class FeaturesLoader:
             tokenized_pids_files
         ), "Number of tokenized files and pids files must be equal."
 
-        tokenized_data_path = join(self.path_cfg.data_path, tokenized_dir)
-
-        logger.info(f"Loading tokenized data from {tokenized_data_path}")
+        logger.info(f"Loading tokenized data from {self.inputs.tokenized}")
         features, pids = self.load_features_and_pids(
-            tokenized_data_path, tokenized_files, tokenized_pids_files
+            tokenized_files, tokenized_pids_files
         )
 
         logger.info("Loading vocabulary")
-        vocabulary = self.load_vocabulary(tokenized_data_path)
+        vocabulary = self.load_vocabulary()
 
         return Data(features, pids, vocabulary=vocabulary, mode=mode)
 
-    @staticmethod
-    def load_features_and_pids(
-        tokenized_data_path: str, tokenized_files: list, tokenized_pids_files: list
-    ):
+    def load_features_and_pids(self, tokenized_files: list, tokenized_pids_files: list):
         """Load features and pids from multiple files."""
         features = {}
         pids = []
         for tokenized_file, tokenized_pids_file in zip(
             tokenized_files, tokenized_pids_files
         ):
-            features_temp = torch.load(join(tokenized_data_path, tokenized_file))
-            pids_temp = torch.load(join(tokenized_data_path, tokenized_pids_file))
+            features_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_file))
+            pids_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_pids_file))
+
             # Concatenate features
             for key in features_temp.keys():
                 features.setdefault(key, []).extend(features_temp[key])
@@ -102,33 +90,32 @@ class FeaturesLoader:
 
         return features, pids
 
-    def load_vocabulary(self, tokenized_data_path: str):
+    def load_vocabulary(self):
         """Load vocabulary from file."""
-        vocabulary_file_path = join(tokenized_data_path, VOCABULARY_FILE)
-        if not os.path.exists(vocabulary_file_path):
-            vocabulary_file_path = join(self.path_cfg.data_path, VOCABULARY_FILE)
-
-        return torch.load(vocabulary_file_path)
+        return torch.load(join(self.paths_cfg.tokenized, VOCABULARY_FILE))
 
     def load_outcomes_and_exposures(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Load outcomes and censoring timestamps from file.
         If no censoring timestamps provided, use outcomes as censoring timestamps.
         """
-        logger.info(f"Load outcomes from {self.path_cfg.outcome}")
-        outcomes = pd.read_csv(self.path_cfg.outcome)
-        if not self.path_cfg.get("exposure", False):
+        logger.info(f"Load outcomes from {self.paths_cfg.outcomes}")
+        outcomes = pd.read_csv(self.paths_cfg.outcomes)
+        if not self.paths_cfg.get("exposure", False):
             logger.warning(
                 "No exposure file provided. Using outcomes as censoring timestamps."
             )
             return outcomes, outcomes.copy(deep=True)
-        logger.info(f"Load exposure timestamps from {self.path_cfg.exposure}")
-        exposures = pd.read_csv(self.path_cfg.exposure)
+
+        logger.info(f"Load exposure timestamps from {self.paths_cfg.exposure}")
+        exposures = pd.read_csv(self.paths_cfg.exposure)
+
         return outcomes, exposures
 
     def load_finetune_data(self, path: str = None, mode: str = None) -> Data:
         """Load features for finetuning"""
-        path = self.path_cfg.finetune_features_path if path is None else path
+        path = self.paths_cfg.finetune_features_path if path is None else path
+
         features = torch.load(join(path, f"features.pt"))
         outcomes = torch.load(join(path, f"outcomes.pt"))
         pids = torch.load(join(path, f"pids.pt"))
@@ -137,15 +124,10 @@ class FeaturesLoader:
 
 
 class ModelLoader:
-    def __init__(self, cfg: Config, model_path: str = None):
+    def __init__(self, model_path: str, checkpoint_epoch: str = None):
         """Load model from config and checkpoint."""
-        self.cfg = cfg
-        if model_path is not None:
-            self.model_path = model_path
-        elif self.cfg.paths.get("model_path", None) is not None:
-            self.model_path = self.cfg.paths.model_path
-        else:
-            self.model_path = None
+        self.model_path = model_path
+        self.checkpoint_epoch = checkpoint_epoch
 
     def load_model(
         self, model_class, add_config: dict = {}, checkpoint: dict = None, kwargs={}
@@ -188,14 +170,13 @@ class ModelLoader:
         return torch.load(checkpoint_path, map_location=device)
 
     def get_checkpoint_epoch(self) -> int:
-        """Get checkpoint epoch from config or return the last checkpoint_epoch for this model."""
-        checkpoint_epoch = self.cfg.paths.get("checkpoint_epoch", None)
-        if checkpoint_epoch is None:
+        """Get checkpoint if set or return the last checkpoint_epoch for this model."""
+        if self.checkpoint_epoch is None:
             logger.info("No checkpoint provided. Loading last checkpoint.")
-            checkpoint_epoch = Utilities.get_last_checkpoint_epoch(
+            self.checkpoint_epoch = Utilities.get_last_checkpoint_epoch(
                 join(self.model_path, CHECKPOINT_FOLDER)
             )
-        return checkpoint_epoch
+        return self.checkpoint_epoch
 
 
 def load_exclude_pids(cfg) -> List:
