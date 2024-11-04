@@ -5,10 +5,7 @@ from datetime import datetime
 import random
 import numpy as np
 
-from corebehrt.functional.values import (
-    add_binned_values,
-    add_quantile_values,
-)
+from corebehrt.classes.values import ValueCreator
 from corebehrt.classes.normalizer import ValuesNormalizer
 
 
@@ -94,7 +91,7 @@ class TestCreators(unittest.TestCase):
         self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=1)
 
     def test_create_binned_value(self):
-        binned_values = add_binned_values(self.concepts_normed).compute()
+        binned_values = ValueCreator.add_binned_values(self.concepts_normed, multiplication_factor=100).compute()
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
         )
@@ -112,12 +109,12 @@ class TestCreators(unittest.TestCase):
             for item in sublist
             if item is not None
         ]
-
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
 
     def test_normalise_and_create_binned_value(self):
-        binned_values = add_binned_values(
+        binned_values = ValueCreator.add_binned_values(
             self.concepts,
+            multiplication_factor=100,
             normalize_args={
                 "func": ValuesNormalizer.min_max_normalize_results,
                 "kwargs": {"min_count": 3},
@@ -148,7 +145,7 @@ class TestCreators(unittest.TestCase):
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
 
     def test_create_quantile_value(self):
-        quantile_values = add_quantile_values(self.concepts_quantiles).compute()
+        quantile_values = ValueCreator.add_quantile_values(self.concepts_quantiles).compute()
         sorted_concepts = list(
             quantile_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
         )

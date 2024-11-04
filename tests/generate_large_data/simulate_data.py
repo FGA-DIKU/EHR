@@ -13,7 +13,7 @@ from tqdm import tqdm
 N = 1000
 BATCH_SIZE = 5
 N_CONCEPTS = 10  # Number of concepts per patient
-WRITE_DIR = "data/raw_w_labs"
+WRITE_DIR = "data/raw_with_values"
 
 
 def main_write(
@@ -31,23 +31,22 @@ def main_write(
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
-        concepts = generate_concepts_batch(patients_info, n_concepts)
+        concepts = generate_concepts_batch(patients_info, n_concepts, prefix="D")
         concepts.to_csv(
             f"{write_dir}/concept.diagnose.csv",
             index=False,
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
-        concepts_m = generate_concepts_batch(patients_info, n_concepts)
+        concepts_m = generate_concepts_batch(patients_info, n_concepts, prefix="M")
         concepts_m.to_csv(
             f"{write_dir}/concept.medication.csv",
             index=False,
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
-
         concepts_l = generate_concepts_batch(
-            patients_info, n_concepts, prefix="LAB", result_col=True
+            patients_info, n_concepts, prefix="LAB", result_col=True, n_unique_concepts=10
         )
         concepts_l.to_csv(
             f"{write_dir}/concept.labtest.csv",
@@ -55,6 +54,8 @@ def main_write(
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
+
+
 
 
 def generate_patients_info_batch(n_patients):
@@ -113,7 +114,7 @@ def generate_patients_info_batch(n_patients):
 
 
 def generate_concepts_batch(
-    patients_info, n_records_per_pid, prefix="", result_col=False
+    patients_info, n_records_per_pid, prefix="", result_col=False, n_unique_concepts=1000
 ):
     # Repeat each row n_records_per_pid times
     repeated_patients_info = patients_info.loc[
@@ -134,7 +135,7 @@ def generate_concepts_batch(
     deathdates[~valid_mask] = birthdates[~valid_mask] + 1
     # Generate random timestamps between birthdates and deathdates
     random_timestamps = np.random.randint(birthdates, deathdates, dtype=np.int64)
-    timestamps = pd.to_datetime(random_timestamps + 10**9, unit="s")
+    timestamps = pd.to_datetime(random_timestamps, unit="s")
 
     # Generate ADMISSION_ID column using vectorized operations
     admission_ids = np.array(
@@ -142,7 +143,7 @@ def generate_concepts_batch(
     )
 
     # Generate CONCEPT column using vectorized operations
-    concepts = np.random.randint(0, 1000, size=len(repeated_patients_info))
+    concepts = np.random.randint(0, n_unique_concepts, size=len(repeated_patients_info))
     if prefix != "":
         concepts = [f"{prefix}_{c}" for c in concepts]
     # Create the DataFrame
@@ -158,6 +159,11 @@ def generate_concepts_batch(
     if result_col:
         results = np.random.randint(100, 200, size=len(repeated_patients_info))
         concepts_data["RESULT"] = results
+
+    # Filter out rows where TIMESTAMP is less than BIRTHDATE
+    concepts_data = concepts_data[
+        concepts_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+    ]
 
     return concepts_data
 

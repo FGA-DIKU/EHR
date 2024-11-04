@@ -18,7 +18,7 @@ from corebehrt.functional.convert import convert_to_sequences
 class TestCreateData(unittest.TestCase):
     def setUp(self):
         # Create tmp directory to use for output
-        self.root_dir = "./.test_create_data"
+        self.root_dir = "./.test_create_data_w_vals"
         makedirs(self.root_dir, exist_ok=True)
 
         # Create config file
@@ -34,18 +34,21 @@ class TestCreateData(unittest.TestCase):
                 "save_features_dir_name": "features",
             },
             "loader": {
-                "data_dir": "./tests/data/raw_w_labs",
-                "concept_types": ["diagnose", "medication"],  # , "labtest"],
+                "data_dir": "./tests/data/raw_with_values",
+                "concept_types": ["diagnose", "medication", "labtest"],
                 "include_values": ["labtest"],
-                "value_type": "binned_value",
-                "normalize_args": {
-                    "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
-                    "kwargs": {"min_count": 3},
-                },
             },
             "features": {
                 "origin_point": {"year": 2020, "month": 1, "day": 26},
                 "background_vars": ["GENDER"],
+                "values": {
+                    "value_type": "binned",
+                    "value_type_kwargs": {"multiplication_factor": 100},
+                    "normalize_args": {
+                        "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
+                        "kwargs": {"min_count": 3},
+                    },
+                },
             },
             "tokenizer": {"sep_tokens": True, "cls_token": True},
             "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
@@ -90,7 +93,7 @@ class TestCreateData(unittest.TestCase):
         )
 
         # 3: Check patients
-        expected_pids = pd.read_csv("./tests/data/raw_w_labs/patients_info.csv")[
+        expected_pids = pd.read_csv("./tests/data/raw_with_values/patients_info.csv")[
             "PID"
         ].tolist()
         self.assertEqual(
@@ -104,6 +107,7 @@ class TestCreateData(unittest.TestCase):
         bg_tokens = [v for k, v in vocab.items() if k.startswith("BG")]
         self.assertEqual(len(bg_tokens), 2)
         val_tokens = [v for k, v in vocab.items() if k.startswith("VAL")]
+        inv_vocab = {v: k for k, v in vocab.items()}
 
         # Check tokenisation
         for mode in ["pretrain", "finetune", "test"]:
@@ -115,7 +119,7 @@ class TestCreateData(unittest.TestCase):
                 )
             )
             sequences, _ = convert_to_sequences(tokenised_features)
-            for cons, positions in zip(sequences["concept"], sequences["abspos"]):
+            for cons, positions in zip(sequences["concept"], sequences["abspos"]):               
                 self.assertTrue(cons[0] == vocab["[CLS]"])
                 self.assertTrue((cons[1] in bg_tokens))
 

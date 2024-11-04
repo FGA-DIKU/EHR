@@ -24,6 +24,7 @@ from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.classes.loader import FormattedDataLoader
 from corebehrt.functional.utils import init_function
+from corebehrt.classes.values import ValueCreator
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
@@ -124,21 +125,13 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             cfg.loader.include_values
             if hasattr(cfg.loader, "include_values") and cfg.loader.include_values
             else []
-        ),
-        value_type=(
-            cfg.loader.value_type
-            if hasattr(cfg.loader, "value_type") and cfg.loader.value_type
-            else None
-        ),
-        normalize_args=(
-            {
-                "func": init_function(cfg.loader.normalize_args.func),
-                "kwargs": cfg.loader.normalize_args.kwargs,
-            }
-            if hasattr(cfg.loader, "normalize_args") and cfg.loader.normalize_args
-            else None
-        ),
+        )
     ).load()
+
+    if 'values' in cfg.features:
+        value_creator  = ValueCreator(**cfg.features.values)
+        concepts = value_creator(concepts)
+        cfg.features.pop("values")
 
     feature_creator = FeatureCreator(**cfg.features)
     features = feature_creator(patients_info, concepts)

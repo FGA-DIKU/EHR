@@ -7,7 +7,6 @@ from corebehrt.functional.utils import (
     normalize_segments_series,
 )
 
-
 def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
     """
     Assign absolute position in hours since origin point to each row in concepts.

@@ -5,7 +5,7 @@ from corebehrt.functional.normalize import min_max_normalize
 class ValuesNormalizer:
     """
     A class to load normalise values in data frames.
-    Expects 'RESULT' and 'CONCEPT' column to be present.
+    Expects 'RESULT' and 'concept' column to be present.
     """
 
     @staticmethod
@@ -23,8 +23,8 @@ class ValuesNormalizer:
     def min_max_normalize_results(values: dd.DataFrame, min_count: int) -> dd.DataFrame:
         """
         Normalises the 'RESULT' column of the given DataFrame using min-max normalisation.
-        If the count of a CONCEPT is less than 3, the RESULT is set to -1.
-        Expects 'RESULT' and 'CONCEPT' column to be present.
+        If the count of a 'concept' is less than 3, the RESULT is set to -1.
+        Expects 'RESULT' and 'concept' column to be present.
         """
         # Compute min, max, and count for each CONCEPT
         grouped = values.groupby("CONCEPT")["RESULT", "TIMESTAMP"]
@@ -33,9 +33,11 @@ class ValuesNormalizer:
         values = dd.merge(
             values, min_max_count, left_on="CONCEPT", right_index=True, how="left"
         )
+        
         # Apply normalisation
-        # min_count = 3
         values = values.map_partitions(min_max_normalize, min_count)
-        # Drop auxiliary columns
+
+        # Drop auxiliary columns and values which have become NaN after normalisation
         values = values.drop(["min", "max", "count"], axis=1)
+        values = values.dropna(subset=["RESULT"])
         return values
