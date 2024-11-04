@@ -10,7 +10,7 @@ from corebehrt.functional.creators import (
     create_death,
     create_segments,
     assign_index_and_order,
-    sort_features
+    sort_features,
 )
 from corebehrt.functional.exclude import exclude_event_nans
 from corebehrt.functional.utils import (
@@ -18,7 +18,6 @@ from corebehrt.functional.utils import (
     check_patients_info_columns,
 )
 
-import numpy as np
 
 class FeatureCreator:
     """
@@ -48,16 +47,18 @@ class FeatureCreator:
             datetime(**origin_point) if isinstance(origin_point, dict) else origin_point
         )
         self.background_vars = background_vars
- 
+
     def __call__(
-        self, patients_info: dd.DataFrame, concepts: dd.DataFrame, 
+        self,
+        patients_info: dd.DataFrame,
+        concepts: dd.DataFrame,
     ) -> dd.DataFrame:
 
         check_concepts_columns(concepts)
         check_patients_info_columns(patients_info, self.background_vars)
 
         concepts = self.prepare_concepts(concepts, patients_info)
-         
+
         background = create_background(patients_info, self.background_vars)
         death = create_death(patients_info)
         features = dd.concat([concepts, background, death])
@@ -67,7 +68,7 @@ class FeatureCreator:
         features = assign_index_and_order(features)
         features = exclude_event_nans(features)
         features = sort_features(features)
-        
+
         features = create_segments(features)
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
 

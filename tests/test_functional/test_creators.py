@@ -9,7 +9,7 @@ from corebehrt.functional.creators import (
     create_segments,
     create_background,
     create_death,
-    sort_features
+    sort_features,
 )
 
 

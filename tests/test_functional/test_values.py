@@ -91,7 +91,9 @@ class TestCreators(unittest.TestCase):
         self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=1)
 
     def test_create_binned_value(self):
-        binned_values = ValueCreator.add_binned_values(self.concepts_normed, multiplication_factor=100).compute()
+        binned_values = ValueCreator.add_binned_values(
+            self.concepts_normed, multiplication_factor=100
+        ).compute()
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
         )
@@ -145,7 +147,9 @@ class TestCreators(unittest.TestCase):
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
 
     def test_create_quantile_value(self):
-        quantile_values = ValueCreator.add_quantile_values(self.concepts_quantiles).compute()
+        quantile_values = ValueCreator.add_quantile_values(
+            self.concepts_quantiles
+        ).compute()
         sorted_concepts = list(
             quantile_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
         )

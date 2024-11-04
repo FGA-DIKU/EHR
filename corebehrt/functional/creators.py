@@ -7,6 +7,7 @@ from corebehrt.functional.utils import (
     normalize_segments_series,
 )
 
+
 def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
     """
     Assign absolute position in hours since origin point to each row in concepts.
@@ -103,9 +104,9 @@ def create_background(
 def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
     """
     Assign 'index' and 'order' columns to ensure correct ordering.
-    - The 'index' column represents the position of each row within its partition.  
+    - The 'index' column represents the position of each row within its partition.
     - The 'order' column can be used for additional custom ordering if needed.
-    - Both columns are initialized with 0 to ensure consistent behavior across partitions.  
+    - Both columns are initialized with 0 to ensure consistent behavior across partitions.
     Parameters:
         df: dd.DataFrame with 'PID' column.
     Returns:
@@ -133,12 +134,12 @@ def _sort_partitions(df: dd.DataFrame) -> dd.DataFrame:
     """
     if "index" in df.columns and "order" in df.columns:
         df = df.sort_values(
-                    ["PID", "abspos", "index", "order"]
-                )  # could maybe be done more optimally, is a bit slow
+            ["PID", "abspos", "index", "order"]
+        )  # could maybe be done more optimally, is a bit slow
         df = df.drop(columns=["index", "order"])
     else:
         df = df.sort_values(["PID", "abspos"])
-    
+
     return df
 
 
@@ -157,6 +158,7 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
 
     return concepts
 
+
 def _assign_segments(df):
     """
     Assign segments to the concepts DataFrame based on 'ADMISSION_ID'
@@ -166,6 +168,7 @@ def _assign_segments(df):
         normalize_segments_series
     )
     return df
+
 
 def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
     """

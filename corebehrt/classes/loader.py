@@ -44,9 +44,11 @@ class FormattedDataLoader:
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
         concepts = [
-            self._remove_values(self._load_concept(concept_type)) 
-            if concept_type not in self.include_values 
-            else self._load_concept(concept_type)
+            (
+                self._remove_values(self._load_concept(concept_type))
+                if concept_type not in self.include_values
+                else self._load_concept(concept_type)
+            )
             for concept_type in self.concept_types
         ]
         concepts = dd.concat(concepts)

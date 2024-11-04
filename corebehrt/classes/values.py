@@ -3,6 +3,7 @@ from typing import Optional, Callable
 import pandas as pd
 from corebehrt.common.config import instantiate_function
 
+
 class ValueCreator:
     """
     A class to create features from patient information and concepts DataFrames.
@@ -25,22 +26,31 @@ class ValueCreator:
         value_type: str,
         value_type_kwargs: dict = None,
         normalize_args: dict = None,
-    ):      
-        self.value_type = value_type # values.get("value_type", None)
-        self.value_type_kwargs = value_type_kwargs #values.get("value_type_kwargs", None)
-        self.normalize_args = normalize_args #values.get("normalize_args", None)
+    ):
+        self.value_type = value_type  # values.get("value_type", None)
+        self.value_type_kwargs = (
+            value_type_kwargs  # values.get("value_type_kwargs", None)
+        )
+        self.normalize_args = normalize_args  # values.get("normalize_args", None)
         if self.normalize_args is not None:
-            self.normalize_args["func"] = instantiate_function(self.normalize_args["func"])
-    
+            self.normalize_args["func"] = instantiate_function(
+                self.normalize_args["func"]
+            )
+
     def __call__(
-            self, concepts: dd.DataFrame, 
-        ) -> dd.DataFrame:
-            if self.value_type == "binned":
-                return self.add_binned_values(concepts, self.value_type_kwargs["multiplication_factor"], self.normalize_args)
-            elif self.value_type == "quantile":
-                return self.add_quantile_values(concepts)
-            else:
-                raise ValueError(f"Unknown value type: {self.value_type}")
+        self,
+        concepts: dd.DataFrame,
+    ) -> dd.DataFrame:
+        if self.value_type == "binned":
+            return self.add_binned_values(
+                concepts,
+                self.value_type_kwargs["multiplication_factor"],
+                self.normalize_args,
+            )
+        elif self.value_type == "quantile":
+            return self.add_quantile_values(concepts)
+        else:
+            raise ValueError(f"Unknown value type: {self.value_type}")
 
     @staticmethod
     def add_binned_values(
@@ -68,7 +78,7 @@ class ValueCreator:
         concepts = concepts.reset_index(drop=False)
         concepts["index"] += 1
         computed_concepts = concepts.compute()
-        values  = concepts.dropna(subset=["RESULT"])
+        values = concepts.dropna(subset=["RESULT"])
         if normalize_args is not None and callable(normalize_args["func"]):
             values = normalize_args["func"](values, **normalize_args["kwargs"])
 

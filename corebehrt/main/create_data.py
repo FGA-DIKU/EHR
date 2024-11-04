@@ -124,11 +124,11 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             cfg.loader.include_values
             if hasattr(cfg.loader, "include_values") and cfg.loader.include_values
             else []
-        )
+        ),
     ).load()
 
-    if 'values' in cfg.features:
-        value_creator  = ValueCreator(**cfg.features.values)
+    if "values" in cfg.features:
+        value_creator = ValueCreator(**cfg.features.values)
         concepts = value_creator(concepts)
         cfg.features.pop("values")
 

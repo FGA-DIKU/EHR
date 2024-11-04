@@ -33,7 +33,7 @@ class ValuesNormalizer:
         values = dd.merge(
             values, min_max_count, left_on="CONCEPT", right_index=True, how="left"
         )
-        
+
         # Apply normalisation
         values = values.map_partitions(min_max_normalize, min_count)
 

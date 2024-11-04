@@ -46,7 +46,11 @@ def main_write(
             header=i == 0,
         )
         concepts_l = generate_concepts_batch(
-            patients_info, n_concepts, prefix="LAB", result_col=True, n_unique_concepts=10
+            patients_info,
+            n_concepts,
+            prefix="LAB",
+            result_col=True,
+            n_unique_concepts=10,
         )
         concepts_l.to_csv(
             f"{write_dir}/concept.labtest.csv",
@@ -54,8 +58,6 @@ def main_write(
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
-
-
 
 
 def generate_patients_info_batch(n_patients):
@@ -114,7 +116,11 @@ def generate_patients_info_batch(n_patients):
 
 
 def generate_concepts_batch(
-    patients_info, n_records_per_pid, prefix="", result_col=False, n_unique_concepts=1000
+    patients_info,
+    n_records_per_pid,
+    prefix="",
+    result_col=False,
+    n_unique_concepts=1000,
 ):
     # Repeat each row n_records_per_pid times
     repeated_patients_info = patients_info.loc[

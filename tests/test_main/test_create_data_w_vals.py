@@ -119,7 +119,7 @@ class TestCreateData(unittest.TestCase):
                 )
             )
             sequences, _ = convert_to_sequences(tokenised_features)
-            for cons, positions in zip(sequences["concept"], sequences["abspos"]):               
+            for cons, positions in zip(sequences["concept"], sequences["abspos"]):
                 self.assertTrue(cons[0] == vocab["[CLS]"])
                 self.assertTrue((cons[1] in bg_tokens))
 

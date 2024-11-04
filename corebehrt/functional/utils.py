@@ -165,6 +165,7 @@ def truncate_patient(
 
     return truncated_patient
 
+
 def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
     """
     Get tokens that start with low_priority_prefixes.
@@ -175,7 +176,13 @@ def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str])
         if any(k.startswith(prefix) for prefix in low_priority_prefixes)
     }
 
-def _drop_non_priority_tokens(patient: pd.DataFrame, non_priority_tokens: set, truncation_length: int, background_length: int) -> pd.DataFrame:
+
+def _drop_non_priority_tokens(
+    patient: pd.DataFrame,
+    non_priority_tokens: set,
+    truncation_length: int,
+    background_length: int,
+) -> pd.DataFrame:
     """
     Drop non-priority tokens from patient, keeping truncation_length - background_length tokens.
     """
@@ -185,19 +192,27 @@ def _drop_non_priority_tokens(patient: pd.DataFrame, non_priority_tokens: set, t
     if len(patient) - len(non_priority_indices) > truncation_length:
         return patient.drop(non_priority_indices)
     else:
-        non_priority_truncation_len = truncation_length - (len(patient) - len(non_priority_indices) - background_length)
+        non_priority_truncation_len = truncation_length - (
+            len(patient) - len(non_priority_indices) - background_length
+        )
         return patient.drop(non_priority_indices[:-non_priority_truncation_len])
 
-def _filter_invalid_positions(patient: pd.DataFrame, low_priority_prefixes: List[str]) -> pd.DataFrame:
+
+def _filter_invalid_positions(
+    patient: pd.DataFrame, low_priority_prefixes: List[str]
+) -> pd.DataFrame:
     """
     Filter out patients where subunits of low_priority_prefixes are not all present.
     """
     unit_len = len(low_priority_prefixes)
     positions = patient[patient["non_priority"]]["abspos"]
-    invalid_positions = positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
+    invalid_positions = (
+        positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
+    )
     if not invalid_positions.empty:
         return patient.drop(invalid_positions)
     return patient
+
 
 def prioritized_truncate_patient(
     patient: pd.DataFrame,
@@ -228,7 +243,9 @@ def prioritized_truncate_patient(
 
     truncation_length = max_len - background_length
     non_priority_tokens = _get_non_priority_tokens(vocabulary, low_priority_prefixes)
-    patient = _drop_non_priority_tokens(patient, non_priority_tokens, truncation_length, background_length)
+    patient = _drop_non_priority_tokens(
+        patient, non_priority_tokens, truncation_length, background_length
+    )
     if unit:
         patient = _filter_invalid_positions(patient, low_priority_prefixes)
 
