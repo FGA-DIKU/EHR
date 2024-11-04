@@ -4,7 +4,7 @@ import torch
 from collections import namedtuple
 
 from torch.utils.data import DataLoader, Dataset
-from corebehrt.common.config import Config, instantiate
+from corebehrt.common.config import Config, instantiate_class
 from corebehrt.dataloader.collate_fn import dynamic_padding
 from corebehrt.trainer.utils import (
     compute_avg_metrics,
@@ -58,10 +58,8 @@ class EHRTrainer:
         self.logger = logger
         self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
-        self.metrics = (
-            {k: instantiate(v) for k, v in metrics.items()} if metrics else {}
-        )
-
+        self.metrics = {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
+        
         self._initialize_early_stopping()
 
     def _initialize_basic_attributes(
@@ -88,9 +86,7 @@ class EHRTrainer:
         self.val_dataset = val_dataset
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.metrics = (
-            {k: instantiate(v) for k, v in metrics.items()} if metrics else {}
-        )
+        self.metrics = {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
         self.sampler = sampler
         self.cfg = cfg
         self.run = run

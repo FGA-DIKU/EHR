@@ -165,6 +165,39 @@ def truncate_patient(
 
     return truncated_patient
 
+def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
+    """
+    Get tokens that start with low_priority_prefixes.
+    """
+    return {
+        v
+        for k, v in vocabulary.items()
+        if any(k.startswith(prefix) for prefix in low_priority_prefixes)
+    }
+
+def _drop_non_priority_tokens(patient: pd.DataFrame, non_priority_tokens: set, truncation_length: int, background_length: int) -> pd.DataFrame:
+    """
+    Drop non-priority tokens from patient, keeping truncation_length - background_length tokens.
+    """
+    patient["non_priority"] = patient["concept"].isin(non_priority_tokens)
+    non_priority_indices = patient[patient["non_priority"]].index
+
+    if len(patient) - len(non_priority_indices) > truncation_length:
+        return patient.drop(non_priority_indices)
+    else:
+        non_priority_truncation_len = truncation_length - (len(patient) - len(non_priority_indices) - background_length)
+        return patient.drop(non_priority_indices[:-non_priority_truncation_len])
+
+def _filter_invalid_positions(patient: pd.DataFrame, low_priority_prefixes: List[str]) -> pd.DataFrame:
+    """
+    Filter out patients where subunits of low_priority_prefixes are not all present.
+    """
+    unit_len = len(low_priority_prefixes)
+    positions = patient[patient["non_priority"]]["abspos"]
+    invalid_positions = positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
+    if not invalid_positions.empty:
+        return patient.drop(invalid_positions)
+    return patient
 
 def prioritized_truncate_patient(
     patient: pd.DataFrame,
@@ -175,34 +208,29 @@ def prioritized_truncate_patient(
     vocabulary: dict,
     unit: bool = False,
 ) -> pd.DataFrame:
+    """
+    Truncate patient to max_len, keeping background, while prioritizing non-low_priority_prefixes.
+    If unit is True, low_priority_prefixes are treated as a single unit, and all of them are kept or removed.
+
+    Args:
+        patient (pd.DataFrame): The patient data to be truncated.
+        background_length (int): The length of the background to keep.
+        max_len (int): The maximum length of the truncated patient data.
+        sep_token (str): The separator token used in the patient data.
+        low_priority_prefixes (List[str]): List of prefixes that denote low priority concepts.
+        vocabulary (dict): A dictionary mapping concept names to their corresponding tokens.
+        unit (bool): If True, treat low_priority_prefixes as a single unit.
+    Returns:
+        pd.DataFrame: The truncated patient data.
+    """
     if len(patient["concept"]) <= max_len:
         return patient
 
     truncation_length = max_len - background_length
-    non_priority_tokens = {
-        v
-        for k, v in vocabulary.items()
-        if any(k.startswith(prefix) for prefix in low_priority_prefixes)
-    }
-    patient["non_priority"] = patient["concept"].isin(non_priority_tokens)
-
-    non_priority_indices = patient[patient["non_priority"]].index
-    if len(patient) - len(non_priority_indices) > truncation_length:
-        patient.drop(non_priority_indices, inplace=True)
-    else:
-        non_priority_truncation_len = truncation_length - (
-            len(patient) - len(non_priority_indices) - background_length
-        )
-        patient.drop(non_priority_indices[:-non_priority_truncation_len], inplace=True)
-
-        if unit:
-            unit_len = len(low_priority_prefixes)
-            positions = patient[patient["non_priority"]]["abspos"]
-            invalid_positions = (
-                positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
-            )
-            if not invalid_positions.empty:
-                patient.drop(invalid_positions, inplace=True)
+    non_priority_tokens = _get_non_priority_tokens(vocabulary, low_priority_prefixes)
+    patient = _drop_non_priority_tokens(patient, non_priority_tokens, truncation_length, background_length)
+    if unit:
+        patient = _filter_invalid_positions(patient, low_priority_prefixes)
 
     patient.drop(columns=["non_priority"], inplace=True)
     return truncate_patient(patient, background_length, max_len, sep_token)
@@ -269,32 +297,3 @@ def check_required_columns(
     if not required_columns.issubset(set(df.columns)):
         missing_columns = required_columns - set(df.columns)
         raise ValueError(f"Missing columns in {type_}: {missing_columns}")
-
-
-def init_function(func_path: str):
-    """Initializes a function or a class method from a path string."""
-    parts = func_path.rsplit(
-        ".", 2
-    )  # Split into module, class (optional), and function/method
-
-    if len(parts) == 3:
-        # If there are three parts, it includes a class
-        module_path, class_name, func_name = parts
-        module = importlib.import_module(module_path)
-        klass = getattr(module, class_name)
-        # Check if klass is a class and func_name is a static method
-        if isinstance(klass, type) and hasattr(klass, func_name):
-            method = getattr(klass, func_name)
-            if callable(method):
-                return method
-        else:
-            raise ValueError(f"{func_name} is not a static method of {class_name}")
-    elif len(parts) == 2:
-        # If there are two parts, it's a function in a module
-        module_path, func_name = parts
-        module = importlib.import_module(module_path)
-        return getattr(module, func_name)
-    else:
-        raise ValueError(
-            "Function path must be in the format 'module.Class.method' or 'module.function'"
-        )

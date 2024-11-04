@@ -1,7 +1,7 @@
 import dask.dataframe as dd
 from typing import Optional, Callable
 import pandas as pd
-from corebehrt.functional.utils import init_function
+from corebehrt.common.config import instantiate_function
 
 class ValueCreator:
     """
@@ -30,7 +30,7 @@ class ValueCreator:
         self.value_type_kwargs = value_type_kwargs #values.get("value_type_kwargs", None)
         self.normalize_args = normalize_args #values.get("normalize_args", None)
         if self.normalize_args is not None:
-            self.normalize_args["func"] = init_function(self.normalize_args["func"])
+            self.normalize_args["func"] = instantiate_function(self.normalize_args["func"])
     
     def __call__(
             self, concepts: dd.DataFrame, 

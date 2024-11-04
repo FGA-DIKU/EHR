@@ -86,8 +86,7 @@ class Config(dict):
             if key not in self:
                 setattr(self, key, value)
 
-
-def instantiate(instantiate_config, **extra_kwargs):
+def instantiate_class(instantiate_config, **extra_kwargs):
     """Instantiates a class from a config object."""
     module_path, class_name = instantiate_config._target_.rsplit(".", 1)
     module = importlib.import_module(module_path)
@@ -98,6 +97,33 @@ def instantiate(instantiate_config, **extra_kwargs):
     instance = class_(**kwargs)
     return instance
 
+
+def instantiate_function(func_path: str):
+    """Initializes a function or a class static method from a path string."""
+    parts = func_path.rsplit(
+        ".", 2
+    )  # Split into module, class (optional), and function/method
+
+    if len(parts) == 3:
+        # If there are three parts, it includes a class
+        module_path, class_name, func_name = parts
+        module = importlib.import_module(module_path)
+        klass = getattr(module, class_name)
+        # Check if klass is a class and func_name is a static method
+        if isinstance(klass, type) and hasattr(klass, func_name):
+            method = getattr(klass, func_name)
+            if callable(method):
+                return method
+        else:
+            raise ValueError(f"{func_name} is not a static method of {class_name}")
+    elif len(parts) == 2:
+        # If there are two parts, it's a function in a module
+        module_path, func_name = parts
+        module = importlib.import_module(module_path)
+        return getattr(module, func_name)
+    else:
+        raise ValueError(
+            "Function path must be in the format 'module.Class.method' or 'module.function'")
 
 def load_config(config_file):
     """Loads a yaml config file."""
