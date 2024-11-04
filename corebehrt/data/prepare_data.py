@@ -230,7 +230,6 @@ class DatasetPreparer:
             logger.info(f"Truncating using priority truncation with low priority prefixes: {data_cfg.priority_truncation.low_priority_prefixes}")
             truncation_args = data_cfg.get("priority_truncation")
             truncation_args["vocabulary"] = vocab
-            print(truncation_args)
             data = truncate_data(data, data_cfg.truncation_len, vocab, prioritized_truncate_patient, kwargs=truncation_args)
         else:
             data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)

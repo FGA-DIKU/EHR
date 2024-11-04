@@ -9,6 +9,7 @@ from corebehrt.functional.creators import (
     create_segments,
     create_background,
     create_death,
+    sort_features
 )
 
 
@@ -94,7 +95,8 @@ class TestCreators(unittest.TestCase):
         concepts_with_abspos = create_abspos(concepts, self.origin_point)
 
         # Apply the function
-        result = create_segments(concepts_with_abspos)
+        sorted_concepts = sort_features(concepts_with_abspos)
+        result = create_segments(sorted_concepts)
 
         # Compute the result
         result_df = result.compute()
