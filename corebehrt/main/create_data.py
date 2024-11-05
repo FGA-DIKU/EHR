@@ -118,7 +118,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Returns a list of lists of pids for each batch
     """
     concepts, patients_info = FormattedDataLoader(
-        cfg.loader.data_dir,
+        cfg.paths.data,
         cfg.loader.concept_types,
         include_values=(
             cfg.loader.include_values
@@ -140,7 +140,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     features = excluder.exclude_short_sequences(features)
 
     with ProgressBar():
-        features.to_csv(join(save_path, "*.csv"), index=False)
+        features.to_csv(join(cfg.paths.features, "*.csv"), index=False)
 
 
 if __name__ == "__main__":

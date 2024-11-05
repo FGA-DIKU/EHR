@@ -3,14 +3,11 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data
+  data: ./example_data/example_data_w_labs
   tokenized: ./outputs/tokenized
   features: ./outputs/features
   
 loader:
-  # can provide formatted data or features
-  features_dir: null # ./outputs/features/features
-  data_dir: ./example_data/example_data_w_labs #./outputs/features_dask #./example_data #./outputs/features_dask # ./example_data # ../outputs/features_test # ../data/formatted/synthea500_icd10 #../outputs/data_icd10
   concept_types: [
     diagnose,
     medication,
