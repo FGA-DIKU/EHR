@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable
+from typing import List, Tuple
 
 import dask.dataframe as dd
 

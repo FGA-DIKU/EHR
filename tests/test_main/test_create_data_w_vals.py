@@ -1,7 +1,6 @@
 from os.path import exists, join
 
 import dask.dataframe as dd
-from tests.helpers import compute_column_checksum
 import torch
 import pandas as pd
 
@@ -10,6 +9,7 @@ from corebehrt.common.setup import DATA_CFG
 
 from .base import TestMainScript
 from corebehrt.functional.convert import convert_to_sequences
+
 
 class TestCreateData(TestMainScript):
     def setUp(self):
@@ -31,17 +31,17 @@ class TestCreateData(TestMainScript):
                     "include_values": ["labtest"],
                 },
                 "features": {
-                "origin_point": {"year": 2020, "month": 1, "day": 26},
-                "background_vars": ["GENDER"],
-                "values": {
-                    "value_type": "binned",
-                    "value_type_kwargs": {"multiplication_factor": 100},
-                    "normalize_args": {
-                        "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
-                        "kwargs": {"min_count": 3},
+                    "origin_point": {"year": 2020, "month": 1, "day": 26},
+                    "background_vars": ["GENDER"],
+                    "values": {
+                        "value_type": "binned",
+                        "value_type_kwargs": {"multiplication_factor": 100},
+                        "normalize_args": {
+                            "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
+                            "kwargs": {"min_count": 3},
+                        },
                     },
                 },
-            },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
                 "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
                 "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},

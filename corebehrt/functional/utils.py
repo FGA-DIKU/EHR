@@ -10,7 +10,6 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 import random
-import importlib
 
 
 def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):

@@ -86,6 +86,7 @@ class Config(dict):
             if key not in self:
                 setattr(self, key, value)
 
+
 def instantiate_class(instantiate_config, **extra_kwargs):
     """Instantiates a class from a config object."""
     module_path, class_name = instantiate_config._target_.rsplit(".", 1)
@@ -123,7 +124,9 @@ def instantiate_function(func_path: str):
         return getattr(module, func_name)
     else:
         raise ValueError(
-            "Function path must be in the format 'module.Class.method' or 'module.function'")
+            "Function path must be in the format 'module.Class.method' or 'module.function'"
+        )
+
 
 def load_config(config_file):
     """Loads a yaml config file."""

@@ -1,6 +1,4 @@
 import dask.dataframe as dd
-from typing import Optional, Callable
-import pandas as pd
 from corebehrt.common.config import instantiate_function
 
 
@@ -77,7 +75,6 @@ class ValueCreator:
         concepts["RESULT"] = dd.to_numeric(concepts["RESULT"], errors="coerce")
         concepts = concepts.reset_index(drop=False)
         concepts["index"] += 1
-        computed_concepts = concepts.compute()
         values = concepts.dropna(subset=["RESULT"])
         if normalize_args is not None and callable(normalize_args["func"]):
             values = normalize_args["func"](values, **normalize_args["kwargs"])

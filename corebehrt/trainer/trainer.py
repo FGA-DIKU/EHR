@@ -58,8 +58,10 @@ class EHRTrainer:
         self.logger = logger
         self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
-        self.metrics = {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
-        
+        self.metrics = (
+            {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
+        )
+
         self._initialize_early_stopping()
 
     def _initialize_basic_attributes(
@@ -86,7 +88,9 @@ class EHRTrainer:
         self.val_dataset = val_dataset
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.metrics = {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
+        self.metrics = (
+            {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
+        )
         self.sampler = sampler
         self.cfg = cfg
         self.run = run

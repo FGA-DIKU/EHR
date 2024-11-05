@@ -101,6 +101,7 @@ def create_background(
 
     return background
 
+
 def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
     """
     Assign 'index' and 'order' columns to ensure correct ordering.
