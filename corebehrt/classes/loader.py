@@ -11,6 +11,7 @@ from corebehrt.functional.utils import (
     check_patients_info_columns,
 )
 
+
 class FormattedDataLoader:
     """
     A class to load concepts and patients_info from a specified folder.
