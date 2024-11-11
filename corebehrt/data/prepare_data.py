@@ -157,7 +157,7 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self.self._truncate_data(
+        data = self._truncate_data(
             data,
             vocab,
             data_cfg.truncation_len,
