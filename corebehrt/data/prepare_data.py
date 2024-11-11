@@ -157,7 +157,12 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self._truncate_data(data, vocab, data_cfg)
+        data = self.self._truncate_data(
+            data,
+            vocab,
+            data_cfg.truncation_len,
+            data_cfg.get("priority_truncation", False),
+        )
 
         # 9. Normalize segments
         data = normalize_segments(data)

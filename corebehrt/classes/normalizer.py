@@ -1,5 +1,4 @@
 from dask import dataframe as dd
-import numpy as np
 from corebehrt.functional.normalize import min_max_normalize
 
 
