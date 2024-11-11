@@ -220,7 +220,12 @@ class DatasetPreparer:
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self._truncate_data(data, vocab, data_cfg)
+        data = self._truncate_data(
+            data,
+            vocab,
+            data_cfg.truncation_len,
+            data_cfg.get("priority_truncation", False),
+        )
 
         # 6. Normalize segments
         data = normalize_segments(data)
@@ -249,23 +254,21 @@ class DatasetPreparer:
 
         return train_data, val_data
 
-    def _truncate_data(self, data, vocab, data_cfg):
+    def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
         truncation_method = (
-            prioritized_truncate_patient
-            if data_cfg.get("priority_truncation", False)
-            else truncate_patient
+            prioritized_truncate_patient if priority_truncation else truncate_patient
         )
-        if data_cfg.get("priority_truncation", False):
+        if priority_truncation:
             logger.info(
-                f"Truncating using priority truncation with low priority prefixes: {data_cfg.priority_truncation.low_priority_prefixes}"
+                f"Truncating using priority truncation with low priority prefixes: {priority_truncation.low_priority_prefixes}"
             )
-            truncation_args = data_cfg.priority_truncation.copy()
+            truncation_args = priority_truncation.copy()
             truncation_args["vocabulary"] = vocab
         else:
             truncation_args = {}
         data = truncate_data(
             data,
-            data_cfg.truncation_len,
+            truncation_len,
             vocab,
             truncation_method,
             kwargs=truncation_args,

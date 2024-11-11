@@ -25,11 +25,11 @@ class ValueCreator:
         value_type_kwargs: dict = None,
         normalize_args: dict = None,
     ):
-        self.value_type = value_type  # values.get("value_type", None)
+        self.value_type = value_type
         self.value_type_kwargs = (
-            value_type_kwargs  # values.get("value_type_kwargs", None)
+            value_type_kwargs if value_type_kwargs is not None else {}
         )
-        self.normalize_args = normalize_args  # values.get("normalize_args", None)
+        self.normalize_args = normalize_args
         if self.normalize_args is not None:
             self.normalize_args["func"] = instantiate_function(
                 self.normalize_args["func"]
@@ -42,7 +42,7 @@ class ValueCreator:
         if self.value_type == "binned":
             return self.add_binned_values(
                 concepts,
-                self.value_type_kwargs["multiplication_factor"],
+                self.value_type_kwargs.get("multiplication_factor", 100),
                 self.normalize_args,
             )
         elif self.value_type == "quantile":

@@ -120,11 +120,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     concepts, patients_info = FormattedDataLoader(
         cfg.paths.data,
         cfg.loader.concept_types,
-        include_values=(
-            cfg.loader.include_values
-            if hasattr(cfg.loader, "include_values") and cfg.loader.include_values
-            else []
-        ),
+        include_values=(getattr(cfg.loader, "include_values", [])),
     ).load()
 
     if "values" in cfg.features:

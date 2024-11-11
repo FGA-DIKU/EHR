@@ -176,6 +176,16 @@ def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str])
     }
 
 
+def _get_non_priority_column(
+    patient: pd.DataFrame, non_priority_tokens: set
+) -> pd.DataFrame:
+    """
+    Add non_priority column to patient.
+    """
+    non_priority_col = patient["concept"].isin(non_priority_tokens)
+    return non_priority_col
+
+
 def _drop_non_priority_tokens(
     patient: pd.DataFrame,
     non_priority_tokens: set,
@@ -185,7 +195,6 @@ def _drop_non_priority_tokens(
     """
     Drop non-priority tokens from patient, keeping truncation_length - background_length tokens.
     """
-    patient["non_priority"] = patient["concept"].isin(non_priority_tokens)
     non_priority_indices = patient[patient["non_priority"]].index
 
     if len(patient) - len(non_priority_indices) > truncation_length:
@@ -242,6 +251,7 @@ def prioritized_truncate_patient(
 
     truncation_length = max_len - background_length
     non_priority_tokens = _get_non_priority_tokens(vocabulary, low_priority_prefixes)
+    patient["non_priority"] = _get_non_priority_column(patient, non_priority_tokens)
     patient = _drop_non_priority_tokens(
         patient, non_priority_tokens, truncation_length, background_length
     )

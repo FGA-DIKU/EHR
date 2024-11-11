@@ -1,4 +1,5 @@
 from dask import dataframe as dd
+import numpy as np
 from corebehrt.functional.normalize import min_max_normalize
 
 
@@ -7,17 +8,6 @@ class ValuesNormalizer:
     A class to load normalise values in data frames.
     Expects 'RESULT' and 'concept' column to be present.
     """
-
-    @staticmethod
-    def apply_normalization(row, normalization_func, **kwargs):
-        """
-        Applies the given normalisation function if count >= min_count, else sets RESULT to -1.
-        """
-        min_count = kwargs.pop("min_count", 3)
-        if row["count"] < min_count:
-            return -1
-        else:
-            return normalization_func(row["RESULT"], **kwargs)
 
     @staticmethod
     def min_max_normalize_results(values: dd.DataFrame, min_count: int) -> dd.DataFrame:
@@ -35,7 +25,8 @@ class ValuesNormalizer:
         )
 
         # Apply normalisation
-        values = values.map_partitions(min_max_normalize, min_count)
+        normed_results = values.map_partitions(min_max_normalize, min_count)
+        values["RESULT"] = normed_results
 
         # Drop auxiliary columns and values which have become NaN after normalisation
         values = values.drop(["min", "max", "count"], axis=1)

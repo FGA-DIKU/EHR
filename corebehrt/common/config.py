@@ -103,29 +103,33 @@ def instantiate_function(func_path: str):
     """Initializes a function or a class static method from a path string."""
     parts = func_path.rsplit(
         ".", 2
-    )  # Split into module, class (optional), and function/method
+    )  # Split into module, submodule (optional), and function/method
 
     if len(parts) == 3:
-        # If there are three parts, it includes a class
-        module_path, class_name, func_name = parts
+        # If there are three parts, it includes a submodule or class
+        module_path, submodule, func_name = parts
         module = importlib.import_module(module_path)
-        klass = getattr(module, class_name)
-        # Check if klass is a class and func_name is a static method
-        if isinstance(klass, type) and hasattr(klass, func_name):
-            method = getattr(klass, func_name)
-            if callable(method):
-                return method
-        else:
-            raise ValueError(f"{func_name} is not a static method of {class_name}")
+        submodule_or_class = getattr(module, submodule, None)
+
+        if submodule_or_class is None:
+            raise ValueError(f"{submodule} is not found in module {module_path}")
+
+        target = submodule_or_class
+
     elif len(parts) == 2:
         # If there are two parts, it's a function in a module
         module_path, func_name = parts
         module = importlib.import_module(module_path)
-        return getattr(module, func_name)
+        target = module
     else:
         raise ValueError(
-            "Function path must be in the format 'module.Class.method' or 'module.function'"
+            "Function path must be in the format 'module.submodule.function', 'module.Class.method', or 'module.function'"
         )
+    func = getattr(target, func_name, None)
+    if func is None or not callable(func):
+        raise ValueError(f"{func_name} is not a callable function in {target}")
+
+    return func
 
 
 def load_config(config_file):
