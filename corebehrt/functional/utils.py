@@ -233,3 +233,8 @@ def check_required_columns(
     if not required_columns.issubset(set(df.columns)):
         missing_columns = required_columns - set(df.columns)
         raise ValueError(f"Missing columns in {type_}: {missing_columns}")
+
+
+def sort_within_pid(df: dd.DataFrame) -> dd.DataFrame:
+    """Sort by 'PID' and 'abspos' to ensure correct ordering"""
+    return df.sort_values(["PID", "abspos"])

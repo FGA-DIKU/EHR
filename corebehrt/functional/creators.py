@@ -1,11 +1,9 @@
 from datetime import datetime
 
 import dask.dataframe as dd
+import pandas as pd
 
-from corebehrt.functional.utils import (
-    get_abspos_from_origin_point,
-    normalize_segments_series,
-)
+from corebehrt.functional.utils import get_abspos_from_origin_point, sort_within_pid
 
 
 def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
@@ -111,16 +109,18 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     Returns:
         concepts with a new 'segment' column
     """
-    # Shuffle data by 'PID' to ensure that all data for a PID is in the same partition
-    concepts = concepts.shuffle(on="PID")
-
-    # Sort within partitions by 'PID' and 'abspos'
-    concepts = concepts.map_partitions(_sort_and_assign_segments)
-
-    # Assign maximum segment to 'Death' concepts
+    concepts = concepts.map_partitions(sort_within_pid)
+    concepts = concepts.map_partitions(assign_segments)
     concepts = assign_segments_to_death(concepts)
-
     return concepts
+
+
+def assign_segments(df: dd.DataFrame) -> dd.DataFrame:
+    """Assign segments to each row in the DataFrame"""
+    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
+        lambda x: pd.factorize(x)[0]
+    )
+    return df
 
 
 def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
@@ -131,19 +131,11 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
     Returns:
         df with 'Death' concepts assigned to the maximum segment.
     """
-    # Compute the maximum segment per 'PID'
     max_segment = df.groupby("PID")["segment"].max().rename("max_segment")
-    # Merge and assign
-    df = df.merge(max_segment.reset_index(), on="PID", how="left")
-    df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
-    return df.drop(columns=["max_segment"])
+    death_df = df[df["concept"] == "Death"]
+    death_df = death_df.merge(max_segment.reset_index(), on="PID", how="left")
+    death_df["segment"] = death_df["max_segment"]
+    death_df = death_df.drop(columns=["max_segment"])
 
-
-def _sort_and_assign_segments(df):
-    """Sort by 'PID' and 'abspos' to ensure correct ordering and assign segments."""
-    df = df.sort_values(["PID", "abspos"])
-    # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
-        normalize_segments_series
-    )
+    df = dd.concat([df[df["concept"] != "Death"], death_df])
     return df
