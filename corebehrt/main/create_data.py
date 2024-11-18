@@ -124,15 +124,9 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     features = feature_creator(patients_info, concepts)
 
     features = excluder.exclude_incorrect_events(features)
-    #! Should we keep this? We're also excluding short sequences in prepare_data
-    features = excluder.exclude_short_sequences(features)
-
-    result = features.groupby("PID").apply(
-        lambda x: x.sort_values("abspos"), meta=features
-    )  # this can potentially be improved
 
     with ProgressBar():
-        result.to_csv(join(cfg.paths.features, "*.csv"), index=False)
+        features.to_csv(join(cfg.paths.features, "*.csv"), index=False)
 
 
 if __name__ == "__main__":
