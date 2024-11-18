@@ -42,8 +42,8 @@ class FormattedDataLoader:
 
         patients_info = self._load_patients_info()
         check_patients_info_columns(patients_info)
-        concepts['ADMISSION_ID'] = concepts['ADMISSION_ID'].astype(str)
-        concepts['CONCEPT'] = concepts['CONCEPT'].astype(str)
+        concepts["ADMISSION_ID"] = concepts["ADMISSION_ID"].astype(str)
+        concepts["CONCEPT"] = concepts["CONCEPT"].astype(str)
         return concepts, patients_info
 
     def _load_patients_info(self) -> dd.DataFrame:

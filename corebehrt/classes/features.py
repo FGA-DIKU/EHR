@@ -74,9 +74,11 @@ class FeatureCreator:
     ) -> dd.DataFrame:
         """Set index, add BIRTHDATE to concepts for age calculation + renaming."""
         concepts = concepts.set_index("PID")  # for merging
-        patients_info = patients_info[['PID', 'BIRTHDATE']].compute()
+        patients_info = patients_info[["PID", "BIRTHDATE"]].compute()
+
         def join_with_patients_info(concepts_partition):
             return concepts_partition.merge(patients_info, on="PID", how="left")
+
         concepts = concepts.map_partitions(join_with_patients_info)
         concepts = concepts.rename(
             columns={"CONCEPT": "concept"}
