@@ -52,14 +52,13 @@ def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
     death_events = death_events.rename(columns={"DEATHDATE": "TIMESTAMP"})
     death_events = death_events.assign(
         concept="Death",
-        ADMISSION_ID=-1,  # Segment for death event
+        ADMISSION_ID="last",  # Segment for death event
     )
-
+    
     # Reorder columns if necessary
     death_events = death_events[
         ["PID", "concept", "TIMESTAMP", "ADMISSION_ID", "BIRTHDATE"]
     ]
-
     return death_events
 
 
@@ -92,13 +91,12 @@ def create_background(
 
     # Assign additional columns
     background["TIMESTAMP"] = background["BIRTHDATE"]
-    background["ADMISSION_ID"] = 0
+    background["ADMISSION_ID"] = "first" 
 
     # Select and reorder the required columns
     background = background[
         ["PID", "concept", "TIMESTAMP", "ADMISSION_ID", "BIRTHDATE"]
     ]
-
     return background
 
 
