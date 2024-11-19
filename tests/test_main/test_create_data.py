@@ -52,7 +52,9 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features = dd.read_csv(join(self.features_dir, "*.csv")).compute()
+        features = dd.read_parquet(
+            join(self.features_dir, "*.parquet"), dtype={"concept": "str"}
+        ).compute()
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
