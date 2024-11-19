@@ -87,18 +87,29 @@ def main_data(config_path):
     df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
     logger.info("Save tokenized features")
+
     # ! We compute each dataframe twice, once to get the pids and once to save the dataframe
+    schema = {
+        "PID": "str",
+        "age": "float32",
+        "abspos": "float64",
+        "concept": "int32",
+        "segment": "int32",
+    }
     df_pt.to_parquet(
         join(cfg.paths.tokenized, "features_pretrain"),
         write_index=False,
+        schema=schema,
     )
     df_ft.to_parquet(
         join(cfg.paths.tokenized, "features_finetune"),
         write_index=False,
+        schema=schema,
     )
     df_test.to_parquet(
         join(cfg.paths.tokenized, "features_test"),
         write_index=False,
+        schema=schema,
     )
     torch.save(
         df_pt.compute()["PID"].unique().tolist(),
@@ -139,9 +150,18 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     features = excluder.exclude_short_sequences(features)
 
     result = features.sort_values(["PID", "abspos"])
-    result["concept"] = result["concept"].astype("str")
+    result["concept"] = result["concept"].astype(
+        "str"
+    )  # we might move this to an earlier stage. E.g. when concatenating concepts
+    schema = {
+        "PID": "str",
+        "age": "float32",
+        "abspos": "float64",
+        "concept": "str",
+        "segment": "int32",
+    }
     with ProgressBar():
-        result.to_parquet(cfg.paths.features, write_index=False)
+        result.to_parquet(cfg.paths.features, write_index=False, schema=schema)
 
 
 if __name__ == "__main__":
