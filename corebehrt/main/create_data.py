@@ -146,13 +146,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     features = feature_creator(patients_info, concepts)
 
     features = excluder.exclude_incorrect_events(features)
-    #! Should we keep this? We're also excluding short sequences in prepare_data
-    features = excluder.exclude_short_sequences(features)
 
-    result = features.sort_values(["PID", "abspos"])
-    result["concept"] = result["concept"].astype(
-        "str"
-    )  # we might move this to an earlier stage. E.g. when concatenating concepts
     schema = {
         "PID": "str",
         "age": "float32",
@@ -161,7 +155,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         "segment": "int32",
     }
     with ProgressBar():
-        result.to_parquet(cfg.paths.features, write_index=False, schema=schema)
+        features.to_parquet(cfg.paths.features, write_index=False, schema=schema)
 
 
 if __name__ == "__main__":
