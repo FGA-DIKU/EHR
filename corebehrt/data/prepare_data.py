@@ -33,6 +33,7 @@ from corebehrt.functional.utils import (
     select_random_subset,
     truncate_data,
     truncate_patient,
+    prioritized_truncate_patient,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -66,11 +67,10 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Loading tokenized data
-        data = dd.read_csv(
+        data = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_finetune",
-                "*.csv",
             )
         )
         vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
@@ -156,7 +156,12 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+        data = self._truncate_data(
+            data,
+            vocab,
+            data_cfg.truncation_len,
+            data_cfg.get("priority_truncation", False),
+        )
 
         # 9. Normalize segments
         data = normalize_segments(data)
@@ -188,13 +193,12 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
-        data = dd.read_csv(
+        data = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_pretrain",
-                "*.csv",
             )
-        )  # self.loader.load_tokenized_data(mode='pretrain')
+        )
         vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
 
         # 2. Exclude pids
@@ -219,7 +223,12 @@ class DatasetPreparer:
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = truncate_data(data, data_cfg.truncation_len, vocab, truncate_patient)
+        data = self._truncate_data(
+            data,
+            vocab,
+            data_cfg.truncation_len,
+            data_cfg.get("priority_truncation", False),
+        )
 
         # 6. Normalize segments
         data = normalize_segments(data)
@@ -247,3 +256,25 @@ class DatasetPreparer:
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
 
         return train_data, val_data
+
+    def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
+        truncation_method = (
+            prioritized_truncate_patient if priority_truncation else truncate_patient
+        )
+        if priority_truncation:
+            logger.info(
+                f"Truncating using priority truncation with low priority prefixes: {priority_truncation.low_priority_prefixes}"
+            )
+            truncation_args = priority_truncation.copy()
+            truncation_args["vocabulary"] = vocab
+        else:
+            truncation_args = {}
+        data = truncate_data(
+            data,
+            truncation_len,
+            vocab,
+            truncation_method,
+            kwargs=truncation_args,
+        )
+
+        return data

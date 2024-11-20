@@ -56,6 +56,19 @@ def main_write(
             mode="w" if i == 0 else "a",
             header=i == 0,
         )
+        concepts_l = generate_concepts_batch(
+            patients_info,
+            n_concepts,
+            prefix="LAB",
+            result_col=True,
+            n_unique_concepts=10,
+        )
+        concepts_l.to_csv(
+            f"{write_dir}/concept.labtest.csv",
+            index=False,
+            mode="w" if i == 0 else "a",
+            header=i == 0,
+        )
 
 
 def generate_patients_info_batch(n_patients):
@@ -142,6 +155,15 @@ def generate_concepts_batch(patients_info, n_records_per_pid_list):
             "CONCEPT": concepts,
         }
     )
+
+    if result_col:
+        results = np.random.randint(100, 200, size=len(repeated_patients_info))
+        concepts_data["RESULT"] = results
+
+    # Filter out rows where TIMESTAMP is less than BIRTHDATE
+    concepts_data = concepts_data[
+        concepts_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+    ]
 
     return concepts_data
 

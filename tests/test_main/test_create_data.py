@@ -52,12 +52,12 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features = dd.read_csv(join(self.features_dir, "*.csv")).compute()
+        features = dd.read_parquet(self.features_dir).compute()
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
 
-        expected_features = dd.read_csv("./tests/data/features/*.csv").compute()
+        expected_features = dd.read_parquet("./tests/data/features").compute()
 
         # 2.1: check patients
         self.assertListEqual(
