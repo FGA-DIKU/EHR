@@ -67,11 +67,10 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Loading tokenized data
-        data = dd.read_csv(
+        data = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_finetune",
-                "*.csv",
             )
         )
         vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
@@ -194,13 +193,12 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
-        data = dd.read_csv(
+        data = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_pretrain",
-                "*.csv",
             )
-        )  # self.loader.load_tokenized_data(mode='pretrain')
+        )
         vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
 
         # 2. Exclude pids

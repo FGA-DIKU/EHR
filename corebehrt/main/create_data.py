@@ -50,7 +50,7 @@ def main_data(config_path):
     # TODO: temporary fix/check until we split the script into two.
     # As cfg.paths.features is always set, its value cannot be used to decide
     # if features are present.
-    if os.path.exists(join(cfg.paths.features, "0.csv")):
+    if os.path.exists(join(cfg.paths.features, "part.0.parquet")):
         logger.info("Reusing existing features")
     else:
         logger.info("Create and process features")
@@ -59,9 +59,8 @@ def main_data(config_path):
             cfg,
         )
         logger.info("Finished feature creation and processing")
-
     logger.info(f"Load features from {cfg.paths.features}")
-    df = dd.read_csv(join(cfg.paths.features, "*.csv"), dtype={"concept": "str"})
+    df = dd.read_parquet(cfg.paths.features, dtype={"concept": "str"})
     pids = df.PID.unique().compute().tolist()
     logger.info("Split into pretrain and finetune.")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -88,15 +87,30 @@ def main_data(config_path):
     df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
     df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
     logger.info("Save tokenized features")
-    df_pt.to_csv(
-        join(cfg.paths.tokenized, "features_pretrain", "*.csv"),
-        index=False,
+
+    # ! We compute each dataframe twice, once to get the pids and once to save the dataframe
+    schema = {
+        "PID": "str",
+        "age": "float32",
+        "abspos": "float64",
+        "concept": "int32",
+        "segment": "int32",
+    }
+    df_pt.to_parquet(
+        join(cfg.paths.tokenized, "features_pretrain"),
+        write_index=False,
+        schema=schema,
     )
-    df_ft.to_csv(
-        join(cfg.paths.tokenized, "features_finetune", "*.csv"),
-        index=False,
+    df_ft.to_parquet(
+        join(cfg.paths.tokenized, "features_finetune"),
+        write_index=False,
+        schema=schema,
     )
-    df_test.to_csv(join(cfg.paths.tokenized, "features_test", "*.csv"), index=False)
+    df_test.to_parquet(
+        join(cfg.paths.tokenized, "features_test"),
+        write_index=False,
+        schema=schema,
+    )
     torch.save(
         df_pt.compute()["PID"].unique().tolist(),
         join(cfg.paths.tokenized, "pids_pretrain.pt"),
@@ -135,8 +149,19 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     #! Should we keep this? We're also excluding short sequences in prepare_data
     features = excluder.exclude_short_sequences(features)
 
+    result = features.sort_values(["PID", "abspos"])
+    result["concept"] = result["concept"].astype(
+        "str"
+    )  # we might move this to an earlier stage. E.g. when concatenating concepts
+    schema = {
+        "PID": "str",
+        "age": "float32",
+        "abspos": "float64",
+        "concept": "str",
+        "segment": "int32",
+    }
     with ProgressBar():
-        features.to_csv(join(cfg.paths.features, "*.csv"), index=False)
+        result.to_parquet(cfg.paths.features, write_index=False, schema=schema)
 
 
 if __name__ == "__main__":

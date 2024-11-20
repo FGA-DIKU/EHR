@@ -61,7 +61,7 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features = dd.read_csv(join(self.features_dir, "*.csv")).compute()
+        features = dd.read_parquet(self.features_dir).compute()
         self.assertEqual(
             features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
         )
@@ -84,11 +84,10 @@ class TestCreateData(TestMainScript):
 
         # 5. Check tokenisation
         for mode in ["pretrain", "finetune", "test"]:
-            tokenised_features = dd.read_csv(
+            tokenised_features = dd.read_parquet(
                 join(
                     self.tokenized_dir,
                     f"features_{mode}",
-                    "*.csv",
                 )
             )
             sequences, _ = convert_to_sequences(tokenised_features)
