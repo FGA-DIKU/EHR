@@ -8,7 +8,7 @@ from torch.optim import AdamW
 from torch.utils.data import Sampler
 from transformers import BertConfig
 
-from corebehrt.common.config import Config, instantiate
+from corebehrt.common.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import CHECKPOINTS_DIR
 from corebehrt.data.utils import Utilities
@@ -78,7 +78,7 @@ class Initializer:
         if not self.cfg.get("scheduler", None):
             return None
         logger.info("Initializing new scheduler")
-        scheduler = instantiate(self.cfg.scheduler, **{"optimizer": optimizer})
+        scheduler = instantiate_class(self.cfg.scheduler, **{"optimizer": optimizer})
 
         if not self.checkpoint:
             return scheduler

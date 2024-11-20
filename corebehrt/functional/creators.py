@@ -102,6 +102,48 @@ def create_background(
     return background
 
 
+def assign_index_and_order(df: dd.DataFrame) -> dd.DataFrame:
+    """
+    Assign 'index' and 'order' columns to ensure correct ordering.
+    - The 'index' column represents the position of each row within its partition.
+    - The 'order' column can be used for additional custom ordering if needed.
+    - Both columns are initialized with 0 to ensure consistent behavior across partitions.
+    Parameters:
+        df: dd.DataFrame with 'PID' column.
+    Returns:
+        df with 'index' and 'order' columns.
+    """
+    if "index" in df.columns and "order" in df.columns:
+        df["index"] = df["index"].fillna(0)
+        df["order"] = df["order"].fillna(0)
+    return df
+
+
+def sort_features(concepts: dd.DataFrame) -> dd.DataFrame:
+    """
+    Sorting all concepts by 'PID' and 'abspos' (and 'index' and 'order' if they exist).
+    """
+    concepts = concepts.shuffle(on="PID")
+    concepts = concepts.map_partitions(_sort_partitions)
+    return concepts
+
+
+def _sort_partitions(df: dd.DataFrame) -> dd.DataFrame:
+    """
+    Sort the DataFrame by 'PID' and 'abspos' to ensure correct ordering.
+    Added "index" and "order" columns to ensure correct ordering if they exist.
+    """
+    if "index" in df.columns and "order" in df.columns:
+        df = df.sort_values(
+            ["PID", "abspos", "index", "order"]
+        )  # could maybe be done more optimally, is a bit slow
+        df = df.drop(columns=["index", "order"])
+    else:
+        df = df.sort_values(["PID", "abspos"])
+
+    return df
+
+
 def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     """
     Assign segments to the concepts DataFrame based on 'ADMISSION_ID', ensuring that
@@ -111,16 +153,22 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     Returns:
         concepts with a new 'segment' column
     """
-    # Shuffle data by 'PID' to ensure that all data for a PID is in the same partition
-    concepts = concepts.shuffle(on="PID")
-
-    # Sort within partitions by 'PID' and 'abspos'
-    concepts = concepts.map_partitions(_sort_and_assign_segments)
-
     # Assign maximum segment to 'Death' concepts
+    concepts = concepts.map_partitions(_assign_segments)
     concepts = assign_segments_to_death(concepts)
 
     return concepts
+
+
+def _assign_segments(df):
+    """
+    Assign segments to the concepts DataFrame based on 'ADMISSION_ID'
+    """
+    # Group by 'PID' and apply factorize to 'ADMISSION_ID'
+    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
+        normalize_segments_series
+    )
+    return df
 
 
 def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
@@ -137,13 +185,3 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
     df = df.merge(max_segment.reset_index(), on="PID", how="left")
     df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
     return df.drop(columns=["max_segment"])
-
-
-def _sort_and_assign_segments(df):
-    """Sort by 'PID' and 'abspos' to ensure correct ordering and assign segments."""
-    df = df.sort_values(["PID", "abspos"])
-    # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df["segment"] = df.groupby("PID")["ADMISSION_ID"].transform(
-        normalize_segments_series
-    )
-    return df

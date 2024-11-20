@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Callable, List, Tuple, Union, Set
+from typing import Callable, List, Union, Set
 
 # New stuff
 import dask.dataframe as dd
@@ -105,13 +105,6 @@ def get_time_difference(now: pd.Series, then: pd.Series) -> pd.Series:
     return (now - then).dt.days / 365.25
 
 
-def convert_df_to_feature_dict(concepts: pd.DataFrame) -> Tuple[dict, list]:
-    return (
-        concepts.groupby("PID").agg(list).to_dict("list"),
-        concepts["PID"].sort_values().unique().tolist(),
-    )
-
-
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
     Assumes that the table has a column named PID.
@@ -172,11 +165,109 @@ def truncate_patient(
     return truncated_patient
 
 
+def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
+    """
+    Get tokens that start with low_priority_prefixes.
+    """
+    return {
+        v
+        for k, v in vocabulary.items()
+        if any(k.startswith(prefix) for prefix in low_priority_prefixes)
+    }
+
+
+def _get_non_priority_column(
+    patient: pd.DataFrame, non_priority_tokens: set
+) -> pd.DataFrame:
+    """
+    Add non_priority column to patient.
+    """
+    non_priority_col = patient["concept"].isin(non_priority_tokens)
+    return non_priority_col
+
+
+def _drop_non_priority_tokens(
+    patient: pd.DataFrame,
+    non_priority_tokens: set,
+    truncation_length: int,
+    background_length: int,
+) -> pd.DataFrame:
+    """
+    Drop non-priority tokens from patient, keeping truncation_length - background_length tokens.
+    """
+    non_priority_indices = patient[patient["non_priority"]].index
+
+    if len(patient) - len(non_priority_indices) > truncation_length:
+        return patient.drop(non_priority_indices)
+    else:
+        non_priority_truncation_len = truncation_length - (
+            len(patient) - len(non_priority_indices) - background_length
+        )
+        return patient.drop(non_priority_indices[:-non_priority_truncation_len])
+
+
+def _filter_invalid_positions(
+    patient: pd.DataFrame, low_priority_prefixes: List[str]
+) -> pd.DataFrame:
+    """
+    Filter out patients where subunits of low_priority_prefixes are not all present.
+    """
+    unit_len = len(low_priority_prefixes)
+    positions = patient[patient["non_priority"]]["abspos"]
+    invalid_positions = (
+        positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
+    )
+    if not invalid_positions.empty:
+        return patient.drop(invalid_positions)
+    return patient
+
+
+def prioritized_truncate_patient(
+    patient: pd.DataFrame,
+    background_length: int,
+    max_len: int,
+    sep_token: str,
+    low_priority_prefixes: List[str],
+    vocabulary: dict,
+    unit: bool = False,
+) -> pd.DataFrame:
+    """
+    Truncate patient to max_len, keeping background, while prioritizing non-low_priority_prefixes.
+    If unit is True, low_priority_prefixes are treated as a single unit, and all of them are kept or removed.
+
+    Args:
+        patient (pd.DataFrame): The patient data to be truncated.
+        background_length (int): The length of the background to keep.
+        max_len (int): The maximum length of the truncated patient data.
+        sep_token (str): The separator token used in the patient data.
+        low_priority_prefixes (List[str]): List of prefixes that denote low priority concepts.
+        vocabulary (dict): A dictionary mapping concept names to their corresponding tokens.
+        unit (bool): If True, treat low_priority_prefixes as a single unit.
+    Returns:
+        pd.DataFrame: The truncated patient data.
+    """
+    if len(patient["concept"]) <= max_len:
+        return patient
+
+    truncation_length = max_len - background_length
+    non_priority_tokens = _get_non_priority_tokens(vocabulary, low_priority_prefixes)
+    patient["non_priority"] = _get_non_priority_column(patient, non_priority_tokens)
+    patient = _drop_non_priority_tokens(
+        patient, non_priority_tokens, truncation_length, background_length
+    )
+    if unit:
+        patient = _filter_invalid_positions(patient, low_priority_prefixes)
+
+    patient.drop(columns=["non_priority"], inplace=True)
+    return truncate_patient(patient, background_length, max_len, sep_token)
+
+
 def truncate_data(
     data: dd.DataFrame,
     max_len: int,
     vocabulary: dict,
     truncate_function: Callable = truncate_patient,
+    kwargs: dict = {},
 ) -> dd.DataFrame:
     """
     Assumes table has a column named PID.
@@ -184,12 +275,11 @@ def truncate_data(
     Uses truncate_patient as default truncate function.
     """
     background_length = get_background_length_dd(data, vocabulary)
-
     truncated_data = (
         data.groupby("PID")[list(data.columns)]
         .apply(
             lambda x: truncate_function(
-                x, background_length, max_len, vocabulary.get("[SEP]")
+                x, background_length, max_len, vocabulary.get("[SEP]"), **kwargs
             ),
             meta={col: dtype for col, dtype in data.dtypes.items()},
         )
