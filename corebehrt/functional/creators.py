@@ -155,7 +155,7 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     """
     # Assign maximum segment to 'Death' concepts
     concepts = concepts.map_partitions(_assign_segments)
-    concepts = assign_segments_to_death(concepts)
+    concepts = concepts.map_partitions(assign_segments_to_death)
 
     return concepts
 
