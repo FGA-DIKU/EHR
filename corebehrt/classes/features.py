@@ -79,10 +79,10 @@ class FeatureCreator:
     ) -> dd.DataFrame:
         """Set index, add BIRTHDATE to concepts for age calculation + renaming of concepts."""
         concepts = concepts.set_index("PID")  # for merging
-        
+
         concepts["ADMISSION_ID"] = concepts["ADMISSION_ID"].astype(str)
         concepts["CONCEPT"] = concepts["CONCEPT"].astype(str)
-        
+
         patients_info = patients_info[["PID", "BIRTHDATE"]].compute()
 
         def join_with_patients_info(concepts_partition: dd.DataFrame) -> dd.DataFrame:
