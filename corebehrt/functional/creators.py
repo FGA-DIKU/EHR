@@ -54,7 +54,7 @@ def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
         concept="Death",
         ADMISSION_ID="last",  # Segment for death event
     )
-    
+
     # Reorder columns if necessary
     death_events = death_events[
         ["PID", "concept", "TIMESTAMP", "ADMISSION_ID", "BIRTHDATE"]
@@ -91,7 +91,7 @@ def create_background(
 
     # Assign additional columns
     background["TIMESTAMP"] = background["BIRTHDATE"]
-    background["ADMISSION_ID"] = "first" 
+    background["ADMISSION_ID"] = "first"
 
     # Select and reorder the required columns
     background = background[
