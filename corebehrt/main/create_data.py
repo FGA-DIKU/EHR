@@ -112,15 +112,15 @@ def main_data(config_path):
         schema=schema,
     )
     torch.save(
-        df_pt.compute()["PID"].unique().tolist(),
+        pretrain_pids,
         join(cfg.paths.tokenized, "pids_pretrain.pt"),
     )
     torch.save(
-        df_ft.compute()["PID"].unique().tolist(),
+        finetune_pids,
         join(cfg.paths.tokenized, "pids_finetune.pt"),
     )
     torch.save(
-        df_test.compute()["PID"].unique().tolist(),
+        test_pids,
         join(cfg.paths.tokenized, "pids_test.pt"),
     )
     torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
