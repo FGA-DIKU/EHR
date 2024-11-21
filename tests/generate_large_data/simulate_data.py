@@ -8,12 +8,13 @@ import uuid
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import argparse
 
 
-N = 1000
-BATCH_SIZE = 5
-N_CONCEPTS = 10  # Number of concepts per patient
-WRITE_DIR = "data/raw_with_values"
+DEFAULT_N = 10_000
+DEFAULT_BATCH_SIZE = 10_000
+DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
+DEFAULT_WRITE_DIR = "data/raw_with_values"
 
 
 def main_write(
@@ -175,9 +176,20 @@ def generate_concepts_batch(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Simulate large data for performance testing and profiling.')
+    parser.add_argument('--n-patients', type=int, default=DEFAULT_N,
+                      help=f'Number of patients to generate (default: {DEFAULT_N})')
+    parser.add_argument('--batch-size', type=int, default=DEFAULT_BATCH_SIZE,
+                      help=f'Batch size for processing patients (default: {DEFAULT_BATCH_SIZE})')
+    parser.add_argument('--n-concepts', type=int, default=DEFAULT_N_CONCEPTS,
+                      help=f'Number of concepts per patient (default: {DEFAULT_N_CONCEPTS})')
+    parser.add_argument('--write-dir', type=str, default=DEFAULT_WRITE_DIR,
+                      help=f'Directory to write output files (default: {DEFAULT_WRITE_DIR})')
+    
+    args = parser.parse_args()
     main_write(
-        n_patients=N,
-        batch_size_patients=BATCH_SIZE,
-        n_concepts=N_CONCEPTS,
-        write_dir=WRITE_DIR,
+        n_patients=args.n_patients,
+        batch_size_patients=args.batch_size,
+        n_concepts=args.n_concepts,
+        write_dir=args.write_dir,
     )
