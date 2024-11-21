@@ -22,7 +22,7 @@ jobs:
         github.event_name == 'push' ||
         (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Run big test'))
       runs-on: "ubuntu-latest"
-      timeout-minutes: 300  # 5 hours. 2M patients should take around 3 hours.
+      timeout-minutes: 100 
       steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -33,15 +33,23 @@ jobs:
                 source .venv/bin/activate
                 pip install -r requirements.txt
             
-            - name: Generate large test data
+            - name: Run create_data with background cleanup
               run: |
+                # Activate virtual environment
                 source .venv/bin/activate
-                python -m tests.generate_large_data.simulate_data --n-patients 2000000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
-            
-            - name: main.create_data
-              run: |
-                source .venv/bin/activate
-                python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml
+                  
+                # Start the main.create_data script in the background
+                python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml &
+        
+                # Wait for 3 minutes to ensure data is loaded
+                sleep 180
+        
+                # Delete the original simulated data to free space
+                echo "Deleting simulated data to save space..."
+                rm -rf ./tmp/example_data_large
+        
+                # Wait for the main.create_data script to complete
+                wait
 
             # - name: main.pretrain
             #   run: |
