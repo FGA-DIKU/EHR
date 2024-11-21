@@ -24,6 +24,7 @@ def main_write(
     n_patients,
     n_concepts,
     write_dir,
+    include_labs=True,
 ):
     os.makedirs(write_dir, exist_ok=True)
     batch_size_patients = min(DEFAULT_BATCH_SIZE, n_patients)
@@ -41,15 +42,17 @@ def main_write(
             prefix="LAB",
             result_col=True,
             n_unique_concepts=10,
-        )
+        ) if include_labs else None
 
         # Dictionary mapping DataFrames to their output files
         data_mapping = {
             "patients_info": (patients_info, f"{write_dir}/patients_info.parquet"),
             "diagnose": (concepts, f"{write_dir}/concept.diagnose.parquet"),
             "medication": (concepts_m, f"{write_dir}/concept.medication.parquet"),
-            "labtest": (concepts_l, f"{write_dir}/concept.labtest.parquet"),
         }
+
+        if include_labs:
+            data_mapping["labtest"] = (concepts_l, f"{write_dir}/concept.labtest.parquet")
 
         # Write each DataFrame
         for name, (df, filepath) in data_mapping.items():
@@ -212,10 +215,23 @@ if __name__ == "__main__":
         default=DEFAULT_WRITE_DIR,
         help=f"Directory to write output files (default: {DEFAULT_WRITE_DIR})",
     )
+    parser.add_argument(
+        "--include-labs",
+        action="store_true",
+        default=True,
+        help="Include lab test data generation (default: True)",
+    )
+    parser.add_argument(
+        "--no-labs",
+        action="store_false",
+        dest="include_labs",
+        help="Exclude lab test data generation",
+    )
 
     args = parser.parse_args()
     main_write(
         n_patients=args.n_patients,
         n_concepts=args.n_concepts,
         write_dir=args.write_dir,
+        include_labs=args.include_labs,
     )

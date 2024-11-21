@@ -1,62 +1,64 @@
 name: 'Create data test on big data'
 
 on:
-  workflow_dispatch:
-  pull_request:
-    types: [labeled]
-  push:
-    branches:
-      - dask_fix
+    workflow_dispatch:
+    pull_request:
+      types: [labeled]
+    # this can be removed once the dask fix is merged
+    push:
+      branches:
+        - dask_fix
 
+
+# Skip if PR doesn't have the right label
 permissions:
   contents: read
   pull-requests: read
 
 jobs:
-  tests:
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Run big test'))
-    runs-on: "ubuntu-latest"
-    timeout-minutes: 300  # 5 hours.
+    tests:
+      if: |
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'push' ||
+        (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Run big test'))
+      runs-on: "ubuntu-latest"
+      timeout-minutes: 300  # 5 hours. 2M patients should take around 3 hours.
+      steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+            - name: Setup dependencies.
+              run: |
+                python -m venv .venv
+                source .venv/bin/activate
+                pip install -r requirements.txt
+            
+            - name: Generate large test data
+              run: |
+                source .venv/bin/activate
+                python -m tests.generate_large_data.simulate_data --n-patients 2000000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
+            
+            - name: main.create_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml
 
-      - name: Setup environment and dependencies
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt
-          export TMP_DIR=$GITHUB_WORKSPACE/tmp
-          mkdir -p $TMP_DIR
+            # - name: main.pretrain
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.pretrain
+            
+            # - name: main.create_outcomes
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.create_outcomes
+            
+            # - name: main.finetune_cv
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.finetune_cv
 
-      - name: Generate large test data
-        run: |
-          source .venv/bin/activate
-          export TMP_DIR=$GITHUB_WORKSPACE/tmp
-          python -m tests.generate_large_data.simulate_data --n-patients 500000 --n-concepts 10 --write-dir $TMP_DIR/example_data_large
-
-      - name: Upload large test data as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: example_data_large
-          path: $GITHUB_WORKSPACE/tmp/example_data_large
-
-      - name: main.create_data
-        run: |
-          source .venv/bin/activate
-          export TMP_DIR=$GITHUB_WORKSPACE/tmp
-          python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml
-
-      - name: Upload outputs as artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: outputs
-          path: $GITHUB_WORKSPACE/tmp/outputs
-
-      - name: Cleanup tmp directory
-        if: always()
-        run: rm -rf $GITHUB_WORKSPACE/tmp
+            - name: Cleanup tmp directory
+              if: always()  # Run even if previous steps fail
+              run: |
+                rm -rf tmp/
