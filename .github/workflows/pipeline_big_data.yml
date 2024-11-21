@@ -1,0 +1,55 @@
+name: 'Pipeline test on big data'
+
+on:
+    workflow_dispatch:
+
+    push:
+        branches:
+            - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+    tests:
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup dependencies.
+              run: |
+                python -m venv .venv
+                source .venv/bin/activate
+                pip install -r requirements.txt
+            
+            - name: Generate large test data
+              run: |
+                source .venv/bin/activate
+                python -m tests.generate_large_data.simulate_data --n-patients 1000 --n-concepts 20 --write-dir ./tmp/example_data_large            
+            
+            - name: main.create_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.create_data --config-path tests/pipeline_configs/create_data_big.yaml
+
+            # - name: main.pretrain
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.pretrain
+            
+            # - name: main.create_outcomes
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.create_outcomes
+            
+            # - name: main.finetune_cv
+            #   run: |
+            #     source .venv/bin/activate
+            #     python -m corebehrt.main.finetune_cv
+
+            - name: Cleanup tmp directory
+              if: always()  # Run even if previous steps fail
+              run: |
+                rm -rf tmp/
