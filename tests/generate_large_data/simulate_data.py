@@ -16,7 +16,8 @@ import pyarrow.parquet as pq
 
 DEFAULT_N = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
-DEFAULT_WRITE_DIR = "tmp/data/example_data_large"
+DEFAULT_WRITE_DIR = "tmp/example_data_large"
+DEFAULT_BATCH_SIZE = 200_000
 
 
 def main_write(
@@ -25,11 +26,11 @@ def main_write(
     write_dir,
 ):
     os.makedirs(write_dir, exist_ok=True)
-    batch_size_patients = min(50_000, n_patients)
+    batch_size_patients = min(DEFAULT_BATCH_SIZE, n_patients)
     # Initialize parquet writers
     writers = {}
     schema_written = False
-    
+
     for i in tqdm(range(n_patients // batch_size_patients)):
         patients_info = generate_patients_info_batch(batch_size_patients)
         concepts = generate_concepts_batch(patients_info, n_concepts, prefix="D")
@@ -41,27 +42,27 @@ def main_write(
             result_col=True,
             n_unique_concepts=10,
         )
-        
+
         # Dictionary mapping DataFrames to their output files
         data_mapping = {
-            'patients_info': (patients_info, f"{write_dir}/patients_info.parquet"),
-            'diagnose': (concepts, f"{write_dir}/concept.diagnose.parquet"),
-            'medication': (concepts_m, f"{write_dir}/concept.medication.parquet"),
-            'labtest': (concepts_l, f"{write_dir}/concept.labtest.parquet")
+            "patients_info": (patients_info, f"{write_dir}/patients_info.parquet"),
+            "diagnose": (concepts, f"{write_dir}/concept.diagnose.parquet"),
+            "medication": (concepts_m, f"{write_dir}/concept.medication.parquet"),
+            "labtest": (concepts_l, f"{write_dir}/concept.labtest.parquet"),
         }
-        
+
         # Write each DataFrame
         for name, (df, filepath) in data_mapping.items():
             table = pa.Table.from_pandas(df)
-            
+
             if not schema_written:
                 # First batch: create new file
                 writers[name] = pq.ParquetWriter(filepath, table.schema)
-            
+
             writers[name].write_table(table)
-            
+
         schema_written = True
-    
+
     # Close all writers
     for writer in writers.values():
         writer.close()
@@ -71,7 +72,7 @@ def generate_patients_info_batch(n_patients):
     # Set a random seed for reproducibility (optional)
     np.random.seed(42)
 
-    # Define the range of birthdates (e.g., between 1920 and 2020)
+    # Define the range of birthdates (e.g., between 1940 and 2020)
     start_birthdate = np.datetime64("1940-01-01")
     end_birthdate = np.datetime64("2020-01-01")
 
@@ -83,7 +84,7 @@ def generate_patients_info_batch(n_patients):
     # Generate deathdates where some people are still alive (i.e., deathdate is NaT)
     death_prob = np.random.rand(n_patients)
 
-    # For those with death_prob > 0.5, generate a deathdate between their birthdate and a future date (e.g., 2025)
+    # For those with death_prob > 0.8, generate a deathdate between their birthdate and a future date (e.g., 2025)
     deathdates = np.where(
         death_prob > 0.8,
         np.array(
@@ -131,18 +132,14 @@ def generate_concepts_batch(
 ):
     # Generate random number of records for each patient using exponential distribution
     n_records_per_patient = np.random.exponential(
-        scale=mean_records_per_pid,
-        size=len(patients_info)
+        scale=mean_records_per_pid, size=len(patients_info)
     ).astype(int)
     # Ensure at least 1 record per patient
     n_records_per_patient = np.maximum(n_records_per_patient, 1)
-    
+
     # Create index array for repeating patient rows
-    repeated_indices = np.repeat(
-        patients_info.index.values,
-        n_records_per_patient
-    )
-    
+    repeated_indices = np.repeat(patients_info.index.values, n_records_per_patient)
+
     # Repeat each row variable number of times
     repeated_patients_info = patients_info.loc[repeated_indices].reset_index(drop=True)
 
