@@ -12,18 +12,17 @@ import argparse
 
 
 DEFAULT_N = 10_000
-DEFAULT_BATCH_SIZE = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
-DEFAULT_WRITE_DIR = "data/raw_with_values"
+DEFAULT_WRITE_DIR = "tmp/data/example_data_large"
 
 
 def main_write(
-    n_patients=10000,
-    batch_size_patients=5000,
-    n_concepts=20,
-    write_dir="../example_data_large",
+    n_patients,
+    n_concepts,
+    write_dir,
 ):
     os.makedirs(write_dir, exist_ok=True)
+    batch_size_patients = min(50_000, n_patients)
     for i in tqdm(range(n_patients // batch_size_patients)):
         patients_info = generate_patients_info_batch(batch_size_patients)
         patients_info.to_csv(
@@ -176,20 +175,31 @@ def generate_concepts_batch(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Simulate large data for performance testing and profiling.')
-    parser.add_argument('--n-patients', type=int, default=DEFAULT_N,
-                      help=f'Number of patients to generate (default: {DEFAULT_N})')
-    parser.add_argument('--batch-size', type=int, default=DEFAULT_BATCH_SIZE,
-                      help=f'Batch size for processing patients (default: {DEFAULT_BATCH_SIZE})')
-    parser.add_argument('--n-concepts', type=int, default=DEFAULT_N_CONCEPTS,
-                      help=f'Number of concepts per patient (default: {DEFAULT_N_CONCEPTS})')
-    parser.add_argument('--write-dir', type=str, default=DEFAULT_WRITE_DIR,
-                      help=f'Directory to write output files (default: {DEFAULT_WRITE_DIR})')
-    
+    parser = argparse.ArgumentParser(
+        description="Simulate large data for performance testing and profiling."
+    )
+    parser.add_argument(
+        "--n-patients",
+        type=int,
+        default=DEFAULT_N,
+        help=f"Number of patients to generate (default: {DEFAULT_N})",
+    )
+    parser.add_argument(
+        "--n-concepts",
+        type=int,
+        default=DEFAULT_N_CONCEPTS,
+        help=f"Number of concepts per patient (default: {DEFAULT_N_CONCEPTS})",
+    )
+    parser.add_argument(
+        "--write-dir",
+        type=str,
+        default=DEFAULT_WRITE_DIR,
+        help=f"Directory to write output files (default: {DEFAULT_WRITE_DIR})",
+    )
+
     args = parser.parse_args()
     main_write(
         n_patients=args.n_patients,
-        batch_size_patients=args.batch_size,
         n_concepts=args.n_concepts,
         write_dir=args.write_dir,
     )
