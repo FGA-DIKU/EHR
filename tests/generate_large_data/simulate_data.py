@@ -124,15 +124,27 @@ def generate_patients_info_batch(n_patients):
 
 def generate_concepts_batch(
     patients_info,
-    n_records_per_pid,
+    mean_records_per_pid,
     prefix="",
     result_col=False,
     n_unique_concepts=1000,
 ):
-    # Repeat each row n_records_per_pid times
-    repeated_patients_info = patients_info.loc[
-        patients_info.index.repeat(n_records_per_pid)
-    ].reset_index(drop=True)
+    # Generate random number of records for each patient using exponential distribution
+    n_records_per_patient = np.random.exponential(
+        scale=mean_records_per_pid,
+        size=len(patients_info)
+    ).astype(int)
+    # Ensure at least 1 record per patient
+    n_records_per_patient = np.maximum(n_records_per_patient, 1)
+    
+    # Create index array for repeating patient rows
+    repeated_indices = np.repeat(
+        patients_info.index.values,
+        n_records_per_patient
+    )
+    
+    # Repeat each row variable number of times
+    repeated_patients_info = patients_info.loc[repeated_indices].reset_index(drop=True)
 
     # Convert BIRTHDATE and DEATHDATE to pandas datetime format
     repeated_patients_info["BIRTHDATE"] = pd.to_datetime(
