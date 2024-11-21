@@ -36,13 +36,17 @@ def main_write(
         patients_info = generate_patients_info_batch(batch_size_patients)
         concepts = generate_concepts_batch(patients_info, n_concepts, prefix="D")
         concepts_m = generate_concepts_batch(patients_info, n_concepts, prefix="M")
-        concepts_l = generate_concepts_batch(
-            patients_info,
-            n_concepts,
-            prefix="LAB",
-            result_col=True,
-            n_unique_concepts=10,
-        ) if include_labs else None
+        concepts_l = (
+            generate_concepts_batch(
+                patients_info,
+                n_concepts,
+                prefix="LAB",
+                result_col=True,
+                n_unique_concepts=10,
+            )
+            if include_labs
+            else None
+        )
 
         # Dictionary mapping DataFrames to their output files
         data_mapping = {
@@ -52,7 +56,10 @@ def main_write(
         }
 
         if include_labs:
-            data_mapping["labtest"] = (concepts_l, f"{write_dir}/concept.labtest.parquet")
+            data_mapping["labtest"] = (
+                concepts_l,
+                f"{write_dir}/concept.labtest.parquet",
+            )
 
         # Write each DataFrame
         for name, (df, filepath) in data_mapping.items():
@@ -60,7 +67,9 @@ def main_write(
 
             if not schema_written:
                 # First batch: create new file
-                writers[name] = pq.ParquetWriter(filepath, table.schema)
+                writers[name] = pq.ParquetWriter(
+                    filepath, table.schema, compression_level=10, compression="ZSTD"
+                )
 
             writers[name].write_table(table)
 
