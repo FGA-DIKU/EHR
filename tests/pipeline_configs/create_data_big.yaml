@@ -1,11 +1,11 @@
 logging:
   level: INFO
-  path: ./tmp/outputs/logs
+  path: $TMP_DIR/outputs/logs
 
 paths:
-  data: ./tmp/example_data_large
-  tokenized: ./tmp/outputs/tokenized
-  features: ./tmp/outputs/features
+  data: $TMP_DIR/example_data_large
+  tokenized: $TMP_DIR/outputs/tokenized
+  features: $TMP_DIR/outputs/features
   
 loader:
   concept_types: [
