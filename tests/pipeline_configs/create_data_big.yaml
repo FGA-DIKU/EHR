@@ -3,7 +3,7 @@ logging:
   path: ./tmp/outputs/logs
 
 paths:
-  data: ./tmp/data/example_data_large
+  data: ./tmp/example_data_large
   tokenized: ./tmp/outputs/tokenized
   features: ./tmp/outputs/features
   
