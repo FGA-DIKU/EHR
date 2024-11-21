@@ -9,11 +9,7 @@ on:
         - dask_fix
 
 
-
-
 # Skip if PR doesn't have the right label
-
-
 permissions:
   contents: read
   pull-requests: read
@@ -43,7 +39,7 @@ jobs:
             - name: main.create_data
               run: |
                 source .venv/bin/activate
-                python -m corebehrt.main.create_data --config-path tests/pipeline_configs/create_data_big.yaml
+                python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml
 
             # - name: main.pretrain
             #   run: |
