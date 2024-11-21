@@ -10,6 +10,9 @@ import pandas as pd
 from tqdm import tqdm
 import argparse
 
+import pyarrow as pa
+import pyarrow.parquet as pq
+
 
 DEFAULT_N = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
@@ -23,28 +26,14 @@ def main_write(
 ):
     os.makedirs(write_dir, exist_ok=True)
     batch_size_patients = min(50_000, n_patients)
+    # Initialize parquet writers
+    writers = {}
+    schema_written = False
+    
     for i in tqdm(range(n_patients // batch_size_patients)):
         patients_info = generate_patients_info_batch(batch_size_patients)
-        patients_info.to_csv(
-            f"{write_dir}/patients_info.csv",
-            index=False,
-            mode="w" if i == 0 else "a",
-            header=i == 0,
-        )
         concepts = generate_concepts_batch(patients_info, n_concepts, prefix="D")
-        concepts.to_csv(
-            f"{write_dir}/concept.diagnose.csv",
-            index=False,
-            mode="w" if i == 0 else "a",
-            header=i == 0,
-        )
         concepts_m = generate_concepts_batch(patients_info, n_concepts, prefix="M")
-        concepts_m.to_csv(
-            f"{write_dir}/concept.medication.csv",
-            index=False,
-            mode="w" if i == 0 else "a",
-            header=i == 0,
-        )
         concepts_l = generate_concepts_batch(
             patients_info,
             n_concepts,
@@ -52,12 +41,30 @@ def main_write(
             result_col=True,
             n_unique_concepts=10,
         )
-        concepts_l.to_csv(
-            f"{write_dir}/concept.labtest.csv",
-            index=False,
-            mode="w" if i == 0 else "a",
-            header=i == 0,
-        )
+        
+        # Dictionary mapping DataFrames to their output files
+        data_mapping = {
+            'patients_info': (patients_info, f"{write_dir}/patients_info.parquet"),
+            'diagnose': (concepts, f"{write_dir}/concept.diagnose.parquet"),
+            'medication': (concepts_m, f"{write_dir}/concept.medication.parquet"),
+            'labtest': (concepts_l, f"{write_dir}/concept.labtest.parquet")
+        }
+        
+        # Write each DataFrame
+        for name, (df, filepath) in data_mapping.items():
+            table = pa.Table.from_pandas(df)
+            
+            if not schema_written:
+                # First batch: create new file
+                writers[name] = pq.ParquetWriter(filepath, table.schema)
+            
+            writers[name].write_table(table)
+            
+        schema_written = True
+    
+    # Close all writers
+    for writer in writers.values():
+        writer.close()
 
 
 def generate_patients_info_batch(n_patients):
