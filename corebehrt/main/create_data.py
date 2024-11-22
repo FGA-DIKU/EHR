@@ -101,7 +101,7 @@ def main_data(config_path):
             join(cfg.paths.tokenized, "features_pretrain"),
             write_index=False,
             schema=schema,
-            )
+        )
         df_ft.to_parquet(
             join(cfg.paths.tokenized, "features_finetune"),
             write_index=False,
