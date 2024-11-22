@@ -96,21 +96,22 @@ def main_data(config_path):
         "concept": "int32",
         "segment": "int32",
     }
-    df_pt.to_parquet(
-        join(cfg.paths.tokenized, "features_pretrain"),
-        write_index=False,
-        schema=schema,
-    )
-    df_ft.to_parquet(
-        join(cfg.paths.tokenized, "features_finetune"),
-        write_index=False,
-        schema=schema,
-    )
-    df_test.to_parquet(
-        join(cfg.paths.tokenized, "features_test"),
-        write_index=False,
-        schema=schema,
-    )
+    with ProgressBar(dt=1):
+        df_pt.to_parquet(
+            join(cfg.paths.tokenized, "features_pretrain"),
+            write_index=False,
+            schema=schema,
+            )
+        df_ft.to_parquet(
+            join(cfg.paths.tokenized, "features_finetune"),
+            write_index=False,
+            schema=schema,
+        )
+        df_test.to_parquet(
+            join(cfg.paths.tokenized, "features_test"),
+            write_index=False,
+            schema=schema,
+        )
     torch.save(
         pretrain_pids,
         join(cfg.paths.tokenized, "pids_pretrain.pt"),
@@ -154,7 +155,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         "concept": "str",
         "segment": "int32",
     }
-    with ProgressBar():
+    with ProgressBar(dt=1):
         features.to_parquet(cfg.paths.features, write_index=False, schema=schema)
 
 
