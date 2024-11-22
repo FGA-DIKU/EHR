@@ -77,9 +77,14 @@ jobs:
           echo "Features data detected. Deleting simulated data..."
           rm -rf ./tmp/example_data_large
 
-          # Wait for the tokenized data to start being written
-          TOKENIZED_FILE_PATTERN="./tmp/outputs/tokenized/features_pretrain/part.0.parquet"
-          wait_for_path "$TOKENIZED_FILE_PATTERN" "tokenized data"
+          # Wait for all tokenized data files to start being written
+          PRETRAIN_FILE_PATTERN="./tmp/outputs/tokenized/features_pretrain/part.0.parquet"
+          FINETUNE_FILE_PATTERN="./tmp/outputs/tokenized/features_finetune/part.0.parquet"
+          TEST_FILE_PATTERN="./tmp/outputs/tokenized/features_test/part.0.parquet"
+          
+          wait_for_path "$PRETRAIN_FILE_PATTERN" "pretrain tokenized data"
+          wait_for_path "$FINETUNE_FILE_PATTERN" "finetune tokenized data"
+          wait_for_path "$TEST_FILE_PATTERN" "test tokenized data"
 
           # Delete the features data to free up space
           echo "Tokenized data detected. Deleting features data..."
