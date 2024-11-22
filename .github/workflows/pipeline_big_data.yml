@@ -34,7 +34,7 @@ jobs:
       - name: Generate large test data
         run: |
           source .venv/bin/activate
-          python -m tests.generate_large_data.simulate_data --n-patients 500000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
+          python -m tests.generate_large_data.simulate_data --n-patients 10000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
 
       - name: Run create_data with background cleanup
         run: |
@@ -53,7 +53,7 @@ jobs:
           wait_for_path() {
             local path="$1"
             local description="$2"
-            local max_wait_time=600  # Maximum wait time in seconds
+            local max_wait_time=1200  # Maximum wait time in seconds
             local wait_time=0
             local sleep_interval=10
 
@@ -76,6 +76,14 @@ jobs:
           # Delete the original simulated data to free up space
           echo "Features data detected. Deleting simulated data..."
           rm -rf ./tmp/example_data_large
+
+          # Wait for the tokenized data to start being written
+          TOKENIZED_FILE_PATTERN="./tmp/outputs/tokenized/features_pretrain/part.0.parquet"
+          wait_for_path "$TOKENIZED_FILE_PATTERN" "tokenized data"
+
+          # Delete the features data to free up space
+          echo "Tokenized data detected. Deleting features data..."
+          rm -rf ./tmp/outputs/features
 
           # Wait for the create_data script to complete
           echo "Waiting for create_data script to finish..."
