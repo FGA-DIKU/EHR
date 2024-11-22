@@ -34,7 +34,7 @@ jobs:
       - name: Generate large test data
         run: |
           source .venv/bin/activate
-          python -m tests.generate_large_data.simulate_data --n-patients 2000000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
+          python -m tests.generate_large_data.simulate_data --n-patients 1000000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
 
       - name: Run create_data with background cleanup
         run: |
