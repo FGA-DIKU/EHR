@@ -12,7 +12,7 @@ def add_special_tokens_partition(
 ) -> pd.DataFrame:
     """
     Efficiently add special tokens to a partition without full sorting.
-    
+
     cls token will be added before earliest abspos for each PID
     sep token will be added at segment changes, adjacent to the last event of the previous segment
     """
@@ -60,12 +60,12 @@ def tokenize_partition(series: pd.Series, vocabulary: dict) -> pd.Series:
 
 def limit_concept_length_partition(series: pd.Series, cutoffs: dict) -> pd.Series:
     """Efficiently limit concept lengths within a partition.
-    
+
     Args:
         series: Pandas Series containing concepts
         cutoffs: Dict mapping prefixes to max lengths, e.g. {'D': 6, 'M': 4}
             Will limit concepts starting with 'D' to 6 chars, 'M' to 4 chars.
-            
+
     Example:
         With cutoffs={'D': 4}, 'D123456' becomes 'D1234'
     """

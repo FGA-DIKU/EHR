@@ -167,9 +167,8 @@ class TestEHRTokenizer(unittest.TestCase):
 
             # Calculate segment changes as per the function
             segment_changes = pid_df.index[
-                (pid_df["segment"] != pid_df["segment"].shift(-1)) & (
-                    pid_df["PID"] == pid_df["PID"].shift(-1)
-                )
+                (pid_df["segment"] != pid_df["segment"].shift(-1))
+                & (pid_df["PID"] == pid_df["PID"].shift(-1))
             ].tolist()
 
             # Get indices of [SEP] tokens for this PID
