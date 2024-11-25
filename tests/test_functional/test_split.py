@@ -18,13 +18,13 @@ class TestSplitFunctions(unittest.TestCase):
 
         # Create temporary .pt files
         self.single_file = os.path.join(self.temp_dir.name, "single.pt")
-        torch.save({1, 2, 3}, self.single_file)
+        torch.save([1, 2, 3], self.single_file)
 
         self.multi_files = [
             os.path.join(self.temp_dir.name, f"multi_{i}.pt") for i in range(2)
         ]
         for i, file in enumerate(self.multi_files):
-            torch.save({i * 3 + 1, i * 3 + 2, i * 3 + 3}, file)
+            torch.save([i * 3 + 1, i * 3 + 2, i * 3 + 3], file)
 
         self.split_path = self.temp_dir.name
         self.mode_files = [
@@ -32,8 +32,8 @@ class TestSplitFunctions(unittest.TestCase):
             os.path.join(self.split_path, f"pids_val.pt"),
             os.path.join(self.split_path, f"pids_val.pt"),
         ]
-        torch.save({1, 2, 3}, self.mode_files[0])
-        torch.save({4, 5, 6, 8}, self.mode_files[1])
+        torch.save([1, 2, 3], self.mode_files[0])
+        torch.save([4, 5, 6, 8], self.mode_files[1])
 
         self.test_data = dd.from_pandas(
             pd.DataFrame(
