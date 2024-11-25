@@ -96,31 +96,32 @@ def main_data(config_path):
         "concept": "int32",
         "segment": "int32",
     }
-    df_pt.to_parquet(
-        join(cfg.paths.tokenized, "features_pretrain"),
-        write_index=False,
-        schema=schema,
-    )
-    df_ft.to_parquet(
-        join(cfg.paths.tokenized, "features_finetune"),
-        write_index=False,
-        schema=schema,
-    )
-    df_test.to_parquet(
-        join(cfg.paths.tokenized, "features_test"),
-        write_index=False,
-        schema=schema,
-    )
+    with ProgressBar(dt=1):
+        df_pt.to_parquet(
+            join(cfg.paths.tokenized, "features_pretrain"),
+            write_index=False,
+            schema=schema,
+        )
+        df_ft.to_parquet(
+            join(cfg.paths.tokenized, "features_finetune"),
+            write_index=False,
+            schema=schema,
+        )
+        df_test.to_parquet(
+            join(cfg.paths.tokenized, "features_test"),
+            write_index=False,
+            schema=schema,
+        )
     torch.save(
-        df_pt.compute()["PID"].unique().tolist(),
+        pretrain_pids,
         join(cfg.paths.tokenized, "pids_pretrain.pt"),
     )
     torch.save(
-        df_ft.compute()["PID"].unique().tolist(),
+        finetune_pids,
         join(cfg.paths.tokenized, "pids_finetune.pt"),
     )
     torch.save(
-        df_test.compute()["PID"].unique().tolist(),
+        test_pids,
         join(cfg.paths.tokenized, "pids_test.pt"),
     )
     torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
@@ -146,13 +147,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     features = feature_creator(patients_info, concepts)
 
     features = excluder.exclude_incorrect_events(features)
-    #! Should we keep this? We're also excluding short sequences in prepare_data
-    features = excluder.exclude_short_sequences(features)
 
-    result = features.sort_values(["PID", "abspos"])
-    result["concept"] = result["concept"].astype(
-        "str"
-    )  # we might move this to an earlier stage. E.g. when concatenating concepts
     schema = {
         "PID": "str",
         "age": "float32",
@@ -160,8 +155,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         "concept": "str",
         "segment": "int32",
     }
-    with ProgressBar():
-        result.to_parquet(cfg.paths.features, write_index=False, schema=schema)
+    with ProgressBar(dt=1):
+        features.to_parquet(cfg.paths.features, write_index=False, schema=schema)
 
 
 if __name__ == "__main__":

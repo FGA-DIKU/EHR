@@ -1,0 +1,100 @@
+name: 'Create data test on big data'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+  push:
+    branches:
+      - dask_fix  # This can be removed once the dask fix is merged
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  tests:
+    # Skip if PR doesn't have the right label
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'Run big test'))
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies.
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Generate large test data
+        run: |
+          source .venv/bin/activate
+          python -m tests.generate_large_data.simulate_data --n-patients 500000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
+
+      - name: Run create_data with background cleanup
+        run: |
+          set -e  # Exit immediately if a command exits with a non-zero status
+          trap 'echo "An error occurred. Exiting."; exit 1;' ERR
+
+          # Activate virtual environment
+          source .venv/bin/activate
+
+          # Start the create_data script in the background
+          echo "Starting data creation..."
+          python -m corebehrt.main.create_data --config_path tests/pipeline_configs/create_data_big.yaml &
+          CREATE_DATA_PID=$!
+
+          # Function to wait for a file or directory to appear
+          wait_for_path() {
+            local path="$1"
+            local description="$2"
+            local max_wait_time=2400  # Maximum wait time in seconds
+            local wait_time=0
+            local sleep_interval=10
+
+            echo "Waiting for $description at $path..."
+            while [ ! -e "$path" ]; do
+              if [ $wait_time -ge $max_wait_time ]; then
+                echo "$description did not appear within expected time."
+                exit 1
+              fi
+              sleep $sleep_interval
+              wait_time=$((wait_time + sleep_interval))
+            done
+            echo "$description detected at $path."
+          }
+
+          # Wait for the features data to start being written
+          FEATURES_FILE_PATTERN="./tmp/outputs/features/part.0.parquet"
+          wait_for_path "$FEATURES_FILE_PATTERN" "features data"
+
+          # Delete the original simulated data to free up space
+          echo "Features data detected. Deleting simulated data..."
+          rm -rf ./tmp/example_data_large
+
+          # Wait for all tokenized data files to start being written
+          PRETRAIN_FILE_PATTERN="./tmp/outputs/tokenized/features_pretrain/part.0.parquet"
+          FINETUNE_FILE_PATTERN="./tmp/outputs/tokenized/features_finetune/part.0.parquet"
+          TEST_FILE_PATTERN="./tmp/outputs/tokenized/features_test/part.0.parquet"
+          
+          wait_for_path "$PRETRAIN_FILE_PATTERN" "pretrain tokenized data"
+          wait_for_path "$FINETUNE_FILE_PATTERN" "finetune tokenized data"
+          wait_for_path "$TEST_FILE_PATTERN" "test tokenized data"
+
+          # Delete the features data to free up space
+          echo "Tokenized data detected. Deleting features data..."
+          rm -rf ./tmp/outputs/features
+
+          # Wait for the create_data script to complete
+          echo "Waiting for create_data script to finish..."
+          wait $CREATE_DATA_PID
+
+      - name: Cleanup tmp directory
+        if: always()  # Run even if previous steps fail
+        run: |
+          rm -rf tmp/

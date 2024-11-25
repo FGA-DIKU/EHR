@@ -77,12 +77,19 @@ class FeatureCreator:
     def prepare_concepts(
         self, concepts: dd.DataFrame, patients_info: dd.DataFrame
     ) -> dd.DataFrame:
-        """Set index, add BIRTHDATE to concepts for age calculation + renaming."""
+        """Set index, add BIRTHDATE to concepts for age calculation + renaming of concepts."""
         concepts = concepts.set_index("PID")  # for merging
 
-        concepts = concepts.merge(
-            patients_info[["PID", "BIRTHDATE"]], on="PID", how="left", broadcast=True
-        )  # for age calculation, each worker gets a copy of patients_info
+        concepts["ADMISSION_ID"] = concepts["ADMISSION_ID"].astype(str)
+        concepts["CONCEPT"] = concepts["CONCEPT"].astype(str)
+
+        patients_info = patients_info[["PID", "BIRTHDATE"]].compute()
+
+        def join_with_patients_info(concepts_partition: dd.DataFrame) -> dd.DataFrame:
+            """Join concepts with patients_info on PID."""
+            return concepts_partition.merge(patients_info, on="PID", how="left")
+
+        concepts = concepts.map_partitions(join_with_patients_info)
         concepts = concepts.rename(
             columns={"CONCEPT": "concept"}
         )  # use lowercase for feature names

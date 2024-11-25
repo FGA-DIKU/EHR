@@ -52,7 +52,7 @@ def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
     death_events = death_events.rename(columns={"DEATHDATE": "TIMESTAMP"})
     death_events = death_events.assign(
         concept="Death",
-        ADMISSION_ID=-1,  # Segment for death event
+        ADMISSION_ID="last",  # Segment for death event
     )
 
     # Reorder columns if necessary
@@ -92,7 +92,7 @@ def create_background(
 
     # Assign additional columns
     background["TIMESTAMP"] = background["BIRTHDATE"]
-    background["ADMISSION_ID"] = 0
+    background["ADMISSION_ID"] = "first"
 
     # Select and reorder the required columns
     background = background[
@@ -155,7 +155,7 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     """
     # Assign maximum segment to 'Death' concepts
     concepts = concepts.map_partitions(_assign_segments)
-    concepts = assign_segments_to_death(concepts)
+    concepts = concepts.map_partitions(assign_segments_to_death)
 
     return concepts
 
@@ -180,8 +180,8 @@ def assign_segments_to_death(df: dd.DataFrame) -> dd.DataFrame:
         df with 'Death' concepts assigned to the maximum segment.
     """
     # Compute the maximum segment per 'PID'
-    max_segment = df.groupby("PID")["segment"].max().rename("max_segment")
+    max_segment = df.groupby("PID")["segment"].max().rename("max_segment").reset_index()
     # Merge and assign
-    df = df.merge(max_segment.reset_index(), on="PID", how="left")
+    df = df.merge(max_segment, on="PID", how="left")
     df["segment"] = df["segment"].where(df["concept"] != "Death", df["max_segment"])
     return df.drop(columns=["max_segment"])
