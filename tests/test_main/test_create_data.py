@@ -101,14 +101,18 @@ class TestCreateData(TestMainScript):
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")
         self.assertTrue(exists(vocab_path))
-        vocab = torch.load(vocab_path)
-        expected_vocab = torch.load("./tests/data/tokenized/vocabulary.pt")
+        vocab = torch.load(vocab_path, weights_only=True)
+        expected_vocab = torch.load(
+            "./tests/data/tokenized/vocabulary.pt", weights_only=True
+        )
         self.assertEqual(len(vocab), len(expected_vocab))
 
         # 4: Check the tokenized files
         for suffix in ["pretrain", "finetune", "test"]:
             pids_path = join(self.tokenized_dir, f"pids_{suffix}.pt")
             self.assertTrue(exists(pids_path))
-            pids = torch.load(pids_path)
-            expected_pids = torch.load(f"./tests/data/tokenized/pids_{suffix}.pt")
+            pids = torch.load(pids_path, weights_only=True)
+            expected_pids = torch.load(
+                f"./tests/data/tokenized/pids_{suffix}.pt", weights_only=True
+            )
             self.assertEqual(pids, expected_pids)

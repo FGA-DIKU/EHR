@@ -22,6 +22,7 @@ from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.functional.load import load_vocabulary
 from corebehrt.classes.loader import FormattedDataLoader
 from corebehrt.classes.values import ValueCreator
 
@@ -73,7 +74,7 @@ def main_data(config_path):
     vocabulary = None
     if "vocabulary" in cfg.paths:
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
-        vocabulary = torch.load(cfg.paths.vocabulary)
+        vocabulary = load_vocabulary(cfg.paths.vocabulary)
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
 
     # Train tokenizer and tokenzie pt

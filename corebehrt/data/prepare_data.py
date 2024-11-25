@@ -23,7 +23,7 @@ from corebehrt.functional.filter import (
     censor_data,
     filter_patients_by_age_at_last_event,
 )
-from corebehrt.functional.load import load_pids, load_predefined_pids
+from corebehrt.functional.load import load_pids, load_predefined_pids, load_vocabulary
 from corebehrt.functional.save import save_data, save_pids_splits, save_sequence_lengths
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.utils import (
@@ -73,7 +73,7 @@ class DatasetPreparer:
                 "features_finetune",
             )
         )
-        vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
             data = exclude_pids_from_data(data, pids_to_exclude)
@@ -199,7 +199,7 @@ class DatasetPreparer:
                 "features_pretrain",
             )
         )
-        vocab = torch.load(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
 
         # 2. Exclude pids
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
