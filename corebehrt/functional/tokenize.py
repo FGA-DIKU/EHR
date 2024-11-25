@@ -10,7 +10,12 @@ from corebehrt.functional.constants import (
 def add_special_tokens_partition(
     df: pd.DataFrame, add_sep=True, add_cls=True
 ) -> pd.DataFrame:
-    """Efficiently add special tokens to a partition without full sorting."""
+    """
+    Efficiently add special tokens to a partition without full sorting.
+    
+    cls token will be added before earliest abspos for each PID
+    sep token will be added at segment changes, adjacent to the last event of the previous segment
+    """
     special_rows = []
     df = df.reset_index(drop=True)
 
@@ -47,14 +52,23 @@ def add_special_tokens_partition(
 
 
 def tokenize_partition(series: pd.Series, vocabulary: dict) -> pd.Series:
-    """Optimized in-partition tokenization"""
+    """Optimized in-partition tokenization using direct dictionary mapping."""
     unk_token = vocabulary[UNKNOWN_TOKEN]
-    # Use vectorized operation instead of map
-    return series.map(lambda x: vocabulary.get(x, unk_token))
+    # Direct mapping with fillna for unknown tokens
+    return series.map(vocabulary).fillna(unk_token).astype(int)
 
 
 def limit_concept_length_partition(series: pd.Series, cutoffs: dict) -> pd.Series:
-    """Efficiently limit concept lengths within a partition"""
+    """Efficiently limit concept lengths within a partition.
+    
+    Args:
+        series: Pandas Series containing concepts
+        cutoffs: Dict mapping prefixes to max lengths, e.g. {'D': 6, 'M': 4}
+            Will limit concepts starting with 'D' to 6 chars, 'M' to 4 chars.
+            
+    Example:
+        With cutoffs={'D': 4}, 'D123456' becomes 'D1234'
+    """
     # Create a copy to avoid modifying original
     result = series.copy()
 
