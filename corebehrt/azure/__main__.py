@@ -10,7 +10,7 @@ from corebehrt.common.config import load_config
 
 from corebehrt.azure.components import create_data, create_outcomes, pretrain, finetune
 
-from . import util
+from . import environment, util
 
 COMPONENTS = {
     "create_data": create_data,
@@ -61,30 +61,12 @@ if __name__ == "__main__":
         prog="corebehrt.azure", description="Run corebehrt jobs and pipelines in Azure"
     )
 
-    # Global options
-    parser.add_argument(
-        "COMPUTE",
-        type=str,
-        help="Compute target to use.",
-    )
-    parser.add_argument(
-        "-e",
-        "--experiment",
-        type=str,
-        default="corebehrt_runs",
-        help="Experiment to run the job in.",
-    )
-    parser.add_argument(
-        "-o",
-        "--register_output",
-        type=str,
-        action="append",
-        default=[],
-        help="If an output should be registered, provide a name for the Azure asset using the format '--register_output <input>=<name>'.",
-    )
-
     # Sub-parsers
     subparsers = parser.add_subparsers(dest="call_type")
+    # Environment parser
+    env_parser = subparsers.add_parser(
+        "build_env", help="Build the CoreBEHRT environment"
+    )
     # Job parser
     job_parser = subparsers.add_parser("job", help="Run a single job.")
     job_parser.add_argument(
@@ -94,22 +76,40 @@ if __name__ == "__main__":
         help="Job to run.",
     )
     job_parser.add_argument(
+        "COMPUTE",
+        type=str,
+        help="Compute target to use.",
+    )
+    job_parser.add_argument(
         "-c",
         "--config",
         type=str,
         help="Path to configuration file. Default is file from repo.",
     )
+    job_parser.add_argument(
+        "-e",
+        "--experiment",
+        type=str,
+        default="corebehrt_runs",
+        help="Experiment to run the job in.",
+    )
+    job_parser.add_argument(
+        "-o",
+        "--register_output",
+        type=str,
+        action="append",
+        default=[],
+        help="If an output should be registered, provide a name for the Azure asset using the format '--register_output <input>=<name>'.",
+    )
 
     # Parse args
     args = parser.parse_args()
 
-    # Parse register_output
-    register_output = [o.split("=") for o in args.register_output]
-    assert all(len(o) == 2 for o in register_output), "Invalid arg for register_output"
-    register_output = dict(register_output)
-
-    # Handle job
-    if args.call_type == "job":
+    if args.call_type == "build_env":
+        # Build environment
+        environment.build()
+    elif args.call_type == "job":
+        # Handle job
         create_and_run_job(args)
     else:
         parser.print_help()
