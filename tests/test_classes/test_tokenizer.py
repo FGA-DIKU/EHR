@@ -160,25 +160,28 @@ class TestEHRTokenizer(unittest.TestCase):
 
         # Identify positions of [SEP] tokens
         sep_token = tokenizer.vocabulary["[SEP]"]
+
         # For each PID, check that [SEP] tokens are correctly placed
         for pid in result_df["PID"].unique():
             pid_df = result_df[result_df["PID"] == pid].reset_index(drop=True)
 
-            # Get indices where segment changes
+            # Calculate segment changes as per the function
             segment_changes = pid_df.index[
-                pid_df["segment"] != pid_df["segment"].shift(-1)
-            ].tolist()[
-                :-1
-            ]  # drop last one
+                (pid_df["segment"] != pid_df["segment"].shift(-1)) & (
+                    pid_df["PID"] == pid_df["PID"].shift(-1)
+                )
+            ].tolist()
+
             # Get indices of [SEP] tokens for this PID
             sep_indices = pid_df.index[pid_df["concept"] == sep_token].tolist()
+
             # Check that number of [SEP] tokens matches number of segment changes
             self.assertEqual(len(segment_changes), len(sep_indices))
 
-            # Check that [SEP] tokens appear right at segment changes
+            # Check that [SEP] tokens appear at the correct positions
             for change_idx, sep_idx in zip(segment_changes, sep_indices):
-                # [SEP] should be at next position after segment change
-                self.assertEqual(change_idx, sep_idx)
+                # The [SEP] token should be at the same index as the segment change
+                self.assertEqual(sep_idx, change_idx)
 
     def test_tokenizer_cls_token(self):
         """Test that [CLS] token is added at the beginning of each PID sequence."""
