@@ -1,5 +1,12 @@
 import dask.dataframe as dd
 
+from corebehrt.functional.constants import (
+    CLS_TOKEN,
+    MASK_TOKEN,
+    PAD_TOKEN,
+    SEP_TOKEN,
+    UNKNOWN_TOKEN,
+)
 from corebehrt.functional.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,
@@ -18,11 +25,11 @@ class EHRTokenizer:
         if vocabulary is None:
             self.new_vocab = True
             self.vocabulary = {
-                "[PAD]": 0,
-                "[CLS]": 1,
-                "[SEP]": 2,
-                "[UNK]": 3,
-                "[MASK]": 4,
+                PAD_TOKEN: 0,
+                CLS_TOKEN: 1,
+                SEP_TOKEN: 2,
+                UNKNOWN_TOKEN: 3,
+                MASK_TOKEN: 4,
             }
         else:
             self.new_vocab = False
