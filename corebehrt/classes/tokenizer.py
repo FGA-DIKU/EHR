@@ -41,8 +41,16 @@ class EHRTokenizer:
             raise ValueError("All values in cutoffs must be integers")
 
     def __call__(self, features: dd.DataFrame) -> dd.DataFrame:
-        # Avoid index operations altogether
-        meta = features._meta.copy()
+        # Apply cutoffs if needed before updating vocabulary
+        if self.cutoffs:
+            features["concept"] = features["concept"].map_partitions(
+                limit_concept_length_partition, self.cutoffs
+            )
+        else:
+            # Ensure concepts are strings
+            features["concept"] = features["concept"].astype(str)
+
+        # Update vocabulary with concepts after cutoffs
         if self.new_vocab:
             self.update_vocabulary(features["concept"])
 
@@ -53,17 +61,11 @@ class EHRTokenizer:
                 df = add_special_tokens_partition(
                     df, add_sep=self.sep_tokens, add_cls=self.cls_token
                 )
-            # Apply cutoffs if needed
-            if self.cutoffs:
-                df["concept"] = limit_concept_length_partition(
-                    df["concept"], self.cutoffs
-                )
-
             # Tokenize within the same partition
             df["concept"] = tokenize_partition(df["concept"], self.vocabulary)
             return df
 
-        return features.map_partitions(_process_partition, meta=meta)
+        return features.map_partitions(_process_partition)
 
     def update_vocabulary(self, concepts: dd.Series) -> None:
         """Create or update vocabulary from unique concepts"""
