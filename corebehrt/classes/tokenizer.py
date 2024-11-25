@@ -1,8 +1,10 @@
 import dask.dataframe as dd
 
-from corebehrt.functional.tokenize import (add_special_tokens_partition,
-                                           limit_concept_length_partition,
-                                           tokenize_partition)
+from corebehrt.functional.tokenize import (
+    add_special_tokens_partition,
+    limit_concept_length_partition,
+    tokenize_partition,
+)
 
 
 class EHRTokenizer:
@@ -42,25 +44,23 @@ class EHRTokenizer:
         # Avoid index operations altogether
         meta = features._meta.copy()
         if self.new_vocab:
-            self.update_vocabulary(features['concept'])
+            self.update_vocabulary(features["concept"])
+
         # Combine all operations into a single partition pass
         def _process_partition(df):
             # Add special tokens
             if self.sep_tokens or self.cls_token:
                 df = add_special_tokens_partition(
-                    df,
-                    add_sep=self.sep_tokens,
-                    add_cls=self.cls_token
+                    df, add_sep=self.sep_tokens, add_cls=self.cls_token
                 )
             # Apply cutoffs if needed
             if self.cutoffs:
-                df['concept'] = limit_concept_length_partition(df['concept'], self.cutoffs)
-            
+                df["concept"] = limit_concept_length_partition(
+                    df["concept"], self.cutoffs
+                )
+
             # Tokenize within the same partition
-            df['concept'] = tokenize_partition(
-                df['concept'],
-                self.vocabulary
-            )
+            df["concept"] = tokenize_partition(df["concept"], self.vocabulary)
             return df
 
         return features.map_partitions(_process_partition, meta=meta)
@@ -69,7 +69,7 @@ class EHRTokenizer:
         """Create or update vocabulary from unique concepts"""
         # Get unique concepts across all partitions
         unique_concepts = concepts.drop_duplicates().compute()
-        
+
         # Start with base vocabulary
         vocabulary = self.vocabulary.copy()
         # Add new concepts
@@ -83,4 +83,3 @@ class EHRTokenizer:
 
     def freeze_vocabulary(self) -> None:
         self.new_vocab = False
-
