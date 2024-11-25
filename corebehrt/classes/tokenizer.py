@@ -1,8 +1,7 @@
 import dask.dataframe as dd
 
 from corebehrt.functional.tokenize import (
-    add_cls_token,
-    add_separator_token,
+    add_special_tokens_partition,
     limit_concept_length,
     tokenize,
 )
@@ -35,30 +34,39 @@ class EHRTokenizer:
         self.sep_tokens = sep_tokens
         self.cls_token = cls_token
 
-    def check_cutoff(self, cutoffs: dict):
+    def check_cutoff(self, cutoffs):
         if not isinstance(cutoffs, dict):
             raise ValueError("Cutoffs must be a dictionary")
         if not all(isinstance(value, int) for value in cutoffs.values()):
             raise ValueError("All values in cutoffs must be integers")
 
     def __call__(self, features: dd.DataFrame) -> dd.DataFrame:
-        if self.sep_tokens:
-            features = add_separator_token(features)
-        if self.cls_token:
-            features = add_cls_token(features)
-        features = features.reset_index(drop=True)
+        features = features.set_index("PID", sorted=False, drop=False)
+        # Apply special tokens if needed
+        if self.sep_tokens or self.cls_token:
+            features = features.map_partitions(
+                add_special_tokens_partition,
+                add_sep=self.sep_tokens,
+                add_cls=self.cls_token,
+                sep_token="[SEP]",
+                cls_token="[CLS]",
+            )
+            features = features.set_index("PID", sorted=False, drop=False)
+
+        # Apply cutoffs if needed
         if self.cutoffs:
-            # Cutoff concepts to max_concept_length
             features["concept"] = limit_concept_length(
                 features["concept"], self.cutoffs
             )
 
+        # Tokenize
         features["concept"], vocabulary = tokenize(
             features["concept"],
             vocabulary=self.vocabulary,
             frozen_vocab=not self.new_vocab,
         )
         self.vocabulary = vocabulary
+
         return features
 
     def freeze_vocabulary(self) -> None:

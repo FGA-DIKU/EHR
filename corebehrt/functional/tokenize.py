@@ -1,40 +1,39 @@
+import re
+
 import dask.dataframe as dd
+import pandas as pd
 
 
-def _get_segment_change(df: dd.DataFrame) -> dd.Series:
-    """Select entries where segment changes."""
-    return (df.segment != df.segment.shift(-1)) | (df.PID != df.PID.shift(-1))
+def add_special_tokens_partition(
+    df: pd.DataFrame, add_sep=True, add_cls=True, sep_token="[SEP]", cls_token="[CLS]"
+) -> pd.DataFrame:
+    """Efficiently add special tokens to a partition"""
+    # Create special token rows
+    special_rows = []
+    df = df.reset_index(drop=True)
+    if add_cls:
+        # Get first row for each PID
+        cls_rows = df.groupby("PID", as_index=False).first().copy()
+        cls_rows["concept"] = cls_token
+        cls_rows["abspos"] -= 1e-3
+        cls_rows["segment"] = 0
 
+    if add_sep:
+        # Find segment changes within same PID
+        segment_changes = (df["segment"] != df["segment"].shift(-1)) & (
+            df["PID"] == df["PID"].shift(-1)
+        )
+        sep_rows = df[segment_changes].copy()
+        sep_rows["concept"] = sep_token
+        sep_rows["abspos"] += 1e-3
+        special_rows.append(sep_rows)
+    # Combine all rows and sort
+    if special_rows:
+        df = pd.concat([df] + special_rows, ignore_index=True)
+        df = df.sort_values(["PID", "abspos"])
 
-def _get_first_event(df: dd.DataFrame) -> dd.Series:
-    """Select the first event in the group based on abspos."""
-    return (df.PID != df.PID.shift(1)).fillna(True)
-
-
-def _add_token(
-    df: dd.DataFrame, token: str, mask_func: callable, abspos_adjustment: float
-) -> dd.DataFrame:
-    """
-    Insert tokens into the DataFrame based on the mask_func applied to the sorted (PID,abspos) dataframe.
-    The abspos_adjustment is used to ensure the tokens will be placed correctly in the final sequences.
-    """
-    df = df.sort_values(["PID", "abspos"])
-    df_change = df[mask_func(df)]
-    df_change["concept"] = token
-    df_change["abspos"] += abspos_adjustment
-    return dd.concat([df, df_change]).sort_values(["PID", "abspos"])
-
-
-def add_separator_token(
-    features: dd.DataFrame, sep_token: str = "[SEP]"
-) -> dd.DataFrame:
-    """Add separator token after each segment in the dataframe"""
-    return _add_token(features, sep_token, _get_segment_change, 1e-3)
-
-
-def add_cls_token(features: dd.DataFrame, cls_token: str = "[CLS]"):
-    """Add a classification token to the beginning of each patient's sequence"""
-    return _add_token(features, cls_token, _get_first_event, -1e-3)
+    # df = df.astype(df.dtypes.to_dict())
+    return df
 
 
 def tokenize(concepts: dd.Series, vocabulary: dict, frozen_vocab: bool) -> dd.Series:
@@ -51,14 +50,31 @@ def tokenize(concepts: dd.Series, vocabulary: dict, frozen_vocab: bool) -> dd.Se
     return concepts, vocabulary
 
 
-def tokenize_with_update(concepts: dd.Series, vocabulary: dict) -> dd.Series:
-    """Tokenize the concepts in the features DataFrame and update the vocabulary."""
-    vocabulary = {**vocabulary}
-    unique_concepts = concepts.unique().compute()
-    for concept in unique_concepts:
-        if concept not in vocabulary:
-            vocabulary[concept] = len(vocabulary)
-    concepts = concepts.map(lambda x: vocabulary[x], meta=("concept", "int64"))
+def tokenize_with_update(
+    concepts: dd.Series, vocabulary: dict
+) -> tuple[dd.Series, dict]:
+    # Extract unique concepts in parallel without computing immediately
+    unique_concepts = concepts.drop_duplicates().compute()
+
+    # Determine new concepts not in the existing vocabulary
+    existing_concepts = set(vocabulary.keys())
+    new_concepts = [c for c in unique_concepts if c not in existing_concepts]
+
+    # Assign new indices to new concepts
+    start_index = max(vocabulary.values()) + 1
+    new_vocab_entries = {
+        concept: idx for idx, concept in enumerate(new_concepts, start=start_index)
+    }
+
+    # Update the vocabulary
+    vocabulary.update(new_vocab_entries)
+
+    # Broadcast the vocabulary to the workers
+    broadcast_vocab = vocabulary.copy()
+
+    # Map concepts to indices using the updated vocabulary
+    concepts = concepts.map(broadcast_vocab.get, meta=("concept", "int64"))
+
     return concepts, vocabulary
 
 
@@ -70,8 +86,14 @@ def tokenize_frozen(concepts: dd.Series, vocabulary: dict) -> dd.Series:
 
 
 def limit_concept_length(concepts: dd.Series, cutoffs: dict) -> dd.Series:
-    """Limit the length of the concepts based on cutoffs."""
-    for key, value in cutoffs.items():
-        mask = concepts.str.startswith(key)
-        concepts = concepts.mask(mask, concepts.str.slice(0, value))
-    return concepts
+    # Precompile regex patterns for efficiency
+    patterns = {prefix: re.compile(f"^{re.escape(prefix)}") for prefix in cutoffs}
+
+    def apply_cutoffs(series):
+        for prefix, length in cutoffs.items():
+            pattern = patterns[prefix]
+            mask = series.str.match(pattern)
+            series = series.where(~mask, series.str.slice(0, length))
+        return series
+
+    return concepts.map_partitions(apply_cutoffs, meta=concepts)
