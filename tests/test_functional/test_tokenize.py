@@ -1,118 +1,136 @@
 import unittest
-import dask.dataframe as dd
+
 import pandas as pd
 
 from corebehrt.functional.tokenize import (
-    add_separator_token,
-    add_cls_token,
-    limit_concept_length,
-    tokenize,
+    add_special_tokens_partition,
+    limit_concept_length_partition,
+    tokenize_partition,
 )
 
 
-class TestCreators(unittest.TestCase):
+class TestAddSpecialTokensPartition(unittest.TestCase):
     def setUp(self):
-        self.features = dd.from_pandas(
-            pd.DataFrame(
-                {
-                    "PID": map(str, [1, 1, 1, 2, 2, 3, 3, 3, 3]),
-                    "concept": ["C1", "C2", "C2", "C2", "C3", "C4a", "C2", "C2", "C4b"],
-                    "age": [33.1, 33.2, 33.3, 21.9, 22.0, 36.1, 36.7, 38.1, 38.2],
-                    "segment": [0, 1, 1, 0, 1, 0, 1, 2, 2],
-                    "abspos": map(float, [1, 2, 3, 1, 2, 1, 2, 3, 4]),
-                }
-            ).set_index("PID"),
-        ).reset_index()
-
-        self.vocabulary = {"[UNK]": 0, "C1": 1, "C2": 2, "C3": 3}
-
-    def test_add_sep(self):
-        expected_concept = [
-            "C1",
-            "[SEP]",
-            "C2",
-            "C2",
-            "[SEP]",
-            "C2",
-            "[SEP]",
-            "C3",
-            "[SEP]",
-            "C4a",
-            "[SEP]",
-            "C2",
-            "[SEP]",
-            "C2",
-            "C4b",
-            "[SEP]",
-        ]
-        expected_segment = [0, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 2, 2, 2]
-
-        result = add_separator_token(self.features)
-
-        self.assertIsNot(result, self.features)
-        result = result.compute()
-        self.assertEqual(result.concept.tolist(), expected_concept)
-        self.assertEqual(result.segment.tolist(), expected_segment)
-
-    def test_add_cls(self):
-        expected_concept = [
-            "[CLS]",
-            "C1",
-            "C2",
-            "C2",
-            "[CLS]",
-            "C2",
-            "C3",
-            "[CLS]",
-            "C4a",
-            "C2",
-            "C2",
-            "C4b",
-        ]
-        expected_segment = [0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 2, 2]
-
-        result = add_cls_token(self.features)
-
-        self.assertIsNot(result, self.features)
-        result = result.compute()
-        self.assertEqual(result.concept.tolist(), expected_concept)
-        self.assertEqual(result.segment.tolist(), expected_segment)
-
-    def test_limit_concept_length(self):
-        cutoffs = {"C4": 2}
-        expected_concept = ["C1", "C2", "C2", "C2", "C3", "C4", "C2", "C2", "C4"]
-
-        result_concept = limit_concept_length(self.features.concept, cutoffs)
-        result_concept = result_concept.compute().tolist()
-
-        self.assertEqual(result_concept, expected_concept)
-
-    def test_tokenize_update(self):
-        expected_concept = [1, 2, 2, 2, 3, 4, 2, 2, 5]
-        expected_vocabulary = {
-            "[UNK]": 0,
-            "C1": 1,
-            "C2": 2,
-            "C3": 3,
-            "C4a": 4,
-            "C4b": 5,
-        }
-
-        result_concept, result_vocab = tokenize(
-            self.features.concept, self.vocabulary, False
+        # Sample data for testing
+        self.data = pd.DataFrame(
+            {
+                "PID": ["P1", "P1", "P1", "P2", "P2", "P3"],
+                "concept": ["C1", "C2", "C3", "C4", "C5", "C6"],
+                "abspos": [1.0, 2.0, 3.0, 1.0, 2.0, 1.0],
+                "segment": [0, 0, 1, 0, 1, 0],
+            }
         )
-        result_concept = result_concept.compute().tolist()
 
-        self.assertEqual(result_concept, expected_concept)
-        self.assertEqual(result_vocab, expected_vocabulary)
+    def test_add_cls_token(self):
+        """Test that [CLS] tokens are correctly added."""
+        result = add_special_tokens_partition(self.data, add_sep=False, add_cls=True)
+        cls_rows = result[result["concept"] == "[CLS]"]
+        # There should be one [CLS] token per PID
+        self.assertEqual(cls_rows["PID"].nunique(), self.data["PID"].nunique())
+        # [CLS] tokens should have the smallest abspos for each PID
+        for pid in self.data["PID"].unique():
+            pid_rows = result[result["PID"] == pid]
+            cls_row = pid_rows[pid_rows["concept"] == "[CLS]"]
+            earliest_abspos = pid_rows["abspos"].min()
 
-    def test_tokenize_frozen(self):
-        expected_concept = [1, 2, 2, 2, 3, 0, 2, 2, 0]
+            self.assertTrue((cls_row["abspos"] <= earliest_abspos).all())
 
-        result_concept, result_vocab = tokenize(
-            self.features.concept, self.vocabulary, True
+    def test_add_sep_token(self):
+        """Test that [SEP] tokens are correctly added after segment changes."""
+        result = add_special_tokens_partition(self.data, add_sep=True, add_cls=False)
+        sep_rows = result[result["concept"] == "[SEP]"]
+        # There should be a [SEP] token for each segment change within a PID
+        expected_sep_count = self.data.groupby("PID")["segment"].apply(
+            lambda x: x.diff().fillna(0).ne(0).sum()
         )
-        result_concept = result_concept.compute().tolist()
+        actual_sep_count = sep_rows.groupby("PID").size()
+        for pid in expected_sep_count.index:
+            self.assertEqual(expected_sep_count[pid], actual_sep_count.get(pid, 0))
 
-        self.assertIs(result_vocab, self.vocabulary)
-        self.assertEqual(result_concept, expected_concept)
+    def test_add_both_special_tokens(self):
+        """Test that both [CLS] and [SEP] tokens are correctly added."""
+        result = add_special_tokens_partition(self.data, add_sep=True, add_cls=True)
+        # Verify [CLS] tokens
+        cls_rows = result[result["concept"] == "[CLS]"]
+        self.assertEqual(cls_rows["PID"].nunique(), self.data["PID"].nunique())
+        # Verify [SEP] tokens
+        sep_rows = result[result["concept"] == "[SEP]"]
+        expected_sep_count = self.data.groupby("PID")["segment"].apply(
+            lambda x: x.diff().fillna(0).ne(0).sum()
+        )
+        actual_sep_count = sep_rows.groupby("PID").size()
+        for pid in expected_sep_count.index:
+            self.assertEqual(expected_sep_count[pid], actual_sep_count.get(pid, 0))
+
+    def test_no_special_tokens(self):
+        """Test that no special tokens are added when flags are False."""
+        result = add_special_tokens_partition(self.data, add_sep=False, add_cls=False)
+        self.assertNotIn("[CLS]", result["concept"].values)
+        self.assertNotIn("[SEP]", result["concept"].values)
+        self.assertEqual(len(result), len(self.data))
+
+
+class TestTokenizePartition(unittest.TestCase):
+    def setUp(self):
+        self.series = pd.Series(["C1", "C2", "C3", "C4", "C5"])
+        self.vocabulary = {"C1": 1, "C2": 2, "[UNK]": 0}
+
+    def test_tokenize_with_known_vocab(self):
+        """Test tokenization with a given vocabulary."""
+        result = tokenize_partition(self.series, self.vocabulary)
+        expected_tokens = [1, 2, 0, 0, 0]  # C1 -> 1, C2 -> 2, others -> [UNK] (0)
+        self.assertListEqual(result.tolist(), expected_tokens)
+
+    def test_tokenize_with_empty_vocab(self):
+        """Test tokenization with an empty vocabulary."""
+        vocabulary = {"[UNK]": 0}
+        result = tokenize_partition(self.series, vocabulary)
+        expected_tokens = [0, 0, 0, 0, 0]
+        self.assertListEqual(result.tolist(), expected_tokens)
+
+    def test_tokenize_with_all_vocab(self):
+        """Test tokenization when all concepts are in the vocabulary."""
+        vocabulary = {"C1": 1, "C2": 2, "C3": 3, "C4": 4, "C5": 5, "[UNK]": 0}
+        result = tokenize_partition(self.series, vocabulary)
+        expected_tokens = [1, 2, 3, 4, 5]
+        self.assertListEqual(result.tolist(), expected_tokens)
+
+
+class TestLimitConceptLengthPartition(unittest.TestCase):
+    def setUp(self):
+        self.series = pd.Series(["BG_GENDER_M", "C1", "BG_AGE_30", "C2", "BG_BP_HIGH"])
+        self.cutoffs = {"BG_": 5}  # Limit concepts starting with 'BG_' to length 5
+
+    def test_limit_concepts(self):
+        """Test that concepts are correctly limited in length."""
+        result = limit_concept_length_partition(self.series, self.cutoffs)
+        expected_series = pd.Series(["BG_GE", "C1", "BG_AG", "C2", "BG_BP"])
+        self.assertTrue(result.equals(expected_series))
+
+    def test_no_cutoff(self):
+        """Test that concepts remain unchanged when no cutoffs are provided."""
+        result = limit_concept_length_partition(self.series, {})
+        self.assertTrue(result.equals(self.series))
+
+    def test_multiple_cutoffs(self):
+        """Test that multiple cutoffs are applied correctly."""
+        cutoffs = {"BG_": 5, "C": 2}
+        result = limit_concept_length_partition(self.series, cutoffs)
+        expected_series = pd.Series(["BG_GE", "C1", "BG_AG", "C2", "BG_BP"])
+        self.assertTrue(result.equals(expected_series))
+
+    def test_non_matching_prefix(self):
+        """Test that concepts without matching prefixes are unchanged."""
+        cutoffs = {"X_": 3}
+        result = limit_concept_length_partition(self.series, cutoffs)
+        self.assertTrue(result.equals(self.series))
+
+    def test_empty_series(self):
+        """Test that an empty series returns an empty series."""
+        empty_series = pd.Series([], dtype=str)
+        result = limit_concept_length_partition(empty_series, self.cutoffs)
+        self.assertTrue(result.empty)
+
+
+if __name__ == "__main__":
+    unittest.main()

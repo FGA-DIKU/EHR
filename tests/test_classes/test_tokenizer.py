@@ -1,0 +1,196 @@
+import unittest
+
+import dask.dataframe as dd
+import pandas as pd
+
+from corebehrt.classes.tokenizer import EHRTokenizer
+
+
+class TestEHRTokenizer(unittest.TestCase):
+    def setUp(self):
+        # Simplified example data
+        data = {
+            "PID": ["P1", "P1", "P1", "P2", "P2", "P3", "P3", "P4"],
+            "concept": ["C1", "C2", "C3", "C1", "C4", "C5", "C6", "C7"],
+            "age": [20, 21, 22, 23, 24, 25, 26, 27],
+            "abspos": [1, 2, 3, 1, 2, 1, 2, 1],
+            "segment": [0, 0, 1, 0, 1, 0, 1, 0],
+        }
+        # Create a Pandas DataFrame
+        self.df = pd.DataFrame(data)
+        # Convert to Dask DataFrame with multiple partitions
+        self.ddf = dd.from_pandas(self.df, npartitions=2).shuffle("PID")
+
+    def test_tokenizer_with_new_vocab(self):
+        """Test tokenization with a new vocabulary."""
+        tokenizer = EHRTokenizer()
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Check if special tokens are added
+        self.assertIn(tokenizer.vocabulary["[CLS]"], result_df["concept"].values)
+        self.assertIn(tokenizer.vocabulary["[SEP]"], result_df["concept"].values)
+
+        # Check if vocabulary is updated with concepts
+        self.assertIn("C1", tokenizer.vocabulary)
+        self.assertIn("C2", tokenizer.vocabulary)
+
+        # Ensure concepts are tokenized to integers
+        self.assertTrue(pd.api.types.is_integer_dtype(result_df["concept"]))
+
+    def test_tokenizer_with_existing_vocab(self):
+        """Test tokenization with an existing vocabulary."""
+        existing_vocab = {
+            "[PAD]": 0,
+            "[CLS]": 1,
+            "[SEP]": 2,
+            "[UNK]": 3,
+            "C1": 4,
+            "C2": 5,
+        }
+        tokenizer = EHRTokenizer(vocabulary=existing_vocab)
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Check if vocabulary is not updated
+        self.assertEqual(tokenizer.vocabulary, existing_vocab)
+
+        # Concepts not in vocabulary should be tokenized as [UNK]
+        unk_token = tokenizer.vocabulary["[UNK]"]
+        unknown_concepts = ["C3", "C4", "C5", "C6", "C7"]
+        for concept in unknown_concepts:
+            self.assertNotIn(concept, tokenizer.vocabulary)
+        self.assertTrue((result_df["concept"] == unk_token).any())
+
+    def test_tokenizer_with_cutoffs(self):
+        """Test tokenizer with cutoffs applied."""
+        cutoffs = {"C2": 1}  # Limit concepts starting with 'C2' to length 1
+        tokenizer = EHRTokenizer(cutoffs=cutoffs, cls_token=False, sep_tokens=False)
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Create inverse vocabulary to map tokens back to concepts
+        inv_vocab = {v: k for k, v in tokenizer.vocabulary.items()}
+
+        # Map the integer tokens back to concepts
+        result_df["concept_str"] = result_df["concept"].map(inv_vocab)
+
+        # Check that 'C2' is not in the vocabulary but 'C' is
+        self.assertNotIn("C2", tokenizer.vocabulary)
+        self.assertIn("C", tokenizer.vocabulary)
+
+        # Get the original data before tokenization
+        df_before_tokenization = self.ddf.compute()
+
+        # Find indices where the original concept was 'C2'
+        indices_c2 = df_before_tokenization[
+            df_before_tokenization["concept"] == "C2"
+        ].index
+
+        # For these indices, check that the tokenized concept is 'C'
+        for idx in indices_c2:
+            tokenized_concept = result_df.loc[idx, "concept_str"]
+            self.assertEqual(tokenized_concept, "C")
+
+        # Ensure 'C2' does not appear in the tokenized concepts
+        self.assertNotIn("C2", result_df["concept_str"].unique())
+
+        # Check that all concepts starting with 'C2' are truncated in the vocabulary
+        for concept in tokenizer.vocabulary.keys():
+            if concept.startswith("C2"):
+                self.fail(
+                    f"Concept '{concept}' should have been truncated but is in vocabulary."
+                )
+
+        # Optionally, check that other concepts are unaffected
+        unaffected_concepts = ["C1", "C3", "C4", "C5", "C6", "C7"]
+        for concept in unaffected_concepts:
+            self.assertIn(concept, tokenizer.vocabulary)
+
+    def test_tokenizer_without_special_tokens(self):
+        """Test tokenizer without adding special tokens."""
+        tokenizer = EHRTokenizer(sep_tokens=False, cls_token=False)
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Check that special tokens are not added
+        self.assertNotIn(tokenizer.vocabulary["[CLS]"], result_df["concept"].values)
+        self.assertNotIn(tokenizer.vocabulary["[SEP]"], result_df["concept"].values)
+
+    def test_tokenizer_freeze_vocabulary(self):
+        """Test tokenizer with frozen vocabulary."""
+        tokenizer = EHRTokenizer(sep_tokens=False, cls_token=False)
+        tokenizer.freeze_vocabulary()
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Since vocabulary is frozen and started empty, all concepts should be [UNK]
+        unk_token = tokenizer.vocabulary["[UNK]"]
+        self.assertTrue((result_df["concept"] == unk_token).all())
+
+    def test_tokenizer_multiple_pids(self):
+        """Test tokenizer with multiple PIDs."""
+        tokenizer = EHRTokenizer()
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Check that all PIDs are present
+        expected_pids = ["P1", "P2", "P3", "P4"]
+        self.assertCountEqual(result_df["PID"].unique(), expected_pids)
+
+    def test_tokenizer_abspos_order(self):
+        """Test that abspos ordering is maintained after tokenization."""
+        tokenizer = EHRTokenizer()
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Check that abspos within each PID is sorted correctly
+        for pid in result_df["PID"].unique():
+            pid_df = result_df[result_df["PID"] == pid]
+            abspos_values = pid_df["abspos"].values
+            self.assertTrue(
+                all(x <= y for x, y in zip(abspos_values, abspos_values[1:]))
+            )
+
+    def test_tokenizer_segment_changes(self):
+        """Test that [SEP] tokens are added at segment changes."""
+        tokenizer = EHRTokenizer(sep_tokens=True, cls_token=False)
+        result = tokenizer(self.ddf)
+        result_df = result.compute()
+
+        # Identify positions of [SEP] tokens
+        sep_token = tokenizer.vocabulary["[SEP]"]
+        # For each PID, check that [SEP] tokens are correctly placed
+        for pid in result_df["PID"].unique():
+            pid_df = result_df[result_df["PID"] == pid].reset_index(drop=True)
+
+            # Get indices where segment changes
+            segment_changes = pid_df.index[
+                pid_df["segment"] != pid_df["segment"].shift(-1)
+            ].tolist()[
+                :-1
+            ]  # drop last one
+            # Get indices of [SEP] tokens for this PID
+            sep_indices = pid_df.index[pid_df["concept"] == sep_token].tolist()
+            # Check that number of [SEP] tokens matches number of segment changes
+            self.assertEqual(len(segment_changes), len(sep_indices))
+
+            # Check that [SEP] tokens appear right at segment changes
+            for change_idx, sep_idx in zip(segment_changes, sep_indices):
+                # [SEP] should be at next position after segment change
+                self.assertEqual(change_idx, sep_idx)
+
+    def test_tokenizer_cls_token(self):
+        """Test that [CLS] token is added at the beginning of each PID sequence."""
+        tokenizer = EHRTokenizer(cls_token=True, sep_tokens=False)
+        result = tokenizer(self.ddf)
+        result_df = result.compute().reset_index(drop=True)
+        cls_token = tokenizer.vocabulary["[CLS]"]
+        # Check that the first concept for each PID is [CLS]
+        first_concepts = result_df.groupby("PID")["concept"].first()
+        for first_concept in first_concepts:
+            self.assertEqual(first_concept, cls_token)
+
+
+if __name__ == "__main__":
+    unittest.main()
