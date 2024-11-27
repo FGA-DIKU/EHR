@@ -48,6 +48,9 @@ class EHRTokenizer:
             raise ValueError("All values in cutoffs must be integers")
 
     def __call__(self, features: dd.DataFrame) -> dd.DataFrame:
+        """
+        !We assume that features are sorted by PID and abspos and PID is the index.
+        """
         # Apply cutoffs if needed before updating vocabulary
         if self.cutoffs:
             features["concept"] = features["concept"].map_partitions(

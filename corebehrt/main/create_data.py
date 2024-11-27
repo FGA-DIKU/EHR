@@ -27,6 +27,16 @@ from corebehrt.classes.values import ValueCreator
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
+SCHEMA = {
+    "PID": "str",
+    "age": "float32",
+    "abspos": "float64",
+    "segment": "int32",
+}
+
+FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
+TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
+
 
 def main_data(config_path):
     """
@@ -59,72 +69,65 @@ def main_data(config_path):
             cfg,
         )
         logger.info("Finished feature creation and processing")
-    logger.info(f"Load features from {cfg.paths.features}")
-    df = dd.read_parquet(cfg.paths.features, dtype={"concept": "str"})
+
+    logger.info("Get all pids")
+    df = dd.read_parquet(cfg.paths.features)
     pids = df.PID.unique().compute().tolist()
-    logger.info("Split into pretrain and finetune.")
+
+    logger.info("Split pids")
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
         pids, **cfg.split_ratios
     )
-    df_pt = df[df["PID"].isin(pretrain_pids)]
-    df_ft_and_test = df[df["PID"].isin(finetune_pids + test_pids)]
 
     logger.info("Tokenizing")
+
     vocabulary = None
     if "vocabulary" in cfg.paths:
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = torch.load(cfg.paths.vocabulary)
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
 
-    # Train tokenizer and tokenzie pt
-    df_pt = tokenizer(df_pt)
+    features_path = cfg.paths.features
+    tokenized_path = cfg.paths.tokenized
 
-    # Freeze vocab
-    tokenizer.freeze_vocabulary()
-
-    # Tokenize finetune and test and split them
-    df_ft_and_test = tokenizer(df_ft_and_test)
-    df_ft = df_ft_and_test[df_ft_and_test["PID"].isin(finetune_pids)]
-    df_test = df_ft_and_test[df_ft_and_test["PID"].isin(test_pids)]
-    logger.info("Save tokenized features")
-
-    # ! We compute each dataframe twice, once to get the pids and once to save the dataframe
-    schema = {
-        "PID": "str",
-        "age": "float32",
-        "abspos": "float64",
-        "concept": "int32",
-        "segment": "int32",
-    }
     with ProgressBar(dt=1):
-        df_pt.to_parquet(
-            join(cfg.paths.tokenized, "features_pretrain"),
-            write_index=False,
-            schema=schema,
+        logger.info("Tokenizing pretrain")
+        load_tokenize_and_save(
+            features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
         )
-        df_ft.to_parquet(
-            join(cfg.paths.tokenized, "features_finetune"),
-            write_index=False,
-            schema=schema,
+        tokenizer.freeze_vocabulary()
+        logger.info("Tokenizing finetune")
+        load_tokenize_and_save(
+            features_path, tokenizer, tokenized_path, "finetune", finetune_pids
         )
-        df_test.to_parquet(
-            join(cfg.paths.tokenized, "features_test"),
-            write_index=False,
-            schema=schema,
+        logger.info("Tokenizing test")
+        load_tokenize_and_save(
+            features_path, tokenizer, tokenized_path, "test", test_pids
         )
-    torch.save(
-        pretrain_pids,
-        join(cfg.paths.tokenized, "pids_pretrain.pt"),
+
+    torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
+    logger.info("Finished tokenizing")
+
+def load_tokenize_and_save(
+    features_path: str,
+    tokenizer: EHRTokenizer,
+    tokenized_path: str,
+    split: str,
+    pids: list,
+):
+    """
+    Load df for selected pids, tokenize and write to tokenized_path.
+    """
+    df = dd.read_parquet(features_path, filters=[("PID", "in", set(pids))]).set_index(
+        "PID"
     )
-    torch.save(
-        finetune_pids,
-        join(cfg.paths.tokenized, "pids_finetune.pt"),
+    df = tokenizer(df).reset_index()
+    df.to_parquet(
+        join(tokenized_path, f"features_{split}"),
+        write_index=False,
+        schema=TOKENIZED_SCHEMA,
     )
-    torch.save(
-        test_pids,
-        join(cfg.paths.tokenized, "pids_test.pt"),
-    )
-    torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
+    torch.save(pids, join(tokenized_path, f"pids_{split}.pt"))
 
 
 def create_and_save_features(excluder: Excluder, cfg) -> None:
@@ -138,25 +141,20 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         include_values=(getattr(cfg.loader, "include_values", [])),
     ).load()
 
-    if "values" in cfg.features:
-        value_creator = ValueCreator(**cfg.features.values)
-        concepts = value_creator(concepts)
-        cfg.features.pop("values")
-
-    feature_creator = FeatureCreator(**cfg.features)
-    features = feature_creator(patients_info, concepts)
-
-    features = excluder.exclude_incorrect_events(features)
-
-    schema = {
-        "PID": "str",
-        "age": "float32",
-        "abspos": "float64",
-        "concept": "str",
-        "segment": "int32",
-    }
     with ProgressBar(dt=1):
-        features.to_parquet(cfg.paths.features, write_index=False, schema=schema)
+        if "values" in cfg.features:
+            value_creator = ValueCreator(**cfg.features.values)
+            concepts = value_creator(concepts)
+            cfg.features.pop("values")
+
+        feature_creator = FeatureCreator(**cfg.features)
+        features = feature_creator(patients_info, concepts)
+
+        features = excluder.exclude_incorrect_events(features)
+
+        features.to_parquet(
+            cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
+        )
 
 
 if __name__ == "__main__":

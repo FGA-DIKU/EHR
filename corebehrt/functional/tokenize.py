@@ -12,18 +12,17 @@ def add_special_tokens_partition(
 ) -> pd.DataFrame:
     """
     Efficiently add special tokens to a partition without full sorting.
+    PID is assumed to be the index.
 
     cls token will be added before earliest abspos for each PID
     sep token will be added at segment changes, adjacent to the last event of the previous segment
     """
     special_rows = []
-    df = df.reset_index(drop=True)
 
     if add_cls:
         # Find indices of the earliest event for each PID
-        earliest_indices = df.groupby("PID")["abspos"].idxmin()
+        cls_rows = df.groupby("PID").first()
         # Create [CLS] rows
-        cls_rows = df.loc[earliest_indices].copy()
         cls_rows["concept"] = CLS_TOKEN
         cls_rows[
             "abspos"
@@ -33,8 +32,10 @@ def add_special_tokens_partition(
 
     if add_sep:
         # Find segment changes within same PID
+        df = df.sort_values(["PID", "abspos", "segment"])
+        pid_series = df.index.to_series()
         segment_changes = (df["segment"] != df["segment"].shift(-1)) & (
-            df["PID"] == df["PID"].shift(-1)
+            pid_series == pid_series.shift(-1)
         )
         sep_rows = df[segment_changes].copy()
         sep_rows["concept"] = SEP_TOKEN
@@ -45,8 +46,8 @@ def add_special_tokens_partition(
 
     # Combine all rows and sort by 'PID' and 'abspos'
     if special_rows:
-        df = pd.concat([df] + special_rows, ignore_index=True)
-        df = df.sort_values(["PID", "abspos"]).reset_index(drop=True)
+        df = pd.concat([df] + special_rows, ignore_index=False)
+        df = df.sort_values(["PID", "abspos"])
 
     return df
 
