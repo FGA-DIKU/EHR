@@ -108,6 +108,7 @@ def main_data(config_path):
     torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
     logger.info("Finished tokenizing")
 
+
 def load_tokenize_and_save(
     features_path: str,
     tokenizer: EHRTokenizer,
