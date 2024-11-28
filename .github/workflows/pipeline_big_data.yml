@@ -4,10 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     types: [labeled]
-  push:
-    branches:
-      - dask_fix  # This can be removed once the dask fix is merged
-
+  
 permissions:
   contents: read
   pull-requests: read
@@ -34,7 +31,7 @@ jobs:
       - name: Generate large test data
         run: |
           source .venv/bin/activate
-          python -m tests.generate_large_data.simulate_data --n-patients 500000 --n-concepts 10 --write-dir ./tmp/example_data_large --no-labs
+          python -m tests.generate_large_data.simulate_data --n-patients 500000 --n-concepts 20 --write-dir ./tmp/example_data_large --no-labs
 
       - name: Run create_data with background cleanup
         run: |
