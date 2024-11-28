@@ -6,7 +6,6 @@ import dask.dataframe as dd
 from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.functional.constants import (
     CLS_TOKEN,
-    MASK_TOKEN,
     PAD_TOKEN,
     SEP_TOKEN,
     UNKNOWN_TOKEN,
