@@ -1,9 +1,16 @@
 import unittest
-
-import dask.dataframe as dd
 import pandas as pd
+import dask.dataframe as dd
 
+# Import the EHRTokenizer class and constants
 from corebehrt.classes.tokenizer import EHRTokenizer
+from corebehrt.functional.constants import (
+    CLS_TOKEN,
+    MASK_TOKEN,
+    PAD_TOKEN,
+    SEP_TOKEN,
+    UNKNOWN_TOKEN,
+)
 
 
 class TestEHRTokenizer(unittest.TestCase):
@@ -18,8 +25,10 @@ class TestEHRTokenizer(unittest.TestCase):
         }
         # Create a Pandas DataFrame
         self.df = pd.DataFrame(data)
+        # Set 'PID' as the index and sort by 'PID' and 'abspos'
+        self.df = self.df.set_index("PID").sort_values(["PID", "abspos"])
         # Convert to Dask DataFrame with multiple partitions
-        self.ddf = dd.from_pandas(self.df, npartitions=2).shuffle("PID")
+        self.ddf = dd.from_pandas(self.df, npartitions=2)
 
     def test_tokenizer_with_new_vocab(self):
         """Test tokenization with a new vocabulary."""
@@ -28,8 +37,8 @@ class TestEHRTokenizer(unittest.TestCase):
         result_df = result.compute()
 
         # Check if special tokens are added
-        self.assertIn(tokenizer.vocabulary["[CLS]"], result_df["concept"].values)
-        self.assertIn(tokenizer.vocabulary["[SEP]"], result_df["concept"].values)
+        self.assertIn(tokenizer.vocabulary[CLS_TOKEN], result_df["concept"].values)
+        self.assertIn(tokenizer.vocabulary[SEP_TOKEN], result_df["concept"].values)
 
         # Check if vocabulary is updated with concepts
         self.assertIn("C1", tokenizer.vocabulary)
@@ -41,10 +50,10 @@ class TestEHRTokenizer(unittest.TestCase):
     def test_tokenizer_with_existing_vocab(self):
         """Test tokenization with an existing vocabulary."""
         existing_vocab = {
-            "[PAD]": 0,
-            "[CLS]": 1,
-            "[SEP]": 2,
-            "[UNK]": 3,
+            PAD_TOKEN: 0,
+            CLS_TOKEN: 1,
+            SEP_TOKEN: 2,
+            UNKNOWN_TOKEN: 3,
             "C1": 4,
             "C2": 5,
         }
@@ -55,8 +64,8 @@ class TestEHRTokenizer(unittest.TestCase):
         # Check if vocabulary is not updated
         self.assertEqual(tokenizer.vocabulary, existing_vocab)
 
-        # Concepts not in vocabulary should be tokenized as [UNK]
-        unk_token = tokenizer.vocabulary["[UNK]"]
+        # Concepts not in vocabulary should be tokenized as UNKNOWN_TOKEN
+        unk_token = tokenizer.vocabulary[UNKNOWN_TOKEN]
         unknown_concepts = ["C3", "C4", "C5", "C6", "C7"]
         for concept in unknown_concepts:
             self.assertNotIn(concept, tokenizer.vocabulary)
@@ -114,8 +123,8 @@ class TestEHRTokenizer(unittest.TestCase):
         result_df = result.compute()
 
         # Check that special tokens are not added
-        self.assertNotIn(tokenizer.vocabulary["[CLS]"], result_df["concept"].values)
-        self.assertNotIn(tokenizer.vocabulary["[SEP]"], result_df["concept"].values)
+        self.assertNotIn(tokenizer.vocabulary[CLS_TOKEN], result_df["concept"].values)
+        self.assertNotIn(tokenizer.vocabulary[SEP_TOKEN], result_df["concept"].values)
 
     def test_tokenizer_freeze_vocabulary(self):
         """Test tokenizer with frozen vocabulary."""
@@ -124,8 +133,8 @@ class TestEHRTokenizer(unittest.TestCase):
         result = tokenizer(self.ddf)
         result_df = result.compute()
 
-        # Since vocabulary is frozen and started empty, all concepts should be [UNK]
-        unk_token = tokenizer.vocabulary["[UNK]"]
+        # Since vocabulary is frozen and started empty, all concepts should be UNKNOWN_TOKEN
+        unk_token = tokenizer.vocabulary[UNKNOWN_TOKEN]
         self.assertTrue((result_df["concept"] == unk_token).all())
 
     def test_tokenizer_multiple_pids(self):
@@ -136,13 +145,16 @@ class TestEHRTokenizer(unittest.TestCase):
 
         # Check that all PIDs are present
         expected_pids = ["P1", "P2", "P3", "P4"]
-        self.assertCountEqual(result_df["PID"].unique(), expected_pids)
+        self.assertCountEqual(result_df.index.unique(), expected_pids)
 
     def test_tokenizer_abspos_order(self):
         """Test that abspos ordering is maintained after tokenization."""
         tokenizer = EHRTokenizer()
         result = tokenizer(self.ddf)
         result_df = result.compute()
+
+        # Reset index to access 'PID' as a column
+        result_df = result_df.reset_index()
 
         # Check that abspos within each PID is sorted correctly
         for pid in result_df["PID"].unique():
@@ -153,45 +165,54 @@ class TestEHRTokenizer(unittest.TestCase):
             )
 
     def test_tokenizer_segment_changes(self):
-        """Test that [SEP] tokens are added at segment changes."""
+        """Test that SEP_TOKEN tokens are added at segment changes."""
         tokenizer = EHRTokenizer(sep_tokens=True, cls_token=False)
         result = tokenizer(self.ddf)
         result_df = result.compute()
 
-        # Identify positions of [SEP] tokens
-        sep_token = tokenizer.vocabulary["[SEP]"]
+        # Reset index to access 'PID' as a column
+        result_df = result_df.reset_index()
 
-        # For each PID, check that [SEP] tokens are correctly placed
+        # Identify positions of SEP_TOKEN tokens
+        sep_token_id = tokenizer.vocabulary[SEP_TOKEN]
+
+        # For each PID, check that SEP_TOKEN tokens are correctly placed
         for pid in result_df["PID"].unique():
             pid_df = result_df[result_df["PID"] == pid].reset_index(drop=True)
 
             # Calculate segment changes as per the function
             segment_changes = pid_df.index[
                 (pid_df["segment"] != pid_df["segment"].shift(-1))
-                & (pid_df["PID"] == pid_df["PID"].shift(-1))
+                & (pid_df["segment"].shift(-1).notnull())
             ].tolist()
 
-            # Get indices of [SEP] tokens for this PID
-            sep_indices = pid_df.index[pid_df["concept"] == sep_token].tolist()
+            # Get indices of SEP_TOKEN tokens for this PID
+            sep_indices = pid_df.index[pid_df["concept"] == sep_token_id].tolist()
 
-            # Check that number of [SEP] tokens matches number of segment changes
+            # Check that number of SEP_TOKEN tokens matches number of segment changes
             self.assertEqual(len(segment_changes), len(sep_indices))
 
-            # Check that [SEP] tokens appear at the correct positions
+            # Check that SEP_TOKEN tokens appear at the correct positions
             for change_idx, sep_idx in zip(segment_changes, sep_indices):
-                # The [SEP] token should be at the same index as the segment change
+                # The SEP_TOKEN should be at the same index as the segment change
                 self.assertEqual(sep_idx, change_idx)
 
     def test_tokenizer_cls_token(self):
-        """Test that [CLS] token is added at the beginning of each PID sequence."""
+        """Test that CLS_TOKEN is added at the beginning of each PID sequence."""
         tokenizer = EHRTokenizer(cls_token=True, sep_tokens=False)
         result = tokenizer(self.ddf)
-        result_df = result.compute().reset_index(drop=True)
-        cls_token = tokenizer.vocabulary["[CLS]"]
-        # Check that the first concept for each PID is [CLS]
-        first_concepts = result_df.groupby("PID")["concept"].first()
-        for first_concept in first_concepts:
-            self.assertEqual(first_concept, cls_token)
+        result_df = result.compute()
+
+        # Reset index to access 'PID' as a column
+        result_df = result_df.reset_index()
+
+        cls_token_id = tokenizer.vocabulary[CLS_TOKEN]
+
+        # Check that the first concept for each PID is CLS_TOKEN
+        for pid in result_df["PID"].unique():
+            pid_df = result_df[result_df["PID"] == pid]
+            first_concept = pid_df["concept"].iloc[0]
+            self.assertEqual(first_concept, cls_token_id)
 
 
 if __name__ == "__main__":
