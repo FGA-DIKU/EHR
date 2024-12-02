@@ -2,6 +2,8 @@
 
 import logging
 
+from dask.diagnostics import ProgressBar
+
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import (
@@ -9,8 +11,8 @@ from corebehrt.common.loader import (
     load_model_cfg_from_checkpoint,
 )
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.data.prepare_data import DatasetPreparer
+from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
@@ -39,7 +41,8 @@ def main_train(config_path):
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
     # Prepare dataset
-    train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
+    with ProgressBar(dt=1):
+        train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
 
     if "scheduler" in cfg:
         logger.info("Replacing steps with epochs in scheduler config")

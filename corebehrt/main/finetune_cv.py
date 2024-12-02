@@ -1,19 +1,15 @@
+import logging
 import os
 from os.path import join, split
 
-import logging
 import torch
+from dask.diagnostics import ProgressBar
 
+from corebehrt.common.config import load_config
 from corebehrt.common.initialize import ModelManager
 from corebehrt.common.loader import load_and_select_splits
-from corebehrt.common.setup import (
-    DirectoryPreparer,
-    get_args,
-)
-from corebehrt.common.config import load_config
+from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.common.utils import Data
-from corebehrt.functional.trainer_utils import replace_steps_with_epochs
-from corebehrt.functional.load import load_pids
 from corebehrt.data.dataset import BinaryOutcomeDataset
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
@@ -22,6 +18,8 @@ from corebehrt.evaluation.utils import (
     save_data,
     split_into_test_data_and_train_val_indices,
 )
+from corebehrt.functional.load import load_pids
+from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
@@ -42,7 +40,8 @@ def main_finetune(config_path):
     logger = logging.getLogger("finetune_cv")
 
     dataset_preparer = DatasetPreparer(cfg)
-    data = dataset_preparer.prepare_finetune_data()
+    with ProgressBar(dt=1):
+        data = dataset_preparer.prepare_finetune_data()
     if "predefined_splits" in cfg.paths:
         logger.info("Using predefined splits")
         test_pids = (
