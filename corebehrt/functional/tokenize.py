@@ -1,77 +1,85 @@
-import dask.dataframe as dd
+import pandas as pd
+from corebehrt.functional.constants import (
+    SPECIAL_TOKEN_ABSPOS_ADJUSTMENT,
+    UNKNOWN_TOKEN,
+    CLS_TOKEN,
+    SEP_TOKEN,
+)
 
 
-def _get_segment_change(df: dd.DataFrame) -> dd.Series:
-    """Select entries where segment changes."""
-    return (df.segment != df.segment.shift(-1)) | (df.PID != df.PID.shift(-1))
-
-
-def _get_first_event(df: dd.DataFrame) -> dd.Series:
-    """Select the first event in the group based on abspos."""
-    return (df.PID != df.PID.shift(1)).fillna(True)
-
-
-def _add_token(
-    df: dd.DataFrame, token: str, mask_func: callable, abspos_adjustment: float
-) -> dd.DataFrame:
+def add_special_tokens_partition(
+    df: pd.DataFrame, add_sep=True, add_cls=True
+) -> pd.DataFrame:
     """
-    Insert tokens into the DataFrame based on the mask_func applied to the sorted (PID,abspos) dataframe.
-    The abspos_adjustment is used to ensure the tokens will be placed correctly in the final sequences.
+    Efficiently add special tokens to a partition without full sorting.
+    PID is assumed to be the index.
+
+    cls token will be added before earliest abspos for each PID
+    sep token will be added at segment changes, adjacent to the last event of the previous segment
     """
-    df = df.sort_values(["PID", "abspos"])
-    df_change = df[mask_func(df)]
-    df_change["concept"] = token
-    df_change["abspos"] += abspos_adjustment
-    return dd.concat([df, df_change]).sort_values(["PID", "abspos"])
+    special_rows = []
+
+    if add_cls:
+        # Find indices of the earliest event for each PID
+        cls_rows = df.groupby("PID").first()
+        # Create [CLS] rows
+        cls_rows["concept"] = CLS_TOKEN
+        cls_rows[
+            "abspos"
+        ] -= SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position to come before earliest event
+        cls_rows["segment"] = 0
+        special_rows.append(cls_rows)
+
+    if add_sep:
+        # Find segment changes within same PID
+        df = df.sort_values(["PID", "abspos", "segment"])
+        pid_series = df.index.to_series()
+        segment_changes = (df["segment"] != df["segment"].shift(-1)) & (
+            pid_series == pid_series.shift(-1)
+        )
+        sep_rows = df[segment_changes].copy()
+        sep_rows["concept"] = SEP_TOKEN
+        sep_rows[
+            "abspos"
+        ] += SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position slightly
+        special_rows.append(sep_rows)
+
+    # Combine all rows and sort by 'PID' and 'abspos'
+    if special_rows:
+        df = pd.concat([df] + special_rows, ignore_index=False)
+        df = df.sort_values(["PID", "abspos"])
+
+    return df
 
 
-def add_separator_token(
-    features: dd.DataFrame, sep_token: str = "[SEP]"
-) -> dd.DataFrame:
-    """Add separator token after each segment in the dataframe"""
-    return _add_token(features, sep_token, _get_segment_change, 1e-3)
+def tokenize_partition(series: pd.Series, vocabulary: dict) -> pd.Series:
+    """Optimized in-partition tokenization using direct dictionary mapping."""
+    unk_token = vocabulary[UNKNOWN_TOKEN]
+    # Direct mapping with fillna for unknown tokens
+    return series.map(vocabulary).fillna(unk_token).astype(int)
 
 
-def add_cls_token(features: dd.DataFrame, cls_token: str = "[CLS]"):
-    """Add a classification token to the beginning of each patient's sequence"""
-    return _add_token(features, cls_token, _get_first_event, -1e-3)
+def limit_concept_length_partition(series: pd.Series, cutoffs: dict) -> pd.Series:
+    """Efficiently limit concept lengths within a partition.
 
+    Args:
+        series: Pandas Series containing concepts
+        cutoffs: Dict mapping prefixes to max lengths, e.g. {'D': 6, 'M': 4}
+            Will limit concepts starting with 'D' to 6 chars, 'M' to 4 chars.
 
-def tokenize(concepts: dd.Series, vocabulary: dict, frozen_vocab: bool) -> dd.Series:
+    Example:
+        With cutoffs={'D': 4}, 'D123456' becomes 'D1234'
     """
-    Tokenize the given concepts.
-    if frozen_vocab is True, the vocabulary will not be updated.
-    And the tokens will be replaced with the UNK token.
-    """
-    if frozen_vocab:
-        concepts = tokenize_frozen(concepts, vocabulary)
-    else:
-        concepts, vocabulary = tokenize_with_update(concepts, vocabulary)
+    # Create a copy to avoid modifying original
+    result = series.copy()
 
-    return concepts, vocabulary
+    # Vectorized operations for each prefix
+    for prefix, length in cutoffs.items():
+        # Create mask for matching prefix
+        mask = result.str.startswith(prefix)
 
+        # Apply length limit only where mask is True
+        if mask.any():
+            result.loc[mask] = result.loc[mask].str[:length]
 
-def tokenize_with_update(concepts: dd.Series, vocabulary: dict) -> dd.Series:
-    """Tokenize the concepts in the features DataFrame and update the vocabulary."""
-    vocabulary = {**vocabulary}
-    unique_concepts = concepts.unique().compute()
-    for concept in unique_concepts:
-        if concept not in vocabulary:
-            vocabulary[concept] = len(vocabulary)
-    concepts = concepts.map(lambda x: vocabulary[x], meta=("concept", "int64"))
-    return concepts, vocabulary
-
-
-def tokenize_frozen(concepts: dd.Series, vocabulary: dict) -> dd.Series:
-    """Tokenize the concepts in the features DataFrame with a frozen vocabulary."""
-    return concepts.map(
-        lambda x: vocabulary.get(x, vocabulary["[UNK]"]), meta=("concept", "int64")
-    )
-
-
-def limit_concept_length(concepts: dd.Series, cutoffs: dict) -> dd.Series:
-    """Limit the length of the concepts based on cutoffs."""
-    for key, value in cutoffs.items():
-        mask = concepts.str.startswith(key)
-        concepts = concepts.mask(mask, concepts.str.slice(0, value))
-    return concepts
+    return result
