@@ -53,7 +53,7 @@ def create_conda_cfg() -> None:
     cfg = {
         "name": "CoreBEHRT",
         "channels": ["defaults", "conda-forge", "anaconda", "pytorch"],
-        "dependencies": ["python>=3.12.0", "pip", {"pip": lines}],
+        "dependencies": ["python>=3.12.0,<3.13.0", "pip", {"pip": lines}],
     }
     with open(TMP_CONDA_FILE, "w") as f:
         f.write(yaml.dump(cfg))
