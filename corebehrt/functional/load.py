@@ -3,26 +3,26 @@
 import os
 from glob import glob
 from os.path import join
-from typing import List, Union
+from typing import Dict, Set, List, Union
 
 import dask.dataframe as dd
 import torch
 
 
 # Taken from common.loader
-def load_pids(files: Union[List, str]) -> List:
+def load_pids(files: Union[List, str]) -> Set:
     """Loads pids from multiple files or one file. Doesn't preserve order."""
     if isinstance(files, str):
-        return set(torch.load(files))
+        return set(torch.load(files, weights_only=True))
     pids = set()
     for file in files:
-        pids.update(set(torch.load(file)))
+        pids.update(set(torch.load(file, weights_only=True)))
     return pids
 
 
 def load_predefined_pids(
     split_path: str, mode: Union[List, str] = ["train", "val"]
-) -> List:
+) -> Set:
     if isinstance(split_path, List) or str(split_path).endswith(".pt"):
         pids = load_pids(split_path)
     elif os.path.exists(join(split_path, "pids.pt")):
@@ -86,6 +86,13 @@ def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
         None
     )  # to prevent tz-naive/tz-aware issues
     return df
+
+
+def load_vocabulary(path: str) -> Dict:
+    """
+    Load a vocabulary from the given path.
+    """
+    return torch.load(path, weights_only=True)
 
 
 def get_file_with_pattern(folder: str, pattern: str) -> List[str]:

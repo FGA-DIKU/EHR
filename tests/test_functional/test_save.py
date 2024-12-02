@@ -32,7 +32,8 @@ class TestSaveFunctions(unittest.TestCase):
 
         # Load the saved file and verify its contents
         saved_lengths = torch.load(
-            os.path.join(self.test_dir, f"sequences_lengths{desc}.pt")
+            os.path.join(self.test_dir, f"sequences_lengths{desc}.pt"),
+            weights_only=True,
         )
         self.assertListEqual(saved_lengths, [10, 5])
 
@@ -56,7 +57,9 @@ class TestSaveFunctions(unittest.TestCase):
         self.assertEqual(loaded_data["col1"].compute().tolist(), list(range(6)))
 
         # Load and verify vocabulary
-        loaded_vocabulary = torch.load(os.path.join(self.test_dir, f"vocabulary.pt"))
+        loaded_vocabulary = torch.load(
+            os.path.join(self.test_dir, f"vocabulary.pt"), weights_only=True
+        )
         self.assertEqual(vocabulary, loaded_vocabulary)
 
     def test_save_pids_splits(self):
@@ -70,10 +73,14 @@ class TestSaveFunctions(unittest.TestCase):
         save_pids_splits(mock_train_df, mock_val_df, self.test_dir)
 
         # Load and verify train PIDs
-        train_pids = torch.load(os.path.join(self.test_dir, "pids_train.pt"))
+        train_pids = torch.load(
+            os.path.join(self.test_dir, "pids_train.pt"), weights_only=True
+        )
         self.assertEqual(train_pids, ["pid1", "pid2"])
         # Load and verify val PIDs
-        val_pids = torch.load(os.path.join(self.test_dir, "pids_val.pt"))
+        val_pids = torch.load(
+            os.path.join(self.test_dir, "pids_val.pt"), weights_only=True
+        )
         self.assertEqual(val_pids, ["pid3", "pid4"])
 
 

@@ -13,6 +13,7 @@ from corebehrt.common.setup import (
 from corebehrt.common.config import load_config
 from corebehrt.common.utils import Data
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
+from corebehrt.functional.load import load_pids
 from corebehrt.data.dataset import BinaryOutcomeDataset
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
@@ -45,11 +46,10 @@ def main_finetune(config_path):
     if "predefined_splits" in cfg.paths:
         logger.info("Using predefined splits")
         test_pids = (
-            torch.load(join(cfg.paths.predefined_splits, "test_pids.pt"))
+            list(load_pids(join(cfg.paths.predefined_splits, "test_pids.pt")))
             if os.path.exists(join(cfg.paths.predefined_splits, "test_pids.pt"))
             else []
         )
-        test_pids = list(set(test_pids))
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
         save_data(test_data, cfg.paths.model)
 

@@ -89,7 +89,7 @@ def setup_job(
         command=cmd,
         inputs=input_values,
         outputs=output_values,
-        environment="PHAIR:23",
+        environment="CoreBEHRT@latest",
         compute=compute,
         name=f"{job}_{ts}",
     )

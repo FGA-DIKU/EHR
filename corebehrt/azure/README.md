@@ -16,7 +16,20 @@ paths:
 ## Running from the command line
 The `azure` submodule can be run directly from the command line:
 ```
-corebehrt.azure [-h] [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] <compute> job {create_data,create_outcomes,pretrain,finetune_cv} [-c <path_to_config>]
+python -m corebehrt.azure [-h] {build_env, job}
+```
+
+### Building the CoreBEHRT environment
+The `CoreBEHRT` Azure environment needed for running CoreBEHRT jobs can be built using the sub-command
+```
+python -m corebehrt.azure build_env
+```
+The environment must be build, before jobs can be run.
+
+### Running jobs
+CoreBEHRT jobs are run using the `job` sub-command:
+```
+python -m corebehrt.azure job {create_data,create_outcomes,pretrain,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>]
 ```
 The command starts the specified job using the specified `experiment` and `compute`. Passing pairs `<ouput_id>=<output_name>` using `-o` allows for registering outputs as data assets. The default configuration path (`corebehrt/configs/<job_name>.yaml`) can be overridden with the `-c`/`--config` option.
 
@@ -26,6 +39,16 @@ corebehrt.azure -e "CBTest" -o features=CBFeatures -o tokenized=CBTokenized CPU-
 ```
 
 ## Running from a python script.
+
+### Building the CoreBEHRT environment
+The CoreBEHRT environment can be build from a script/notebook using:
+```
+from corebehrt.azure import environment
+
+environment.build()
+```
+
+### Running jobs
 Each CoreBEHRT main can be run from a script/notebook as well:
 ```
 from corebehrt.azure import util
