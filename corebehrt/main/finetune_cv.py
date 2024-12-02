@@ -13,6 +13,7 @@ from corebehrt.common.setup import (
 from corebehrt.common.config import load_config
 from corebehrt.common.utils import Data
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
+from corebehrt.functional.load import load_pids
 from corebehrt.data.dataset import BinaryOutcomeDataset
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv

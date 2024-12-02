@@ -4,7 +4,6 @@ from os.path import join
 
 import dask.dataframe as dd
 import pandas as pd
-import torch
 
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config, load_config
