@@ -273,21 +273,56 @@ def truncate_data(
     Assumes table has a column named PID.
     Truncate the data to max_len. CLS and SEP tokens are kept if present.
     Uses truncate_patient as default truncate function.
+    Currently only supports normal truncation.
     """
     background_length = get_background_length_dd(data, vocabulary)
-    truncated_data = (
-        data.groupby("PID")[list(data.columns)]
-        .apply(
-            lambda x: truncate_function(
-                x, background_length, max_len, vocabulary.get("[SEP]"), **kwargs
-            ),
-            meta={col: dtype for col, dtype in data.dtypes.items()},
-        )
-        .reset_index(drop=True)
-    )
-
+    data = data.set_index("PID")
+    if truncate_function == truncate_patient:
+        truncated_data = truncate_data_simple(data, max_len, background_length)
+    else:
+        raise ValueError(f"Truncate function {truncate_function} needs to be implemented.")
+    
+    truncated_data = truncated_data.reset_index(drop=False)
+    
     return truncated_data
 
+
+def truncate_data_simple(
+    data: dd.DataFrame,
+    max_len: int,
+    background_length: int,
+) -> dd.DataFrame:
+    """
+    Truncate data per PID to max_len, keeping the first 'background_length' tokens and
+    the last 'max_len - background_length' tokens per patient.
+    Assumes 'PID' is the index in data.
+    """
+    # Compute total tokens per patient
+    total_tokens = data.groupby('PID')['concept'].transform('count')
+    
+    # Compute sequence numbers
+    data['seq_num'] = data.groupby('PID').cumcount()
+    
+    # Compute reverse sequence numbers
+    data['rev_seq_num'] = total_tokens - data['seq_num'] - 1
+    
+    # Create background mask: Keep the first 'background_length' tokens
+    background_mask = (data['seq_num'] < background_length)
+    
+    # Create truncation mask: Keep the last 'max_len - background_length' tokens
+    truncation_length = max_len - background_length
+    truncation_mask = (data['rev_seq_num'] < truncation_length)
+    
+    # Combine masks
+    combined_mask = background_mask | truncation_mask
+    
+    # Apply the combined mask
+    truncated_data = data[combined_mask]
+    
+    # Drop helper columns
+    truncated_data = truncated_data.drop(columns=['seq_num', 'rev_seq_num'])
+    
+    return truncated_data
 
 def get_gender_token(gender: str, vocabulary: dict) -> int:
     """
