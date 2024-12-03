@@ -255,8 +255,8 @@ class DatasetPreparer:
         print("save sequence lengths")
         save_sequence_lengths(data, self.save_dir, desc="_pretrain")
         print("save data")
-        data = data.reset_index(drop=False)
         save_data(data, vocab, self.save_dir, desc="_pretrain")
+        
         # Splitting data
         logger.info("Splitting data")
         print("split data")
