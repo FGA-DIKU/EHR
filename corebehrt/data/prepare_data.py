@@ -31,8 +31,8 @@ from corebehrt.functional.utils import (
     normalize_segments,
     select_random_subset,
     truncate_data,
-    truncate_patient,
-    prioritized_truncate_patient,
+    truncate_data_simple,
+    truncate_data_prioritized,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -279,7 +279,7 @@ class DatasetPreparer:
 
     def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
         truncation_method = (
-            prioritized_truncate_patient if priority_truncation else truncate_patient
+            truncate_data_prioritized if priority_truncation else truncate_data_simple
         )
         if priority_truncation:
             logger.info(
