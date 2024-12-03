@@ -325,6 +325,7 @@ def truncate_data(
             vocabulary=vocabulary,
             **kwargs
         )
+        result = _normalize_group(result)
         # Remove the MultiIndex and keep just PID as index
         if isinstance(result.index, pd.MultiIndex):
             result.index = result.index.get_level_values('PID')
