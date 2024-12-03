@@ -148,9 +148,11 @@ class DatasetPreparer:
                 )
 
         # 6. Exclude short sequences
+        
         logger.info("Excluding short sequences")
+        background_length = get_background_length_dd(data, vocab)
         data = exclude_short_sequences_dask(
-            data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
+            data, data_cfg.get("min_len", 1), background_length
         )
 
         # 7. Optional: Patient Subset Selection
@@ -159,12 +161,14 @@ class DatasetPreparer:
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 8. Truncation
+        data = data.set_index('PID', drop=True, shuffle='tasks')
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = self._truncate_data(
             data,
             vocab,
             data_cfg.truncation_len,
             data_cfg.get("priority_truncation", False),
+            background_length,
         )
 
         # 9. Normalize segments
@@ -221,8 +225,9 @@ class DatasetPreparer:
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
+        background_length =  get_background_length_dd(data, vocab)
         data = exclude_short_sequences_dask(
-            data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
+            data, data_cfg.get("min_len", 1), background_length
         )
 
         # 4. Optional: Patient Subset Selection
@@ -231,11 +236,13 @@ class DatasetPreparer:
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
+        data = data.set_index('PID', drop=True, shuffle='tasks')
         data = self._truncate_data(
             data,
             vocab,
             data_cfg.truncation_len,
             data_cfg.get("priority_truncation", False),
+            background_length,
         )
 
         # 6. Normalize segments
@@ -270,7 +277,7 @@ class DatasetPreparer:
         logger.info("Data preparation complete")
         return train_data, val_data
 
-    def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
+    def _truncate_data(self, data, vocab, truncation_len, priority_truncation, background_length):
         truncation_method = (
             prioritized_truncate_patient if priority_truncation else truncate_patient
         )
@@ -281,6 +288,7 @@ class DatasetPreparer:
             truncation_args = priority_truncation.copy()
             truncation_args["vocabulary"] = vocab
         else:
+            logger.info("Truncating using simple truncation")
             truncation_args = {}
         data = truncate_data(
             data,
@@ -288,6 +296,7 @@ class DatasetPreparer:
             vocab,
             truncation_method,
             kwargs=truncation_args,
+            background_length=background_length,
         )
 
         return data
