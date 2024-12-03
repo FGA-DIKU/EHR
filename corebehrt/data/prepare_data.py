@@ -31,8 +31,8 @@ from corebehrt.functional.utils import (
     normalize_segments,
     select_random_subset,
     truncate_data,
-    truncate_patient,
-    prioritized_truncate_patient,
+    truncate_partition,
+    prioritized_truncate_partition,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -258,22 +258,45 @@ class DatasetPreparer:
 
     def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
         truncation_method = (
-            prioritized_truncate_patient if priority_truncation else truncate_patient
+            prioritized_truncate_partition if priority_truncation else truncate_partition
         )
+
+        print(priority_truncation)
         if priority_truncation:
             logger.info(
                 f"Truncating using priority truncation with low priority prefixes: {priority_truncation.low_priority_prefixes}"
             )
             truncation_args = priority_truncation.copy()
-            truncation_args["vocabulary"] = vocab
         else:
             truncation_args = {}
+
         data = truncate_data(
             data,
             truncation_len,
             vocab,
             truncation_method,
-            kwargs=truncation_args,
+            kwargs=truncation_args
         )
+        
+        # truncation_method = (
+        #     prioritized_truncate if priority_truncation else truncate
+        # )
+        # data = data.set_index("PID")
+        # if priority_truncation:
+        #     logger.info(
+        #         f"Truncating using priority truncation with low priority prefixes: {priority_truncation.low_priority_prefixes}"
+        #     )
+        #     truncation_args = priority_truncation.copy()
+        #     truncation_args["vocabulary"] = vocab
+        # else:
+        #     truncation_args = {}
+
+        # data = truncate_data(
+        #     data,
+        #     truncation_len,
+        #     vocab,
+        #     truncation_method,
+        #     kwargs=truncation_args,
+        # )
 
         return data
