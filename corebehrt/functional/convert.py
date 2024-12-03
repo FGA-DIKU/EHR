@@ -5,7 +5,10 @@ from typing import Tuple, Dict, List
 def convert_to_sequences(features: dd.DataFrame) -> Tuple[Dict[str, List], List[str]]:
     """Convert the DataFrame to a dictionary of features and a list of PIDs."""
     features = features.compute()  # Compute Dask DataFrame to pandas DataFrame
-    pids = features["PID"].unique().tolist()  # List of unique PIDs
+    if "PID" in features.columns:
+        pids = features["PID"].unique().tolist()  # List of unique PIDs
+    else:
+        pids = features.index.unique().tolist()  # List of unique PIDs
 
     grouped = features.groupby("PID")
     features_dict = {
