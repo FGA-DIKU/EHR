@@ -282,8 +282,6 @@ def truncate_data(
     else:
         raise ValueError(f"Truncate function {truncate_function} needs to be implemented.")
     
-    truncated_data = truncated_data.reset_index(drop=False)
-    
     return truncated_data
 
 

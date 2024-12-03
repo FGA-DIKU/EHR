@@ -243,7 +243,7 @@ class DatasetPreparer:
         # 6. Normalize segments
         logger.info("Normalizing segments")
         data = normalize_segments(data)
-
+        data = data.reset_index(drop=False)
         # Check if max segment is larger than type_vocab_size
         logger.info(f"Checking max segment size against type_vocab_size: {model_cfg.type_vocab_size}")
         check_max_segment(data, model_cfg.type_vocab_size)
