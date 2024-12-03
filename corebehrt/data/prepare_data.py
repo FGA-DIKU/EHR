@@ -107,6 +107,7 @@ class DatasetPreparer:
 
         else:
             # 2. Optional: Select gender group
+            logger.info("Filtering patients by gender")
             data = filter_patients_by_gender(
                 data, vocab, self.cfg.data.get("gender", None)
             )
@@ -114,7 +115,7 @@ class DatasetPreparer:
             # 3. Loading and processing outcomes
             outcomes = pd.read_csv(paths_cfg.outcome)
             exposures = pd.read_csv(paths_cfg.exposure)
-
+            logger.info("Handling outcomes")
             outcomehandler = OutcomeHandler(
                 index_date=self.cfg.outcome.get("index_date", None),
                 select_patient_group=data_cfg.get(
@@ -131,6 +132,7 @@ class DatasetPreparer:
             )
 
         # 4. Data censoring
+        logger.info("Censoring data")
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data = censor_data(
             data,
@@ -139,18 +141,21 @@ class DatasetPreparer:
 
         if not predefined_splits:
             # 5. Optional: Select Patients By Age
+            logger.info("Filtering patients by age")
             if data_cfg.get("min_age") or data_cfg.get("max_age"):
                 data = filter_patients_by_age_at_last_event(
                     data, data_cfg.min_age, data_cfg.max_age
                 )
 
         # 6. Exclude short sequences
+        logger.info("Excluding short sequences")
         data = exclude_short_sequences_dask(
             data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
         )
 
         # 7. Optional: Patient Subset Selection
         if not predefined_splits and data_cfg.get("num_patients"):
+            logger.info("Selecting random subset of patients")
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 8. Truncation
@@ -163,6 +168,7 @@ class DatasetPreparer:
         )
 
         # 9. Normalize segments
+        logger.info("Normalizing segments")
         data = normalize_segments(data)
 
         # Check if max segment is larger than type_vocab_size
@@ -170,13 +176,15 @@ class DatasetPreparer:
         # max_segment(data, model_cfg.type_vocab_size)
         # Previously had issue with it
 
-        # save
+        # save  
+        logger.info("Saving data")
         save_sequence_lengths(data, self.save_dir, desc="_finetune")
         save_data(data, vocab, self.save_dir, desc="_finetune")
         outcomes.to_csv(join(self.save_dir, "outcomes.csv"), index=False)
         index_dates.to_csv(join(self.save_dir, "index_dates.csv"), index=False)
 
         # Convert to sequences
+        logger.info("Converting to sequences")
         features, pids = convert_to_sequences(data)
         data = Data(features=features, pids=pids, vocabulary=vocab, mode="finetune")
         data.add_outcomes(outcomes)
@@ -184,6 +192,7 @@ class DatasetPreparer:
         data.check_lengths()
 
         log_features_in_sequence(data)
+        logger.info("Data preparation complete")
         return data
 
     def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
@@ -230,30 +239,35 @@ class DatasetPreparer:
         )
 
         # 6. Normalize segments
+        logger.info("Normalizing segments")
         data = normalize_segments(data)
 
         # Check if max segment is larger than type_vocab_size
         check_max_segment(data, model_cfg.type_vocab_size)
 
         # Save
+        logger.info("Saving data")
         save_sequence_lengths(data, self.save_dir, desc="_pretrain")
         save_data(data, vocab, self.save_dir, desc="_pretrain")
 
         # Splitting data
+        logger.info("Splitting data")
         if predefined_splits:
             train_data, val_data = load_train_val_split(data, predefined_splits)
         else:
             train_data, val_data = split_pids_into_train_val(data, val_ratio)
 
         # Save split
+        logger.info("Saving split")
         save_pids_splits(train_data, val_data, self.save_dir)
 
         # Convert to sequences
+        logger.info("Converting to sequences")
         train_features, train_pids = convert_to_sequences(train_data)
         train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
         val_features, val_pids = convert_to_sequences(val_data)
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-
+        logger.info("Data preparation complete")
         return train_data, val_data
 
     def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
