@@ -3,7 +3,6 @@ import logging
 from os.path import join
 import torch
 import os
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,7 +31,15 @@ def save_data(
     Optional: Save using a description.
     """
     os.makedirs(save_dir, exist_ok=True)
-    data.to_csv(join(save_dir, f"data{desc}", "*.csv"), index=False)
+    data = data.reset_index(drop=False)
+    schema = {
+            "PID": "str",
+            "age": "float32",
+            "abspos": "float64",
+            "concept": "int32",
+            "segment": "int32",
+        }
+    data.to_parquet(join(save_dir, f"data{desc}"), write_index=False, schema=schema)
     torch.save(vocabulary, join(save_dir, f"vocabulary.pt"))
     if outcomes is not None:
         outcomes.to_csv(join(save_dir, f"outcomes{desc}", "*.csv"), index=False)
@@ -46,7 +53,7 @@ def save_pids_splits(
     Assumes that the data has a column named PID.
     """
     os.makedirs(save_dir, exist_ok=True)
-    train_pids = train_data["PID"].unique().compute().tolist()
-    val_pids = val_data["PID"].unique().compute().tolist()
+    train_pids = train_data.index.unique().compute().tolist()
+    val_pids = val_data.index.unique().compute().tolist()
     torch.save(train_pids, join(save_dir, "pids_train.pt"))
     torch.save(val_pids, join(save_dir, "pids_val.pt"))
