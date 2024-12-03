@@ -242,19 +242,24 @@ class DatasetPreparer:
 
         # 6. Normalize segments
         logger.info("Normalizing segments")
-        data = normalize_segments(data)
-        data = data.reset_index(drop=False)
+        print("normalize segments")
+        data = normalize_segments(data) # !Try without map_partitions
+
         # Check if max segment is larger than type_vocab_size
         logger.info(f"Checking max segment size against type_vocab_size: {model_cfg.type_vocab_size}")
+        print("check max segment")
         check_max_segment(data, model_cfg.type_vocab_size)
 
         # Save
         logger.info("Saving")
+        print("save sequence lengths")
         save_sequence_lengths(data, self.save_dir, desc="_pretrain")
+        print("save data")
+        data = data.reset_index(drop=False)
         save_data(data, vocab, self.save_dir, desc="_pretrain")
-
         # Splitting data
         logger.info("Splitting data")
+        print("split data")
         if predefined_splits:
             train_data, val_data = load_train_val_split(data, predefined_splits)
         else:
