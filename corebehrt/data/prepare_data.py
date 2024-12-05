@@ -232,6 +232,7 @@ class DatasetPreparer:
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 5. Truncation
+        print("trancating data")
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         data = self._truncate_data(
             data,
@@ -241,6 +242,7 @@ class DatasetPreparer:
         )
 
         # 6. Normalize segments
+        print("normalise segments")
         logger.info("Normalizing segments")
         print("normalize segments")
         data = normalize_segments(data) # !Try without map_partitions

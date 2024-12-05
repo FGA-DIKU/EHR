@@ -223,7 +223,7 @@ def _priority_truncate_mask_partition(partition: pd.DataFrame, max_len: int, voc
     partition["non_priority"] = partition["concept"].isin(
         _get_non_priority_tokens(vocabulary, low_priority_prefixes)
     )
-
+    print("Calling apply")
     truncation_len = max_len - background_length
     truncated_mask = partition.groupby("PID").apply(
         _get_patient_priority_trun_mask, truncation_len=truncation_len
@@ -260,10 +260,12 @@ def truncate_data_prioritized(
     background_data = data[background_mask]
 
     # Create truncation mask based on priority
+    print("Calling map_partitions")
     truncation_length = max_len - background_length
     truncation_mask = data.map_partitions(
         _priority_truncate_mask_partition, max_len, vocabulary, low_priority_prefixes, background_length, meta=pd.Series(dtype=bool)
     )
+    print("Done calling map_partitions")
 
     # Combine masks
     combined_mask = background_mask | truncation_mask
