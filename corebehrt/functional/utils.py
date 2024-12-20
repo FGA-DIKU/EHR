@@ -17,6 +17,8 @@ def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
         return normalize_segments_series(x)
     elif isinstance(x, dd.DataFrame):
         return normalize_segments_dask(x)
+    elif isinstance(x, dict):
+        return normalize_segments_dict(x)
     else:
         raise TypeError(
             "Invalid type for x, only pd.DataFrame, list, and dict are supported."
@@ -34,6 +36,10 @@ def _normalize_group(partition):
     )
     return partition
 
+def normalize_segments_dict(features: dict) -> dict:
+    for idx, segments in enumerate(features["segment"]):
+        features["segment"][idx] = normalize_segments_list(segments)
+    return features
 
 def normalize_segments_series(series: pd.Series) -> pd.Series:
     # Convert to string to ensure consistent types and avoid warnings

@@ -1,6 +1,8 @@
 import os
 import re
 import logging
+from corebehrt.common.utils import Data
+from typing import Dict
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -22,6 +24,13 @@ ORIGIN_POINT = {
 
 
 class Utilities:
+    @classmethod
+    def process_data(cls, data: Data, func: callable, args_for_func: Dict={})->Dict:
+        """Apply a function to all datasets in a dictionary"""
+        data = func(data, **args_for_func)
+
+        return data
+
     @staticmethod
     def get_last_checkpoint_epoch(checkpoint_folder: str) -> int:
         """Returns the epoch of the last checkpoint."""

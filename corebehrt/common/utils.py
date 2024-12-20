@@ -4,7 +4,7 @@ import random
 from copy import deepcopy
 from dataclasses import dataclass, field
 from os.path import join
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Generator
 
 import pandas as pd
 import numpy as np
@@ -12,6 +12,10 @@ import torch
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
+def iter_patients(features: dict) -> Generator[dict, None, None]:
+    """Iterate over patients in a features dict."""
+    for i in range(len(features["concept"])):
+        yield {key: values[i] for key, values in features.items()} 
 
 @dataclass
 class Data:

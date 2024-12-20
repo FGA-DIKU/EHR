@@ -1,0 +1,8 @@
+2024-11-05 13:33:20,204 - create_data - INFO - Initialize Processors
+2024-11-05 13:33:20,204 - create_data - INFO - Starting feature creation and processing
+2024-11-05 13:33:20,205 - create_data - INFO - Create and process features
+2024-11-05 13:33:33,178 - create_data - INFO - Finished feature creation and processing
+2024-11-05 13:33:33,178 - create_data - INFO - Load features from ./.test_create_data_w_vals/outputs/features
+2024-11-05 13:33:33,205 - create_data - INFO - Split into pretrain and finetune.
+2024-11-05 13:33:33,206 - create_data - INFO - Tokenizing
+2024-11-05 13:33:34,192 - create_data - INFO - Save tokenized features

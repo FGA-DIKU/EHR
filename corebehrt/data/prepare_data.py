@@ -35,6 +35,13 @@ from corebehrt.functional.utils import (
     prioritized_truncate_patient,
 )
 
+# Old stuff for sequences
+from corebehrt.data.utils import Utilities
+from corebehrt.data_fixes.truncate import Truncator
+from corebehrt.common.loader import (
+    load_and_select_splits,
+)
+
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 VOCABULARY_FILE = "vocabulary.pt"
@@ -48,6 +55,7 @@ class DatasetPreparer:
 
         self.save_dir = cfg.paths.model
         self.saver = Saver(self.save_dir)
+        self.data_modifier = DataModifier(cfg)
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
@@ -220,39 +228,34 @@ class DatasetPreparer:
         if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
 
+        # convert to sequences
+        features, pids = convert_to_sequences(data)
+        data = Data(features, pids, vocabulary=vocab, mode="pretrain")
+
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self._truncate_data(
+        data = Utilities.process_data(
             data,
-            vocab,
-            data_cfg.truncation_len,
-            data_cfg.get("priority_truncation", False),
+            self.data_modifier.truncate,
+            args_for_func={"truncation_len": data_cfg.truncation_len},
         )
 
         # 6. Normalize segments
-        data = normalize_segments(data)
+        data = Utilities.process_data(data, self.data_modifier.normalize_segments)
 
         # Check if max segment is larger than type_vocab_size
-        check_max_segment(data, model_cfg.type_vocab_size)
-
-        # Save
-        save_sequence_lengths(data, self.save_dir, desc="_pretrain")
-        save_data(data, vocab, self.save_dir, desc="_pretrain")
+        data.check_lengths()
 
         # Splitting data
         if predefined_splits:
-            train_data, val_data = load_train_val_split(data, predefined_splits)
+            train_data, val_data = load_and_select_splits(
+                self.cfg.paths.predefined_splits, data
+            )
         else:
-            train_data, val_data = split_pids_into_train_val(data, val_ratio)
+            train_data, val_data = data.split(val_ratio)
 
         # Save split
-        save_pids_splits(train_data, val_data, self.save_dir)
-
-        # Convert to sequences
-        train_features, train_pids = convert_to_sequences(train_data)
-        train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
-        val_features, val_pids = convert_to_sequences(val_data)
-        val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
+        self.saver.save_train_val_pids(train_data.pids, val_data.pids)
 
         return train_data, val_data
 
@@ -277,3 +280,35 @@ class DatasetPreparer:
         )
 
         return data
+
+
+
+
+class DataModifier:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+
+    @staticmethod
+    def truncate(data: Data, truncation_len: int) -> Data:
+        truncator = Truncator(max_len=truncation_len, vocabulary=data.vocabulary)
+        data.features = truncator(data.features)
+        return data
+
+    def censor_data(self, data: Data, n_hours: float) -> Data:
+        """Censors data n_hours after censor_outcome."""
+        censorer_cfg = self.cfg.data.get("censorer", {"_target_": DEFAULT_CENSORER})
+        censorer = instantiate(
+            censorer_cfg, vocabulary=data.vocabulary, n_hours=n_hours
+        )
+        logger.info(
+            f"Censoring data {n_hours} hours after outcome with {censorer.__class__.__name__}"
+        )
+        data.features = censorer(data.features, data.censor_outcomes)
+        return data
+
+    @staticmethod
+    def normalize_segments(data: Data) -> Data:
+        """Normalize segments after truncation to start with 1 and increase by 1 then normalize those."""
+        data.features = normalize_segments(data.features)
+        return data
+
