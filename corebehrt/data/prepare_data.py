@@ -76,11 +76,6 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
-        assert False
-
-        if paths_cfg.get("exclude_pids", None):
-            pids_to_exclude = load_pids(paths_cfg.exclude_pids)
-            data = exclude_pids_from_data(data, pids_to_exclude)
 
         predefined_splits = paths_cfg.get("predefined_splits", False)
         if predefined_splits:
@@ -149,23 +144,13 @@ class DatasetPreparer:
                     data, data_cfg.min_age, data_cfg.max_age
                 )
 
-        # 6. Exclude short sequences
-        data = exclude_short_sequences_dask(
-            data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
-        )
-
-        # 7. Optional: Patient Subset Selection
-        if not predefined_splits and data_cfg.get("num_patients"):
-            data = select_random_subset(data, data_cfg.num_patients)
+         # 3. Exclude short sequences
+        data.patients = exclude_short_sequences(data.patients, data_cfg.get("min_len", 1) + get_background_length(data, vocab))
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self._truncate_data(
-            data,
-            vocab,
-            data_cfg.truncation_len,
-            data_cfg.get("priority_truncation", False),
-        )
+        background_length = get_background_length(data, vocab)
+        data.patients = data.process_in_parallel(truncate_patient_namedtuple, max_len=data_cfg.truncation_len, background_length=background_length, sep_token=vocab["[SEP]"])
 
         # 9. Normalize segments
         data = normalize_segments(data)
