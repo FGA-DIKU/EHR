@@ -222,20 +222,17 @@ class DatasetPreparer:
 
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(data.patients, data_cfg.get("min_len", 1) + get_background_length(data, vocab))
-        assert False
+        
         # 4. Optional: Patient Subset Selection
         if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        data = self._truncate_data(
-            data,
-            vocab,
-            data_cfg.truncation_len,
-            data_cfg.get("priority_truncation", False),
-        )
-
+        background_length = get_background_length(data, vocab)
+        data.patients = data.process_in_parallel(truncate_patient_namedtuple, max_len=data_cfg.truncation_len, background_length=background_length, sep_token=vocab["[SEP]"])
+        print(data.patients[0])
+        assert False
         # 6. Normalize segments
         data = normalize_segments(data)
 
@@ -262,28 +259,6 @@ class DatasetPreparer:
         val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
 
         return train_data, val_data
-
-    def _truncate_data(self, data, vocab, truncation_len, priority_truncation):
-        truncation_method = (
-            prioritized_truncate_patient if priority_truncation else truncate_patient
-        )
-        if priority_truncation:
-            logger.info(
-                f"Truncating using priority truncation with low priority prefixes: {priority_truncation.low_priority_prefixes}"
-            )
-            truncation_args = priority_truncation.copy()
-            truncation_args["vocabulary"] = vocab
-        else:
-            truncation_args = {}
-        data = truncate_data(
-            data,
-            truncation_len,
-            vocab,
-            truncation_method,
-            kwargs=truncation_args,
-        )
-
-        return data
 
 
 from typing import NamedTuple, List
@@ -336,10 +311,10 @@ class Data:
     def __getitem__(self, idx: int):
         return self.patients[idx]
 
-    def process_in_parallel(self, func, n_jobs=4):
+    def process_in_parallel(self, func, n_jobs=-1, **kwargs):
         from joblib import Parallel, delayed
         return Parallel(n_jobs=n_jobs)(
-            delayed(func)(p, self.vocabulary) for p in self.patients
+            delayed(func)(p, **kwargs) for p in self.patients
         )
 
 def exclude_short_sequences(patients: List[PatientData], min_len: int) -> List[PatientData]:
@@ -358,3 +333,34 @@ def get_background_length(patients: List[PatientData], vocabulary) -> int:
         return background_length
 
 
+def truncate_patient_namedtuple(
+    patient: PatientData, 
+    background_length: int, 
+    max_len: int, 
+    sep_token: str
+) -> PatientData:
+    """
+    Truncate patient to max_len, keeping background.
+    """
+    concepts = list(patient.concepts)
+    length = len(concepts)
+
+    if length <= max_len:
+        return patient  # No truncation needed
+
+    truncation_length = max_len - background_length
+
+    # Check if the boundary item is a SEP token
+    if concepts[-truncation_length] == sep_token:
+        truncation_length -= 1
+
+    # Create truncated lists for each field in the namedtuple
+    truncated_fields = {}
+    for field in patient._fields:
+        if field == 'pid':
+            continue
+        original_list = getattr(patient, field)
+        truncated_fields[field] = original_list[:background_length] + original_list[-truncation_length:]
+
+    # Return a new namedtuple with the truncated lists
+    return patient._replace(**truncated_fields)
