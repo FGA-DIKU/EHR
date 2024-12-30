@@ -9,7 +9,7 @@ from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config, load_config
 from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
-from corebehrt.common.utils import Data
+# from corebehrt.common.utils import Data
 from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
@@ -61,17 +61,23 @@ class DatasetPreparer:
         )
         return train_dataset, val_dataset
 
-    def prepare_finetune_data(self) -> Data:
+    def prepare_finetune_data(self):
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
         # 1. Loading tokenized data
-        data = dd.read_parquet(
+        df = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_finetune",
             )
-        )
+        ).compute()
+        print(df.columns)
+        assert False
+        # convert data to list of tuples
+        features = list(df.drop(columns=["PID"]).to_records(index=False))
+        data = Data(features=features, vocabulary=vocab, mode="finetune")
+
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
@@ -186,19 +192,22 @@ class DatasetPreparer:
         log_features_in_sequence(data)
         return data
 
-    def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2) -> Data:
+    def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2):
         data_cfg = self.cfg.data
         model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
-        data = dd.read_parquet(
+        df = dd.read_parquet(
             join(
                 paths_cfg.tokenized,
                 "features_pretrain",
             )
-        )
+        ).compute()
+        patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        data = Data(patients=patient_list, vocabulary=vocab)
+
 
         # 2. Exclude pids
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
@@ -212,10 +221,8 @@ class DatasetPreparer:
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
-        data = exclude_short_sequences_dask(
-            data, data_cfg.get("min_len", 1), get_background_length_dd(data, vocab)
-        )
-
+        data.patients = exclude_short_sequences(data.patients, data_cfg.get("min_len", 1) + get_background_length(data, vocab))
+        assert False
         # 4. Optional: Patient Subset Selection
         if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
@@ -277,3 +284,77 @@ class DatasetPreparer:
         )
 
         return data
+
+
+from typing import NamedTuple, List
+
+class PatientData(NamedTuple):
+    pid: str
+    concepts: List[int]  # or List[str], depending on your use
+    abspos: List[float]  # or int, depends on your data
+    segments: List[int]
+    ages: List[float]    # e.g. age at each concept
+
+
+def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
+    # Ensure df has at least these columns: pid, concept, abspos, segment, age
+    patients_data = []
+    
+    # Optional: If you want to preserve the original row order within each patient,
+    # you can sort by ['pid', 'abspos'] or your preferred column(s).
+    # df = df.sort_values(['pid', 'abspos'])
+
+    grouped = df.groupby('PID', sort=False)  
+    for pid, group in grouped:
+        # Convert each column to a Python list
+        concepts_list = group['concept'].tolist()
+        abspos_list = group['abspos'].tolist()
+        segments_list = group['segment'].tolist()
+        ages_list = group['age'].tolist()
+
+        # Create a PatientData instance
+        patient = PatientData(
+            pid=pid,
+            concepts=concepts_list,
+            abspos=abspos_list,
+            segments=segments_list,
+            ages=ages_list,
+        )
+
+        patients_data.append(patient)
+
+    return patients_data
+
+class Data:
+    def __init__(self, patients: List[PatientData], vocabulary: dict):
+        self.patients = patients
+        self.vocabulary = vocabulary
+
+    def __len__(self):
+        return len(self.patients)
+
+    def __getitem__(self, idx: int):
+        return self.patients[idx]
+
+    def process_in_parallel(self, func, n_jobs=4):
+        from joblib import Parallel, delayed
+        return Parallel(n_jobs=n_jobs)(
+            delayed(func)(p, self.vocabulary) for p in self.patients
+        )
+
+def exclude_short_sequences(patients: List[PatientData], min_len: int) -> List[PatientData]:
+    return [p for p in patients if len(p.concepts) >= min_len]
+
+def get_background_length(patients: List[PatientData], vocabulary) -> int:
+    """Get the length of the background sentence, first SEP token included."""
+    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
+    example_concepts = patients[0].concepts
+    background_length = len(set(example_concepts) & background_tokens)
+    if "CLS" in vocabulary:
+        return background_length + 2  # +2 for [CLS] and [SEP] tokens
+    if "SEP" in vocabulary:
+        return background_length + 1  # +1 for [SEP] token
+    else:
+        return background_length
+
+
