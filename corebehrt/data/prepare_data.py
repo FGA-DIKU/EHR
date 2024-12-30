@@ -72,13 +72,12 @@ class DatasetPreparer:
                 "features_finetune",
             )
         ).compute()
-        print(df.columns)
-        assert False
-        # convert data to list of tuples
-        features = list(df.drop(columns=["PID"]).to_records(index=False))
-        data = Data(features=features, vocabulary=vocab, mode="finetune")
-
+        
+        patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        data = Data(patients=patient_list, vocabulary=vocab)
+        assert False
+
         if paths_cfg.get("exclude_pids", None):
             pids_to_exclude = load_pids(paths_cfg.exclude_pids)
             data = exclude_pids_from_data(data, pids_to_exclude)
