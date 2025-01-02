@@ -2,46 +2,41 @@
 
 import logging
 from datetime import datetime
-from typing import Callable, List, Union, Set
+from typing import List, Set, Union
 
 # New stuff
 import dask.dataframe as dd
 import pandas as pd
 
+from corebehrt.data.dataset import PatientData
+
 logger = logging.getLogger(__name__)
 import random
 
 
-def normalize_segments(x: Union[pd.Series, pd.DataFrame, list, dict]):
-    if isinstance(x, pd.Series):
-        return normalize_segments_series(x)
-    elif isinstance(x, dd.DataFrame):
-        return normalize_segments_dask(x)
-    else:
-        raise TypeError(
-            "Invalid type for x, only pd.DataFrame, list, and dict are supported."
-        )
+def normalize_segments_for_patient(patient: PatientData) -> PatientData:
+    segments = patient.segments
+    normalized_segments = normalize_segments(segments)
+    patient.segments = normalized_segments
+    return patient
 
 
-def normalize_segments_dask(df: dd.DataFrame) -> dd.DataFrame:
-    normalized_df = df.map_partitions(_normalize_group, meta=df)
-    return normalized_df
+def normalize_segments(segments: List[int]) -> List[int]:
+    """Normalize a list of segment IDs to be zero-based and contiguous.
 
+    Takes a list of segment IDs that may have gaps or start from an arbitrary number,
+    and normalizes them to start from 0 and increment by 1 while preserving their relative order.
 
-def _normalize_group(partition):
-    partition["segment"] = partition.groupby("PID")["segment"].transform(
-        normalize_segments_series
-    )
-    return partition
+    Args:
+        segments (list): List of segment IDs to normalize
 
+    Returns:
+        list: Normalized list of segment IDs starting from 0 with no gaps
 
-def normalize_segments_series(series: pd.Series) -> pd.Series:
-    # Convert to string to ensure consistent types and avoid warnings
-    series = series.astype(str)
-    return series.factorize(use_na_sentinel=False)[0]
-
-
-def normalize_segments_list(segments: list) -> list:
+    Example:
+        >>> normalize_segments([5, 5, 8, 10, 8])
+        [0, 0, 1, 2, 1]
+    """
     segment_set = sorted(set(segments))
     correct_segments = list(range(len(segment_set)))
     converter = {k: v for (k, v) in zip(segment_set, correct_segments)}
@@ -49,32 +44,17 @@ def normalize_segments_list(segments: list) -> list:
     return [converter[segment] for segment in segments]
 
 
-def normalize_segments_dict(features: dict) -> dict:
-    for idx, segments in enumerate(features["segment"]):
-        features["segment"][idx] = normalize_segments_list(segments)
-    return features
-
-
-def get_background_length(features: dict, vocabulary) -> int:
+def get_background_length(patients: List[PatientData], vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    example_concepts = features["concept"][
-        0
-    ]  # Assume that all patients have the same background length
+    example_concepts = patients[0].concepts
     background_length = len(set(example_concepts) & background_tokens)
-
-    return background_length + 2  # +2 for [CLS] and [SEP] tokens
-
-
-def get_background_length_dd(features: dd.DataFrame, vocabulary) -> int:
-    """Get the length of the background sentence, first SEP token included."""
-    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    first_pid_value = features["PID"].compute().iloc[0]
-    first_pid = features[features["PID"] == first_pid_value]
-    all_concepts_first_pid = first_pid["concept"].compute().tolist()
-    background_length = len(set(all_concepts_first_pid) & background_tokens)
-
-    return background_length + 2  # +2 for [CLS] and [SEP] tokens
+    if "CLS" in vocabulary:
+        return background_length + 2  # +2 for [CLS] and [SEP] tokens
+    if "SEP" in vocabulary:
+        return background_length + 1  # +1 for [SEP] token
+    else:
+        return background_length
 
 
 def get_abspos_from_origin_point(
@@ -144,25 +124,33 @@ def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
 
 
 def truncate_patient(
-    patient: pd.DataFrame, background_length: int, max_len: int, sep_token: str
-) -> pd.DataFrame:
+    patient: PatientData, background_length: int, max_len: int, sep_token: str
+) -> PatientData:
     """
-    Assumes patient is pd.DataFrame.
     Truncate patient to max_len, keeping background.
     """
-    if len(patient["concept"]) <= max_len:
-        return patient
+    concepts = list(patient.concepts)
+    length = len(concepts)
+
+    if length <= max_len:
+        return patient  # No truncation needed
 
     truncation_length = max_len - background_length
-    if patient["concept"].iloc[-truncation_length] == sep_token:
+
+    # Check if the boundary item is a SEP token
+    if concepts[-truncation_length] == sep_token:
         truncation_length -= 1
 
-    truncated_patient = pd.concat(
-        [patient.iloc[:background_length], patient.iloc[-truncation_length:]],
-        ignore_index=True,
+    # Create a new PatientData with truncated lists
+    return PatientData(
+        pid=patient.pid,
+        concepts=patient.concepts[:background_length]
+        + patient.concepts[-truncation_length:],
+        abspos=patient.abspos[:background_length] + patient.abspos[-truncation_length:],
+        segments=patient.segments[:background_length]
+        + patient.segments[-truncation_length:],
+        ages=patient.ages[:background_length] + patient.ages[-truncation_length:],
     )
-
-    return truncated_patient
 
 
 def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
@@ -260,33 +248,6 @@ def prioritized_truncate_patient(
 
     patient.drop(columns=["non_priority"], inplace=True)
     return truncate_patient(patient, background_length, max_len, sep_token)
-
-
-def truncate_data(
-    data: dd.DataFrame,
-    max_len: int,
-    vocabulary: dict,
-    truncate_function: Callable = truncate_patient,
-    kwargs: dict = {},
-) -> dd.DataFrame:
-    """
-    Assumes table has a column named PID.
-    Truncate the data to max_len. CLS and SEP tokens are kept if present.
-    Uses truncate_patient as default truncate function.
-    """
-    background_length = get_background_length_dd(data, vocabulary)
-    truncated_data = (
-        data.groupby("PID")[list(data.columns)]
-        .apply(
-            lambda x: truncate_function(
-                x, background_length, max_len, vocabulary.get("[SEP]"), **kwargs
-            ),
-            meta={col: dtype for col, dtype in data.dtypes.items()},
-        )
-        .reset_index(drop=True)
-    )
-
-    return truncated_data
 
 
 def get_gender_token(gender: str, vocabulary: dict) -> int:

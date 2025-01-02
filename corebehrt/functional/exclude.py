@@ -1,5 +1,4 @@
 import dask.dataframe as dd
-import pandas as pd
 
 from corebehrt.functional.utils import filter_table_by_pids, get_gender_token
 
@@ -14,27 +13,6 @@ def exclude_incorrect_event_ages(
 def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
     """Exclude events (row) with (any) NaNs"""
     return df.dropna()
-
-
-def exclude_short_sequences_dask(
-    df: dd.DataFrame,
-    min_len: int = 3,
-    background_length: int = 0,
-) -> dd.DataFrame:
-    min_len = min_len + background_length
-    # we can materialize the groupby object to a dataframe
-    counts_df = df.groupby("PID").size().compute().reset_index(name="count")
-    valid_pids = counts_df[counts_df["count"] >= min_len]["PID"]
-    return filter_table_by_pids(df, valid_pids)
-
-
-def exclude_short_sequences_df(
-    df: pd.DataFrame, min_len: int = 3, background_length: int = 0
-) -> pd.DataFrame:
-    min_len = min_len + background_length
-    counts_df = df.groupby("PID").size().reset_index(name="count")
-    valid_pids = counts_df[counts_df["count"] >= min_len]["PID"]
-    return df[df["PID"].isin(valid_pids)]
 
 
 def exclude_pids_from_data(data: dd.DataFrame, pids_to_exclude: list) -> dd.DataFrame:

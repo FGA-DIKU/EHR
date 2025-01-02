@@ -1,8 +1,17 @@
+import operator
+from typing import List, Union
+
 import dask.dataframe as dd
 import pandas as pd
-import operator
+
+from corebehrt.data.dataset import PatientData
 from corebehrt.functional.exclude import filter_table_by_pids
-from typing import Union
+
+
+def exclude_short_sequences(
+    patients: List[PatientData], min_len: int
+) -> List[PatientData]:
+    return [p for p in patients if len(p.concepts) >= min_len]
 
 
 def filter_patients_by_age_at_last_event(

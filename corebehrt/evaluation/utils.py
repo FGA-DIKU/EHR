@@ -1,5 +1,4 @@
 import os
-import torch
 import numpy as np
 import pandas as pd
 from typing import Tuple
@@ -8,7 +7,7 @@ from datetime import datetime
 
 from torch.utils.data import WeightedRandomSampler
 
-from corebehrt.common.utils import Data
+from corebehrt.data.dataset import PatientDataset
 
 
 def get_sampler(cfg, train_dataset, outcomes):
@@ -59,6 +58,25 @@ def compute_and_save_scores_mean_std(
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
 
 
+def split_into_test_data_and_train_val_indices(
+    cfg, data: PatientDataset
+) -> Tuple[PatientDataset, list]:
+    """Split data into test and train_val indices. And save test set."""
+    indices = list(range(len(data.get_pids())))
+    test_split = cfg.data.get("test_split", None)
+    if test_split is not None:
+        test_indices, train_val_indices = split_test_set(indices, test_split)
+    else:
+        test_indices = []
+        train_val_indices = indices
+    test_data = (
+        PatientDataset()
+        if len(test_indices) == 0
+        else PatientDataset([data.patients[i] for i in test_indices], data.vocabulary)
+    )
+    return test_data, train_val_indices
+
+
 def split_test_set(indices: list, test_split: float) -> Tuple[list, list]:
     """Split intro test and train_val indices"""
     np.random.seed(42)
@@ -68,35 +86,3 @@ def split_test_set(indices: list, test_split: float) -> Tuple[list, list]:
     test_indices_set = set(test_indices)
     train_val_indices = [i for i in indices if i not in test_indices_set]
     return test_indices, train_val_indices
-
-
-def split_into_test_data_and_train_val_indices(cfg, data: Data) -> Tuple[Data, list]:
-    """Split data into test and train_val indices. And save test set."""
-    indices = list(range(len(data.pids)))
-    test_split = cfg.data.get("test_split", None)
-    if test_split is not None:
-        test_indices, train_val_indices = split_test_set(indices, test_split)
-    else:
-        test_indices = []
-        train_val_indices = indices
-    test_data = (
-        Data()
-        if len(test_indices) == 0
-        else data.select_data_subset_by_indices(test_indices, mode="test")
-    )
-    return test_data, train_val_indices
-
-
-def save_data(data: Data, folder: str) -> None:
-    """Unpacks data and saves it to folder"""
-    if len(data) > 0:
-        torch.save(data.pids, join(folder, f"{data.mode}_pids.pt"))
-        torch.save(data.features, join(folder, f"{data.mode}_features.pt"))
-        if data.outcomes is not None:
-            torch.save(data.outcomes, join(folder, f"{data.mode}_outcomes.pt"))
-        if data.censor_outcomes is not None:
-            torch.save(
-                data.censor_outcomes, join(folder, f"{data.mode}_censor_outcomes.pt")
-            )
-    else:
-        raise Warning(f"Data is empty for {data}")

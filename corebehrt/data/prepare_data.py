@@ -3,25 +3,22 @@ from os.path import join
 
 import dask.dataframe as dd
 import pandas as pd
+from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
-
-# from corebehrt.common.utils import Data
-from corebehrt.data.dataset import MLMDataset
-from corebehrt.functional.convert import convert_to_sequences
-from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
-
-from corebehrt.functional.filter import (
-    censor_data,
-)
+from corebehrt.data.dataset import MLMDataset, PatientDataset
+from corebehrt.functional.convert import dataframe_to_patient_list
+from corebehrt.functional.filter import censor_data, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
-from corebehrt.functional.save import save_data, save_pids_splits, save_sequence_lengths
+from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.utils import (
-    normalize_segments,
+    get_background_length,
+    normalize_segments_for_patient,
+    truncate_patient,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -43,10 +40,10 @@ class DatasetPreparer:
         predefined_splits = self.cfg.paths.get("predefined_splits", False)
         train_data, val_data = self._prepare_mlm_features(predefined_splits)
         train_dataset = MLMDataset(
-            train_data.features, train_data.vocabulary, **self.cfg.data.dataset
+            train_data.patients, train_data.vocabulary, **self.cfg.data.dataset
         )
         val_dataset = MLMDataset(
-            val_data.features, train_data.vocabulary, **self.cfg.data.dataset
+            val_data.patients, val_data.vocabulary, **self.cfg.data.dataset
         )
         return train_dataset, val_dataset
 
@@ -56,7 +53,7 @@ class DatasetPreparer:
 
         # 1. Loading tokenized data
         # Enable dask progress bar for reading parquet
-        with dd.diagnostics.ProgressBar():
+        with ProgressBar(dt=10):
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
@@ -66,7 +63,7 @@ class DatasetPreparer:
         print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
-        data = Data(patients=patient_list, vocabulary=vocab)
+        data = PatientDataset(patients=patient_list, vocabulary=vocab)
 
         # 3. Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
@@ -87,25 +84,25 @@ class DatasetPreparer:
             data,
             censor_dates,
         )
-
+        background_length = get_background_length(data, vocab)
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
             data.patients,
-            data_cfg.get("min_len", 1) + get_background_length(data, vocab),
+            data_cfg.get("min_len", 1) + background_length,
         )
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        background_length = get_background_length(data, vocab)
+
         data.patients = data.process_in_parallel(
-            truncate_patient_namedtuple,
+            truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
         )
 
         # 9. Normalize segments
-        data = normalize_segments(data)
+        data.patients = data.process_in_parallel(normalize_segments_for_patient)
 
         # Check if max segment is larger than type_vocab_size
         # TODO: pass pt_model_config and perform this check
@@ -113,28 +110,19 @@ class DatasetPreparer:
         # Previously had issue with it
 
         # save
-        save_sequence_lengths(data, self.save_dir, desc="_finetune")
-        save_data(data, vocab, self.save_dir, desc="_finetune")
-        outcomes.to_csv(join(self.save_dir, "outcomes.csv"), index=False)
-        index_dates.to_csv(join(self.save_dir, "index_dates.csv"), index=False)
+        if self.cfg.get("save_processed_data", False):
+            data.save(join(self.save_dir, "processed_data"))
+            outcomes.to_csv(join(self.save_dir, "outcomes.csv"), index=False)
+            index_dates.to_csv(join(self.save_dir, "index_dates.csv"), index=False)
 
-        # Convert to sequences
-        features, pids = convert_to_sequences(data)
-        data = Data(features=features, pids=pids, vocabulary=vocab, mode="finetune")
-        data.add_outcomes(outcomes)
-        data.add_index_dates(index_dates)
-        data.check_lengths()
-
-        log_features_in_sequence(data)
         return data
 
     def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2):
         data_cfg = self.cfg.data
-        model_cfg = self.cfg.model
         paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
-        with dd.diagnostics.ProgressBar():
+        with ProgressBar(dt=10):
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
@@ -144,7 +132,7 @@ class DatasetPreparer:
         print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
-        data = Data(patients=patient_list, vocabulary=vocab)
+        data = PatientDataset(patients=patient_list, vocabulary=vocab)
         print("Excluding short sequences")
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
@@ -156,22 +144,16 @@ class DatasetPreparer:
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
         data.patients = data.process_in_parallel(
-            truncate_patient_namedtuple,
+            truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
         )
-        print(data.patients[0])
-        assert False
         # 6. Normalize segments
-        data = normalize_segments(data)
-
-        # Check if max segment is larger than type_vocab_size
-        check_max_segment(data, model_cfg.type_vocab_size)
-
+        data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Save
-        save_sequence_lengths(data, self.save_dir, desc="_pretrain")
-        save_data(data, vocab, self.save_dir, desc="_pretrain")
+        if self.cfg.get("save_processed_data", False):
+            data.save(join(self.save_dir, "processed_data"))
 
         # Splitting data
         if predefined_splits:
@@ -182,128 +164,4 @@ class DatasetPreparer:
         # Save split
         save_pids_splits(train_data, val_data, self.save_dir)
 
-        # Convert to sequences
-        train_features, train_pids = convert_to_sequences(train_data)
-        train_data = Data(train_features, train_pids, vocabulary=vocab, mode="train")
-        val_features, val_pids = convert_to_sequences(val_data)
-        val_data = Data(val_features, val_pids, vocabulary=vocab, mode="val")
-
         return train_data, val_data
-
-
-from typing import NamedTuple, List
-
-
-class PatientData(NamedTuple):
-    pid: str
-    concepts: List[int]  # or List[str], depending on your use
-    abspos: List[float]  # or int, depends on your data
-    segments: List[int]
-    ages: List[float]  # e.g. age at each concept
-
-
-def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
-    # Ensure df has at least these columns: pid, concept, abspos, segment, age
-    patients_data = []
-
-    # Optional: If you want to preserve the original row order within each patient,
-    # you can sort by ['pid', 'abspos'] or your preferred column(s).
-    # df = df.sort_values(['pid', 'abspos'])
-
-    grouped = df.groupby("PID", sort=False)
-    for pid, group in grouped:
-        # Convert each column to a Python list
-        concepts_list = group["concept"].tolist()
-        abspos_list = group["abspos"].tolist()
-        segments_list = group["segment"].tolist()
-        ages_list = group["age"].tolist()
-
-        # Create a PatientData instance
-        patient = PatientData(
-            pid=pid,
-            concepts=concepts_list,
-            abspos=abspos_list,
-            segments=segments_list,
-            ages=ages_list,
-        )
-
-        patients_data.append(patient)
-
-    return patients_data
-
-
-class Data:
-    def __init__(self, patients: List[PatientData], vocabulary: dict):
-        self.patients = patients
-        self.vocabulary = vocabulary
-
-    def __len__(self):
-        return len(self.patients)
-
-    def __getitem__(self, idx: int):
-        return self.patients[idx]
-
-    def process_in_parallel(self, func, n_jobs=-1, **kwargs):
-        from joblib import Parallel, delayed
-
-        return Parallel(n_jobs=n_jobs)(
-            delayed(func)(p, **kwargs) for p in self.patients
-        )
-
-
-def filter_patients_by_pids(
-    patients: List[PatientData], pids: List[str]
-) -> List[PatientData]:
-    pids_set = set(pids)
-    return [p for p in patients if p.pid in pids_set]
-
-
-def exclude_short_sequences(
-    patients: List[PatientData], min_len: int
-) -> List[PatientData]:
-    return [p for p in patients if len(p.concepts) >= min_len]
-
-
-def get_background_length(patients: List[PatientData], vocabulary) -> int:
-    """Get the length of the background sentence, first SEP token included."""
-    background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
-    example_concepts = patients[0].concepts
-    background_length = len(set(example_concepts) & background_tokens)
-    if "CLS" in vocabulary:
-        return background_length + 2  # +2 for [CLS] and [SEP] tokens
-    if "SEP" in vocabulary:
-        return background_length + 1  # +1 for [SEP] token
-    else:
-        return background_length
-
-
-def truncate_patient_namedtuple(
-    patient: PatientData, background_length: int, max_len: int, sep_token: str
-) -> PatientData:
-    """
-    Truncate patient to max_len, keeping background.
-    """
-    concepts = list(patient.concepts)
-    length = len(concepts)
-
-    if length <= max_len:
-        return patient  # No truncation needed
-
-    truncation_length = max_len - background_length
-
-    # Check if the boundary item is a SEP token
-    if concepts[-truncation_length] == sep_token:
-        truncation_length -= 1
-
-    # Create truncated lists for each field in the namedtuple
-    truncated_fields = {}
-    for field in patient._fields:
-        if field == "pid":
-            continue
-        original_list = getattr(patient, field)
-        truncated_fields[field] = (
-            original_list[:background_length] + original_list[-truncation_length:]
-        )
-
-    # Return a new namedtuple with the truncated lists
-    return patient._replace(**truncated_fields)

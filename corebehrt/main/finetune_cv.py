@@ -11,7 +11,7 @@ from corebehrt.common.setup import (
     get_args,
 )
 from corebehrt.common.config import load_config
-from corebehrt.common.utils import Data
+from corebehrt.data.dataset import PatientDataset
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.functional.load import load_pids
 from corebehrt.data.dataset import BinaryOutcomeDataset
@@ -19,7 +19,6 @@ from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv
 from corebehrt.evaluation.utils import (
     compute_and_save_scores_mean_std,
-    save_data,
     split_into_test_data_and_train_val_indices,
 )
 from corebehrt.trainer.trainer import EHRTrainer
@@ -51,7 +50,8 @@ def main_finetune(config_path):
             else []
         )
         test_data = data.select_data_subset_by_pids(test_pids, mode="test")
-        save_data(test_data, cfg.paths.model)
+        if cfg.save_test_data:
+            test_data.save(join(cfg.paths.model, "test_data"))
 
         cv_splits = cv_loop_predefined_splits(
             cfg,
@@ -68,7 +68,8 @@ def main_finetune(config_path):
         test_data, train_val_indices = split_into_test_data_and_train_val_indices(
             cfg, data
         )
-        save_data(test_data, cfg.paths.model)
+        if cfg.save_test_data:
+            test_data.save(join(cfg.paths.model, "test_data"))
         if cv_splits > 1:
             cv_loop(
                 cfg,
@@ -102,10 +103,10 @@ def finetune_fold(
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
-    train_data: Data,
-    val_data: Data,
+    train_data: PatientDataset,
+    val_data: PatientDataset,
     fold: int,
-    test_data: Data = None,
+    test_data: PatientDataset = None,
 ) -> None:
     """Finetune model on one fold"""
     if "scheduler" in cfg:
@@ -124,7 +125,7 @@ def finetune_fold(
     torch.save(val_data.pids, join(fold_folder, "val_pids.pt"))
     if len(test_data) > 0:
         torch.save(test_data.pids, join(fold_folder, "test_pids.pt"))
-    dataset_preparer.saver.save_patient_nums(train_data, val_data, folder=fold_folder)
+    # dataset_preparer.saver.save_patient_nums(train_data, val_data, folder=fold_folder)
 
     logger.info("Initializing datasets")
     train_dataset = BinaryOutcomeDataset(train_data.features, train_data.outcomes)
@@ -175,11 +176,11 @@ def split_and_finetune(
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
-    data: Data,
+    data: PatientDataset,
     train_indices: list,
     val_indices: list,
     fold: int,
-    test_data: Data = None,
+    test_data: PatientDataset = None,
 ):
     train_data = data.select_data_subset_by_indices(train_indices, mode="train")
     val_data = data.select_data_subset_by_indices(val_indices, mode="val")
@@ -215,9 +216,9 @@ def cv_loop(
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
-    data: Data,
+    data: PatientDataset,
     train_val_indices: list,
-    test_data: Data,
+    test_data: PatientDataset,
 ) -> None:
     """Loop over cross validation folds."""
     cv_splits = cfg.get("cv_splits", DEFAULT_CV_SPLITS)
@@ -247,9 +248,9 @@ def finetune_without_cv(
     logger,
     finetune_folder: str,
     dataset_preparer: DatasetPreparer,
-    data: Data,
+    data: PatientDataset,
     train_val_indices: list,
-    test_data: Data = None,
+    test_data: PatientDataset = None,
 ) -> None:
     val_split = cfg.data.get("val_split", DEAFAULT_VAL_SPLIT)
     logger.info(
@@ -274,9 +275,9 @@ def cv_loop_predefined_splits(
     cfg,
     logger,
     finetune_folder: str,
-    data: Data,
+    data: PatientDataset,
     predefined_splits_dir: str,
-    test_data: Data,
+    test_data: PatientDataset,
 ) -> int:
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir

@@ -8,7 +8,7 @@ import torch
 from transformers import BertConfig
 
 from corebehrt.common.config import Config, load_config
-from corebehrt.common.utils import Data
+from corebehrt.data.dataset import PatientDataset
 from corebehrt.data.utils import Utilities
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -42,34 +42,6 @@ class FeaturesLoader:
     def __init__(self, cfg):
         self.paths_cfg = cfg.paths
         self.cfg = cfg
-
-    def load_tokenized_data(self, mode: str = None) -> Data:
-        """Load features for finetuning"""
-        tokenized_files = self.paths_cfg.get("tokenized_file", f"features_{mode}.pt")
-        tokenized_pids_files = self.paths_cfg.get("tokenized_pids", f"pids_{mode}.pt")
-
-        # Ensure the files are in a list. We might want to load multiple files.
-        tokenized_files = (
-            [tokenized_files] if isinstance(tokenized_files, str) else tokenized_files
-        )
-        tokenized_pids_files = (
-            [tokenized_pids_files]
-            if isinstance(tokenized_pids_files, str)
-            else tokenized_pids_files
-        )
-        assert len(tokenized_files) == len(
-            tokenized_pids_files
-        ), "Number of tokenized files and pids files must be equal."
-
-        logger.info(f"Loading tokenized data from {self.inputs.tokenized}")
-        features, pids = self.load_features_and_pids(
-            tokenized_files, tokenized_pids_files
-        )
-
-        logger.info("Loading vocabulary")
-        vocabulary = self.load_vocabulary()
-
-        return Data(features, pids, vocabulary=vocabulary, mode=mode)
 
     def load_features_and_pids(self, tokenized_files: list, tokenized_pids_files: list):
         """Load features and pids from multiple files."""
@@ -111,16 +83,6 @@ class FeaturesLoader:
         exposures = pd.read_csv(self.paths_cfg.exposure)
 
         return outcomes, exposures
-
-    def load_finetune_data(self, path: str = None, mode: str = None) -> Data:
-        """Load features for finetuning"""
-        path = self.paths_cfg.finetune_features_path if path is None else path
-
-        features = torch.load(join(path, f"features.pt"))
-        outcomes = torch.load(join(path, f"outcomes.pt"))
-        pids = torch.load(join(path, f"pids.pt"))
-        vocabulary = torch.load(join(path, "vocabulary.pt"))
-        return Data(features, pids, outcomes, vocabulary=vocabulary, mode=mode)
 
 
 class ModelLoader:
@@ -220,7 +182,9 @@ def get_pids_file(split_dir: str, mode: str) -> str:
         raise ValueError(f"No pids file found for mode {mode} in {split_dir}")
 
 
-def load_and_select_splits(split_dir: str, data: Data) -> Tuple[Data, Data]:
+def load_and_select_splits(
+    split_dir: str, data: PatientDataset
+) -> Tuple[PatientDataset, PatientDataset]:
     """Load and select pids from predefined splits"""
     logger.info("Load and select pids")
     train_pids = torch.load(get_pids_file(split_dir, "train"))
