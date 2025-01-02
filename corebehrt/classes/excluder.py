@@ -7,7 +7,6 @@ from dask import dataframe as dd
 from corebehrt.functional.exclude import (
     exclude_incorrect_event_ages,
     exclude_pids_from_data,
-    exclude_short_sequences_dask,
 )
 
 
@@ -27,13 +26,6 @@ class Excluder:
     def exclude_incorrect_events(self, df: dd.DataFrame) -> dd.DataFrame:
         """Exclude events with incorrect ages (outside defined range)"""
         return exclude_incorrect_event_ages(df, self.min_age, self.max_age)
-
-    def exclude_short_sequences(
-        self,
-        x: dd.DataFrame,
-    ) -> dd.DataFrame:
-        """Exclude patients with less than k events (taken background into account)"""
-        return exclude_short_sequences_dask(x, self.min_len, self.background_length)
 
     def exclude_pids(
         self, data: dd.DataFrame, pids_path: Optional[str] = None
