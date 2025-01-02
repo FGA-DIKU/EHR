@@ -44,6 +44,12 @@ def normalize_segments(segments: List[int]) -> List[int]:
     return [converter[segment] for segment in segments]
 
 
+def normalize_segments_series(series: pd.Series) -> pd.Series:
+    # Convert to string to ensure consistent types and avoid warnings
+    series = series.astype(str)
+    return series.factorize(use_na_sentinel=False)[0]
+
+
 def get_background_length(patients: List[PatientData], vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
