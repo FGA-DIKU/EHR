@@ -1,38 +1,31 @@
 import logging
-import os
 from os.path import join
 
 import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.classes.outcomes import OutcomeHandler
-from corebehrt.common.config import Config, load_config
+from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
+
 # from corebehrt.common.utils import Data
 from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
 from corebehrt.functional.exclude import (
-    exclude_short_sequences_dask,
-    filter_patients_by_gender,
     exclude_pids_from_data,
 )
 from corebehrt.functional.filter import (
     censor_data,
-    filter_patients_by_age_at_last_event,
 )
 from corebehrt.functional.load import load_pids, load_predefined_pids, load_vocabulary
 from corebehrt.functional.save import save_data, save_pids_splits, save_sequence_lengths
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.utils import (
     filter_table_by_pids,
-    get_background_length_dd,
     normalize_segments,
     select_random_subset,
-    truncate_data,
-    truncate_patient,
-    prioritized_truncate_patient,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -72,63 +65,23 @@ class DatasetPreparer:
                 "features_finetune",
             )
         ).compute()
-        
+
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
 
-        predefined_splits = paths_cfg.get("predefined_splits", False)
-        if predefined_splits:
-            logger.warning("Using predefined splits. Ignoring test_split parameter")
-            logger.warning("Use original censoring time. Overwrite n_hours parameter.")
-            if not os.path.exists(predefined_splits):
-                raise ValueError(
-                    f"Predefined splits folder {predefined_splits} does not exist."
-                )
-            if os.path.exists(join(predefined_splits, "finetune_config.yaml")):
-                original_config = load_config(
-                    join(predefined_splits, "finetune_config.yaml")
-                )
-            else:
-                if "model_path" not in paths_cfg:
-                    raise ValueError(
-                        "Model path must be provided if no finetune_config in predefined splits folder."
-                    )
-                original_config = load_config(
-                    join(paths_cfg.model_path, "finetune_config.yaml")
-                )
-            self.cfg.outcome.n_hours_censoring = (
-                original_config.outcome.n_hours_censoring
-            )
-            logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
-            outcomes = pd.read_csv(join(predefined_splits, "outcomes.csv"))
-            exposures = pd.read_csv(join(predefined_splits, "censor_outcomes.csv"))
+        # 3. Loading and processing outcomes
+        outcomes = pd.read_csv(paths_cfg.outcome)
+        exposures = pd.read_csv(paths_cfg.exposure)
 
-        else:
-            # 2. Optional: Select gender group
-            data = filter_patients_by_gender(
-                data, vocab, self.cfg.data.get("gender", None)
-            )
-
-            # 3. Loading and processing outcomes
-            outcomes = pd.read_csv(paths_cfg.outcome)
-            exposures = pd.read_csv(paths_cfg.exposure)
-
-            outcomehandler = OutcomeHandler(
-                index_date=self.cfg.outcome.get("index_date", None),
-                select_patient_group=data_cfg.get(
-                    "select_patient_group", None
-                ),  # exposed/unexposed
-                exclude_pre_followup_outcome_patients=self.cfg.outcome.get(
-                    "first_time_outcomes_only", False
-                ),
-            )
-            data, index_dates, outcomes = outcomehandler.handle(
-                data,
-                outcomes=outcomes,
-                exposures=exposures,
-            )
+        outcomehandler = OutcomeHandler(
+            index_date=self.cfg.outcome.get("index_date", None),
+        )
+        data, index_dates, outcomes = outcomehandler.handle(
+            data,
+            outcomes=outcomes,
+            exposures=exposures,
+        )
 
         # 4. Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
@@ -137,20 +90,15 @@ class DatasetPreparer:
             censor_dates,
         )
 
-        if not predefined_splits:
-            # 5. Optional: Select Patients By Age
-            if data_cfg.get("min_age") or data_cfg.get("max_age"):
-                data = filter_patients_by_age_at_last_event(
-                    data, data_cfg.min_age, data_cfg.max_age
-                )
-
-         # 3. Exclude short sequences
-        data.patients = exclude_short_sequences(data.patients, data_cfg.get("min_len", 1) + get_background_length(data, vocab))
-
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
-        data.patients = data.process_in_parallel(truncate_patient_namedtuple, max_len=data_cfg.truncation_len, background_length=background_length, sep_token=vocab["[SEP]"])
+        data.patients = data.process_in_parallel(
+            truncate_patient_namedtuple,
+            max_len=data_cfg.truncation_len,
+            background_length=background_length,
+            sep_token=vocab["[SEP]"],
+        )
 
         # 9. Normalize segments
         data = normalize_segments(data)
@@ -192,7 +140,6 @@ class DatasetPreparer:
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
 
-
         # 2. Exclude pids
         exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
         if exclude_pids_path:
@@ -205,8 +152,11 @@ class DatasetPreparer:
             data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
 
         # 3. Exclude short sequences
-        data.patients = exclude_short_sequences(data.patients, data_cfg.get("min_len", 1) + get_background_length(data, vocab))
-        
+        data.patients = exclude_short_sequences(
+            data.patients,
+            data_cfg.get("min_len", 1) + get_background_length(data, vocab),
+        )
+
         # 4. Optional: Patient Subset Selection
         if not predefined_splits and data_cfg.get("num_patients"):
             data = select_random_subset(data, data_cfg.num_patients)
@@ -214,7 +164,12 @@ class DatasetPreparer:
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
-        data.patients = data.process_in_parallel(truncate_patient_namedtuple, max_len=data_cfg.truncation_len, background_length=background_length, sep_token=vocab["[SEP]"])
+        data.patients = data.process_in_parallel(
+            truncate_patient_namedtuple,
+            max_len=data_cfg.truncation_len,
+            background_length=background_length,
+            sep_token=vocab["[SEP]"],
+        )
         print(data.patients[0])
         assert False
         # 6. Normalize segments
@@ -247,29 +202,30 @@ class DatasetPreparer:
 
 from typing import NamedTuple, List
 
+
 class PatientData(NamedTuple):
     pid: str
     concepts: List[int]  # or List[str], depending on your use
     abspos: List[float]  # or int, depends on your data
     segments: List[int]
-    ages: List[float]    # e.g. age at each concept
+    ages: List[float]  # e.g. age at each concept
 
 
 def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
     # Ensure df has at least these columns: pid, concept, abspos, segment, age
     patients_data = []
-    
+
     # Optional: If you want to preserve the original row order within each patient,
     # you can sort by ['pid', 'abspos'] or your preferred column(s).
     # df = df.sort_values(['pid', 'abspos'])
 
-    grouped = df.groupby('PID', sort=False)  
+    grouped = df.groupby("PID", sort=False)
     for pid, group in grouped:
         # Convert each column to a Python list
-        concepts_list = group['concept'].tolist()
-        abspos_list = group['abspos'].tolist()
-        segments_list = group['segment'].tolist()
-        ages_list = group['age'].tolist()
+        concepts_list = group["concept"].tolist()
+        abspos_list = group["abspos"].tolist()
+        segments_list = group["segment"].tolist()
+        ages_list = group["age"].tolist()
 
         # Create a PatientData instance
         patient = PatientData(
@@ -284,6 +240,7 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
 
     return patients_data
 
+
 class Data:
     def __init__(self, patients: List[PatientData], vocabulary: dict):
         self.patients = patients
@@ -297,12 +254,24 @@ class Data:
 
     def process_in_parallel(self, func, n_jobs=-1, **kwargs):
         from joblib import Parallel, delayed
+
         return Parallel(n_jobs=n_jobs)(
             delayed(func)(p, **kwargs) for p in self.patients
         )
 
-def exclude_short_sequences(patients: List[PatientData], min_len: int) -> List[PatientData]:
+
+def filter_patients_by_pids(
+    patients: List[PatientData], pids: List[str]
+) -> List[PatientData]:
+    pids_set = set(pids)
+    return [p for p in patients if p.pid in pids_set]
+
+
+def exclude_short_sequences(
+    patients: List[PatientData], min_len: int
+) -> List[PatientData]:
     return [p for p in patients if len(p.concepts) >= min_len]
+
 
 def get_background_length(patients: List[PatientData], vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
@@ -318,10 +287,7 @@ def get_background_length(patients: List[PatientData], vocabulary) -> int:
 
 
 def truncate_patient_namedtuple(
-    patient: PatientData, 
-    background_length: int, 
-    max_len: int, 
-    sep_token: str
+    patient: PatientData, background_length: int, max_len: int, sep_token: str
 ) -> PatientData:
     """
     Truncate patient to max_len, keeping background.
@@ -341,10 +307,12 @@ def truncate_patient_namedtuple(
     # Create truncated lists for each field in the namedtuple
     truncated_fields = {}
     for field in patient._fields:
-        if field == 'pid':
+        if field == "pid":
             continue
         original_list = getattr(patient, field)
-        truncated_fields[field] = original_list[:background_length] + original_list[-truncation_length:]
+        truncated_fields[field] = (
+            original_list[:background_length] + original_list[-truncation_length:]
+        )
 
     # Return a new namedtuple with the truncated lists
     return patient._replace(**truncated_fields)
