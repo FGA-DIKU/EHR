@@ -13,19 +13,15 @@ from corebehrt.common.saver import Saver
 from corebehrt.data.dataset import MLMDataset
 from corebehrt.functional.convert import convert_to_sequences
 from corebehrt.functional.data_check import check_max_segment, log_features_in_sequence
-from corebehrt.functional.exclude import (
-    exclude_pids_from_data,
-)
+
 from corebehrt.functional.filter import (
     censor_data,
 )
-from corebehrt.functional.load import load_pids, load_predefined_pids, load_vocabulary
+from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_data, save_pids_splits, save_sequence_lengths
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.utils import (
-    filter_table_by_pids,
     normalize_segments,
-    select_random_subset,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -90,6 +86,12 @@ class DatasetPreparer:
             censor_dates,
         )
 
+        # 3. Exclude short sequences
+        data.patients = exclude_short_sequences(
+            data.patients,
+            data_cfg.get("min_len", 1) + get_background_length(data, vocab),
+        )
+
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
@@ -140,26 +142,11 @@ class DatasetPreparer:
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
 
-        # 2. Exclude pids
-        exclude_pids_path = paths_cfg.get("filter_table_by_exclude_pids", None)
-        if exclude_pids_path:
-            excluded_pids = load_pids(exclude_pids_path)
-            data = exclude_pids_from_data(data, excluded_pids)
-
-        # 3. Select predefined pids, remove the rest
-        if predefined_splits:
-            logger.warning("Using predefined splits. Ignoring test_split parameter")
-            data = filter_table_by_pids(data, load_predefined_pids(predefined_splits))
-
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
         )
-
-        # 4. Optional: Patient Subset Selection
-        if not predefined_splits and data_cfg.get("num_patients"):
-            data = select_random_subset(data, data_cfg.num_patients)
 
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
