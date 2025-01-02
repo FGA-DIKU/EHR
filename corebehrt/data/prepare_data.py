@@ -55,13 +55,15 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Loading tokenized data
-        df = dd.read_parquet(
-            join(
-                paths_cfg.tokenized,
-                "features_finetune",
-            )
-        ).compute()
-
+        # Enable dask progress bar for reading parquet
+        with dd.diagnostics.ProgressBar():
+            df = dd.read_parquet(
+                join(
+                    paths_cfg.tokenized,
+                    "features_finetune",
+                )
+            ).compute()
+        print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
@@ -132,22 +134,24 @@ class DatasetPreparer:
         paths_cfg = self.cfg.paths
 
         # 1. Load tokenized data + vocab
-        df = dd.read_parquet(
-            join(
-                paths_cfg.tokenized,
-                "features_pretrain",
-            )
-        ).compute()
+        with dd.diagnostics.ProgressBar():
+            df = dd.read_parquet(
+                join(
+                    paths_cfg.tokenized,
+                    "features_pretrain",
+                )
+            ).compute()
+        print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = Data(patients=patient_list, vocabulary=vocab)
-
+        print("Excluding short sequences")
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
         )
-
+        print("Truncating data")
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
