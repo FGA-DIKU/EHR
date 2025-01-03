@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from os.path import join
-from typing import Any, Callable, List
+from typing import List
 
 import pandas as pd
 import torch
