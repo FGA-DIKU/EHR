@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from corebehrt.data.mask import ConceptMasker
 
@@ -70,9 +71,8 @@ class PatientDataset:
         Returns:
             list: Results of applying the function to each patient.
         """
-        return Parallel(n_jobs=n_jobs)(
-            delayed(func)(p, **kwargs) for p in self.patients
-        )
+        loop = tqdm(self.patients, desc=f"{func.__name__}", mininterval=10)
+        return Parallel(n_jobs=n_jobs)(delayed(func)(p, **kwargs) for p in loop)
 
     def save(self, save_dir: str, suffix: str = ""):
         """Save patient data and vocabulary to disk.

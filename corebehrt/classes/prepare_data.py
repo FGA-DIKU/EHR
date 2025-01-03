@@ -85,7 +85,6 @@ class DatasetPreparer:
         data = data.assign_outcomes(outcomes)
 
         # 4. Data censoring
-        logger.info("Censoring data")
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
@@ -100,7 +99,6 @@ class DatasetPreparer:
         )
 
         # 8. Truncation
-        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         non_priority_tokens = get_non_priority_tokens(
             vocab, data_cfg.get("low_priority_prefixes", None)
         )
@@ -113,7 +111,6 @@ class DatasetPreparer:
         )
 
         # 9. Normalize segments
-        logger.info("Normalizing segments")
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Check if max segment is larger than type_vocab b_size
         # TODO: pass pt_model_config and perform this check
@@ -152,7 +149,6 @@ class DatasetPreparer:
             data.patients,
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
         )
-        logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
         data.patients = data.process_in_parallel(
             truncate_patient,
@@ -161,7 +157,6 @@ class DatasetPreparer:
             sep_token=vocab["[SEP]"],
         )
         # 6. Normalize segments
-        logger.info("Normalizing segments")
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         logger.info(
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
