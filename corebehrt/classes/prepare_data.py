@@ -60,7 +60,9 @@ class DatasetPreparer:
                 )
             ).compute()
         print("Converting to patient list")
+        start_time = time.time()
         patient_list = dataframe_to_patient_list(df)
+        print(f"Converting to patient list took {time.time() - start_time:.2f} seconds")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
 
