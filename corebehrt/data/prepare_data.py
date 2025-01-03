@@ -22,7 +22,7 @@ from corebehrt.functional.utils import (
     normalize_segments_for_patient,
     truncate_patient,
 )
-
+import dataclasses
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 VOCABULARY_FILE = "vocabulary.pt"
@@ -74,8 +74,8 @@ class DatasetPreparer:
         outcomehandler = OutcomeHandler(
             index_date=self.cfg.outcome.get("index_date", None),
         )
-        data, index_dates, outcomes = outcomehandler.handle(
-            data,
+        index_dates, outcomes = outcomehandler.handle(
+            data.get_pids(),
             outcomes=outcomes,
             exposures=exposures,
         )
@@ -138,7 +138,7 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         print(f"Number of patients: {len(patient_list)}")
         print(
-            f"Memory usage of patient list: {sys.getsizeof(patient_list) / 1024**2:.2f} MB"
+            f"Memory usage of patient list: {get_recursive_size(patient_list) / 1024**2:.2f} MB"
         )
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
@@ -186,3 +186,47 @@ class DatasetPreparer:
         save_pids_splits(train_data, val_data, self.save_dir)
 
         return train_data, val_data
+
+
+import sys
+def get_recursive_size(obj, visited=None) -> int:
+    """
+    Recursively compute the approximate memory footprint of a Python object,
+    including nested containers and dataclasses.
+
+    Args:
+        obj: The object to measure.
+        visited: A set of object IDs already visited (to avoid double-counting).
+    Returns:
+        int: The approximate size of 'obj' in bytes.
+    """
+    if visited is None:
+        visited = set()
+
+    obj_id = id(obj)
+    # If already visited this object, return 0 to avoid double-counting.
+    if obj_id in visited:
+        return 0
+    visited.add(obj_id)
+
+    # Shallow size
+    size = sys.getsizeof(obj)
+
+    # If it's a dataclass instance, convert to dict for deeper inspection
+    # (so we can recurse on its fields).
+    if dataclasses.is_dataclass(obj):
+        # Convert to a dict, then recurse on that dict.
+        obj_dict = dataclasses.asdict(obj)
+        size += get_recursive_size(obj_dict, visited)
+        return size
+
+    # If it's one of the common container types, recurse on its items.
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            size += get_recursive_size(k, visited)
+            size += get_recursive_size(v, visited)
+    elif isinstance(obj, (list, tuple, set)):
+        for item in obj:
+            size += get_recursive_size(item, visited)
+
+    return size
