@@ -5,10 +5,10 @@ import dask.dataframe as dd
 import pandas as pd
 from dask.diagnostics import ProgressBar
 
+from corebehrt.classes.dataset import MLMDataset, PatientDataset
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
-from corebehrt.classes.dataset import MLMDataset, PatientDataset
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
@@ -17,8 +17,8 @@ from corebehrt.functional.split import load_train_val_split, split_pids_into_tra
 from corebehrt.functional.truncate import truncate_patient
 from corebehrt.functional.utils import (
     get_background_length,
-    normalize_segments_for_patient,
     get_non_priority_tokens,
+    normalize_segments_for_patient,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -117,7 +117,9 @@ class DatasetPreparer:
         # TODO: pass pt_model_config and perform this check
         # max_segment(data, model_cfg.type_vocab_size)
         # Previously had issue with it
-
+        logger.info(
+            f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
+        )
         # save
         if self.cfg.get("save_processed_data", False):
             processed_dir = join(self.save_dir, "processed_data")
@@ -139,7 +141,6 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             ).compute()
-        print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
