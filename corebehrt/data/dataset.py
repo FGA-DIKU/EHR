@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 from dataclasses import dataclass
 from os.path import join
@@ -5,6 +6,7 @@ from typing import List
 
 import pandas as pd
 import torch
+from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 
 from corebehrt.data.mask import ConceptMasker
@@ -68,7 +70,10 @@ class PatientDataset:
         Returns:
             list: Results of applying the function to each patient.
         """
-        from joblib import Parallel, delayed
+
+        if n_jobs == -1:
+            n_jobs = multiprocessing.cpu_count()
+            print(f"Using {n_jobs} processors")
 
         return Parallel(n_jobs=n_jobs)(
             delayed(func)(p, **kwargs) for p in self.patients
