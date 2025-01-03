@@ -1,6 +1,7 @@
 from typing import List
 
 import pandas as pd
+from tqdm import tqdm
 
 from corebehrt.classes.dataset import PatientData
 
@@ -27,7 +28,10 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
     patients_data = []
 
     grouped = df.groupby("PID", sort=False)
-    for pid, group in grouped:
+    loop = tqdm(
+        grouped, total=len(grouped), desc="Converting to patient list", mininterval=10
+    )
+    for pid, group in loop:
         # Convert each column to a Python list
         concepts_list = group["concept"].tolist()
         abspos_list = group["abspos"].tolist()

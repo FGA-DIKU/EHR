@@ -60,21 +60,20 @@ class DatasetPreparer:
                 )
             ).compute()
 
-        logger.info("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
 
         # 3. Loading and processing outcomes
-        logger.info("Loading outcomes")
         outcomes = pd.read_csv(paths_cfg.outcome)
         exposures = pd.read_csv(paths_cfg.exposure)
 
+        logger.info("Handling outcomes")
         outcomehandler = OutcomeHandler(
             index_date=self.cfg.outcome.get("index_date", None),
         )
-        logger.info("Handling outcomes")
+
         index_dates, outcomes = outcomehandler.handle(
             data.get_pids(),
             outcomes=outcomes,
@@ -99,8 +98,10 @@ class DatasetPreparer:
         )
 
         # 8. Truncation
-        non_priority_tokens = get_non_priority_tokens(
-            vocab, data_cfg.get("low_priority_prefixes", None)
+        non_priority_tokens = (
+            None
+            if data_cfg.get("low_priority_prefixes", None) is None
+            else get_non_priority_tokens(vocab, data_cfg.low_priority_prefixes)
         )
         data.patients = data.process_in_parallel(
             truncate_patient,
@@ -150,11 +151,17 @@ class DatasetPreparer:
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
         )
         background_length = get_background_length(data, vocab)
+        non_priority_tokens = (
+            None
+            if data_cfg.get("low_priority_prefixes", None) is None
+            else get_non_priority_tokens(vocab, data_cfg.low_priority_prefixes)
+        )
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
+            non_priority_tokens=non_priority_tokens,
         )
         # 6. Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
