@@ -10,7 +10,7 @@ from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.classes.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.data.prepare_data import DatasetPreparer
-from corebehrt.data.split import get_n_splits_cv_pids
+from corebehrt.functional.split import get_n_splits_cv_pids
 from corebehrt.evaluation.utils import (
     compute_and_save_scores_mean_std,
     split_into_test_and_train_val_pids,
