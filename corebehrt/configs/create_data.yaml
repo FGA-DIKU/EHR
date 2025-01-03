@@ -42,7 +42,6 @@ tokenizer:
    # M: 4 # medication
 
 excluder:
-  min_len: 2
   min_age: -1
   max_age: 120
 
