@@ -80,6 +80,7 @@ class PatientDataset:
         Args:
             save_dir (str): Directory path to save the files.
         """
+        os.makedirs(save_dir, exist_ok=True)
         torch.save(self.patients, join(save_dir, f"patients{suffix}.pt"))
         if not os.path.exists(join(save_dir, "vocabulary.pt")):
             torch.save(self.vocabulary, join(save_dir, "vocabulary.pt"))
