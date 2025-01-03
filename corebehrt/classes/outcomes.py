@@ -3,19 +3,15 @@ import operator
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
-from corebehrt.data.dataset import PatientDataset
-from corebehrt.functional.exclude import exclude_pids_from_data
 from corebehrt.functional.filter import filter_events_by_abspos
 from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     get_abspos_from_origin_point,
     get_first_event_by_pid,
-    get_pids,
     remove_missing_timestamps,
 )
 

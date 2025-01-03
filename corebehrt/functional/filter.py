@@ -1,5 +1,4 @@
-import operator
-from typing import List, Union
+from typing import List
 
 import dask.dataframe as dd
 import pandas as pd
@@ -38,21 +37,31 @@ def filter_patients_by_age_at_last_event(
     return filter_table_by_pids(data, pids_in_age_range)
 
 
-def censor_data(data: dd.DataFrame, censor_dates: pd.Series) -> dd.DataFrame:
+def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     """
-    Censors the data by removing all events that occur after the censor_dates.
-    args:
-        data: dd.DataFrame (needs to have abspos column)
-        censor_dates: pd.Series (index: PID, values: censor_dates as abspos)
+    Censors a patient's data by keeping only events that occur before or at the censor date.
+
+    Args:
+        patient: The patient data to censor
+        censor_date: The cutoff date (in absolute time units) after which events should be removed
+
+    Returns:
+        The censored patient data with only events before or at the censor date
     """
-    return filter_events_by_abspos(data, censor_dates, operator.le)
+    censor_date = censor_dates[patient.pid]
+    keep_indices = set([i for i, a in enumerate(patient.abspos) if a <= censor_date])
+    patient.concepts = [patient.concepts[i] for i in keep_indices]
+    patient.abspos = [patient.abspos[i] for i in keep_indices]
+    patient.segments = [patient.segments[i] for i in keep_indices]
+    patient.ages = [patient.ages[i] for i in keep_indices]
+    return patient
 
 
 def filter_events_by_abspos(
-    data: dd.DataFrame,
+    events: pd.DataFrame,
     abspos_series: pd.Series,
     comparison_function: callable,
-) -> dd.DataFrame:
+) -> pd.DataFrame:
     """
     Filters the data based on a timestamp per PID using the specified comparison operator.
 
@@ -68,22 +77,9 @@ def filter_events_by_abspos(
     abspos_df = abspos_series.reset_index()
     abspos_df.columns = ["PID", "abspos_ref"]
 
-    merged_df = inner_merge_tables(data, abspos_df, "PID")
+    merged_df = pd.merge(events, abspos_df, on="PID", how="inner")
     filtered_df = merged_df[
         comparison_function(merged_df["abspos"], merged_df["abspos_ref"])
     ]
 
     return filtered_df.drop(columns=["abspos_ref"])
-
-
-def inner_merge_tables(
-    df1: Union[pd.DataFrame, dd.DataFrame], df2: pd.DataFrame, on: str
-) -> dd.DataFrame:
-    """
-    Merges two tables on a common column using an inner join.
-    The first dataframe can be either a pandas or dask DataFrame.
-    """
-    if isinstance(df1, pd.DataFrame):
-        return pd.merge(df1, df2, on=on, how="inner")
-    else:
-        return dd.merge(df1, df2, on=on, how="inner")
