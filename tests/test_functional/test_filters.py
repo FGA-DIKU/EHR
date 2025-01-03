@@ -143,6 +143,25 @@ class TestFilterEventsByAbspos(unittest.TestCase):
         result = filter_events_by_abspos(events, abspos_series, operator.le)
         self.assertEqual(len(result), 0)
 
+    def test_filter_events_by_abspos_unsorted(self):
+        # Test with unsorted abspos values
+        events = pd.DataFrame(
+            {
+                "PID": ["A", "A", "A", "B"],
+                "abspos": [3.0, 1.0, 2.0, 5.0],  # Not in increasing order
+                "info": [101, 102, 103, 104],
+            }
+        )
+        abspos_series = pd.Series([2.0, 4.0], index=["A", "B"])
+
+        result = filter_events_by_abspos(events, abspos_series, operator.le)
+
+        # Should still work correctly regardless of input order
+        # For A: abspos <= 2.0 => keeps events with abspos 1.0 and 2.0
+        # For B: abspos <= 4.0 => no events kept
+        self.assertEqual(len(result), 2)
+        self.assertListEqual(sorted(result["abspos"].tolist()), [1.0, 2.0])
+
 
 if __name__ == "__main__":
     unittest.main()
