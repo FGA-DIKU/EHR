@@ -1,40 +1,14 @@
 from typing import List
 
-import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.classes.dataset import PatientData
-from corebehrt.functional.exclude import filter_table_by_pids
 
 
 def exclude_short_sequences(
     patients: List[PatientData], min_len: int
 ) -> List[PatientData]:
     return [p for p in patients if len(p.concepts) >= min_len]
-
-
-def filter_patients_by_age_at_last_event(
-    data: dd.DataFrame, min_age: int, max_age: int
-) -> dd.DataFrame:
-    """
-    Filters the data to include only patients whose age at their last event falls within the specified age range.
-
-    Args:
-        data: Dask DataFrame with 'PID' and 'age' columns.
-              The 'age' column represents the age of the patient at each event.
-        min_age: The minimum age (inclusive) of patients to include.
-        max_age: The maximum age (inclusive) of patients to include.
-
-    Returns:
-        A Dask DataFrame containing only events for patients whose age at their last event is within the specified range.
-    """
-    last_events = data.groupby("PID").last().reset_index()
-
-    patients_in_age_range = last_events[
-        (last_events["age"] >= min_age) & (last_events["age"] <= max_age)
-    ]
-    pids_in_age_range = patients_in_age_range["PID"].compute()
-    return filter_table_by_pids(data, pids_in_age_range)
 
 
 def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:

@@ -9,7 +9,6 @@ from dask.diagnostics import ProgressBar
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
-from corebehrt.common.saver import Saver
 from corebehrt.classes.dataset import MLMDataset, PatientDataset
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
@@ -34,7 +33,6 @@ class DatasetPreparer:
         self.loader = FeaturesLoader(cfg)
 
         self.save_dir = cfg.paths.model
-        self.saver = Saver(self.save_dir)
 
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""

@@ -107,7 +107,6 @@ class EHRTrainer:
             raise ValueError("effective_batch_size must be a multiple of batch_size")
 
     def _initialize_early_stopping(self):
-        self.best_val_loss = float("inf")  # Best observed validation loss
         early_stopping = self.cfg.trainer_args.get("early_stopping", False)
         self.early_stopping = True if early_stopping else False
         self.early_stopping_patience = (

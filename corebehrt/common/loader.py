@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 
 VOCABULARY_FILE = "vocabulary.pt"
 CHECKPOINT_FOLDER = "checkpoints"
-VAL_RATIO = 0.2
 
 
 def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> Tuple:
@@ -43,46 +42,9 @@ class FeaturesLoader:
         self.paths_cfg = cfg.paths
         self.cfg = cfg
 
-    def load_features_and_pids(self, tokenized_files: list, tokenized_pids_files: list):
-        """Load features and pids from multiple files."""
-        features = {}
-        pids = []
-        for tokenized_file, tokenized_pids_file in zip(
-            tokenized_files, tokenized_pids_files
-        ):
-            features_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_file))
-            pids_temp = torch.load(join(self.paths_cfg.tokenized, tokenized_pids_file))
-
-            # Concatenate features
-            for key in features_temp.keys():
-                features.setdefault(key, []).extend(features_temp[key])
-
-            # Concatenate pids
-            pids.extend(pids_temp)
-
-        return features, pids
-
     def load_vocabulary(self):
         """Load vocabulary from file."""
         return torch.load(join(self.paths_cfg.tokenized, VOCABULARY_FILE))
-
-    def load_outcomes_and_exposures(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Load outcomes and censoring timestamps from file.
-        If no censoring timestamps provided, use outcomes as censoring timestamps.
-        """
-        logger.info(f"Load outcomes from {self.paths_cfg.outcomes}")
-        outcomes = pd.read_csv(self.paths_cfg.outcomes)
-        if not self.paths_cfg.get("exposure", False):
-            logger.warning(
-                "No exposure file provided. Using outcomes as censoring timestamps."
-            )
-            return outcomes, outcomes.copy(deep=True)
-
-        logger.info(f"Load exposure timestamps from {self.paths_cfg.exposure}")
-        exposures = pd.read_csv(self.paths_cfg.exposure)
-
-        return outcomes, exposures
 
 
 class ModelLoader:
@@ -139,36 +101,6 @@ class ModelLoader:
                 join(self.model_path, CHECKPOINT_FOLDER)
             )
         return self.checkpoint_epoch
-
-
-def load_exclude_pids(cfg) -> List:
-    """
-    Loads pids from file
-    Excluded pids
-    """
-    if cfg.get("exclude_pids", None) is None:
-        return []
-    return _load_pids(cfg.exclude_pids)
-
-
-def load_assigned_pids(cfg) -> Dict:
-    """Loads pids which should be assigned to certain splits."""
-    if cfg.get("assigned_pids", None) is None:
-        return {}
-    assigned_pids = {}
-    for split, files in cfg.assigned_pids.items():
-        assigned_pids[split] = _load_pids(files)
-    return assigned_pids
-
-
-def _load_pids(files: Union[List, str]) -> List:
-    """Loads pids from multiple files or one file. Doesn't preserve order."""
-    if isinstance(files, str):
-        return set(torch.load(files))
-    pids = set()
-    for file in files:
-        pids.update(set(torch.load(file)))
-    return pids
 
 
 def get_pids_file(split_dir: str, mode: str) -> str:

@@ -85,13 +85,6 @@ def get_abspos_from_origin_point(
         )
 
 
-def get_time_difference(now: pd.Series, then: pd.Series) -> pd.Series:
-    """Get the time difference in hours"""
-    if len(now) == 0:
-        return pd.Series([])
-    return (now - then).dt.days / 365.25
-
-
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
     Assumes that the table has a column named PID.
@@ -114,20 +107,6 @@ def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
     Get the first event for each PID in the table.
     """
     return df.groupby("PID")["abspos"].min()
-
-
-def select_random_subset(data: dd.DataFrame, n: int) -> dd.DataFrame:
-    """
-    Assumes that the table has a column named PID.
-    Returns a new table with a random subset of n PIDs.
-    """
-    if n >= len(data):
-        return data
-    pids = data["PID"].unique().compute().tolist()
-    random.seed(42)
-    random.shuffle(pids)
-    pids = pids[:n]
-    return filter_table_by_pids(data, pids)
 
 
 def truncate_patient(
@@ -255,15 +234,6 @@ def prioritized_truncate_patient(
 
     patient.drop(columns=["non_priority"], inplace=True)
     return truncate_patient(patient, background_length, max_len, sep_token)
-
-
-def get_gender_token(gender: str, vocabulary: dict) -> int:
-    """
-    Retrieves the token for the specified gender from the vocabulary.
-    Assumes that the gender starts with BG_GENDER_.
-    """
-    gender_key = f"BG_GENDER_{gender}"
-    return vocabulary[gender_key]
 
 
 def get_pids(data: dd.DataFrame) -> List[str]:

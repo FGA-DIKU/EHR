@@ -1,13 +1,8 @@
 """ Excluder class for excluding incorrect events and patients """
 
-from typing import Optional
-
 from dask import dataframe as dd
 
-from corebehrt.functional.exclude import (
-    exclude_incorrect_event_ages,
-    exclude_pids_from_data,
-)
+from corebehrt.functional.exclude import exclude_incorrect_event_ages
 
 
 class Excluder:
@@ -26,9 +21,3 @@ class Excluder:
     def exclude_incorrect_events(self, df: dd.DataFrame) -> dd.DataFrame:
         """Exclude events with incorrect ages (outside defined range)"""
         return exclude_incorrect_event_ages(df, self.min_age, self.max_age)
-
-    def exclude_pids(
-        self, data: dd.DataFrame, pids_path: Optional[str] = None
-    ) -> dd.DataFrame:
-        """Exclude pids from data."""
-        return exclude_pids_from_data(data, pids_path)
