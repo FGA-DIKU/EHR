@@ -13,7 +13,7 @@ paths:
   # restart_model: ... # Use for restarting from checkpoint
 
 ## OUTPUTS
-  model: ./outputs/pretraining2 # Save model/outputs to this folder
+  model: ./outputs/pretraining # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 data:
