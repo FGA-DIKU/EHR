@@ -1,18 +1,13 @@
 """ Random utils, should be structered later """
 
-import logging
+from dataclasses import fields, replace
 from datetime import datetime
 from typing import List, Set, Union
-from dataclasses import replace, fields
 
-# New stuff
 import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.classes.dataset import PatientData
-
-logger = logging.getLogger(__name__)
-import random
 
 
 def normalize_segments_for_patient(patient: PatientData) -> PatientData:
