@@ -9,4 +9,4 @@ azure_job_config.yaml
 corebehrt/sandbox
 /profiling
 /tmp
-corebert/main/create_data_profiling.py
+corebehrt/main/create_data_profiling.py
