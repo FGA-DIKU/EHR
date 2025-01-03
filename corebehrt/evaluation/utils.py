@@ -51,10 +51,3 @@ def compute_and_save_scores_mean_std(
     scores_mean_std = scores.groupby("metric")["value"].agg(["mean", "std"])
     date = datetime.now().strftime("%Y%m%d-%H%M")
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
-
-
-def split_into_test_and_train_val_pids(pids: list, test_split: float):
-    test_pids = np.random.choice(pids, size=int(len(pids) * test_split), replace=False)
-    set_test_pids = set(test_pids)
-    train_val_pids = [pid for pid in pids if pid not in set_test_pids]
-    return test_pids, train_val_pids
