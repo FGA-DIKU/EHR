@@ -2,6 +2,7 @@
 
 import logging
 
+from corebehrt.classes.prepare_data import DatasetPreparer
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import (
@@ -10,7 +11,6 @@ from corebehrt.common.loader import (
 )
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
-from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
