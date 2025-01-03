@@ -13,7 +13,7 @@ from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
 from corebehrt.data.dataset import MLMDataset, PatientDataset
 from corebehrt.functional.convert import dataframe_to_patient_list
-from corebehrt.functional.filter import censor_data, exclude_short_sequences
+from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
@@ -23,6 +23,7 @@ from corebehrt.functional.utils import (
     truncate_patient,
 )
 import dataclasses
+
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 VOCABULARY_FILE = "vocabulary.pt"
@@ -82,10 +83,8 @@ class DatasetPreparer:
 
         # 4. Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
-        data = censor_data(
-            data,
-            censor_dates,
-        )
+        data.patients = data.process_in_parallel(censor_patient, censor_dates)
+
         background_length = get_background_length(data, vocab)
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
@@ -113,9 +112,10 @@ class DatasetPreparer:
 
         # save
         if self.cfg.get("save_processed_data", False):
-            data.save(join(self.save_dir, "processed_data"))
-            outcomes.to_csv(join(self.save_dir, "outcomes.csv"), index=False)
-            index_dates.to_csv(join(self.save_dir, "index_dates.csv"), index=False)
+            processed_dir = join(self.save_dir, "processed_data")
+            data.save(processed_dir)
+            outcomes.to_csv(join(processed_dir, "outcomes.csv"), index=False)
+            index_dates.to_csv(join(processed_dir, "index_dates.csv"), index=False)
 
         return data
 
@@ -189,6 +189,8 @@ class DatasetPreparer:
 
 
 import sys
+
+
 def get_recursive_size(obj, visited=None) -> int:
     """
     Recursively compute the approximate memory footprint of a Python object,
