@@ -2,7 +2,6 @@ import os
 import random
 import tempfile
 import unittest
-from typing import List
 
 import numpy as np
 import torch
