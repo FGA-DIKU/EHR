@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 
 def get_tqdm(dataloader: DataLoader) -> tqdm:
-    return tqdm(dataloader, total=len(dataloader))
+    return tqdm(dataloader, total=len(dataloader), mininterval=10)
 
 
 def compute_avg_metrics(metric_values: dict):
