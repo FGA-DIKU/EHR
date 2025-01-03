@@ -189,6 +189,6 @@ def load_and_select_splits(
     logger.info("Load and select pids")
     train_pids = torch.load(get_pids_file(split_dir, "train"))
     val_pids = torch.load(get_pids_file(split_dir, "val"))
-    train_data = data.select_data_subset_by_pids(train_pids, mode="train")
-    val_data = data.select_data_subset_by_pids(val_pids, mode="val")
+    train_data = data.filter_by_pids(train_pids)
+    val_data = data.filter_by_pids(val_pids)
     return train_data, val_data
