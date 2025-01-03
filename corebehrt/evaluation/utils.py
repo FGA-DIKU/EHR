@@ -1,26 +1,21 @@
 import os
 import numpy as np
 import pandas as pd
-from typing import Tuple
 from os.path import join
 from datetime import datetime
-
+from typing import List
 from torch.utils.data import WeightedRandomSampler
 
-from corebehrt.data.dataset import PatientDataset
 
-
-def get_sampler(cfg, train_dataset, outcomes):
+def get_sampler(cfg, outcomes: List[int]):
     """Get sampler for training data.
     sample_weight: float. Adjusts the number of samples in the positive class.
     """
     if cfg.trainer_args["sampler"]:
-        labels = pd.Series(outcomes).notna().astype(int)
-        value_counts = labels.value_counts()
-        label_weight = inverse_sqrt(value_counts)
-        weights = labels.map(label_weight).values
+        _, counts = np.unique(np.array(outcomes), return_counts=True)
+        label_weight = inverse_sqrt(counts)
         sampler = WeightedRandomSampler(
-            weights=weights, num_samples=len(train_dataset), replacement=True
+            weights=label_weight, num_samples=len(outcomes), replacement=True
         )
         return sampler
     else:
@@ -58,31 +53,8 @@ def compute_and_save_scores_mean_std(
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
 
 
-def split_into_test_data_and_train_val_indices(
-    cfg, data: PatientDataset
-) -> Tuple[PatientDataset, list]:
-    """Split data into test and train_val indices. And save test set."""
-    indices = list(range(len(data.get_pids())))
-    test_split = cfg.data.get("test_split", None)
-    if test_split is not None:
-        test_indices, train_val_indices = split_test_set(indices, test_split)
-    else:
-        test_indices = []
-        train_val_indices = indices
-    test_data = (
-        PatientDataset()
-        if len(test_indices) == 0
-        else PatientDataset([data.patients[i] for i in test_indices], data.vocabulary)
-    )
-    return test_data, train_val_indices
-
-
-def split_test_set(indices: list, test_split: float) -> Tuple[list, list]:
-    """Split intro test and train_val indices"""
-    np.random.seed(42)
-    test_indices = np.random.choice(
-        indices, size=int(len(indices) * test_split), replace=False
-    )
-    test_indices_set = set(test_indices)
-    train_val_indices = [i for i in indices if i not in test_indices_set]
-    return test_indices, train_val_indices
+def split_into_test_and_train_val_pids(pids: list, test_split: float):
+    test_pids = np.random.choice(pids, size=int(len(pids) * test_split), replace=False)
+    set_test_pids = set(test_pids)
+    train_val_pids = [pid for pid in pids if pid not in set_test_pids]
+    return test_pids, train_val_pids
