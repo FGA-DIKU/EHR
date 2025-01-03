@@ -1,5 +1,4 @@
 import logging
-import sys
 import time
 from os.path import join
 
@@ -22,7 +21,6 @@ from corebehrt.functional.utils import (
     normalize_segments_for_patient,
     truncate_patient,
 )
-import dataclasses
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -41,7 +39,7 @@ class DatasetPreparer:
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
         predefined_splits = self.cfg.paths.get("predefined_splits", False)
-        train_data, val_data = self._prepare_mlm_features(predefined_splits)
+        train_data, val_data = self._prepare_mlm_features(predefined_splits, val_ratio)
         train_dataset = MLMDataset(
             train_data.patients, train_data.vocabulary, **self.cfg.data.dataset
         )
@@ -67,7 +65,10 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
+        # select random subset of patients
+        import random
 
+        data.patients = random.sample(data.patients, 100)
         # 3. Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
         exposures = pd.read_csv(paths_cfg.exposure)
@@ -81,10 +82,12 @@ class DatasetPreparer:
             exposures=exposures,
         )
 
+        data = data.assign_outcomes(outcomes)
         # 4. Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
-        data.patients = data.process_in_parallel(censor_patient, censor_dates)
-
+        data.patients = data.process_in_parallel(
+            censor_patient, censor_dates=censor_dates
+        )
         background_length = get_background_length(data, vocab)
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
@@ -104,8 +107,7 @@ class DatasetPreparer:
 
         # 9. Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
-
-        # Check if max segment is larger than type_vocab_size
+        # Check if max segment is larger than type_vocab b_size
         # TODO: pass pt_model_config and perform this check
         # max_segment(data, model_cfg.type_vocab_size)
         # Previously had issue with it
@@ -131,19 +133,12 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             ).compute()
-        print(
-            f"Memory usage of dataframe: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
-        )
         print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
         print(f"Number of patients: {len(patient_list)}")
-        print(
-            f"Memory usage of patient list: {get_recursive_size(patient_list) / 1024**2:.2f} MB"
-        )
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
         print("Excluding short sequences")
-
         # 3. Exclude short sequences
         start_time = time.time()
         data.patients = exclude_short_sequences(
@@ -186,49 +181,3 @@ class DatasetPreparer:
         save_pids_splits(train_data, val_data, self.save_dir)
 
         return train_data, val_data
-
-
-import sys
-
-
-def get_recursive_size(obj, visited=None) -> int:
-    """
-    Recursively compute the approximate memory footprint of a Python object,
-    including nested containers and dataclasses.
-
-    Args:
-        obj: The object to measure.
-        visited: A set of object IDs already visited (to avoid double-counting).
-    Returns:
-        int: The approximate size of 'obj' in bytes.
-    """
-    if visited is None:
-        visited = set()
-
-    obj_id = id(obj)
-    # If already visited this object, return 0 to avoid double-counting.
-    if obj_id in visited:
-        return 0
-    visited.add(obj_id)
-
-    # Shallow size
-    size = sys.getsizeof(obj)
-
-    # If it's a dataclass instance, convert to dict for deeper inspection
-    # (so we can recurse on its fields).
-    if dataclasses.is_dataclass(obj):
-        # Convert to a dict, then recurse on that dict.
-        obj_dict = dataclasses.asdict(obj)
-        size += get_recursive_size(obj_dict, visited)
-        return size
-
-    # If it's one of the common container types, recurse on its items.
-    if isinstance(obj, dict):
-        for k, v in obj.items():
-            size += get_recursive_size(k, visited)
-            size += get_recursive_size(v, visited)
-    elif isinstance(obj, (list, tuple, set)):
-        for item in obj:
-            size += get_recursive_size(item, visited)
-
-    return size
