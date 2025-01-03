@@ -105,7 +105,7 @@ class TestCreateData(TestMainScript):
 
             patient_list = dataframe_to_patient_list(tokenised_features)
             for patient in patient_list:
-                concepts = patient["concept"]
+                concepts = patient.concepts
                 self.assertTrue(concepts[0] == vocab["[CLS]"])
                 self.assertTrue(concepts[1] in bg_tokens)
 
