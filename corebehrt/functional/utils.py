@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime
 from typing import List, Set, Union
+from dataclasses import asdict, replace, fields
 
 # New stuff
 import dask.dataframe as dd
@@ -133,30 +134,30 @@ def truncate_patient(
     patient: PatientData, background_length: int, max_len: int, sep_token: str
 ) -> PatientData:
     """
-    Truncate patient to max_len, keeping background.
+    Truncate patient to max_len, preserving 'background_length' items at the start
+    and the remainder from the end. If the boundary item is a SEP token, shift by 1.
     """
-    concepts = list(patient.concepts)
-    length = len(concepts)
-
+    length = len(patient.concepts)
     if length <= max_len:
         return patient  # No truncation needed
 
-    truncation_length = max_len - background_length
+    # Number of items from the tail portion
+    tail_len = max_len - background_length
 
-    # Check if the boundary item is a SEP token
-    if concepts[-truncation_length] == sep_token:
-        truncation_length -= 1
+    # Shift boundary if the boundary item is a SEP token
+    if patient.concepts[-tail_len] == sep_token:
+        tail_len -= 1
 
-    # Create a new PatientData with truncated lists
-    return PatientData(
-        pid=patient.pid,
-        concepts=patient.concepts[:background_length]
-        + patient.concepts[-truncation_length:],
-        abspos=patient.abspos[:background_length] + patient.abspos[-truncation_length:],
-        segments=patient.segments[:background_length]
-        + patient.segments[-truncation_length:],
-        ages=patient.ages[:background_length] + patient.ages[-truncation_length:],
-    )
+    truncated_attrs = {}
+    # Only iterate over the real dataclass fields
+    for field_ in fields(patient):
+        value = getattr(patient, field_.name)
+        if isinstance(value, list):
+            truncated_attrs[field_.name] = value[:background_length] + value[-tail_len:]
+        else:
+            truncated_attrs[field_.name] = value
+
+    return replace(patient, **truncated_attrs)
 
 
 def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
