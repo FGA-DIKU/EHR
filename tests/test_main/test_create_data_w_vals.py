@@ -84,12 +84,25 @@ class TestCreateData(TestMainScript):
 
         # 5. Check tokenisation
         for mode in ["pretrain", "finetune", "test"]:
+            # Load the parquet file and immediately convert to pandas DataFrame
             tokenised_features = dd.read_parquet(
                 join(
                     self.tokenized_dir,
                     f"features_{mode}",
                 )
-            )
+            ).compute()
+
+            # Debug print to verify DataFrame structure
+            print(f"Columns in DataFrame: {tokenised_features.columns}")
+            print(f"First few rows:\n{tokenised_features.head()}")
+
+            # Ensure required columns exist
+            required_columns = ["PID", "concept", "abspos", "segment", "age"]
+            for col in required_columns:
+                self.assertIn(
+                    col, tokenised_features.columns, f"Missing required column: {col}"
+                )
+
             patient_list = dataframe_to_patient_list(tokenised_features)
             for patient in patient_list:
                 concepts = patient["concept"]
