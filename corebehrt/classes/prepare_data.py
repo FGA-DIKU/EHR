@@ -59,34 +59,41 @@ class DatasetPreparer:
                     "features_finetune",
                 )
             ).compute()
-        print("Converting to patient list")
-        start_time = time.time()
+
+        logger.info("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
-        print(f"Converting to patient list took {time.time() - start_time:.2f} seconds")
+        logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
 
         # 3. Loading and processing outcomes
+        logger.info("Loading outcomes")
         outcomes = pd.read_csv(paths_cfg.outcome)
         exposures = pd.read_csv(paths_cfg.exposure)
 
         outcomehandler = OutcomeHandler(
             index_date=self.cfg.outcome.get("index_date", None),
         )
+        logger.info("Handling outcomes")
         index_dates, outcomes = outcomehandler.handle(
             data.get_pids(),
             outcomes=outcomes,
             exposures=exposures,
         )
 
+        logger.info("Assigning outcomes")
         data = data.assign_outcomes(outcomes)
+
         # 4. Data censoring
+        logger.info("Censoring data")
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
+
         background_length = get_background_length(data, vocab)
         # 3. Exclude short sequences
+        logger.info("Excluding short sequences")
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + background_length,
@@ -94,7 +101,7 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-
+        start_time = time.time()
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,
@@ -103,6 +110,7 @@ class DatasetPreparer:
         )
 
         # 9. Normalize segments
+        logger.info("Normalizing segments")
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Check if max segment is larger than type_vocab b_size
         # TODO: pass pt_model_config and perform this check
@@ -132,21 +140,15 @@ class DatasetPreparer:
             ).compute()
         print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
-        print(f"Number of patients: {len(patient_list)}")
+        logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
-        print("Excluding short sequences")
+        logger.info("Excluding short sequences")
         # 3. Exclude short sequences
-        start_time = time.time()
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
         )
-        print(
-            f"Time to exclude short sequences: {time.time() - start_time:.2f} seconds"
-        )
-        print("Truncating data")
-        # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
         start_time = time.time()
@@ -156,12 +158,10 @@ class DatasetPreparer:
             background_length=background_length,
             sep_token=vocab["[SEP]"],
         )
-        print(f"Time to truncate data: {time.time() - start_time:.2f} seconds")
         # 6. Normalize segments
-        start_time = time.time()
+        logger.info("Normalizing segments")
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
-        print(f"Time to normalize segments: {time.time() - start_time:.2f} seconds")
-        print(
+        logger.info(
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
         )
         # Save
