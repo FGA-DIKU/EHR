@@ -65,10 +65,7 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
-        # select random subset of patients
-        import random
 
-        data.patients = random.sample(data.patients, 100)
         # 3. Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
         exposures = pd.read_csv(paths_cfg.exposure)
