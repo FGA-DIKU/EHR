@@ -1,5 +1,4 @@
 import logging
-import time
 from os.path import join
 
 import dask.dataframe as dd
@@ -15,10 +14,11 @@ from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
+from corebehrt.functional.truncate import truncate_patient
 from corebehrt.functional.utils import (
     get_background_length,
     normalize_segments_for_patient,
-    truncate_patient,
+    get_non_priority_tokens,
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -101,12 +101,15 @@ class DatasetPreparer:
 
         # 8. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
-        start_time = time.time()
+        non_priority_tokens = get_non_priority_tokens(
+            vocab, data_cfg.get("low_priority_prefixes", None)
+        )
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
+            non_priority_tokens=non_priority_tokens,
         )
 
         # 9. Normalize segments
@@ -151,7 +154,6 @@ class DatasetPreparer:
         )
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
-        start_time = time.time()
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,

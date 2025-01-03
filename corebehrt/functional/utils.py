@@ -1,6 +1,6 @@
 """ Random utils, should be structered later """
 
-from dataclasses import fields, replace
+from dataclasses import asdict, fields
 from datetime import datetime
 from typing import List, Set, Union
 
@@ -104,37 +104,7 @@ def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
     return df.groupby("PID")["abspos"].min()
 
 
-def truncate_patient(
-    patient: PatientData, background_length: int, max_len: int, sep_token: str
-) -> PatientData:
-    """
-    Truncate patient to max_len, preserving 'background_length' items at the start
-    and the remainder from the end. If the boundary item is a SEP token, shift by 1.
-    """
-    length = len(patient.concepts)
-    if length <= max_len:
-        return patient  # No truncation needed
-
-    # Number of items from the tail portion
-    tail_len = max_len - background_length
-
-    # Shift boundary if the boundary item is a SEP token
-    if patient.concepts[-tail_len] == sep_token:
-        tail_len -= 1
-
-    truncated_attrs = {}
-    # Only iterate over the real dataclass fields
-    for field_ in fields(patient):
-        value = getattr(patient, field_.name)
-        if isinstance(value, list):
-            truncated_attrs[field_.name] = value[:background_length] + value[-tail_len:]
-        else:
-            truncated_attrs[field_.name] = value
-
-    return replace(patient, **truncated_attrs)
-
-
-def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
+def get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
     """
     Get tokens that start with low_priority_prefixes.
     """
@@ -143,97 +113,6 @@ def _get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str])
         for k, v in vocabulary.items()
         if any(k.startswith(prefix) for prefix in low_priority_prefixes)
     }
-
-
-def _get_non_priority_column(
-    patient: pd.DataFrame, non_priority_tokens: set
-) -> pd.DataFrame:
-    """
-    Add non_priority column to patient.
-    """
-    non_priority_col = patient["concept"].isin(non_priority_tokens)
-    return non_priority_col
-
-
-def _drop_non_priority_tokens(
-    patient: pd.DataFrame,
-    non_priority_tokens: set,
-    truncation_length: int,
-    background_length: int,
-) -> pd.DataFrame:
-    """
-    Drop non-priority tokens from patient, keeping truncation_length - background_length tokens.
-    """
-    non_priority_indices = patient[patient["non_priority"]].index
-
-    if len(patient) - len(non_priority_indices) > truncation_length:
-        return patient.drop(non_priority_indices)
-    else:
-        non_priority_truncation_len = truncation_length - (
-            len(patient) - len(non_priority_indices) - background_length
-        )
-        return patient.drop(non_priority_indices[:-non_priority_truncation_len])
-
-
-def _filter_invalid_positions(
-    patient: pd.DataFrame, low_priority_prefixes: List[str]
-) -> pd.DataFrame:
-    """
-    Filter out patients where subunits of low_priority_prefixes are not all present.
-    """
-    unit_len = len(low_priority_prefixes)
-    positions = patient[patient["non_priority"]]["abspos"]
-    invalid_positions = (
-        positions.groupby(positions).filter(lambda x: len(x) != unit_len).index
-    )
-    if not invalid_positions.empty:
-        return patient.drop(invalid_positions)
-    return patient
-
-
-def prioritized_truncate_patient(
-    patient: pd.DataFrame,
-    background_length: int,
-    max_len: int,
-    sep_token: str,
-    low_priority_prefixes: List[str],
-    vocabulary: dict,
-    unit: bool = False,
-) -> pd.DataFrame:
-    """
-    Truncate patient to max_len, keeping background, while prioritizing non-low_priority_prefixes.
-    If unit is True, low_priority_prefixes are treated as a single unit, and all of them are kept or removed.
-
-    Args:
-        patient (pd.DataFrame): The patient data to be truncated.
-        background_length (int): The length of the background to keep.
-        max_len (int): The maximum length of the truncated patient data.
-        sep_token (str): The separator token used in the patient data.
-        low_priority_prefixes (List[str]): List of prefixes that denote low priority concepts.
-        vocabulary (dict): A dictionary mapping concept names to their corresponding tokens.
-        unit (bool): If True, treat low_priority_prefixes as a single unit.
-    Returns:
-        pd.DataFrame: The truncated patient data.
-    """
-    if len(patient["concept"]) <= max_len:
-        return patient
-
-    truncation_length = max_len - background_length
-    non_priority_tokens = _get_non_priority_tokens(vocabulary, low_priority_prefixes)
-    patient["non_priority"] = _get_non_priority_column(patient, non_priority_tokens)
-    patient = _drop_non_priority_tokens(
-        patient, non_priority_tokens, truncation_length, background_length
-    )
-    if unit:
-        patient = _filter_invalid_positions(patient, low_priority_prefixes)
-
-    patient.drop(columns=["non_priority"], inplace=True)
-    return truncate_patient(patient, background_length, max_len, sep_token)
-
-
-def get_pids(data: dd.DataFrame) -> List[str]:
-    """Get unique pids from data."""
-    return data["PID"].unique().compute().tolist()
 
 
 def check_concepts_columns(df: dd.DataFrame) -> None:
@@ -256,3 +135,22 @@ def check_required_columns(
     if not required_columns.issubset(set(df.columns)):
         missing_columns = required_columns - set(df.columns)
         raise ValueError(f"Missing columns in {type_}: {missing_columns}")
+
+
+def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> PatientData:
+    """
+    Return a new PatientData containing only the rows at `keep_indices`
+    for all list-type attributes. Non-list attributes remain unchanged.
+    """
+    # Convert the PatientData instance to a dictionary
+    data = asdict(patient)
+
+    # For each field in the dataclass, if the value is a list, subset it.
+    # Otherwise, keep it as is.
+    for f in fields(PatientData):
+        val = data[f.name]
+        if isinstance(val, list):
+            data[f.name] = [val[i] for i in keep_indices]
+
+    # Recreate a new PatientData from the updated dictionary
+    return PatientData(**data)
