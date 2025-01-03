@@ -8,7 +8,7 @@ from corebehrt.main.create_data import main_data
 from corebehrt.common.setup import DATA_CFG
 
 from .base import TestMainScript
-from corebehrt.functional.convert import convert_to_sequences
+from corebehrt.functional.convert import dataframe_to_patient_list
 
 
 class TestCreateData(TestMainScript):
@@ -90,12 +90,13 @@ class TestCreateData(TestMainScript):
                     f"features_{mode}",
                 )
             )
-            sequences, _ = convert_to_sequences(tokenised_features)
-            for cons, positions in zip(sequences["concept"], sequences["abspos"]):
-                self.assertTrue(cons[0] == vocab["[CLS]"])
-                self.assertTrue((cons[1] in bg_tokens))
+            patient_list = dataframe_to_patient_list(tokenised_features)
+            for patient in patient_list:
+                concepts = patient["concept"]
+                self.assertTrue(concepts[0] == vocab["[CLS]"])
+                self.assertTrue(concepts[1] in bg_tokens)
 
-                index_vals = [i for i, x in enumerate(cons) if x in val_tokens]
+                index_vals = [i for i, x in enumerate(concepts) if x in val_tokens]
                 for i in range(len(index_vals) - 1):
                     self.assertNotEqual(
                         index_vals[i] + 1,

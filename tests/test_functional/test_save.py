@@ -1,11 +1,12 @@
-import unittest
-import dask.dataframe as dd
-import torch
 import os
-import tempfile
 import shutil
+import tempfile
+import unittest
+
+import torch
+
+from corebehrt.classes.dataset import PatientData, PatientDataset
 from corebehrt.functional.save import save_pids_splits
-import pandas as pd
 
 
 class TestSaveFunctions(unittest.TestCase):
@@ -19,14 +20,23 @@ class TestSaveFunctions(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     def test_save_pids_splits(self):
-        mock_train_df = dd.from_pandas(
-            pd.DataFrame({"PID": ["pid1", "pid2"]}), npartitions=1
+        # Create mock PatientDataset instances with PatientData objects
+        mock_train_dataset = PatientDataset(
+            patients=[
+                PatientData(pid="pid1", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid="pid2", concepts=[], abspos=[], segments=[], ages=[]),
+            ],
+            vocabulary={},
         )
-        mock_val_df = dd.from_pandas(
-            pd.DataFrame({"PID": ["pid3", "pid4"]}), npartitions=1
+        mock_val_dataset = PatientDataset(
+            patients=[
+                PatientData(pid="pid3", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid="pid4", concepts=[], abspos=[], segments=[], ages=[]),
+            ],
+            vocabulary={},
         )
 
-        save_pids_splits(mock_train_df, mock_val_df, self.test_dir)
+        save_pids_splits(mock_train_dataset, mock_val_dataset, self.test_dir)
 
         # Load and verify train PIDs
         train_pids = torch.load(
