@@ -106,7 +106,6 @@ class TestCreateOutcomes(TestMainScript):
             "pids_train",
             "pids_val",
             "vocabulary",
-            "sequences_lengths_pretrain",
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
 
