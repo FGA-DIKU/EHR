@@ -147,48 +147,34 @@ def _drop_non_priority_tokens(
     background_length: int,
 ) -> PatientData:
     """
-    Drop non-priority tokens (beyond the background region) until the patient
-    fits into the desired length (`background_length + truncation_length`).
-
-    Steps:
-      1. Compute the set of non-priority indices that lie beyond `background_length`.
-      2. If dropping them all still exceeds our target length, drop them all.
-      3. Otherwise, drop only the number required to reach the target length.
+    Drop non-priority tokens to achieve desired truncation length.
 
     Args:
-        patient (PatientData): The patient's data.
-        non_priority_mask (List[bool]): True for non-priority tokens, False otherwise.
-        truncation_length (int): How many tokens can remain beyond background.
-        background_length (int): How many tokens we must preserve at the start.
-
-    Returns:
-        PatientData: A new PatientData with selected tokens removed.
+        patient: PatientData object
+        non_priority_mask: List of booleans indicating non-priority tokens
+        truncation_length: Number of tokens to keep after background
+        background_length: Number of background tokens to always keep
     """
-    total_tokens = len(patient.concepts)
-    target_total = background_length + truncation_length
+    # Calculate target length
+    target_length = background_length + truncation_length
 
-    # Identify non-priority indices beyond the background region
-    beyond_bg_indices = [
-        i
-        for i, is_np in enumerate(non_priority_mask)
-        if is_np and i >= background_length
-    ]
-    n_non_priority_beyond_bg = len(beyond_bg_indices)
+    # If we're already at or below target, return as is
+    if len(patient.concepts) <= target_length:
+        return patient
 
-    # If dropping *all* of these tokens still results in more than `target_total`,
-    # drop them all.
-    if (total_tokens - n_non_priority_beyond_bg) > target_total:
-        keep_indices = [i for i in range(total_tokens) if i not in beyond_bg_indices]
-        return subset_patient_data(patient, keep_indices)
+    # Keep all background tokens and then prioritize non-masked tokens
+    keep_indices = list(range(background_length))  # Always keep background
 
-    # Otherwise, drop only as many as needed to reach the target length
-    must_drop = total_tokens - target_total
-    if must_drop <= 0:
-        return patient  # No need to drop any
+    # For the remaining positions, prefer priority tokens
+    remaining_indices = []
+    for i in range(background_length, len(patient.concepts)):
+        if not non_priority_mask[i]:  # If it's a priority token
+            remaining_indices.append(i)
 
-    # Drop the first `must_drop` from beyond_bg_indices (or choose another order).
-    indices_to_drop = beyond_bg_indices[:must_drop]
-    keep_indices = [i for i in range(total_tokens) if i not in indices_to_drop]
+    # Add as many priority tokens as we can fit
+    keep_indices.extend(remaining_indices[:truncation_length])
+
+    # Create new PatientData with kept indices
     return subset_patient_data(patient, keep_indices)
 
 
