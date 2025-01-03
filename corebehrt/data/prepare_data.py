@@ -1,4 +1,6 @@
 import logging
+import sys
+import time
 from os.path import join
 
 import dask.dataframe as dd
@@ -129,28 +131,47 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             ).compute()
+        print(
+            f"Memory usage of dataframe: {df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
+        )
         print("Converting to patient list")
         patient_list = dataframe_to_patient_list(df)
+        print(f"Number of patients: {len(patient_list)}")
+        print(
+            f"Memory usage of patient list: {sys.getsizeof(patient_list) / 1024**2:.2f} MB"
+        )
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list, vocabulary=vocab)
         print("Excluding short sequences")
+
         # 3. Exclude short sequences
+        start_time = time.time()
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + get_background_length(data, vocab),
+        )
+        print(
+            f"Time to exclude short sequences: {time.time() - start_time:.2f} seconds"
         )
         print("Truncating data")
         # 5. Truncation
         logger.info(f"Truncating data to {data_cfg.truncation_len} tokens")
         background_length = get_background_length(data, vocab)
+        start_time = time.time()
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
         )
+        print(f"Time to truncate data: {time.time() - start_time:.2f} seconds")
         # 6. Normalize segments
+        start_time = time.time()
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
+        print(f"Time to normalize segments: {time.time() - start_time:.2f} seconds")
+        print(
+            f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
+        )
         # Save
         if self.cfg.get("save_processed_data", False):
             data.save(join(self.save_dir, "processed_data"))
