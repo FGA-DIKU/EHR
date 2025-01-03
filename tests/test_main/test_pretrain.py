@@ -20,6 +20,7 @@ class TestCreateOutcomes(TestMainScript):
                     "tokenized": "./tests/data/tokenized",
                     "model": self.pretrain_dir,
                 },
+                "save_processed_data": True,
                 "data": {
                     "dataset": {
                         "select_ratio": 1.0,
@@ -105,9 +106,11 @@ class TestCreateOutcomes(TestMainScript):
         for file_name in [
             "pids_train",
             "pids_val",
-            "vocabulary",
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
+        self.assertTrue(
+            exists(join(self.pretrain_dir, "processed_data", "vocabulary.pt"))
+        )
 
     def test_pretrain_with_existing_model(self):
         ### Call pretrain script to train initial model
