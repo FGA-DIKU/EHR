@@ -34,7 +34,7 @@ def dynamic_padding(batch: list) -> dict:
             if tensor_field.dim() == 1 and tensor_field.shape[0] == seq_len:
                 # For MLM 'target' we typically fill with -100
                 if key == "target":
-                    # Only do this if target is indeed a sequence (MLM). 
+                    # Only do this if target is indeed a sequence (MLM).
                     # If it's binary classification, 'target' will be 0D so we won't enter here.
                     filler = torch.full((diff,), -100, dtype=tensor_field.dtype)
                 else:
