@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 from typing import List, Set, Union
-from dataclasses import asdict, replace, fields
+from dataclasses import replace, fields
 
 # New stuff
 import dask.dataframe as dd
