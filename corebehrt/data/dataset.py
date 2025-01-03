@@ -110,6 +110,7 @@ class MLMDataset(Dataset):
         ignore_special_tokens: bool = True,
     ):
         self.patients = patients
+        self.vocabulary = vocabulary
         self.masker = ConceptMasker(
             vocabulary,
             select_ratio,
