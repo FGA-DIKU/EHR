@@ -1,3 +1,4 @@
+from bisect import bisect_right
 from typing import List
 
 import pandas as pd
@@ -12,22 +13,16 @@ def exclude_short_sequences(
 
 
 def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
-    """
-    Censors a patient's data by keeping only events that occur before or at the censor date.
-
-    Args:
-        patient: The patient data to censor
-        censor_date: The cutoff date (in absolute time units) after which events should be removed
-
-    Returns:
-        The censored patient data with only events before or at the censor date
-    """
     censor_date = censor_dates[patient.pid]
-    keep_indices = set([i for i, a in enumerate(patient.abspos) if a <= censor_date])
-    patient.concepts = [patient.concepts[i] for i in keep_indices]
-    patient.abspos = [patient.abspos[i] for i in keep_indices]
-    patient.segments = [patient.segments[i] for i in keep_indices]
-    patient.ages = [patient.ages[i] for i in keep_indices]
+    # Find the position where censor_date fits in the sorted abspos list
+    idx = bisect_right(patient.abspos, censor_date)
+
+    # Slice everything up to idx
+    patient.concepts = patient.concepts[:idx]
+    patient.abspos = patient.abspos[:idx]
+    patient.segments = patient.segments[:idx]
+    patient.ages = patient.ages[:idx]
+
     return patient
 
 
