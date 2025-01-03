@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 from dataclasses import dataclass
 from os.path import join
@@ -19,6 +18,7 @@ class PatientData:
     abspos: List[float]  # or int, depends on your data
     segments: List[int]
     ages: List[float]  # e.g. age at each concept
+    outcome: int = None
 
 
 class PatientDataset:
@@ -70,11 +70,6 @@ class PatientDataset:
         Returns:
             list: Results of applying the function to each patient.
         """
-
-        if n_jobs == -1:
-            n_jobs = multiprocessing.cpu_count()
-            print(f"Using {n_jobs} processors")
-
         return Parallel(n_jobs=n_jobs)(
             delayed(func)(p, **kwargs) for p in self.patients
         )
@@ -97,6 +92,29 @@ class PatientDataset:
 
     def get_pids(self) -> List[str]:
         return [p.pid for p in self.patients]
+
+    def get_outcomes(self) -> List[int]:
+        return [p.outcome for p in self.patients]
+
+    def assign_outcomes(self, outcomes: pd.Series):
+        """Assigns binary outcomes to each patient in the dataset.
+
+        Takes a pandas Series mapping patient IDs to outcomes absolute positions and assigns a binary outcome
+        to each patient in the dataset. The outcome is 1.0 if the patient has a non-null
+        outcome in the Series, and 0.0 otherwise.
+
+        Args:
+            outcomes (pd.Series): Series with patient IDs as index and outcomes as values.
+                The actual outcome values are not used, only whether they are null or not.
+
+        Returns:
+            PatientDataset: Returns self for method chaining.
+        """
+        outcomes = pd.notna(outcomes).astype(int)
+        for p in self.patients:
+            p.outcome = outcomes[p.pid]
+
+        return self
 
 
 class MLMDataset(Dataset):
@@ -150,13 +168,11 @@ class BinaryOutcomeDataset(Dataset):
     outcomes is a list of the outcome timestamps to predict
     """
 
-    def __init__(self, patients: List[PatientData], outcomes: List[float]):
+    def __init__(self, patients: List[PatientData]):
         self.patients = patients
-        self.outcomes = outcomes  # we might make this part of the patient data
 
     def __getitem__(self, index: int) -> dict:
         patient = self.patients[index]
-        target = float(pd.notna(self.outcomes[index]))
         attention_mask = torch.ones(
             len(patient.concepts), dtype=torch.long
         )  # Require attention mask for bi-gru head
@@ -166,7 +182,7 @@ class BinaryOutcomeDataset(Dataset):
             "segment": torch.tensor(patient.segments, dtype=torch.long),
             "age": torch.tensor(patient.ages, dtype=torch.float),
             "attention_mask": attention_mask,
-            "target": torch.tensor(target, dtype=torch.long),
+            "target": torch.tensor(patient.outcome, dtype=torch.float),
         }
         return sample
 
