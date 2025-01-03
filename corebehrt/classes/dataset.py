@@ -1,7 +1,7 @@
 import os
 from dataclasses import dataclass
 from os.path import join
-from typing import List
+from typing import Any, Callable, List
 
 import pandas as pd
 import torch
@@ -60,19 +60,38 @@ class PatientDataset:
         """
         return self.patients[idx]
 
-    def process_in_parallel(self, func, n_jobs=-1, **kwargs):
-        """Process all patients in parallel using the given function.
+    def process_in_parallel(self, func, n_jobs=-1, chunk_size=1000, **kwargs):
+        """Process all patients in parallel using the given function with chunking support.
 
         Args:
-            func: Function to apply to each patient.
-            n_jobs (int): Number of parallel jobs. -1 means using all processors.
-            **kwargs: Additional keyword arguments passed to the function.
+            func: Function to apply to each patient
+            n_jobs (int): Number of parallel jobs. -1 means using all processors
+            chunk_size (int): Size of patient chunks to process together
+            **kwargs: Additional keyword arguments passed to the function
 
         Returns:
-            list: Results of applying the function to each patient.
+            list: Results of applying the function to each patient
         """
-        loop = tqdm(self.patients, desc=f"{func.__name__}", mininterval=10)
-        return Parallel(n_jobs=n_jobs)(delayed(func)(p, **kwargs) for p in loop)
+        # Get the chunk size
+        chunk_size = self._get_chunk_size(chunk_size, n_jobs)
+        loop = tqdm(
+            self.patients,
+            total=len(self.patients),
+            desc=f"{func.__name__}",
+            mininterval=10,
+        )
+        results = Parallel(n_jobs=n_jobs, batch_size=chunk_size)(
+            delayed(func)(patient, **kwargs) for patient in loop
+        )
+
+        return results
+
+    def _get_chunk_size(self, chunk_size: int, n_jobs: int) -> int:
+        return min(
+            chunk_size,
+            len(self.patients),
+            len(self.patients) // (n_jobs if n_jobs > 0 else os.cpu_count()),
+        )
 
     def save(self, save_dir: str, suffix: str = ""):
         """Save patient data and vocabulary to disk.
