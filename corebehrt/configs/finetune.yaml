@@ -32,20 +32,12 @@ model:
     bidirectional: true
 data:
   cv_splits: 2
-  num_patients: 1000 # 300 #300
   val_split: 0.1
   test_split: 0.1
   truncation_len: 30
-  select_censored: false
-  # gender: M
-  min_age: 0
-  max_age: 70
-  # min_len: null
   min_len: 2
   censorer:
    _target_: corebehrt.data_fixes.censor.EQ_Censorer
-  # remove_features: ['abspos']
-  number_of_train_patients: 10
 
 outcome: 
   n_hours_censoring: -10 # censor time after index date (negative means before)
