@@ -1,7 +1,7 @@
 import logging
 import os
 from os.path import join
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 
 import torch
 from torch.optim import AdamW
@@ -45,7 +45,7 @@ class Initializer:
             )
         return model
 
-    def initialize_finetune_model(self, train_dataset):
+    def initialize_finetune_model(self):
         if self.checkpoint:
             logger.info("Loading model from checkpoint")
             add_config = {**self.cfg.model}
@@ -87,9 +87,11 @@ class Initializer:
         scheduler.load_state_dict(self.checkpoint["scheduler_state_dict"])
         return scheduler
 
-    def initialize_sampler(self, train_dataset) -> Tuple[Optional[Sampler], Config]:
+    def initialize_sampler(
+        self, outcomes: List[int]
+    ) -> Tuple[Optional[Sampler], Config]:
         """Initialize sampler and modify cfg."""
-        sampler = get_sampler(self.cfg, train_dataset, train_dataset.outcomes)
+        sampler = get_sampler(self.cfg, outcomes)
         if sampler:
             self.cfg.trainer_args.shuffle = False
         return sampler, self.cfg
@@ -177,21 +179,21 @@ class ModelManager:
     def load_checkpoint(self):
         return ModelLoader(self.checkpoint_model_path).load_checkpoint()
 
-    def initialize_finetune_model(self, checkpoint, train_dataset):
+    def initialize_finetune_model(self, checkpoint):
         logger.info("Initializing model")
         self.initializer = Initializer(
             self.cfg, checkpoint=checkpoint, model_path=self.checkpoint_model_path
         )
-        model = self.initializer.initialize_finetune_model(train_dataset)
+        model = self.initializer.initialize_finetune_model()
         return model
 
-    def initialize_training_components(self, model, train_dataset):
+    def initialize_training_components(self, model, outcomes):
         """Initialize training components. If no model_path provided, optimizer and scheduler are initialized from scratch."""
         if self.restart_model_path is None:
             logger.info("Initializing optimizer and scheduler from scratch")
             self.initializer.checkpoint = None
         optimizer = self.initializer.initialize_optimizer(model)
-        sampler, cfg = self.initializer.initialize_sampler(train_dataset)
+        sampler, cfg = self.initializer.initialize_sampler(outcomes)
         scheduler = self.initializer.initialize_scheduler(optimizer)
         return optimizer, sampler, scheduler, cfg
 
