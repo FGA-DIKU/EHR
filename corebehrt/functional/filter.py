@@ -3,7 +3,7 @@ from typing import List
 import dask.dataframe as dd
 import pandas as pd
 
-from corebehrt.data.dataset import PatientData
+from corebehrt.classes.dataset import PatientData
 from corebehrt.functional.exclude import filter_table_by_pids
 
 

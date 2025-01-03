@@ -9,7 +9,7 @@ from dataclasses import replace, fields
 import dask.dataframe as dd
 import pandas as pd
 
-from corebehrt.data.dataset import PatientData
+from corebehrt.classes.dataset import PatientData
 
 logger = logging.getLogger(__name__)
 import random

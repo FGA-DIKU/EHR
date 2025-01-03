@@ -4,7 +4,7 @@ from typing import Tuple
 
 import numpy as np
 
-from corebehrt.data.dataset import PatientDataset
+from corebehrt.classes.dataset import PatientDataset
 from corebehrt.functional.load import load_predefined_splits
 
 

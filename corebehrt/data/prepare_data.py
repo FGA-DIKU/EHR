@@ -10,7 +10,7 @@ from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
 from corebehrt.common.saver import Saver
-from corebehrt.data.dataset import MLMDataset, PatientDataset
+from corebehrt.classes.dataset import MLMDataset, PatientDataset
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary

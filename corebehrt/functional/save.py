@@ -4,7 +4,7 @@ from os.path import join
 
 import torch
 
-from corebehrt.data.dataset import PatientDataset
+from corebehrt.classes.dataset import PatientDataset
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@ from typing import List
 
 import pandas as pd
 
-from corebehrt.data.dataset import PatientData
+from corebehrt.classes.dataset import PatientData
 
 
 def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:

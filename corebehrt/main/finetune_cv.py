@@ -8,7 +8,7 @@ from corebehrt.common.config import load_config
 from corebehrt.common.initialize import ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.data.dataset import BinaryOutcomeDataset, PatientDataset
+from corebehrt.classes.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.data.split import get_n_splits_cv_pids
 from corebehrt.evaluation.utils import (
