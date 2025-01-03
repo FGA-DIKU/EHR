@@ -82,7 +82,7 @@ class PatientDataset:
         """
         torch.save(self.patients, join(save_dir, f"patients{suffix}.pt"))
         if not os.path.exists(join(save_dir, "vocabulary.pt")):
-            torch.save(self.vocabulary, join(save_dir, f"vocabulary.pt"))
+            torch.save(self.vocabulary, join(save_dir, "vocabulary.pt"))
 
     def filter_by_pids(self, pids: List[str]) -> "PatientDataset":
         pids_set = set(pids)
