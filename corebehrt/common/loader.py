@@ -1,9 +1,8 @@
 import logging
 import os
 from os.path import join
-from typing import Dict, List, Tuple, Union
+from typing import Tuple
 
-import pandas as pd
 import torch
 from transformers import BertConfig
 

@@ -1,6 +1,3 @@
-import logging
-
-
 class TqdmToLogger(object):
     """File-like object to redirect tqdm to logger"""
 
