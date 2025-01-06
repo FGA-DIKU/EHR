@@ -51,12 +51,7 @@ def get_background_length(patients: List[PatientData], vocabulary) -> int:
     background_tokens = set([v for k, v in vocabulary.items() if k.startswith("BG_")])
     example_concepts = patients[0].concepts
     background_length = len(set(example_concepts) & background_tokens)
-    if "CLS" in vocabulary:
-        return background_length + 2  # +2 for [CLS] and [SEP] tokens
-    if "SEP" in vocabulary:
-        return background_length + 1  # +1 for [SEP] token
-    else:
-        return background_length
+    return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
 def get_abspos_from_origin_point(
