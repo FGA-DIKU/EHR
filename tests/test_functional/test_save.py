@@ -26,14 +26,12 @@ class TestSaveFunctions(unittest.TestCase):
                 PatientData(pid="pid1", concepts=[], abspos=[], segments=[], ages=[]),
                 PatientData(pid="pid2", concepts=[], abspos=[], segments=[], ages=[]),
             ],
-            vocabulary={},
         )
         mock_val_dataset = PatientDataset(
             patients=[
                 PatientData(pid="pid3", concepts=[], abspos=[], segments=[], ages=[]),
                 PatientData(pid="pid4", concepts=[], abspos=[], segments=[], ages=[]),
             ],
-            vocabulary={},
         )
 
         save_pids_splits(mock_train_dataset, mock_val_dataset, self.test_dir)

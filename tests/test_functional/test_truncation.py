@@ -130,8 +130,7 @@ class TestTruncationFunctions(unittest.TestCase):
         # 3. Create a PatientDataset with some patients
         # -----------------------------------------------------------------
         self.dataset = PatientDataset(
-            patients=[self.patient1, self.patient2, self.patient3, self.patient4],
-            vocabulary=self.vocabulary,
+            patients=[self.patient1, self.patient2, self.patient3, self.patient4]
         )
 
     # ---------------------------------------------------------------------

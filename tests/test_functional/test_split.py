@@ -37,10 +37,9 @@ class TestSplitFunctions(unittest.TestCase):
                 pid="pid5", concepts=[], abspos=[], segments=[], ages=[], outcome=0
             ),
         ]
-        self.mock_vocab = {"tokenA": 1, "tokenB": 2}  # minimal placeholder
 
         # Create a PatientDataset
-        self.dataset = PatientDataset(self.mock_patients, self.mock_vocab)
+        self.dataset = PatientDataset(self.mock_patients)
         self.all_pids = self.dataset.get_pids()
 
         # Temporary dir for load_train_val_split testing
