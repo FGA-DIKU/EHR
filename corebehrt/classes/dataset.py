@@ -32,18 +32,15 @@ class PatientDataset:
     Attributes:
         patients (List[PatientData]): List of patient data objects containing medical concepts,
             positions, segments and ages.
-        vocabulary (dict): Dictionary mapping tokens to indices for the medical concepts.
     """
 
-    def __init__(self, patients: List[PatientData], vocabulary: dict):
+    def __init__(self, patients: List[PatientData]):
         """Initialize the PatientDataset.
 
         Args:
             patients (List[PatientData]): List of patient data objects.
-            vocabulary (dict): Dictionary mapping tokens to indices.
         """
         self.patients = patients
-        self.vocabulary = vocabulary
 
     def __len__(self):
         """Get the number of patients in the dataset."""
@@ -101,14 +98,10 @@ class PatientDataset:
         """
         os.makedirs(save_dir, exist_ok=True)
         torch.save(self.patients, join(save_dir, f"patients{suffix}.pt"))
-        if not os.path.exists(join(save_dir, "vocabulary.pt")):
-            torch.save(self.vocabulary, join(save_dir, "vocabulary.pt"))
 
     def filter_by_pids(self, pids: List[str]) -> "PatientDataset":
         pids_set = set(pids)
-        return PatientDataset(
-            [p for p in self.patients if p.pid in pids_set], self.vocabulary
-        )
+        return PatientDataset([p for p in self.patients if p.pid in pids_set])
 
     def get_pids(self) -> List[str]:
         return [p.pid for p in self.patients]

@@ -1,8 +1,10 @@
 import logging
+import os
 from os.path import join
 
 import dask.dataframe as dd
 import pandas as pd
+import torch
 from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.dataset import MLMDataset, PatientDataset
@@ -24,6 +26,7 @@ from corebehrt.functional.utils import (
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
 VOCABULARY_FILE = "vocabulary.pt"
+PROCESSED_DATA_DIR = "processed_data"
 
 
 # TODO: Add option to load test set only!
@@ -37,13 +40,11 @@ class DatasetPreparer:
     def prepare_mlm_dataset(self, val_ratio=0.2):
         """Load data, truncate, adapt features, create dataset"""
         predefined_splits = self.cfg.paths.get("predefined_splits", False)
-        train_data, val_data = self._prepare_mlm_features(predefined_splits, val_ratio)
-        train_dataset = MLMDataset(
-            train_data.patients, train_data.vocabulary, **self.cfg.data.dataset
+        train_data, val_data, vocab = self._prepare_mlm_features(
+            predefined_splits, val_ratio
         )
-        val_dataset = MLMDataset(
-            val_data.patients, val_data.vocabulary, **self.cfg.data.dataset
-        )
+        train_dataset = MLMDataset(train_data.patients, vocab, **self.cfg.data.dataset)
+        val_dataset = MLMDataset(val_data.patients, vocab, **self.cfg.data.dataset)
         return train_dataset, val_dataset
 
     def prepare_finetune_data(self):
@@ -63,7 +64,7 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
-        data = PatientDataset(patients=patient_list, vocabulary=vocab)
+        data = PatientDataset(patients=patient_list)
 
         # 3. Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
@@ -121,8 +122,10 @@ class DatasetPreparer:
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
         )
         # save
+        processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
+        os.makedirs(processed_dir, exist_ok=True)
+        torch.save(vocab, join(processed_dir, VOCABULARY_FILE))
         if self.cfg.get("save_processed_data", False):
-            processed_dir = join(self.save_dir, "processed_data")
             data.save(processed_dir)
             outcomes.to_csv(join(processed_dir, "outcomes.csv"), index=False)
             index_dates.to_csv(join(processed_dir, "index_dates.csv"), index=False)
@@ -144,7 +147,7 @@ class DatasetPreparer:
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
-        data = PatientDataset(patients=patient_list, vocabulary=vocab)
+        data = PatientDataset(patients=patient_list)
         logger.info("Excluding short sequences")
         # 3. Exclude short sequences
         data.patients = exclude_short_sequences(
@@ -170,8 +173,10 @@ class DatasetPreparer:
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
         )
         # Save
+        os.makedirs(join(self.save_dir, PROCESSED_DATA_DIR), exist_ok=True)
+        torch.save(vocab, join(self.save_dir, PROCESSED_DATA_DIR, VOCABULARY_FILE))
         if self.cfg.get("save_processed_data", False):
-            data.save(join(self.save_dir, "processed_data"))
+            data.save(join(self.save_dir, PROCESSED_DATA_DIR))
 
         # Splitting data
         if predefined_splits:
