@@ -187,4 +187,4 @@ class DatasetPreparer:
         # Save split
         save_pids_splits(train_data, val_data, self.save_dir)
 
-        return train_data, val_data
+        return train_data, val_data, vocab
