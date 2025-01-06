@@ -38,7 +38,6 @@ data:
   min_len: 2
   censorer:
    _target_: corebehrt.data_fixes.censor.EQ_Censorer
-  low_priority_prefixes: ["D"]
 
 outcome: 
   n_hours_censoring: -10 # censor time after index date (negative means before)
