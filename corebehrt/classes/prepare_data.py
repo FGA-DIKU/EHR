@@ -51,8 +51,7 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
-        # 1. Loading tokenized data
-        # Enable dask progress bar for reading parquet
+        # Load tokenized data
         with ProgressBar(dt=10):
             df = dd.read_parquet(
                 join(
@@ -66,7 +65,7 @@ class DatasetPreparer:
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list)
 
-        # 3. Loading and processing outcomes
+        # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
         exposures = pd.read_csv(paths_cfg.exposure)
 
@@ -84,21 +83,21 @@ class DatasetPreparer:
         logger.info("Assigning outcomes")
         data = data.assign_outcomes(outcomes)
 
-        # 4. Data censoring
+        # Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
 
         background_length = get_background_length(data, vocab)
-        # 3. Exclude short sequences
+        # Exclude short sequences
         logger.info("Excluding short sequences")
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 1) + background_length,
         )
 
-        # 8. Truncation
+        # Truncation
         non_priority_tokens = (
             None
             if data_cfg.get("low_priority_prefixes", None) is None
@@ -112,7 +111,7 @@ class DatasetPreparer:
             non_priority_tokens=non_priority_tokens,
         )
 
-        # 9. Normalize segments
+        # Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Check if max segment is larger than type_vocab b_size
         # TODO: pass pt_model_config and perform this check
@@ -136,7 +135,7 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
-        # 1. Load tokenized data + vocab
+        # Load tokenized data + vocab
         with ProgressBar(dt=10):
             df = dd.read_parquet(
                 join(
@@ -144,17 +143,21 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             ).compute()
+
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
         data = PatientDataset(patients=patient_list)
+
+        # Excluding short sequences
         logger.info("Excluding short sequences")
-        # 3. Exclude short sequences
+        background_length = get_background_length(data, vocab)
         data.patients = exclude_short_sequences(
             data.patients,
-            data_cfg.get("min_len", 1) + get_background_length(data, vocab),
+            data_cfg.get("min_len", 1) + background_length,
         )
-        background_length = get_background_length(data, vocab)
+
+        # Truncation
         non_priority_tokens = (
             None
             if data_cfg.get("low_priority_prefixes", None) is None
@@ -167,11 +170,13 @@ class DatasetPreparer:
             sep_token=vocab["[SEP]"],
             non_priority_tokens=non_priority_tokens,
         )
-        # 6. Normalize segments
+
+        # Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         logger.info(
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
         )
+
         # Save
         os.makedirs(join(self.save_dir, PROCESSED_DATA_DIR), exist_ok=True)
         torch.save(vocab, join(self.save_dir, PROCESSED_DATA_DIR, VOCABULARY_FILE))
