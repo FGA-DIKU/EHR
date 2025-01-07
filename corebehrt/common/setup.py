@@ -17,6 +17,9 @@ OUTCOMES_CFG = "outcomes_config.yaml"
 PRETRAIN_CFG = "pretrain_config.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
 
+VOCABULARY_FILE = "vocabulary.pt"
+PROCESSED_DATA_DIR = "processed_data"
+
 
 def get_args(default_config_name, default_run_name=None):
     """Get command line arguments."""

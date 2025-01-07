@@ -1,21 +1,21 @@
 import logging
 import os
 from os.path import join
-
+from typing import Tuple
 import dask.dataframe as dd
 import pandas as pd
 import torch
 from dask.diagnostics import ProgressBar
 
-from corebehrt.classes.dataset import MLMDataset, PatientDataset
+from corebehrt.classes.dataset import PatientDataset
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.loader import FeaturesLoader
+from corebehrt.common.setup import PROCESSED_DATA_DIR, VOCABULARY_FILE
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
-from corebehrt.functional.save import save_pids_splits
-from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
+
 from corebehrt.functional.truncate import truncate_patient
 from corebehrt.functional.utils import (
     get_background_length,
@@ -24,9 +24,6 @@ from corebehrt.functional.utils import (
 )
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
-
-VOCABULARY_FILE = "vocabulary.pt"
-PROCESSED_DATA_DIR = "processed_data"
 
 
 # TODO: Add option to load test set only!
@@ -37,17 +34,7 @@ class DatasetPreparer:
 
         self.save_dir = cfg.paths.model
 
-    def prepare_mlm_dataset(self, val_ratio=0.2):
-        """Load data, truncate, adapt features, create dataset"""
-        predefined_splits = self.cfg.paths.get("predefined_splits", False)
-        train_data, val_data, vocab = self._prepare_mlm_features(
-            predefined_splits, val_ratio
-        )
-        train_dataset = MLMDataset(train_data.patients, vocab, **self.cfg.data.dataset)
-        val_dataset = MLMDataset(val_data.patients, vocab, **self.cfg.data.dataset)
-        return train_dataset, val_dataset
-
-    def prepare_finetune_data(self):
+    def prepare_finetune_data(self) -> PatientDataset:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
@@ -131,7 +118,7 @@ class DatasetPreparer:
 
         return data
 
-    def _prepare_mlm_features(self, predefined_splits, val_ratio=0.2):
+    def prepare_pretrain_data(self) -> Tuple[PatientDataset, dict]:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
@@ -182,14 +169,4 @@ class DatasetPreparer:
         torch.save(vocab, join(self.save_dir, PROCESSED_DATA_DIR, VOCABULARY_FILE))
         if self.cfg.get("save_processed_data", False):
             data.save(join(self.save_dir, PROCESSED_DATA_DIR))
-
-        # Splitting data
-        if predefined_splits:
-            train_data, val_data = load_train_val_split(data, predefined_splits)
-        else:
-            train_data, val_data = split_pids_into_train_val(data, val_ratio)
-
-        # Save split
-        save_pids_splits(train_data, val_data, self.save_dir)
-
-        return train_data, val_data, vocab
+        return data
