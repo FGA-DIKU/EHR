@@ -143,7 +143,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         include_values=(getattr(cfg.loader, "include_values", [])),
     ).load()
 
-    with ProgressBar(dt=100):
+    with ProgressBar(dt=10):
         if "values" in cfg.features:
             value_creator = ValueCreator(**cfg.features.values)
             concepts = value_creator(concepts)
