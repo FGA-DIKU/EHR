@@ -2,20 +2,19 @@ import logging
 import os
 from os.path import join
 from typing import Tuple
+
 import dask.dataframe as dd
 import pandas as pd
-import torch
 from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.dataset import PatientDataset
 from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
-from corebehrt.common.loader import FeaturesLoader
-from corebehrt.common.setup import PROCESSED_DATA_DIR, VOCABULARY_FILE
+from corebehrt.common.setup import INDEX_DATES_FILE, OUTCOMES_FILE, PROCESSED_DATA_DIR
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
-
+from corebehrt.functional.save import save_vocabulary
 from corebehrt.functional.truncate import truncate_patient
 from corebehrt.functional.utils import (
     get_background_length,
@@ -30,9 +29,8 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 class DatasetPreparer:
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self.loader = FeaturesLoader(cfg)
-
         self.save_dir = cfg.paths.model
+        self.processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
 
     def prepare_finetune_data(self) -> PatientDataset:
         data_cfg = self.cfg.data
@@ -49,7 +47,7 @@ class DatasetPreparer:
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        vocab = load_vocabulary(self.processed_dir)
         data = PatientDataset(patients=patient_list)
 
         # Loading and processing outcomes
@@ -108,13 +106,12 @@ class DatasetPreparer:
             f"Max segment length: {max(max(patient.segments) for patient in data.patients)}"
         )
         # save
-        processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
-        os.makedirs(processed_dir, exist_ok=True)
-        torch.save(vocab, join(processed_dir, VOCABULARY_FILE))
+        os.makedirs(self.processed_dir, exist_ok=True)
+        save_vocabulary(vocab, self.processed_dir)
         if self.cfg.get("save_processed_data", False):
-            data.save(processed_dir)
-            outcomes.to_csv(join(processed_dir, "outcomes.csv"), index=False)
-            index_dates.to_csv(join(processed_dir, "index_dates.csv"), index=False)
+            data.save(self.processed_dir)
+            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
+            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
 
         return data
 
@@ -133,7 +130,7 @@ class DatasetPreparer:
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(join(paths_cfg.tokenized, VOCABULARY_FILE))
+        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
 
         # Excluding short sequences
@@ -165,8 +162,8 @@ class DatasetPreparer:
         )
 
         # Save
-        os.makedirs(join(self.save_dir, PROCESSED_DATA_DIR), exist_ok=True)
-        torch.save(vocab, join(self.save_dir, PROCESSED_DATA_DIR, VOCABULARY_FILE))
+        os.makedirs(self.processed_dir, exist_ok=True)
+        save_vocabulary(vocab, self.processed_dir)
         if self.cfg.get("save_processed_data", False):
-            data.save(join(self.save_dir, PROCESSED_DATA_DIR))
+            data.save(self.processed_dir)
         return data

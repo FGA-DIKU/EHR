@@ -7,13 +7,14 @@ from corebehrt.classes.dataset import MLMDataset
 from corebehrt.classes.prepare_data import DatasetPreparer
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import Initializer, ModelManager
-from corebehrt.common.loader import (load_checkpoint_and_epoch,
-                                     load_model_cfg_from_checkpoint)
+from corebehrt.common.loader import (
+    load_checkpoint_and_epoch,
+    load_model_cfg_from_checkpoint,
+)
 from corebehrt.common.setup import VOCABULARY_FILE, DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
-from corebehrt.functional.split import (load_train_val_split,
-                                        split_pids_into_train_val)
+from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.trainer.trainer import EHRTrainer
 
@@ -52,7 +53,7 @@ def main_train(config_path):
             data, cfg.data.get("val_ratio", 0.2)
         )
 
-    vocab = load_vocabulary(join(cfg.paths.tokenized, VOCABULARY_FILE))
+    vocab = load_vocabulary(cfg.paths.tokenized)
     # Initialize datasets
     train_dataset = MLMDataset(train_data.patients, vocab, **cfg.data.dataset)
     val_dataset = MLMDataset(val_data.patients, vocab, **cfg.data.dataset)

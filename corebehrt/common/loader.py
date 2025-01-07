@@ -36,16 +36,6 @@ def load_model_cfg_from_checkpoint(model_dir: str, config_name: str) -> Config:
     return load_config(join(model_dir, f"{config_name}.yaml")).model
 
 
-class FeaturesLoader:
-    def __init__(self, cfg):
-        self.paths_cfg = cfg.paths
-        self.cfg = cfg
-
-    def load_vocabulary(self):
-        """Load vocabulary from file."""
-        return torch.load(join(self.paths_cfg.tokenized, VOCABULARY_FILE))
-
-
 class ModelLoader:
     def __init__(self, model_path: str, checkpoint_epoch: str = None):
         """Load model from config and checkpoint."""
