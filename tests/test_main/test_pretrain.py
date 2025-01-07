@@ -1,7 +1,7 @@
 from os.path import getmtime, join, exists
 
 from corebehrt.main.pretrain import main_train
-from corebehrt.common.setup import DATA_CFG, PRETRAIN_CFG
+from corebehrt.common.setup import DATA_CFG, PRETRAIN_CFG, PROCESSED_DATA_DIR
 
 from .base import TestMainScript
 
@@ -109,7 +109,7 @@ class TestCreateOutcomes(TestMainScript):
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
         self.assertTrue(
-            exists(join(self.pretrain_dir, "processed_data", "vocabulary.pt"))
+            exists(join(self.pretrain_dir, PROCESSED_DATA_DIR, "vocabulary.pt"))
         )
 
     def test_pretrain_with_existing_model(self):
