@@ -70,7 +70,7 @@ class PatientDataset:
             list: Results of applying the function to each patient
         """
         # Get the chunk size
-        chunk_size = self._get_chunk_size(chunk_size, n_jobs)
+        n_jobs = 1 if len(self.patients) < 1000 else n_jobs
         loop = tqdm(
             self.patients,
             total=len(self.patients),
@@ -82,13 +82,6 @@ class PatientDataset:
         )
 
         return results
-
-    def _get_chunk_size(self, chunk_size: int, n_jobs: int) -> int:
-        return min(
-            chunk_size,
-            len(self.patients),
-            len(self.patients) // (n_jobs if n_jobs > 0 else os.cpu_count()),
-        )
 
     def save(self, save_dir: str, suffix: str = ""):
         """Save patient data and vocabulary to disk.
