@@ -9,6 +9,7 @@ data:
   num_val_patients: 20
   truncation_len: 20
   val_ratio: 0.2
+save_processed_data: true
 logging:
   level: 20
   path: ./.test_tmp/logs

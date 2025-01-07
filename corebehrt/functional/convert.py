@@ -1,21 +1,52 @@
-import dask.dataframe as dd
-from typing import Tuple, Dict, List
+from typing import List
+
+import pandas as pd
+from tqdm import tqdm
+
+from corebehrt.classes.dataset import PatientData
 
 
-def convert_to_sequences(features: dd.DataFrame) -> Tuple[Dict[str, List], List[str]]:
-    """Convert the DataFrame to a dictionary of features and a list of PIDs."""
-    features = features.compute()  # Compute Dask DataFrame to pandas DataFrame
-    pids = features["PID"].unique().tolist()  # List of unique PIDs
+def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
+    """Convert a DataFrame containing patient data into a list of PatientData objects.
 
-    grouped = features.groupby("PID")
-    features_dict = {
-        col: grouped[col].apply(list).to_dict()
-        for col in features.columns
-        if col != "PID"
-    }
+    Args:
+        df (pd.DataFrame): DataFrame containing patient data with columns:
+            - PID: Patient ID
+            - concept: Medical concepts/tokens
+            - abspos: Absolute positions/timestamps
+            - segment: Segment IDs
+            - age: Patient ages
 
-    for col in features_dict:
-        # Convert dictionary of lists from grouped structure to normal lists
-        features_dict[col] = list(features_dict[col].values())
+    Returns:
+        List[PatientData]: List of PatientData objects, where each object contains:
+            - pid (str): Patient ID
+            - concepts (List[int]): List of medical concept tokens
+            - abspos (List[float]): List of absolute positions/timestamps
+            - segments (List[int]): List of segment IDs
+            - ages (List[float]): List of patient ages
+    """
+    patients_data = []
 
-    return features_dict, pids
+    grouped = df.groupby("PID", sort=False)
+    loop = tqdm(
+        grouped, total=len(grouped), desc="Converting to patient list", mininterval=10
+    )
+    for pid, group in loop:
+        # Convert each column to a Python list
+        concepts_list = group["concept"].tolist()
+        abspos_list = group["abspos"].tolist()
+        segments_list = group["segment"].tolist()
+        ages_list = group["age"].tolist()
+
+        # Create a PatientData instance
+        patient = PatientData(
+            pid=pid,
+            concepts=concepts_list,
+            abspos=abspos_list,
+            segments=segments_list,
+            ages=ages_list,
+        )
+
+        patients_data.append(patient)
+
+    return patients_data

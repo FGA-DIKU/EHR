@@ -2,6 +2,8 @@
 
 import logging
 
+from corebehrt.classes.dataset import MLMDataset
+from corebehrt.classes.prepare_data import DatasetPreparer
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import Initializer, ModelManager
 from corebehrt.common.loader import (
@@ -9,13 +11,13 @@ from corebehrt.common.loader import (
     load_model_cfg_from_checkpoint,
 )
 from corebehrt.common.setup import DirectoryPreparer, get_args
+from corebehrt.functional.load import load_vocabulary
+from corebehrt.functional.save import save_pids_splits
+from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
-from corebehrt.data.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
-
-# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
 def main_train(config_path):
@@ -38,8 +40,25 @@ def main_train(config_path):
     if restart_path:
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
-    # Prepare dataset
-    train_dataset, val_dataset = DatasetPreparer(cfg).prepare_mlm_dataset()
+    # Prepare data
+    data = DatasetPreparer(cfg).prepare_pretrain_data()
+
+    # Splitting data
+    predefined_splits_path = cfg.paths.get("predefined_splits", False)
+    if predefined_splits_path:
+        train_data, val_data = load_train_val_split(data, predefined_splits_path)
+    else:
+        train_data, val_data = split_pids_into_train_val(
+            data, cfg.data.get("val_ratio", 0.2)
+        )
+
+    vocab = load_vocabulary(cfg.paths.tokenized)
+    # Initialize datasets
+    train_dataset = MLMDataset(train_data.patients, vocab, **cfg.data.dataset)
+    val_dataset = MLMDataset(val_data.patients, vocab, **cfg.data.dataset)
+
+    # Save split
+    save_pids_splits(train_data, val_data, cfg.paths.model)
 
     if "scheduler" in cfg:
         logger.info("Replacing steps with epochs in scheduler config")

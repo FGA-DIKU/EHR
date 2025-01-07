@@ -1,7 +1,7 @@
 from os.path import getmtime, join, exists
 
 from corebehrt.main.pretrain import main_train
-from corebehrt.common.setup import DATA_CFG, PRETRAIN_CFG
+from corebehrt.common.setup import DATA_CFG, PRETRAIN_CFG, PROCESSED_DATA_DIR
 
 from .base import TestMainScript
 
@@ -20,6 +20,7 @@ class TestCreateOutcomes(TestMainScript):
                     "tokenized": "./tests/data/tokenized",
                     "model": self.pretrain_dir,
                 },
+                "save_processed_data": True,
                 "data": {
                     "dataset": {
                         "select_ratio": 1.0,
@@ -105,10 +106,11 @@ class TestCreateOutcomes(TestMainScript):
         for file_name in [
             "pids_train",
             "pids_val",
-            "vocabulary",
-            "sequences_lengths_pretrain",
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
+        self.assertTrue(
+            exists(join(self.pretrain_dir, PROCESSED_DATA_DIR, "vocabulary.pt"))
+        )
 
     def test_pretrain_with_existing_model(self):
         ### Call pretrain script to train initial model

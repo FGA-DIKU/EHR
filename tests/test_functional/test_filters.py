@@ -1,183 +1,166 @@
 import unittest
-import dask.dataframe as dd
+import operator
 import pandas as pd
-from pandas.testing import assert_frame_equal
 
+from corebehrt.classes.dataset import PatientData
 from corebehrt.functional.filter import (
-    censor_data,
-    filter_patients_by_age_at_last_event,
+    exclude_short_sequences,
+    censor_patient,
+    filter_events_by_abspos,
 )
 
 
-class TestCensorModule(unittest.TestCase):
+class TestExcludeShortSequences(unittest.TestCase):
+    def test_exclude_short_sequences_basic(self):
+        # Create some dummy PatientData objects
+        p1 = PatientData(
+            pid="P1",
+            concepts=[1, 2, 3],
+            abspos=[10.0, 11.0, 12.0],
+            segments=[0, 1, 1],
+            ages=[40.0, 41.0, 42.0],
+        )
+        p2 = PatientData(
+            pid="P2",
+            concepts=[1, 2],
+            abspos=[5.0, 6.0],
+            segments=[0, 0],
+            ages=[30.0, 31.0],
+        )
+        patients = [p1, p2]
 
-    def test_censor_data(self):
-        # Create sample data
-        data = pd.DataFrame(
+        # Only keep patients with concepts >= 3
+        min_len = 3
+        result = exclude_short_sequences(patients, min_len)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].pid, "P1")
+
+    def test_exclude_short_sequences_empty(self):
+        # No patients at all
+        patients = []
+        result = exclude_short_sequences(patients, min_len=2)
+        self.assertEqual(len(result), 0)
+
+    def test_exclude_short_sequences_edge_case(self):
+        # Exactly matching the min_len
+        p1 = PatientData("P1", [1, 2], [10, 11], [0, 1], [40, 41])
+        patients = [p1]
+        result = exclude_short_sequences(patients, min_len=2)
+        # p1 has concept length == min_len, so it should be included
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].pid, "P1")
+
+
+class TestCensorPatient(unittest.TestCase):
+    def test_censor_patient_basic(self):
+        # Setup a single patient
+        p1 = PatientData(
+            pid="P1",
+            concepts=[101, 102, 103],
+            abspos=[1.0, 2.5, 4.0],
+            segments=[0, 0, 1],
+            ages=[30.0, 31.2, 32.1],
+        )
+        censor_dates = {"P1": 2.5}
+
+        censored = censor_patient(p1, censor_dates)
+        self.assertEqual(len(censored.concepts), 2)
+        # We expect only abspos <= 2.5, so indexes 0 and 1 remain
+        self.assertListEqual(censored.concepts, [101, 102])
+        self.assertListEqual(censored.abspos, [1.0, 2.5])
+        self.assertListEqual(censored.segments, [0, 0])
+        self.assertListEqual(censored.ages, [30.0, 31.2])
+
+    def test_censor_patient_no_events(self):
+        # If everything is after the censor date, we get an empty list
+        p1 = PatientData(
+            pid="P1",
+            concepts=[101, 102],
+            abspos=[5.0, 6.0],
+            segments=[0, 1],
+            ages=[30.0, 31.0],
+        )
+        censor_dates = {"P1": 2.0}
+
+        censored = censor_patient(p1, censor_dates)
+        self.assertEqual(len(censored.concepts), 0)
+        self.assertEqual(len(censored.abspos), 0)
+        self.assertEqual(len(censored.segments), 0)
+        self.assertEqual(len(censored.ages), 0)
+
+    def test_censor_patient_all_included(self):
+        # If censor_date is large, everything is included
+        p1 = PatientData("P1", [101], [10.0], [1], [50.0])
+        censor_dates = {"P1": 999.0}
+        censored = censor_patient(p1, censor_dates)
+        self.assertEqual(len(censored.concepts), 1)
+
+
+class TestFilterEventsByAbspos(unittest.TestCase):
+    def test_filter_events_by_abspos_le(self):
+        # Suppose we have event data for multiple patients
+        events = pd.DataFrame(
             {
-                "PID": ["P1", "P1", "P1", "P2", "P2", "P3", "P4"],
-                "abspos": [100, 200, 300, 150, 250, 400, 500],
-                "concept": ["A", "B", "C", "D", "E", "F", "G"],
+                "PID": ["A", "A", "B", "B"],
+                "abspos": [1.0, 3.0, 5.0, 2.0],
+                "some_feature": [10, 20, 30, 40],
             }
         )
-        data_dd = dd.from_pandas(data, npartitions=1)
+        # Reference abspos for each PID
+        abspos_series = pd.Series([2.0, 3.0], index=["A", "B"])
 
-        # Create sample censor_dates
-        censor_dates = pd.Series(
+        result = filter_events_by_abspos(events, abspos_series, operator.le)
+        # For A: abspos <= 2.0 => only row 1.0 remains
+        # For B: abspos <= 3.0 => only row 2.0 remains
+        self.assertEqual(len(result), 2)
+        self.assertListEqual(sorted(result["abspos"].tolist()), [1.0, 2.0])
+
+    def test_filter_events_by_abspos_gt(self):
+        # Another scenario
+        events = pd.DataFrame(
             {
-                "P1": 250,
-                "P2": 200,
-                "P3": 450,
-                # P4 is not in censor_dates
+                "PID": ["A", "A", "B", "C"],
+                "abspos": [2.0, 4.0, 3.0, 10.0],
+                "info": [101, 102, 103, 999],
             }
         )
+        abspos_series = pd.Series([3.0, 1.0, 5.0], index=["A", "B", "C"])
+        # We'll do operator.gt: keep events where event abspos > reference abspos
+        result = filter_events_by_abspos(events, abspos_series, operator.gt)
 
-        # Call the function
-        result_dd = censor_data(data_dd, censor_dates)
+        # Explanation:
+        # - For PID=A, reference=3.0 => keep events with abspos>3 => abspos=4.0
+        # - For PID=B, reference=1.0 => keep events with abspos>1 => abspos=3.0
+        # - For PID=C, reference=5.0 => keep events with abspos>5 => abspos=10.0
+        self.assertEqual(len(result), 3)
+        self.assertListEqual(sorted(result["abspos"].tolist()), [3.0, 4.0, 10.0])
 
-        # Collect the result
-        result = result_dd.compute()
-        result["PID"] = result["PID"].astype("str")
-        result["concept"] = result["concept"].astype("str")
-        # Expected output
-        expected = pd.DataFrame(
+    def test_filter_events_by_abspos_empty_series(self):
+        # If the abspos_series is empty, we get no merges
+        events = pd.DataFrame({"PID": ["A", "B"], "abspos": [2.0, 3.0]})
+        abspos_series = pd.Series(dtype=float)  # empty
+
+        result = filter_events_by_abspos(events, abspos_series, operator.le)
+        self.assertEqual(len(result), 0)
+
+    def test_filter_events_by_abspos_unsorted(self):
+        # Test with unsorted abspos values
+        events = pd.DataFrame(
             {
-                "PID": ["P1", "P1", "P2", "P3"],
-                "abspos": [100, 200, 150, 400],
-                "concept": ["A", "B", "D", "F"],
+                "PID": ["A", "A", "A", "B"],
+                "abspos": [3.0, 1.0, 2.0, 5.0],  # Not in increasing order
+                "info": [101, 102, 103, 104],
             }
         )
+        abspos_series = pd.Series([2.0, 4.0], index=["A", "B"])
 
-        # Sort and reset index for comparison
-        result_sorted = result.sort_values(["PID", "abspos"]).reset_index(drop=True)
-        expected_sorted = expected.sort_values(["PID", "abspos"]).reset_index(drop=True)
+        result = filter_events_by_abspos(events, abspos_series, operator.le)
 
-        # Compare the result with the expected output
-        assert_frame_equal(result_sorted, expected_sorted)
-
-    def test_censor_data_empty_censor_dates(self):
-        # Test with empty censor_dates Series
-        data = pd.DataFrame(
-            {"PID": ["P1", "P1"], "abspos": [100, 200], "concept": ["A", "B"]}
-        )
-        data_dd = dd.from_pandas(data, npartitions=1)
-
-        censor_dates = pd.Series(dtype="int", index=[])
-
-        result_dd = censor_data(data_dd, censor_dates)
-        result = result_dd.compute()
-        self.assertTrue(result.empty)
-
-    def test_censor_data_pid_not_in_censor_dates(self):
-        # Test with PIDs in data not in censor_dates
-        data = pd.DataFrame(
-            {"PID": ["P1", "P5"], "abspos": [100, 200], "concept": ["A", "B"]}
-        )
-        data_dd = dd.from_pandas(data, npartitions=1)
-
-        censor_dates = pd.Series(
-            {
-                "P1": 150,
-                # P5 is not in censor_dates
-            }
-        )
-
-        result_dd = censor_data(data_dd, censor_dates)
-        result = result_dd.compute()
-        result["PID"] = result["PID"].astype("str")
-        result["concept"] = result["concept"].astype("str")
-        expected = pd.DataFrame({"PID": ["P1"], "abspos": [100], "concept": ["A"]})
-
-        assert_frame_equal(
-            result.reset_index(drop=True), expected.reset_index(drop=True)
-        )
-
-
-class TestFilterPatientsByAge(unittest.TestCase):
-
-    def test_filter_patients_by_age_at_last_event(self):
-        # Create sample data
-        data = pd.DataFrame(
-            {
-                "PID": ["P1", "P1", "P2", "P2", "P3", "P4"],
-                "age": [30, 31, 45, 46, 60, 65],
-                "concept": ["A", "B", "C", "D", "E", "F"],
-            }
-        )
-        data_dd = dd.from_pandas(data, npartitions=1)
-
-        # Define age range
-        min_age = 31
-        max_age = 60
-
-        # Call the function
-        result_dd = filter_patients_by_age_at_last_event(data_dd, min_age, max_age)
-        result = result_dd.compute()
-
-        # Expected output
-        expected = pd.DataFrame(
-            {
-                "PID": pd.Series(["P1", "P1", "P2", "P2", "P3"]),
-                "age": [30, 31, 45, 46, 60],
-                "concept": pd.Series(["A", "B", "C", "D", "E"]),
-            }
-        )
-        # Sort and reset index for comparison
-        result["PID"] = result["PID"].astype("str")
-        result["concept"] = result["concept"].astype("str")
-        result_sorted = result.sort_values(["PID", "age"]).reset_index(drop=True)
-        expected_sorted = expected.sort_values(["PID", "age"]).reset_index(drop=True)
-
-        # Compare the result with the expected output
-        assert_frame_equal(result_sorted, expected_sorted)
-
-    def test_filter_patients_by_age_at_last_event_no_patients_in_range(self):
-        # Create sample data
-        data = pd.DataFrame(
-            {"PID": ["P1", "P2", "P3"], "age": [25, 26, 27], "concept": ["A", "B", "C"]}
-        )
-        data_dd = dd.from_pandas(data, npartitions=1)
-
-        # Define age range where no patients fall into
-        min_age = 30
-        max_age = 40
-
-        # Call the function
-        result_dd = filter_patients_by_age_at_last_event(data_dd, min_age, max_age)
-        result = result_dd.compute()
-
-        # check that result is empty
-        self.assertTrue(result.empty)
-
-    def test_filter_patients_by_age_at_last_event_all_patients_in_range(self):
-        # Create sample data
-        data = pd.DataFrame(
-            {
-                "PID": ["P1", "P1", "P2", "P2"],
-                "age": [40, 41, 42, 43],
-                "concept": ["A", "B", "C", "D"],
-            }
-        )
-        data_dd = dd.from_pandas(data, npartitions=1)
-
-        # Define age range that includes all patients
-        min_age = 40
-        max_age = 50
-
-        # Call the function
-        result_dd = filter_patients_by_age_at_last_event(data_dd, min_age, max_age)
-        result = result_dd.compute()
-
-        # Expected output is the same as the input data
-        expected = data
-        result["PID"] = result["PID"].astype("str")
-        result["concept"] = result["concept"].astype("str")
-        # Sort and reset index for comparison
-        result_sorted = result.sort_values(["PID", "age"]).reset_index(drop=True)
-        expected_sorted = expected.sort_values(["PID", "age"]).reset_index(drop=True)
-
-        # Compare the result with the expected output
-        assert_frame_equal(result_sorted, expected_sorted)
+        # Should still work correctly regardless of input order
+        # For A: abspos <= 2.0 => keeps events with abspos 1.0 and 2.0
+        # For B: abspos <= 4.0 => no events kept
+        self.assertEqual(len(result), 2)
+        self.assertListEqual(sorted(result["abspos"].tolist()), [1.0, 2.0])
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from collections import namedtuple
 
 from torch.utils.data import DataLoader, Dataset
 from corebehrt.common.config import Config, instantiate_class
-from corebehrt.dataloader.collate_fn import dynamic_padding
+from corebehrt.functional.trainer_utils import dynamic_padding
 from corebehrt.trainer.utils import (
     compute_avg_metrics,
     get_tqdm,
@@ -107,7 +107,6 @@ class EHRTrainer:
             raise ValueError("effective_batch_size must be a multiple of batch_size")
 
     def _initialize_early_stopping(self):
-        self.best_val_loss = float("inf")  # Best observed validation loss
         early_stopping = self.cfg.trainer_args.get("early_stopping", False)
         self.early_stopping = True if early_stopping else False
         self.early_stopping_patience = (
@@ -131,7 +130,7 @@ class EHRTrainer:
             self.args["effective_batch_size"] // self.args["batch_size"]
         )
         dataloader = self.setup_training()
-        self.log(f"Test validation before starting training")
+        self.log("Test validation before starting training")
         self.validate_and_log(0, [0], dataloader)
         for epoch in range(self.continue_epoch, self.args["epochs"]):
             self._train_epoch(epoch, dataloader)

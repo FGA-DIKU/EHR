@@ -2,7 +2,7 @@ import os
 import unittest
 import tempfile
 import torch
-from corebehrt.functional.load import load_pids, load_predefined_pids
+from corebehrt.functional.load import load_pids
 
 
 class TestLoadPIDs(unittest.TestCase):
@@ -40,29 +40,6 @@ class TestLoadPIDs(unittest.TestCase):
     def test_load_pids_multiple_files(self):
         pids = load_pids(self.multi_files)
         self.assertEqual(pids, {1, 2, 3, 4, 5, 6})
-
-    # Test load_predefined_pids
-    def test_load_predefined_pids_with_pids_pt(self):
-        predefined_pids_file = os.path.join(self.split_path, "pids.pt")
-        torch.save([7, 8, 9], predefined_pids_file)
-        pids = load_predefined_pids(self.split_path)
-        self.assertEqual(pids, {7, 8, 9})
-
-    def test_load_predefined_pids_with_pt_path(self):
-        pids = load_predefined_pids(self.single_file)
-        self.assertEqual(pids, {1, 2, 3})
-
-    def test_load_predefined_pids_list(self):
-        pids = load_predefined_pids(self.multi_files)
-        self.assertEqual(pids, {1, 2, 3, 4, 5, 6})
-
-    def test_load_predefined_pids_with_single_mode(self):
-        pids = load_predefined_pids(self.split_path, mode="train")
-        self.assertEqual(pids, {1, 2, 3})
-
-    def test_load_predefined_pids_with_multiple_modes(self):
-        pids = load_predefined_pids(self.split_path, mode=["train", "test"])
-        self.assertEqual(pids, {1, 2, 3, 4, 100})
 
 
 if __name__ == "__main__":

@@ -3,19 +3,16 @@ import operator
 from datetime import datetime
 from typing import Dict, List, Tuple
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
-from corebehrt.functional.exclude import exclude_pids_from_data
 from corebehrt.functional.filter import filter_events_by_abspos
 from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
-    get_first_event_by_pid,
-    get_pids,
-    remove_missing_timestamps,
     get_abspos_from_origin_point,
+    get_first_event_by_pid,
+    remove_missing_timestamps,
 )
 
 logger = logging.getLogger(__name__)
@@ -114,7 +111,7 @@ class OutcomeHandler:
 
     def handle(
         self,
-        data: dd.DataFrame,
+        data_pids: List[str],
         outcomes: pd.DataFrame,
         exposures: pd.DataFrame,
     ) -> Tuple[Dict[str, List], Dict[str, List]]:
@@ -134,7 +131,6 @@ class OutcomeHandler:
         """
         self.check_input(outcomes, exposures)
         # Step 1: Filter outcomes and index_dates to include only relevant patients
-        data_pids = get_pids(data)
         outcomes = filter_table_by_pids(outcomes, data_pids)
         index_dates = filter_table_by_pids(exposures, data_pids)
 
@@ -145,38 +141,22 @@ class OutcomeHandler:
         if self.index_date:
             index_dates = self.compute_abspos_for_index_date(data_pids)
 
-        exposed_patients = set(index_dates.index)
-        # Step 4 (Optional): Select only exposed/unexposed patients
-        if self.select_patient_group:
-            data = self.select_exposed_or_unexposed_patients(
-                data, exposed_patients, self.select_patient_group
-            )
-        if self.select_patient_group != "exposed":
-            # Step 5: Assign censoring to patients without it (random assignment)
-            logger.info(f"Number of exposed patients: {len(exposed_patients)}")
-            index_dates = self.draw_index_dates_for_unexposed(
-                index_dates, get_pids(data)
-            )
+        # Step 5: Assign censoring to patients without it (random assignment)
+        logger.info(f"Number of exposed patients: {len(set(index_dates.index))}")
+        index_dates = self.draw_index_dates_for_unexposed(index_dates, data_pids)
 
         # Step 6: Select first outcome after censoring for each patient
-        follow_up_dates = index_dates + self.n_hours_start_followup
-        outcomes, pids_outcome_pre_followup = self.get_first_outcome_in_follow_up(
-            outcomes, follow_up_dates
+        outcomes = self.get_first_outcome_in_follow_up(
+            outcomes, index_dates, self.n_hours_start_followup
         )
-        # Step 7 (Optional): Remove patients with outcome(s) before censoring
-        if self.exclude_pre_followup_outcome_patients:
-            logger.info(
-                f"Remove {len(pids_outcome_pre_followup)} patients with outcome before start of follow-up."
-            )
-            data = exclude_pids_from_data(data, pids_outcome_pre_followup)
 
         # Step 8: Assign outcomes and censor outcomes to data
-        index_dates = self.synchronize_patients(data, index_dates)
-        outcomes = self.synchronize_patients(data, outcomes)
-        return data, index_dates, outcomes
+        index_dates = self.synchronize_patients(data_pids, index_dates)
+        outcomes = self.synchronize_patients(data_pids, outcomes)
+        return index_dates, outcomes
 
     def synchronize_patients(
-        self, data: dd.DataFrame, timestamps: pd.Series
+        self, data_pids: List[str], timestamps: pd.Series
     ) -> pd.Series:
         """
         Synchronize patients in timestamps with data.
@@ -184,8 +164,7 @@ class OutcomeHandler:
         PIDs in timestamps that are not present in data will be assigned nan as timestamp.
         """
         logger.info("Synchronizing patients in data with timestamps.")
-        pids = get_pids(data)
-        timestamps = timestamps.reindex(pids)
+        timestamps = timestamps.reindex(data_pids)
         timestamps = timestamps.astype(pd.Float64Dtype())
         return timestamps
 
@@ -195,22 +174,6 @@ class OutcomeHandler:
         for df, name in [(outcomes, "outcomes"), (exposures, "exposures")]:
             if not required_columns.issubset(set(df.columns)):
                 raise ValueError(f"{name} must have columns PID and abspos.")
-
-    @staticmethod
-    def select_exposed_or_unexposed_patients(
-        data: dd.DataFrame, exposed_patients: set, select_patient_group: str
-    ) -> dd.DataFrame:
-        """Select only exposed or unexposed patients."""
-        logger.info(f"Selecting only {select_patient_group} patients.")
-        if select_patient_group == "exposed":
-            data = filter_table_by_pids(data, exposed_patients)
-        elif select_patient_group == "unexposed":
-            data = exclude_pids_from_data(data, exposed_patients)
-        else:
-            raise ValueError(
-                f"select_patient_group must be one of None, exposed or unexposed, not {select_patient_group}"
-            )
-        return data
 
     @staticmethod
     def draw_index_dates_for_unexposed(
@@ -241,15 +204,25 @@ class OutcomeHandler:
         return pd.Series(outcome_abspos * len(pids), index=pids)
 
     def get_first_outcome_in_follow_up(
-        self, outcomes: pd.DataFrame, follow_up_dates: pd.Series
-    ) -> Tuple[pd.Series, set]:
-        """Get the first outcome event occurring at or after the follow_up date for each PID."""
-        # First filter the outcomes based on the censor timestamps
+        self,
+        outcomes: pd.DataFrame,
+        index_dates: pd.Series,
+        n_hours_start_followup: int,
+    ) -> pd.Series:
+        """Get the first outcome event occurring at or after the follow-up date for each PID.
+
+        Args:
+            outcomes: DataFrame containing outcome events with columns PID and abspos
+            index_dates: Series mapping PIDs to their index dates (in abspos)
+            n_hours_start_followup: Number of hours after index date to start follow-up period
+
+        Returns:
+            Series mapping PIDs to abspos of their first outcome event during follow-up.
+            Only includes PIDs that had an outcome during follow-up.
+        """
+        start_followup_date = index_dates + n_hours_start_followup
         filtered_outcomes = filter_events_by_abspos(
-            outcomes, follow_up_dates, operator.ge
-        )
-        pids_w_outcome_pre_followup = set(outcomes["PID"].unique()) - set(
-            filtered_outcomes["PID"].unique()
+            outcomes, start_followup_date, operator.ge
         )
         first_outcome = get_first_event_by_pid(filtered_outcomes)
-        return first_outcome, pids_w_outcome_pre_followup
+        return first_outcome

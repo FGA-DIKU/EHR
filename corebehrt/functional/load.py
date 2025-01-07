@@ -3,10 +3,12 @@
 import os
 from glob import glob
 from os.path import join
-from typing import Dict, Set, List, Union
+from typing import Dict, List, Set, Union
 
 import dask.dataframe as dd
 import torch
+
+from corebehrt.common.setup import VOCABULARY_FILE
 
 
 # Taken from common.loader
@@ -17,21 +19,6 @@ def load_pids(files: Union[List, str]) -> Set:
     pids = set()
     for file in files:
         pids.update(set(torch.load(file, weights_only=True)))
-    return pids
-
-
-def load_predefined_pids(
-    split_path: str, mode: Union[List, str] = ["train", "val"]
-) -> Set:
-    if isinstance(split_path, List) or str(split_path).endswith(".pt"):
-        pids = load_pids(split_path)
-    elif os.path.exists(join(split_path, "pids.pt")):
-        pids = load_pids(join(split_path, "pids.pt"))
-    else:
-        if isinstance(mode, str):
-            mode = [mode]
-        split_paths = [join(split_path, f"pids_{m}.pt") for m in mode]
-        pids = load_pids(split_paths)
     return pids
 
 
@@ -88,11 +75,11 @@ def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
     return df
 
 
-def load_vocabulary(path: str) -> Dict:
+def load_vocabulary(dir_: str) -> Dict:
     """
-    Load a vocabulary from the given path.
+    Load a vocabulary from the given directory.
     """
-    return torch.load(path, weights_only=True)
+    return torch.load(join(dir_, VOCABULARY_FILE), weights_only=True)
 
 
 def get_file_with_pattern(folder: str, pattern: str) -> List[str]:

@@ -4,12 +4,6 @@ import logging
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
-PID_KEY = "PID"
-BG_GENDER_KEYS = {
-    "male": ["M", "Mand", "male", "Male", "man", "MAN", "1"],
-    "female": ["W", "Kvinde", "F", "female", "Female", "woman", "WOMAN", "0"],
-}
-MIN_POSITIVES = {"finetune": 1, None: 1}
 CHECKPOINT_FOLDER = "checkpoints"
 ORIGIN_POINT = {
     "year": 2020,

@@ -1,12 +1,12 @@
-import unittest
-import dask.dataframe as dd
-import torch
 import os
-import tempfile
 import shutil
-from corebehrt.functional.save import save_sequence_lengths, save_data, save_pids_splits
-import pandas as pd
-from os.path import join
+import tempfile
+import unittest
+
+import torch
+
+from corebehrt.classes.dataset import PatientData, PatientDataset
+from corebehrt.functional.save import save_pids_splits
 
 
 class TestSaveFunctions(unittest.TestCase):
@@ -19,58 +19,22 @@ class TestSaveFunctions(unittest.TestCase):
         # Remove the directory after the test
         shutil.rmtree(self.test_dir)
 
-    def test_save_sequence_lengths(self):
-        # Create a mock DataFrame with expected structure
-        df = pd.DataFrame(
-            {"col1": list(range(10)) + list(range(5)), "PID": [1] * 10 + [2] * 5}
-        )
-        mock_df = dd.from_pandas(df, npartitions=1)
-        desc = "_test"
-
-        # Call the function under test
-        save_sequence_lengths(mock_df, self.test_dir, desc)
-
-        # Load the saved file and verify its contents
-        saved_lengths = torch.load(
-            os.path.join(self.test_dir, f"sequences_lengths{desc}.pt"),
-            weights_only=True,
-        )
-        self.assertListEqual(saved_lengths, [10, 5])
-
-    def test_save_data(self):
-        mock_df = dd.from_pandas(pd.DataFrame({"col1": range(6)}), npartitions=1)
-        mock_df["PID"] = 1
-        vocabulary = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6}
-        desc = "_test"
-
-        save_data(mock_df, vocabulary, self.test_dir, desc)
-
-        # Verify the CSV file exists and check a few properties
-        data_path = os.path.join(self.test_dir, f"data{desc}")
-        self.assertTrue(os.path.exists(data_path))
-        loaded_data = dd.read_csv(
-            join(
-                data_path,
-                "*.csv",
-            )
-        )
-        self.assertEqual(loaded_data["col1"].compute().tolist(), list(range(6)))
-
-        # Load and verify vocabulary
-        loaded_vocabulary = torch.load(
-            os.path.join(self.test_dir, f"vocabulary.pt"), weights_only=True
-        )
-        self.assertEqual(vocabulary, loaded_vocabulary)
-
     def test_save_pids_splits(self):
-        mock_train_df = dd.from_pandas(
-            pd.DataFrame({"PID": ["pid1", "pid2"]}), npartitions=1
+        # Create mock PatientDataset instances with PatientData objects
+        mock_train_dataset = PatientDataset(
+            patients=[
+                PatientData(pid="pid1", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid="pid2", concepts=[], abspos=[], segments=[], ages=[]),
+            ],
         )
-        mock_val_df = dd.from_pandas(
-            pd.DataFrame({"PID": ["pid3", "pid4"]}), npartitions=1
+        mock_val_dataset = PatientDataset(
+            patients=[
+                PatientData(pid="pid3", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid="pid4", concepts=[], abspos=[], segments=[], ages=[]),
+            ],
         )
 
-        save_pids_splits(mock_train_df, mock_val_df, self.test_dir)
+        save_pids_splits(mock_train_dataset, mock_val_dataset, self.test_dir)
 
         # Load and verify train PIDs
         train_pids = torch.load(

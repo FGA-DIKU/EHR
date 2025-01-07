@@ -8,7 +8,7 @@ from corebehrt.main.create_data import main_data
 from corebehrt.common.setup import DATA_CFG
 
 from .base import TestMainScript
-from corebehrt.functional.convert import convert_to_sequences
+from corebehrt.functional.convert import dataframe_to_patient_list
 
 
 class TestCreateData(TestMainScript):
@@ -43,7 +43,7 @@ class TestCreateData(TestMainScript):
                     },
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
-                "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
+                "excluder": {"min_age": -1, "max_age": 120},
                 "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
             }
         )
@@ -84,18 +84,32 @@ class TestCreateData(TestMainScript):
 
         # 5. Check tokenisation
         for mode in ["pretrain", "finetune", "test"]:
+            # Load the parquet file and immediately convert to pandas DataFrame
             tokenised_features = dd.read_parquet(
                 join(
                     self.tokenized_dir,
                     f"features_{mode}",
                 )
-            )
-            sequences, _ = convert_to_sequences(tokenised_features)
-            for cons, positions in zip(sequences["concept"], sequences["abspos"]):
-                self.assertTrue(cons[0] == vocab["[CLS]"])
-                self.assertTrue((cons[1] in bg_tokens))
+            ).compute()
 
-                index_vals = [i for i, x in enumerate(cons) if x in val_tokens]
+            # Debug print to verify DataFrame structure
+            print(f"Columns in DataFrame: {tokenised_features.columns}")
+            print(f"First few rows:\n{tokenised_features.head()}")
+
+            # Ensure required columns exist
+            required_columns = ["PID", "concept", "abspos", "segment", "age"]
+            for col in required_columns:
+                self.assertIn(
+                    col, tokenised_features.columns, f"Missing required column: {col}"
+                )
+
+            patient_list = dataframe_to_patient_list(tokenised_features)
+            for patient in patient_list:
+                concepts = patient.concepts
+                self.assertTrue(concepts[0] == vocab["[CLS]"])
+                self.assertTrue(concepts[1] in bg_tokens)
+
+                index_vals = [i for i, x in enumerate(concepts) if x in val_tokens]
                 for i in range(len(index_vals) - 1):
                     self.assertNotEqual(
                         index_vals[i] + 1,

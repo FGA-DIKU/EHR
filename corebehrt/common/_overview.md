@@ -22,8 +22,6 @@ Notes: Revamp to be less dependent on specific file extensions
 ### logger.py
 Don't understand? Is this really needed?
 
-### saver.py
-Classes: Saver
 
 Functional: Basically all
  - Except they should be simplified - make a general function (e.g. just object, name args)

@@ -6,8 +6,6 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
-  # tokenized_file: "features_finetune.pt" # can also be a list
-  # tokenized_pids: "pids_finetune.pt" # can also be a list
  
   pretrain_model: ./outputs/pretraining
  
@@ -17,8 +15,6 @@ paths:
   # Optional:
   exposure: ./outputs/outcomes/TEST_CENSOR.csv
   
-  # predefined_splits: outputs/pretraining/behrt_base
-  # exclude_pids: pids_path
 
 ## OUTPUTS
   model: ./outputs/finetuning # Save model/outputs to this folder
@@ -29,11 +25,11 @@ model:
   # hidden_size: null
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
-    bidirectional: true
+    bidirectional: false
 data:
   cv_splits: 2
   val_split: 0.1
-  test_split: 0.1
+  test_split: 0.0
   truncation_len: 30
   min_len: 2
   censorer:
@@ -42,7 +38,11 @@ data:
 outcome: 
   n_hours_censoring: -10 # censor time after index date (negative means before)
   n_hours_start_follow_up: -1 # start follow up (considering outcomes) time after index date (negative means before)
-  first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  first_time_outcomes_only: true # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  index_date: 
+    year: 2020
+    month: 1
+    day: 26
 
 trainer_args:
   sampler: true
@@ -51,7 +51,7 @@ trainer_args:
   batch_size: 8
   val_batch_size: 16
   effective_batch_size: 16
-  epochs: 3
+  epochs: 2
   info: true
   gradient_clip: 
     clip_value: 1.0
@@ -77,18 +77,6 @@ metrics:
     _target_: corebehrt.evaluation.metrics.ROC_AUC
   pr_auc:
     _target_: corebehrt.evaluation.metrics.PR_AUC
-  precentage_positives:
-    _target_: corebehrt.evaluation.metrics.Percentage_Positives
-  mean_probability:
-    _target_: corebehrt.evaluation.metrics.Mean_Probability
-  true_positives:
-    _target_: corebehrt.evaluation.metrics.True_Positives
-  true_negatives:
-    _target_: corebehrt.evaluation.metrics.True_Negatives
-  false_positives:
-    _target_: corebehrt.evaluation.metrics.False_Positives
-  false_negatives:
-    _target_: corebehrt.evaluation.metrics.False_Negatives
-  
+
   
  
