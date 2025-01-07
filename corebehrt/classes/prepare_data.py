@@ -96,11 +96,6 @@ class DatasetPreparer:
             non_priority_tokens=non_priority_tokens,
         )
 
-        # Normalize segments
-        def normalize_segments_for_patient(patient: PatientData) -> PatientData:
-            normalized_segments = normalize_segments(patient.segments)
-            return replace(patient, segments=normalized_segments)
-
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Check if max segment is larger than type_vocab b_size
         # TODO: pass pt_model_config and perform this check
