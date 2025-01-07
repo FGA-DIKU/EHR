@@ -91,7 +91,7 @@ def main_data(config_path):
     features_path = cfg.paths.features
     tokenized_path = cfg.paths.tokenized
 
-    with ProgressBar(dt=1):
+    with ProgressBar(dt=10):
         logger.info("Tokenizing pretrain")
         load_tokenize_and_save(
             features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
@@ -143,7 +143,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         include_values=(getattr(cfg.loader, "include_values", [])),
     ).load()
 
-    with ProgressBar(dt=1):
+    with ProgressBar(dt=100):
         if "values" in cfg.features:
             value_creator = ValueCreator(**cfg.features.values)
             concepts = value_creator(concepts)
