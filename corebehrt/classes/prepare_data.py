@@ -47,7 +47,7 @@ class DatasetPreparer:
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(self.processed_dir)
+        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
 
         # Loading and processing outcomes
