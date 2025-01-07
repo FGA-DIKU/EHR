@@ -1,7 +1,6 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
 import logging
-from os.path import join
 
 from corebehrt.classes.dataset import MLMDataset
 from corebehrt.classes.prepare_data import DatasetPreparer
@@ -11,7 +10,7 @@ from corebehrt.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
 )
-from corebehrt.common.setup import VOCABULARY_FILE, DirectoryPreparer, get_args
+from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val

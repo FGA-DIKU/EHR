@@ -1,6 +1,6 @@
 """ Random utils, should be structered later """
 
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 from datetime import datetime
 from typing import List, Set, Union
 
@@ -11,10 +11,8 @@ from corebehrt.classes.dataset import PatientData
 
 
 def normalize_segments_for_patient(patient: PatientData) -> PatientData:
-    segments = patient.segments
-    normalized_segments = normalize_segments(segments)
-    patient.segments = normalized_segments
-    return patient
+    normalized_segments = normalize_segments(patient.segments)
+    return replace(patient, segments=normalized_segments)
 
 
 def normalize_segments(segments: List[int]) -> List[int]:
