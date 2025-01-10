@@ -41,7 +41,7 @@ class TestCreateData(TestMainScript):
                     },
                 },
                 "tokenizer": {},
-                "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
+                "excluder": {"min_age": -1, "max_age": 120},
                 "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
             }
         )
