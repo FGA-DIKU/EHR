@@ -35,10 +35,6 @@ class TestEHRTokenizer(unittest.TestCase):
         result = tokenizer(self.ddf)
         result_df = result.compute()
 
-        # Check if special tokens are added
-        self.assertIn(tokenizer.vocabulary[CLS_TOKEN], result_df["concept"].values)
-        self.assertIn(tokenizer.vocabulary[SEP_TOKEN], result_df["concept"].values)
-
         # Check if vocabulary is updated with concepts
         self.assertIn("C1", tokenizer.vocabulary)
         self.assertIn("C2", tokenizer.vocabulary)
@@ -73,7 +69,7 @@ class TestEHRTokenizer(unittest.TestCase):
     def test_tokenizer_with_cutoffs(self):
         """Test tokenizer with cutoffs applied."""
         cutoffs = {"C2": 1}  # Limit concepts starting with 'C2' to length 1
-        tokenizer = EHRTokenizer(cutoffs=cutoffs, cls_token=False, sep_tokens=False)
+        tokenizer = EHRTokenizer(cutoffs=cutoffs)
         result = tokenizer(self.ddf)
         result_df = result.compute()
 
@@ -117,7 +113,7 @@ class TestEHRTokenizer(unittest.TestCase):
 
     def test_tokenizer_without_special_tokens(self):
         """Test tokenizer without adding special tokens."""
-        tokenizer = EHRTokenizer(sep_tokens=False, cls_token=False)
+        tokenizer = EHRTokenizer()
         result = tokenizer(self.ddf)
         result_df = result.compute()
 
@@ -127,7 +123,7 @@ class TestEHRTokenizer(unittest.TestCase):
 
     def test_tokenizer_freeze_vocabulary(self):
         """Test tokenizer with frozen vocabulary."""
-        tokenizer = EHRTokenizer(sep_tokens=False, cls_token=False)
+        tokenizer = EHRTokenizer()
         tokenizer.freeze_vocabulary()
         result = tokenizer(self.ddf)
         result_df = result.compute()
@@ -162,56 +158,6 @@ class TestEHRTokenizer(unittest.TestCase):
             self.assertTrue(
                 all(x <= y for x, y in zip(abspos_values, abspos_values[1:]))
             )
-
-    def test_tokenizer_segment_changes(self):
-        """Test that SEP_TOKEN tokens are added at segment changes."""
-        tokenizer = EHRTokenizer(sep_tokens=True, cls_token=False)
-        result = tokenizer(self.ddf)
-        result_df = result.compute()
-
-        # Reset index to access 'PID' as a column
-        result_df = result_df.reset_index()
-
-        # Identify positions of SEP_TOKEN tokens
-        sep_token_id = tokenizer.vocabulary[SEP_TOKEN]
-
-        # For each PID, check that SEP_TOKEN tokens are correctly placed
-        for pid in result_df["PID"].unique():
-            pid_df = result_df[result_df["PID"] == pid].reset_index(drop=True)
-
-            # Calculate segment changes as per the function
-            segment_changes = pid_df.index[
-                (pid_df["segment"] != pid_df["segment"].shift(-1))
-                & (pid_df["segment"].shift(-1).notnull())
-            ].tolist()
-
-            # Get indices of SEP_TOKEN tokens for this PID
-            sep_indices = pid_df.index[pid_df["concept"] == sep_token_id].tolist()
-
-            # Check that number of SEP_TOKEN tokens matches number of segment changes
-            self.assertEqual(len(segment_changes), len(sep_indices))
-
-            # Check that SEP_TOKEN tokens appear at the correct positions
-            for change_idx, sep_idx in zip(segment_changes, sep_indices):
-                # The SEP_TOKEN should be at the same index as the segment change
-                self.assertEqual(sep_idx, change_idx)
-
-    def test_tokenizer_cls_token(self):
-        """Test that CLS_TOKEN is added at the beginning of each PID sequence."""
-        tokenizer = EHRTokenizer(cls_token=True, sep_tokens=False)
-        result = tokenizer(self.ddf)
-        result_df = result.compute()
-
-        # Reset index to access 'PID' as a column
-        result_df = result_df.reset_index()
-
-        cls_token_id = tokenizer.vocabulary[CLS_TOKEN]
-
-        # Check that the first concept for each PID is CLS_TOKEN
-        for pid in result_df["PID"].unique():
-            pid_df = result_df[result_df["PID"] == pid]
-            first_concept = pid_df["concept"].iloc[0]
-            self.assertEqual(first_concept, cls_token_id)
 
 
 if __name__ == "__main__":

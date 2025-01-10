@@ -1,12 +1,14 @@
 from os.path import exists, join
 
-import dask.dataframe as dd
-from tests.helpers import compute_column_checksum
 import torch
 import pandas as pd
+import dask.dataframe as dd
 
+from tests.helpers import compute_column_checksum
 from corebehrt.main.create_data import main_data
 from corebehrt.common.setup import DATA_CFG
+from corebehrt.functional.constants import CLS_TOKEN, SEP_TOKEN
+
 
 from .base import TestMainScript
 
@@ -27,14 +29,19 @@ class TestCreateData(TestMainScript):
                     "tokenized": self.tokenized_dir,
                 },
                 "loader": {
-                    "concept_types": ["diagnose", "medication"],
+                    "concept_types": ["diagnose", "medication", "labtest"],
                 },
                 "features": {
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
                     "background_vars": ["GENDER"],
+                    "sep_token": True, 
+                    "cls_token": True,
+                    "values": {
+                        "num_bins": 100,
+                    },
                 },
-                "tokenizer": {"sep_tokens": True, "cls_token": True},
-                "excluder": {"min_age": -1, "max_age": 120},
+                "tokenizer": {},
+                "excluder": {"min_len": 2, "min_age": -1, "max_age": 120},
                 "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
             }
         )
@@ -97,6 +104,15 @@ class TestCreateData(TestMainScript):
                         expected_segment,
                         f"Segments for PID {pid} do not match.",
                     )
+
+        # 2.4: Check special tokens
+        self.assertTrue((features.groupby("PID")["concept"].head(1) == CLS_TOKEN).all())
+        self.assertTrue((features.groupby(["PID", "segment"])["concept"].tail(1) == SEP_TOKEN).all())
+
+        # 2.5: Check ordering
+        self.assertTrue(
+            (features.groupby("PID")["abspos"].apply(lambda x: x.is_monotonic_increasing)).all()
+        )
 
         # 3: Check vocabulary
         vocab_path = join(self.tokenized_dir, "vocabulary.pt")

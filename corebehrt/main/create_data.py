@@ -1,15 +1,8 @@
-"""
-Input: Formatted Data
-- Load concepts
-- Handle wrong data
-- Exclude patients with <k concepts
-- Split data
-- Tokenize
-- truncate train and val
-"""
-
+# Description: This script is used to create and process features from the raw data.
 import os
 from os.path import join
+from pathlib import Path
+from collections import defaultdict
 
 import logging
 import dask.dataframe as dd
@@ -23,8 +16,6 @@ from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.load import load_vocabulary
-from corebehrt.classes.loader import FormattedDataLoader
-from corebehrt.classes.values import ValueCreator
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
@@ -38,80 +29,87 @@ SCHEMA = {
 FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
 TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
 
+default_dtypes = defaultdict(lambda: "string[pyarrow]", {"RESULT": "float64"})
 
 def main_data(config_path):
-    """
-    Loads data
-    Finds outcomes
-    Creates features
-    Handles wrong data
-    Excludes patients with <k concepts
-    Splits data
-    Tokenizes
-    Saves
-    """
     cfg = load_config(config_path)
 
     DirectoryPreparer(cfg).setup_create_data()
 
     logger = logging.getLogger("create_data")
-    logger.info("Initialize Processors")
-    logger.info("Starting feature creation and processing")
+    logger.info("Loading formatted features")
 
-    # TODO: temporary fix/check until we split the script into two.
-    # As cfg.paths.features is always set, its value cannot be used to decide
-    # if features are present.
-    if os.path.exists(join(cfg.paths.features, "part.0.parquet")):
-        logger.info("Reusing existing features")
-    else:
-        logger.info("Create and process features")
-        create_and_save_features(
-            Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
-            cfg,
+    # Load formatted data and create background
+    raw_dir = Path(cfg.paths.data)
+    concepts = dd.concat([
+        dd.read_csv(
+            raw_dir / f"concept.{concept_type}.csv", 
+            dtype=default_dtypes
         )
-        logger.info("Finished feature creation and processing")
-
-    logger.info("Get all pids")
-    df = dd.read_parquet(cfg.paths.features)
-    pids = df.PID.unique().compute().tolist()
-
-    logger.info("Split pids")
-    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
-        pids, **cfg.split_ratios
+        for concept_type in cfg.loader.concept_types
+    ])
+    # parse_date did not play nice, so we do conversion manually
+    concepts["TIMESTAMP"] = dd.to_datetime(concepts["TIMESTAMP"]).dt.tz_localize(None).astype("datetime64[ns]")
+    
+    patients_info = dd.read_csv(
+        raw_dir / "patients_info.csv", 
+        dtype=default_dtypes, 
     )
+    # parse_date did not play nice, so we do conversion manually
+    patients_info["BIRTHDATE"] = dd.to_datetime(patients_info["BIRTHDATE"]).dt.tz_localize(None)
+    patients_info["DEATHDATE"] = dd.to_datetime(patients_info["DEATHDATE"]).dt.tz_localize(None)   
 
-    logger.info("Tokenizing")
-
+    # Initialize tokenizer
     vocabulary = None
     if "vocabulary" in cfg.paths:
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = load_vocabulary(cfg.paths.vocabulary)
     tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
 
-    features_path = cfg.paths.features
-    tokenized_path = cfg.paths.tokenized
+    # Load or create features
+    if os.path.exists(join(cfg.paths.features, "part.0.parquet")):
+        logger.info("Reusing existing features")
+        features = dd.read_parquet(cfg.paths.features)
+    else:
+        logger.info("Create and process features")
+        with ProgressBar(dt=1):
+            feature_creator = FeatureCreator(**cfg.features)
+            features = feature_creator(patients_info, concepts)
 
-    with ProgressBar(dt=10):
-        logger.info("Tokenizing pretrain")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
-        )
-        tokenizer.freeze_vocabulary()
-        logger.info("Tokenizing finetune")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "finetune", finetune_pids
-        )
-        logger.info("Tokenizing test")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "test", test_pids
-        )
+            excluder = Excluder(**cfg.excluder)
+            features = excluder.exclude_incorrect_events(features)
 
-    torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
+            features.to_parquet(
+                cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
+            )
+            logger.info("Finished feature creation and processing")
+    
+    logger.info("Split pids")
+    pids = features.PID.unique().compute().tolist()
+    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
+        pids, **cfg.split_ratios
+    )
+
+    logger.info("Tokenizing")
+    with ProgressBar(dt=1):
+        for split, pids in zip(["pretrain", "finetune", "test"], [pretrain_pids, finetune_pids, test_pids]):
+            df = features[features.PID.isin(pids)]
+            df = tokenizer(df)
+            torch.save(pids, join(cfg.paths.tokenized, f"pids_{split}.pt"))
+            df.to_parquet(
+                join(cfg.paths.tokenized, f"features_{split}"),
+                write_index=False,
+                schema=TOKENIZED_SCHEMA,
+            )
+            if split == "pretrain":
+                tokenizer.freeze_vocabulary()
+
+    torch.save(tokenizer.vocabulary, join(cfg.paths.tokenized, "vocabulary.pt"))
     logger.info("Finished tokenizing")
 
 
-def load_tokenize_and_save(
-    features_path: str,
+def split_tokenize_and_save(
+    features: dd.DataFrame,
     tokenizer: EHRTokenizer,
     tokenized_path: str,
     split: str,
@@ -120,43 +118,14 @@ def load_tokenize_and_save(
     """
     Load df for selected pids, tokenize and write to tokenized_path.
     """
-    df = dd.read_parquet(features_path, filters=[("PID", "in", set(pids))]).set_index(
-        "PID"
-    )
-    df = tokenizer(df).reset_index()
+    df = features[features.PID.isin(pids)]
+    df = tokenizer(df)
     df.to_parquet(
         join(tokenized_path, f"features_{split}"),
         write_index=False,
         schema=TOKENIZED_SCHEMA,
     )
     torch.save(pids, join(tokenized_path, f"pids_{split}.pt"))
-
-
-def create_and_save_features(excluder: Excluder, cfg) -> None:
-    """
-    Creates features and saves them to disk.
-    Returns a list of lists of pids for each batch
-    """
-    concepts, patients_info = FormattedDataLoader(
-        cfg.paths.data,
-        cfg.loader.concept_types,
-        include_values=(getattr(cfg.loader, "include_values", [])),
-    ).load()
-
-    with ProgressBar(dt=10):
-        if "values" in cfg.features:
-            value_creator = ValueCreator(**cfg.features.values)
-            concepts = value_creator(concepts)
-            cfg.features.pop("values")
-
-        feature_creator = FeatureCreator(**cfg.features)
-        features = feature_creator(patients_info, concepts)
-
-        features = excluder.exclude_incorrect_events(features)
-
-        features.to_parquet(
-            cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
-        )
 
 
 if __name__ == "__main__":

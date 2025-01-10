@@ -3,6 +3,7 @@ import pandas as pd
 import dask.dataframe as dd
 from datetime import datetime
 from corebehrt.classes.features import FeatureCreator
+from corebehrt.functional.constants import CLS_TOKEN, SEP_TOKEN
 
 
 class TestFeatureCreator(unittest.TestCase):
@@ -41,15 +42,17 @@ class TestFeatureCreator(unittest.TestCase):
         )
 
         # Convert pandas DataFrames to Dask DataFrames with npartitions=2
-        self.concepts = dd.from_pandas(self.concepts_pd, npartitions=2)
-        self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=2)
+        self.concepts = dd.from_pandas(self.concepts_pd, npartitions=2).astype({"PID": "string[pyarrow]", "ADMISSION_ID": "string[pyarrow]", "CONCEPT": "string[pyarrow]"})
+        self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=2).astype({"PID": "string[pyarrow]"})
 
         self.feature_creator = FeatureCreator(
             origin_point=datetime(2020, 1, 1),
             background_vars=["GENDER"],
+            cls_token=True,
+            sep_token=True,
         )
         self.expected_segments = pd.Series(
-            [0, 1, 1, 2, 0, 1, 1, 0, 1, 1, 0, 1, 1], name="segment"  # bg + death
+            [0, 0, 0, 1, 1, 1, 2, 2, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 1], name="segment"  # bg + death
         )
 
     def test_create_ages(self):
@@ -84,6 +87,41 @@ class TestFeatureCreator(unittest.TestCase):
         result = self.feature_creator(self.patients_info, self.concepts)
         result_df = result.compute()
         self.assertTrue(any(result_df["concept"].str.startswith("BG_GENDER")))
+        self.assertEqual((result_df["concept"] == CLS_TOKEN).sum(), len(self.patients_info))
+
+    def test_no_cls(self):
+        feature_creator = FeatureCreator(
+            origin_point=datetime(2020, 1, 1),
+            background_vars=["GENDER"],
+            cls_token=False,
+            sep_token=True,
+        )
+        result = feature_creator(self.patients_info, self.concepts)
+        result_df = result.compute()
+        self.assertFalse(any(result_df["concept"] == CLS_TOKEN))
+
+    def test_no_sep(self):
+        feature_creator = FeatureCreator(
+            origin_point=datetime(2020, 1, 1),
+            background_vars=["GENDER"],
+            cls_token=True,
+            sep_token=False,
+        )
+        result = feature_creator(self.patients_info, self.concepts)
+        result_df = result.compute()
+        self.assertFalse(any(result_df["concept"] == SEP_TOKEN))
+
+    def test_sep_token(self):
+        result = self.feature_creator(self.patients_info, self.concepts)
+        result_df = result.compute()
+
+        self.assertTrue((result_df.groupby(["PID", "segment"])["concept"].tail(1) == SEP_TOKEN).all())
+
+    def test_cls_token(self):
+        result = self.feature_creator(self.patients_info, self.concepts)
+        result_df = result.compute()
+
+        self.assertTrue((result_df.groupby("PID")["concept"].head(1) == CLS_TOKEN).all())
 
     def test_create_death(self):
         result = self.feature_creator(self.patients_info, self.concepts)

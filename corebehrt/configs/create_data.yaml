@@ -16,27 +16,18 @@ loader:
   include_values: [labtest]
 
 features:
-  #ages: true
   origin_point:
     year: 2020
     month: 1
     day: 26
-  #segment: true
   background_vars: ['GENDER']
-
-# Arguments for adding values to the data
-values:
-  value_type: binned # How you want the values. Either binned or quantile are supported.
-  value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
-    multiplication_factor: 100
-  normalize: # Dict with the function and kwargs for normalizing the values.
-    func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
-    kwargs: # Example kwargs
-      min_count: 3
+  sep_token: true
+  cls_token: true
+  # Arguments for adding values to the data
+  values:
+    num_bins: 100 # Number of bins for the values
 
 tokenizer:
-  sep_tokens: true
-  cls_token: true
   #cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication

@@ -9,21 +9,24 @@ features:
     day: 26
     month: 1
     year: 2020
+  cls_token: true
+  sep_token: true
+  values:
+    num_bins: 100
 loader:
   concept_types:
   - diagnose
   - medication
+  - labtest
 logging:
   level: 20
-  path: ./.test_create_data/logs
+  path: ./.test_tmp/logs
 paths:
   data: ./tests/data/raw
-  features: ./.test_create_data/outputs/features
-  tokenized: ./.test_create_data/outputs/tokenized
+  features: ./.test_tmp/features
+  tokenized: ./.test_tmp/tokenized
 split_ratios:
   finetune: 0.18
   pretrain: 0.72
   test: 0.1
-tokenizer:
-  cls_token: true
-  sep_tokens: true
+tokenizer: {}

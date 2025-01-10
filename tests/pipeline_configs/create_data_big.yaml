@@ -19,9 +19,7 @@ features:
     month: 1
     day: 26
   background_vars: ['GENDER']
-
-tokenizer:
-  sep_tokens: true
+  sep_token: true
   cls_token: true
 
 excluder:

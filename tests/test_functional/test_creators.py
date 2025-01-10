@@ -40,7 +40,7 @@ class TestCreators(unittest.TestCase):
         # Convert pandas DataFrames to Dask DataFrames
         self.concepts = dd.from_pandas(self.concepts_pd, npartitions=1)
         self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=1)
-        self.expected_segments = pd.Series([0, 1, 0, 0], name="segment")
+        self.expected_segments = pd.Series([0, 0, 0, 1], name="segment")
 
     def test_create_age_in_years(self):
         """
@@ -52,10 +52,7 @@ class TestCreators(unittest.TestCase):
         )
 
         # Apply the function
-        result = create_age_in_years(concepts_with_birthdate)
-
-        # Compute the result
-        result_df = result.compute()
+        ages = create_age_in_years(concepts_with_birthdate).compute()
 
         # Expected ages
         expected_ages = (
@@ -66,17 +63,14 @@ class TestCreators(unittest.TestCase):
         ).dt.days // 365.25
 
         # Assert the ages are as expected
-        self.assertTrue((result_df["age"] == expected_ages).all())
+        self.assertTrue((ages == expected_ages).all())
 
     def test_create_abspos(self):
         """
         Test the create_abspos function.
         """
         # Apply the function
-        result = create_abspos(self.concepts, self.origin_point)
-
-        # Compute the result
-        result_df = result.compute()
+        abspos = create_abspos(self.concepts, self.origin_point).compute()
 
         # Expected abspos
         expected_abspos = (
@@ -84,7 +78,7 @@ class TestCreators(unittest.TestCase):
         ).dt.total_seconds() / 3600
 
         # Assert the abspos values are as expected
-        self.assertTrue((result_df["abspos"] == expected_abspos).all())
+        self.assertTrue((abspos == expected_abspos).all())
 
     def test_create_segments(self):
         """
@@ -92,10 +86,10 @@ class TestCreators(unittest.TestCase):
         """
         # Prepare concepts DataFrame by adding 'abspos' (required for sorting)
         concepts = self.concepts.rename(columns={"CONCEPT": "concept"})
-        concepts_with_abspos = create_abspos(concepts, self.origin_point)
+        concepts["abspos"] = create_abspos(concepts, self.origin_point)
 
         # Apply the function
-        sorted_concepts = sort_features(concepts_with_abspos)
+        sorted_concepts = sort_features(concepts)
         result = create_segments(sorted_concepts)
 
         # Compute the result
@@ -109,28 +103,35 @@ class TestCreators(unittest.TestCase):
         Test the create_background function.
         """
         # Apply the function
-        result = create_background(self.patients_info, self.background_vars)
+        result = create_background(self.patients_info, self.background_vars, cls_token=True)
 
         # Compute the result
         result_df = result.compute()
 
         # Expected number of rows: number of patients * number of background_vars
-        expected_rows = len(self.patients_info_pd) * len(self.background_vars)
-        self.assertEqual(len(result_df), expected_rows)
+        self.assertEqual(len(result_df), len(self.patients_info_pd))
+        self.assertEqual(len(result_df.columns), len(self.patients_info_pd.columns) + 3) # +3 for admission_ID, timestamp and CLS
+
+        # Check that admission_ids were added and correctly
+        self.assertTrue("ADMISSION_ID" in result_df.columns)
+        self.assertTrue((result_df["ADMISSION_ID"] == "first").all())
+
+        # Check that TIMESTAMP was added and correctly
+        self.assertTrue("TIMESTAMP" in result_df.columns)
+        self.assertTrue((result_df["TIMESTAMP"] == result_df["BIRTHDATE"]).all())
 
         # Check that all added concepts are prefixed by 'BG_'
-        self.assertTrue(result_df["concept"].str.startswith("BG_").all())
+        for var in self.background_vars:
+            self.assertTrue(var in result_df.columns)
+            self.assertTrue(result_df[var].str.startswith("BG_").all())
+            self.assertTrue((result_df[var] == self.patients_info_pd[var].map(lambda x: f"BG_{var}_{x}")).all())
+        self.assertTrue("CLS_TOKEN" in result_df.columns)
+        self.assertTrue((result_df["CLS_TOKEN"] =="[CLS]").all())
 
-        # Check that each patient has one entry for each background_var
+        # Check that each patient has one entry total
         group_counts = result_df.groupby("PID").size()
-        self.assertTrue((group_counts == len(self.background_vars)).all())
-
-        # Verify that the 'concept' column contains the correct values
-        for pid, group in result_df.groupby("PID"):
-            patient_info = self.patients_info_pd[self.patients_info_pd["PID"] == pid]
-            for var in self.background_vars:
-                expected_concept = f"BG_{var}_{patient_info[var].values[0]}"
-                self.assertIn(expected_concept, group["concept"].values)
+        self.assertTrue((group_counts == 1).all())
+            
 
     def test_create_death(self):
         """
@@ -160,7 +161,7 @@ class TestCreators(unittest.TestCase):
         self.assertTrue(set(result_df["PID"]) == set(expected_pids))
 
         # Assert that 'concept' column is 'Death'
-        self.assertTrue((result_df["concept"] == "Death").all())
+        self.assertTrue((result_df["death"] == "Death").all())
 
         # Assert that 'TIMESTAMP' matches 'DEATHDATE' in patients_info
         for pid in expected_pids:
