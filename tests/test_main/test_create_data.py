@@ -34,7 +34,7 @@ class TestCreateData(TestMainScript):
                 "features": {
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
                     "background_vars": ["GENDER"],
-                    "sep_token": True, 
+                    "sep_token": True,
                     "cls_token": True,
                     "values": {
                         "num_bins": 100,
@@ -107,11 +107,17 @@ class TestCreateData(TestMainScript):
 
         # 2.4: Check special tokens
         self.assertTrue((features.groupby("PID")["concept"].head(1) == CLS_TOKEN).all())
-        self.assertTrue((features.groupby(["PID", "segment"])["concept"].tail(1) == SEP_TOKEN).all())
+        self.assertTrue(
+            (features.groupby(["PID", "segment"])["concept"].tail(1) == SEP_TOKEN).all()
+        )
 
         # 2.5: Check ordering
         self.assertTrue(
-            (features.groupby("PID")["abspos"].apply(lambda x: x.is_monotonic_increasing)).all()
+            (
+                features.groupby("PID")["abspos"].apply(
+                    lambda x: x.is_monotonic_increasing
+                )
+            ).all()
         )
 
         # 3: Check vocabulary

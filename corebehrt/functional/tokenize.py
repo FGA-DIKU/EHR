@@ -1,7 +1,5 @@
 import pandas as pd
-from corebehrt.functional.constants import (
-    UNKNOWN_TOKEN
-)
+from corebehrt.functional.constants import UNKNOWN_TOKEN
 
 
 def tokenize_partition(series: pd.Series, vocabulary: dict) -> pd.Series:

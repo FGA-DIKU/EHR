@@ -10,6 +10,7 @@ from corebehrt.functional.constants import (
     UNKNOWN_TOKEN,
 )
 
+
 class TestTokenizePartition(unittest.TestCase):
     def setUp(self):
         self.series = pd.Series(["C1", "C2", "C3", "C4", "C5"])

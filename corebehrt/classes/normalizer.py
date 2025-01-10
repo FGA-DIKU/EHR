@@ -10,11 +10,15 @@ class ValuesNormalizer:
 
     @staticmethod
     def min_max_normalize_results(concepts: dd.DataFrame, num_bins=100) -> dd.Series:
-        concepts = concepts.shuffle("CONCEPT") # Shuffle to ensure that the same concept is in the same partition
+        concepts = concepts.shuffle(
+            "CONCEPT"
+        )  # Shuffle to ensure that the same concept is in the same partition
         # Has to be be assigned inside here due to some weird dask behaviour
         concepts["RESULT"] = concepts.map_partitions(
-            lambda partition: partition.groupby("CONCEPT")["RESULT"].transform(lambda series:
-                ValuesNormalizer.min_max_normalize(series, num_bins=num_bins)
+            lambda partition: partition.groupby("CONCEPT")["RESULT"].transform(
+                lambda series: ValuesNormalizer.min_max_normalize(
+                    series, num_bins=num_bins
+                )
             )
         )
         return concepts
@@ -28,7 +32,6 @@ class ValuesNormalizer:
         normalized_values = normalized_values.dropna()
         val_mask = normalized_values != "UNIQUE"
         normalized_values = normalized_values.where(
-            ~val_mask,
-            normalized_values[val_mask].mul(num_bins).astype(int).astype(str)
+            ~val_mask, normalized_values[val_mask].mul(num_bins).astype(int).astype(str)
         ).astype(str)
         return "VAL_" + normalized_values

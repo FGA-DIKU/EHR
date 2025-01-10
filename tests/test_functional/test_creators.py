@@ -103,14 +103,18 @@ class TestCreators(unittest.TestCase):
         Test the create_background function.
         """
         # Apply the function
-        result = create_background(self.patients_info, self.background_vars, cls_token=True)
+        result = create_background(
+            self.patients_info, self.background_vars, cls_token=True
+        )
 
         # Compute the result
         result_df = result.compute()
 
         # Expected number of rows: number of patients * number of background_vars
         self.assertEqual(len(result_df), len(self.patients_info_pd))
-        self.assertEqual(len(result_df.columns), len(self.patients_info_pd.columns) + 3) # +3 for admission_ID, timestamp and CLS
+        self.assertEqual(
+            len(result_df.columns), len(self.patients_info_pd.columns) + 3
+        )  # +3 for admission_ID, timestamp and CLS
 
         # Check that admission_ids were added and correctly
         self.assertTrue("ADMISSION_ID" in result_df.columns)
@@ -124,14 +128,18 @@ class TestCreators(unittest.TestCase):
         for var in self.background_vars:
             self.assertTrue(var in result_df.columns)
             self.assertTrue(result_df[var].str.startswith("BG_").all())
-            self.assertTrue((result_df[var] == self.patients_info_pd[var].map(lambda x: f"BG_{var}_{x}")).all())
+            self.assertTrue(
+                (
+                    result_df[var]
+                    == self.patients_info_pd[var].map(lambda x: f"BG_{var}_{x}")
+                ).all()
+            )
         self.assertTrue("CLS_TOKEN" in result_df.columns)
-        self.assertTrue((result_df["CLS_TOKEN"] =="[CLS]").all())
+        self.assertTrue((result_df["CLS_TOKEN"] == "[CLS]").all())
 
         # Check that each patient has one entry total
         group_counts = result_df.groupby("PID").size()
         self.assertTrue((group_counts == 1).all())
-            
 
     def test_create_death(self):
         """

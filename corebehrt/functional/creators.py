@@ -18,9 +18,7 @@ def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFram
     Returns:
         dd.Series: the calculated absolute position in hours
     """
-    return get_abspos_from_origin_point(
-        concepts["TIMESTAMP"], origin_point
-    )
+    return get_abspos_from_origin_point(concepts["TIMESTAMP"], origin_point)
 
 
 def create_age_in_years(concepts: dd.DataFrame) -> dd.DataFrame:
@@ -33,15 +31,18 @@ def create_age_in_years(concepts: dd.DataFrame) -> dd.DataFrame:
     """
     return (concepts["TIMESTAMP"] - concepts["BIRTHDATE"]).dt.days // 365.25
 
+
 def create_sep_tokens(features: dd.DataFrame):
     def process_partition(partition):
         def process_group(group):
             last_event_in_admission = group["segment"].duplicated(keep="last")
             last_concepts = group.loc[~last_event_in_admission, "concept"]
-            last_concepts.map(lambda x: x.append(SEP_TOKEN)) # Utilise in-place append
+            last_concepts.map(lambda x: x.append(SEP_TOKEN))  # Utilise in-place append
             return group
+
         return partition.groupby("PID", group_keys=False).apply(process_group)
-    features = features.set_index("PID") # Make groupby properly work
+
+    features = features.set_index("PID")  # Make groupby properly work
     features = features.map_partitions(process_partition, meta=features)
     features = features.reset_index()
     return features
@@ -66,7 +67,9 @@ def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
         death="Death",
         ADMISSION_ID="last",  # Segment for death event
     )
-    death_events["ADMISSION_ID"] = death_events["ADMISSION_ID"].astype("string[pyarrow]")
+    death_events["ADMISSION_ID"] = death_events["ADMISSION_ID"].astype(
+        "string[pyarrow]"
+    )
 
     # Reorder columns if necessary
     death_events = death_events[
@@ -92,7 +95,9 @@ def create_background(
     patients_info = patients_info[~patients_info["BIRTHDATE"].isna()]
 
     for var in background_vars:
-        patients_info[var] = patients_info[var].map(lambda x: f"BG_{var}_{x}", meta=(var, "string[pyarrow]"))
+        patients_info[var] = patients_info[var].map(
+            lambda x: f"BG_{var}_{x}", meta=(var, "string[pyarrow]")
+        )
 
     # Add '[CLS]' token to the background variables
     if cls_token:
@@ -102,7 +107,9 @@ def create_background(
     # Assign additional columns
     patients_info["TIMESTAMP"] = patients_info["BIRTHDATE"]
     patients_info["ADMISSION_ID"] = "first"
-    patients_info["ADMISSION_ID"] = patients_info["ADMISSION_ID"].astype("string[pyarrow]")
+    patients_info["ADMISSION_ID"] = patients_info["ADMISSION_ID"].astype(
+        "string[pyarrow]"
+    )
 
     # Select and reorder the required columns
     background = patients_info[
@@ -142,6 +149,4 @@ def _assign_segments(df):
     Assign segments to the concepts DataFrame based on 'ADMISSION_ID'
     """
     # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    return df.groupby("PID")["ADMISSION_ID"].transform(
-        normalize_segments_series
-    )
+    return df.groupby("PID")["ADMISSION_ID"].transform(normalize_segments_series)

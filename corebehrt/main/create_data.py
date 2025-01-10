@@ -31,6 +31,7 @@ TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
 
 default_dtypes = defaultdict(lambda: "string[pyarrow]", {"RESULT": "float64"})
 
+
 def main_data(config_path):
     cfg = load_config(config_path)
 
@@ -41,23 +42,30 @@ def main_data(config_path):
 
     # Load formatted data and create background
     raw_dir = Path(cfg.paths.data)
-    concepts = dd.concat([
-        dd.read_csv(
-            raw_dir / f"concept.{concept_type}.csv", 
-            dtype=default_dtypes
-        )
-        for concept_type in cfg.loader.concept_types
-    ])
-    # parse_date did not play nice, so we do conversion manually
-    concepts["TIMESTAMP"] = dd.to_datetime(concepts["TIMESTAMP"]).dt.tz_localize(None).astype("datetime64[ns]")
-    
-    patients_info = dd.read_csv(
-        raw_dir / "patients_info.csv", 
-        dtype=default_dtypes, 
+    concepts = dd.concat(
+        [
+            dd.read_csv(raw_dir / f"concept.{concept_type}.csv", dtype=default_dtypes)
+            for concept_type in cfg.loader.concept_types
+        ]
     )
     # parse_date did not play nice, so we do conversion manually
-    patients_info["BIRTHDATE"] = dd.to_datetime(patients_info["BIRTHDATE"]).dt.tz_localize(None)
-    patients_info["DEATHDATE"] = dd.to_datetime(patients_info["DEATHDATE"]).dt.tz_localize(None)   
+    concepts["TIMESTAMP"] = (
+        dd.to_datetime(concepts["TIMESTAMP"])
+        .dt.tz_localize(None)
+        .astype("datetime64[ns]")
+    )
+
+    patients_info = dd.read_csv(
+        raw_dir / "patients_info.csv",
+        dtype=default_dtypes,
+    )
+    # parse_date did not play nice, so we do conversion manually
+    patients_info["BIRTHDATE"] = dd.to_datetime(
+        patients_info["BIRTHDATE"]
+    ).dt.tz_localize(None)
+    patients_info["DEATHDATE"] = dd.to_datetime(
+        patients_info["DEATHDATE"]
+    ).dt.tz_localize(None)
 
     # Initialize tokenizer
     vocabulary = None
@@ -83,7 +91,7 @@ def main_data(config_path):
                 cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
             )
             logger.info("Finished feature creation and processing")
-    
+
     logger.info("Split pids")
     pids = features.PID.unique().compute().tolist()
     pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
@@ -92,7 +100,9 @@ def main_data(config_path):
 
     logger.info("Tokenizing")
     with ProgressBar(dt=1):
-        for split, pids in zip(["pretrain", "finetune", "test"], [pretrain_pids, finetune_pids, test_pids]):
+        for split, pids in zip(
+            ["pretrain", "finetune", "test"], [pretrain_pids, finetune_pids, test_pids]
+        ):
             df = features[features.PID.isin(pids)]
             df = tokenizer(df)
             torch.save(pids, join(cfg.paths.tokenized, f"pids_{split}.pt"))
