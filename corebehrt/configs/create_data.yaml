@@ -28,7 +28,7 @@ features:
     num_bins: 100 # Number of bins for the values
 
 tokenizer:
-  #cutoffs:
+  cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication
 
