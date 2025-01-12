@@ -66,7 +66,7 @@ class EHRTokenizer:
     def update_vocabulary(self, concepts: dd.Series) -> None:
         """Create or update vocabulary from unique concepts"""
         # Get unique concepts across all partitions
-        unique_concepts = concepts.unique().compute()
+        unique_concepts = concepts.drop_duplicates().compute()
 
         # Start with base vocabulary
         vocabulary = self.vocabulary.copy()
