@@ -16,6 +16,7 @@ from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.load import load_vocabulary
+from corebehrt.functional.utils import convert_to_datetime
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
@@ -49,23 +50,15 @@ def main_data(config_path):
         ]
     )
     # parse_date did not play nice, so we do conversion manually
-    concepts["TIMESTAMP"] = (
-        dd.to_datetime(concepts["TIMESTAMP"])
-        .dt.tz_localize(None)
-        .astype("datetime64[ns]")
-    )
+    concepts["TIMESTAMP"] = convert_to_datetime(concepts["TIMESTAMP"])
 
     patients_info = dd.read_csv(
         raw_dir / "patients_info.csv",
         dtype=default_dtypes,
     )
     # parse_date did not play nice, so we do conversion manually
-    patients_info["BIRTHDATE"] = dd.to_datetime(
-        patients_info["BIRTHDATE"]
-    ).dt.tz_localize(None)
-    patients_info["DEATHDATE"] = dd.to_datetime(
-        patients_info["DEATHDATE"]
-    ).dt.tz_localize(None)
+    patients_info["BIRTHDATE"] = convert_to_datetime(patients_info["BIRTHDATE"])
+    patients_info["DEATHDATE"] = convert_to_datetime(patients_info["DEATHDATE"])
 
     # Initialize tokenizer
     vocabulary = None
