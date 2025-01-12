@@ -47,7 +47,7 @@ class FeatureCreator:
             2020, 1, 26
         ),  # If given, compute ABSPOS
         background_vars: list = ["GENDER"],
-        cls_token: bool = True,
+        cls_token: bool = False,
         sep_token: bool = True,
         values: dict = None,
     ):  # If given, add background variables

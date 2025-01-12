@@ -22,7 +22,7 @@ features:
     day: 26
   background_vars: ['GENDER']
   sep_token: true
-  cls_token: true
+  cls_token: false
   # Arguments for adding values to the data
   values:
     num_bins: 100 # Number of bins for the values

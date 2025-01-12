@@ -80,7 +80,7 @@ def create_death(patients_info: dd.DataFrame) -> dd.DataFrame:
 
 
 def create_background(
-    patients_info: dd.DataFrame, background_vars: list, cls_token: bool = True
+    patients_info: dd.DataFrame, background_vars: list, cls_token: bool = False
 ) -> dd.DataFrame:
     """
     Create background concepts for each patient based on static background variables and optionally add a '[CLS]' token.
