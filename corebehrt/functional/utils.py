@@ -148,5 +148,6 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
     # Recreate a new PatientData from the updated dictionary
     return PatientData(**data)
 
+
 def convert_to_datetime(series: dd.Series) -> dd.Series:
     return dd.to_datetime(series).dt.tz_localize(None)
