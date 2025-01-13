@@ -7,17 +7,13 @@ from corebehrt.functional.constants import (
     SEP_TOKEN,
     UNKNOWN_TOKEN,
 )
-from corebehrt.functional.tokenize import (
-    limit_concept_length_partition,
-    tokenize_partition,
-)
+from corebehrt.functional.tokenize import tokenize_partition
 
 
 class EHRTokenizer:
     def __init__(
         self,
         vocabulary=None,
-        cutoffs=None,
     ):
         if vocabulary is None:
             self.new_vocab = True
@@ -32,27 +28,11 @@ class EHRTokenizer:
             self.new_vocab = False
             self.vocabulary = vocabulary
 
-        if cutoffs is not None:
-            self.check_cutoff(cutoffs)
-        self.cutoffs = cutoffs
-
-    def check_cutoff(self, cutoffs) -> None:
-        if not isinstance(cutoffs, dict):
-            raise ValueError("Cutoffs must be a dictionary")
-        if not all(isinstance(value, int) for value in cutoffs.values()):
-            raise ValueError("All values in cutoffs must be integers")
-
     def __call__(self, features: dd.DataFrame) -> dd.DataFrame:
         """
         !We assume that features are sorted by PID and abspos and PID is the index.
         """
-        # Apply cutoffs if needed before updating vocabulary
-        if self.cutoffs:
-            features["concept"] = features["concept"].map_partitions(
-                limit_concept_length_partition, self.cutoffs
-            )
-
-        # Update vocabulary with concepts after cutoffs
+        # Update vocabulary with concepts if new vocab
         if self.new_vocab:
             self.update_vocabulary(features["concept"])
 

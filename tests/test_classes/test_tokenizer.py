@@ -66,51 +66,6 @@ class TestEHRTokenizer(unittest.TestCase):
             self.assertNotIn(concept, tokenizer.vocabulary)
         self.assertTrue((result_df["concept"] == unk_token).any())
 
-    def test_tokenizer_with_cutoffs(self):
-        """Test tokenizer with cutoffs applied."""
-        cutoffs = {"C2": 1}  # Limit concepts starting with 'C2' to length 1
-        tokenizer = EHRTokenizer(cutoffs=cutoffs)
-        result = tokenizer(self.ddf)
-        result_df = result.compute()
-
-        # Create inverse vocabulary to map tokens back to concepts
-        inv_vocab = {v: k for k, v in tokenizer.vocabulary.items()}
-
-        # Map the integer tokens back to concepts
-        result_df["concept_str"] = result_df["concept"].map(inv_vocab)
-
-        # Check that 'C2' is not in the vocabulary but 'C' is
-        self.assertNotIn("C2", tokenizer.vocabulary)
-        self.assertIn("C", tokenizer.vocabulary)
-
-        # Get the original data before tokenization
-        df_before_tokenization = self.ddf.compute()
-
-        # Find indices where the original concept was 'C2'
-        indices_c2 = df_before_tokenization[
-            df_before_tokenization["concept"] == "C2"
-        ].index
-
-        # For these indices, check that the tokenized concept is 'C'
-        for idx in indices_c2:
-            tokenized_concept = result_df.loc[idx, "concept_str"]
-            self.assertEqual(tokenized_concept, "C")
-
-        # Ensure 'C2' does not appear in the tokenized concepts
-        self.assertNotIn("C2", result_df["concept_str"].unique())
-
-        # Check that all concepts starting with 'C2' are truncated in the vocabulary
-        for concept in tokenizer.vocabulary.keys():
-            if concept.startswith("C2"):
-                self.fail(
-                    f"Concept '{concept}' should have been truncated but is in vocabulary."
-                )
-
-        # Optionally, check that other concepts are unaffected
-        unaffected_concepts = ["C1", "C3", "C4", "C5", "C6", "C7"]
-        for concept in unaffected_concepts:
-            self.assertIn(concept, tokenizer.vocabulary)
-
     def test_tokenizer_without_special_tokens(self):
         """Test tokenizer without adding special tokens."""
         tokenizer = EHRTokenizer()

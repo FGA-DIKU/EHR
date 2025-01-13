@@ -65,7 +65,7 @@ def main_data(config_path):
     if "vocabulary" in cfg.paths:
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = load_vocabulary(cfg.paths.vocabulary)
-    tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
+    tokenizer = EHRTokenizer(vocabulary=vocabulary)
 
     # Load or create features
     if os.path.exists(join(cfg.paths.features, "part.0.parquet")):

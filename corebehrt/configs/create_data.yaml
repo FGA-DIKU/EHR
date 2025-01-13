@@ -27,11 +27,6 @@ features:
   values:
     num_bins: 100 # Number of bins for the values
 
-tokenizer:
-  cutoffs:
-   # D: 3 # diagnosis
-   # M: 4 # medication
-
 excluder:
   min_age: -1
   max_age: 120
