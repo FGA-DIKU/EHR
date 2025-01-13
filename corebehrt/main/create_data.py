@@ -30,7 +30,7 @@ SCHEMA = {
 FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
 TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
 
-default_dtypes = defaultdict(lambda: "string[pyarrow]", {"RESULT": "float64"})
+default_dtypes = defaultdict(lambda: "string[pyarrow]")
 
 
 def main_data(config_path):
