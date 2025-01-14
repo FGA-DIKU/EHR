@@ -9,7 +9,6 @@ import torch
 
 
 class TestTrainerUtils(unittest.TestCase):
-
     def test_convert_epochs_to_steps(self):
         # Test case 1: Basic conversion
         self.assertEqual(

@@ -39,7 +39,6 @@ class EHRTrainer:
         run_folder: str = None,
         last_epoch: int = None,
     ):
-
         self._initialize_basic_attributes(
             model,
             train_dataset,
