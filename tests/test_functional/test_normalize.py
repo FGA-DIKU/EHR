@@ -6,7 +6,7 @@ from corebehrt.functional.normalize import min_max_normalize
 class TestNormalize(unittest.TestCase):
     def test_min_max_normalize(self):
         # Create Series
-        x = pd.Series([1, 2, 3, 4, 5, 6])
+        x = pd.Series([1, 2, 3, 4, 5, 6]).astype(str)
 
         normalized = min_max_normalize(x)
 
@@ -15,7 +15,7 @@ class TestNormalize(unittest.TestCase):
 
     def test_min_max_normalize_single_value(self):
         # Create Series with a single value
-        x = pd.Series([1, 1, 1, 1, 1, 1])
+        x = pd.Series([1, 1, 1, 1, 1, 1]).astype(str)
 
         normalized = min_max_normalize(x)
 
@@ -24,7 +24,7 @@ class TestNormalize(unittest.TestCase):
 
     def test_min_max_normalize_nan(self):
         # Create Series with NaN values
-        x = pd.Series([1, 2, 3, 4, 5, 6, None])
+        x = pd.Series([1, 2, 3, 4, 5, 6, None]).astype(str)
 
         normalized = min_max_normalize(x)
 

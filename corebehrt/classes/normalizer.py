@@ -31,7 +31,12 @@ class ValuesNormalizer:
         normalized_values = min_max_normalize(series)
         normalized_values = normalized_values.dropna()
         val_mask = normalized_values != "UNIQUE"
-        normalized_values = normalized_values.where(
-            ~val_mask, normalized_values[val_mask].mul(num_bins).astype(int).astype(str)
-        ).astype(str)
+        normalized_values = (
+            normalized_values.where(
+                ~val_mask, normalized_values[val_mask].mul(num_bins)
+            )
+            .astype(str)
+            .str.split(".")
+            .str[0]
+        )  # using .astype(int) for float->int conversion doesnt work properly
         return "VAL_" + normalized_values

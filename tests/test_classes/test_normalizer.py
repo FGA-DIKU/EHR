@@ -13,6 +13,7 @@ class TestNormalizer(unittest.TestCase):
                 "RESULT": list(range(6)) + [None],
             }
         )
+        self.concepts_pd["RESULT"] = self.concepts_pd["RESULT"].astype(str)
         # Convert pandas DataFrames to Dask DataFrames with npartitions=2
         self.concepts = dd.from_pandas(self.concepts_pd, npartitions=2)
 
