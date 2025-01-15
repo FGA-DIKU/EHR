@@ -13,7 +13,6 @@ loader:
     medication,
     labtest
   ]
-  include_values: [labtest]
 
 features:
   origin_point:
