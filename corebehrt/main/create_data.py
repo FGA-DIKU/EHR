@@ -70,7 +70,6 @@ def main_data(config_path):
     # Load or create features
     if os.path.exists(join(cfg.paths.features, "part.0.parquet")):
         logger.info("Reusing existing features")
-        features = dd.read_parquet(cfg.paths.features)
     else:
         logger.info("Create and process features")
         with ProgressBar(dt=1):
@@ -84,6 +83,7 @@ def main_data(config_path):
                 cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
             )
             logger.info("Finished feature creation and processing")
+    features = dd.read_parquet(cfg.paths.features)
 
     logger.info("Split pids")
     pids = features.PID.unique().compute().tolist()
