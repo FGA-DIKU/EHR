@@ -51,8 +51,8 @@ class DatasetPreparer:
         data = PatientDataset(patients=patient_list)
 
         # Loading and processing outcomes
-        outcomes = pd.read_csv(paths_cfg.outcome)
-        exposures = pd.read_csv(paths_cfg.exposure)
+        outcomes = pd.read_parquet(paths_cfg.outcome)
+        exposures = pd.read_parquet(paths_cfg.exposure)
 
         logger.info("Handling outcomes")
         outcomehandler = OutcomeHandler(
