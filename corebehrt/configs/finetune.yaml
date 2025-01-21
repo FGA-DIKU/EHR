@@ -13,9 +13,9 @@ paths:
  
   # restart_model: ... # Use for restarting from checkpoint
   
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv
+  outcome: ./outputs/outcomes/TEST_OUTCOME.parquet
   # Optional:
-  exposure: ./outputs/outcomes/TEST_CENSOR.csv
+  exposure: ./outputs/outcomes/TEST_CENSOR.parquet
   
   # predefined_splits: outputs/pretraining/behrt_base
   # exclude_pids: pids_path

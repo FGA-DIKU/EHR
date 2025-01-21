@@ -109,8 +109,12 @@ class DatasetPreparer:
         save_vocabulary(vocab, self.processed_dir)
         if self.cfg.get("save_processed_data", False):
             data.save(self.processed_dir)
-            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
-            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
+            outcomes.to_parquet(
+                join(self.processed_dir, OUTCOMES_FILE), write_index=False
+            )
+            index_dates.to_parquet(
+                join(self.processed_dir, INDEX_DATES_FILE), write_index=False
+            )
 
         return data
 

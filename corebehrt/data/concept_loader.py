@@ -46,11 +46,7 @@ class ConceptLoader:
 
     def read_file(self, file_path: str) -> pd.DataFrame:
         """Read csv or parquet file and return a DataFrame"""
-        _, file_ext = os.path.splitext(file_path)
-        if file_ext == ".csv":
-            df = pd.read_csv(file_path)
-        elif file_ext == ".parquet":
-            df = pd.read_parquet(file_path)
+        df = pd.read_parquet(file_path)
 
         return self._handle_datetime_columns(df)
 
@@ -121,11 +117,7 @@ class ConceptLoaderLarge(ConceptLoader):
 
     @staticmethod
     def _get_iterator(file_path: str, chunksize: int) -> Iterator[pd.DataFrame]:
-        _, file_ext = os.path.splitext(file_path)
-        if file_ext == ".csv":
-            return pd.read_csv(file_path, chunksize=chunksize)
-        elif file_ext == "parquet":
-            return ParquetIterator(file_path, chunksize)
+        return ParquetIterator(file_path, chunksize)
 
     @staticmethod
     def get_patient_batch(patient_ids: list, batch_size: int) -> Iterator[list]:
