@@ -87,6 +87,8 @@ class FeatureCreator:
         death = self.combine_to_event(death)
 
         features = dd.concat([background, concepts, death])
+        if self.sep_token:
+            features = create_sep_tokens(features)
 
         # Create temporal features
         features["age"] = create_age_in_years(features)
@@ -98,9 +100,6 @@ class FeatureCreator:
         features = create_segments(features)
 
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
-
-        if self.sep_token:
-            features = create_sep_tokens(features)
 
         # Explode "concept" column (list of concepts) into separate rows
         features = features.explode("concept")

@@ -45,15 +45,17 @@ def main_data(config_path):
     raw_dir = Path(cfg.paths.data)
     concepts = dd.concat(
         [
-            dd.read_csv(raw_dir / f"concept.{concept_type}.csv", dtype=default_dtypes)
+            dd.read_parquet(
+                raw_dir / f"concept.{concept_type}.parquet", dtype=default_dtypes
+            )
             for concept_type in cfg.loader.concept_types
         ]
     )
     # parse_date did not play nice, so we do conversion manually
     concepts["TIMESTAMP"] = convert_to_datetime(concepts["TIMESTAMP"])
 
-    patients_info = dd.read_csv(
-        raw_dir / "patients_info.csv",
+    patients_info = dd.read_parquet(
+        raw_dir / "patients_info.parquet",
         dtype=default_dtypes,
     )
     # parse_date did not play nice, so we do conversion manually

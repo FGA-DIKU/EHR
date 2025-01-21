@@ -35,7 +35,7 @@ def create_age_in_years(concepts: dd.DataFrame) -> dd.DataFrame:
 def create_sep_tokens(features: dd.DataFrame):
     def process_partition(partition):
         def process_group(group):
-            last_event_in_admission = group["segment"].duplicated(keep="last")
+            last_event_in_admission = group["ADMISSION_ID"].duplicated(keep="last")
             last_concepts = group.loc[~last_event_in_admission, "concept"]
             last_concepts.map(lambda x: x.append(SEP_TOKEN))  # Utilise in-place append
             return group
@@ -121,10 +121,10 @@ def create_background(
 
 def sort_features(concepts: dd.DataFrame) -> dd.DataFrame:
     """
-    Shuffles partitions on "PID" and sorts all concepts by 'abspos'.
+    Shuffles partitions on "PID" and sorts all concepts by 'abspos' then 'PID'.
     """
     concepts = concepts.shuffle(on="PID")
-    concepts = concepts.map_partitions(lambda df: df.sort_values("abspos"))
+    concepts = concepts.map_partitions(lambda df: df.sort_values(["abspos", "PID"]))
     return concepts
 
 
