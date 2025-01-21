@@ -51,7 +51,7 @@ def main_data(config_path):
     )
 
     for key, df in outcome_tables.items():
-        df.to_parquet(join(cfg.paths.outcomes, f"{key}.parquet"), write_index=False)
+        df.to_parquet(join(cfg.paths.outcomes, f"{key}.parquet"), index=False)
 
     logger.info("Finish outcomes creation")
     logger.info("Done")
