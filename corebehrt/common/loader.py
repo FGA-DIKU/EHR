@@ -4,7 +4,7 @@ from os.path import join
 from typing import Tuple
 
 import torch
-from transformers import BertConfig
+from transformers import ModernBertConfig
 
 from corebehrt.common.config import Config, load_config
 from corebehrt.classes.dataset import PatientDataset
@@ -48,7 +48,7 @@ class ModelLoader:
         """Load model from config and checkpoint. model_class is the class of the model to be loaded."""
         checkpoint = self.load_checkpoint() if checkpoint is None else checkpoint
         # Load the config from file
-        config = BertConfig.from_pretrained(self.model_path)
+        config = ModernBertConfig.from_pretrained(self.model_path)
         config.update(add_config)
         model = model_class(config, **kwargs)
 
