@@ -47,7 +47,6 @@ class TestCreateOutcomes(TestMainScript):
                     "early_stopping": None,
                 },
                 "model": {
-                    "linear": True,
                     "hidden_size": 96,
                     "num_hidden_layers": 3,
                     "num_attention_heads": 3,
