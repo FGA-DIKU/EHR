@@ -53,8 +53,9 @@ class TestCreateOutcomes(TestMainScript):
                     "num_attention_heads": 3,
                     "intermediate_size": 64,
                     "type_vocab_size": 240,
-                    "plusplus": True,
-                    "abspos_embeddings": False,
+                    "hidden_dropout_prob": 0.1,
+                    "attention_probs_dropout_prob": 0.1,
+                    "layer_norm_eps": 1e-6,
                 },
                 "optimizer": {
                     "lr": 5e-4,
