@@ -2,12 +2,12 @@ import torch
 
 
 class MLMHead(torch.nn.Module):
-    def __init__(self, hidden_size: int, vocab_size: int, layer_norm_eps: float):
+    def __init__(self, hidden_size: int, vocab_size: int):
         super().__init__()
         # BertPredictionHeadTransform
         self.dense = torch.nn.Linear(hidden_size, hidden_size)
         self.activation = torch.nn.GELU()
-        self.layer_norm = torch.nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.layer_norm = torch.nn.LayerNorm(hidden_size)
 
         # BertLMPredictionHead
         self.decoder = torch.nn.Linear(hidden_size, vocab_size, bias=False)

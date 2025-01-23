@@ -13,8 +13,7 @@ class BertEHREncoder(ModernBertModel):
             vocab_size=config.vocab_size,
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
-            layer_norm_eps=config.layer_norm_eps,
-            hidden_dropout_prob=config.hidden_dropout_prob,
+            embedding_dropout=config.embedding_dropout,
         )
 
     def forward(self, batch: dict):
@@ -41,7 +40,6 @@ class BertEHRModel(BertEHREncoder):
         self.cls = MLMHead(
             hidden_size=config.hidden_size,
             vocab_size=config.vocab_size,
-            layer_norm_eps=config.layer_norm_eps,
         )
 
     def forward(self, batch: dict):
