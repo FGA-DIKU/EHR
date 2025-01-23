@@ -38,7 +38,6 @@ trainer_args:
   early_stopping: null # num_epochs or null/false
 
 model:
-  linear: true
   hidden_size: 96
   num_hidden_layers: 3
   num_attention_heads: 3
