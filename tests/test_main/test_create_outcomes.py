@@ -60,18 +60,18 @@ class TestCreateOutcomes(TestMainScript):
 
         # 2: Check the required outcome/exposure files are created as expected
         for file_name in ["TEST_CENSOR", "TEST_OUTCOME"]:
-            path = join(self.outcomes_dir, f"{file_name}.csv")
+            path = join(self.outcomes_dir, f"{file_name}.parquet")
 
             # Exists:
             self.assertTrue(exists(path))
-            output = pd.read_csv(path)
+            output = pd.read_parquet(path)
 
             # Columns?
             self.assertEqual(output.columns.to_list(), ["TIMESTAMP", "PID", "abspos"])
 
             # Compare to expected
-            expected_output = pd.read_csv(
-                join(f"./tests/data/outcomes/{file_name}.csv")
+            expected_output = pd.read_parquet(
+                join(f"./tests/data/outcomes/{file_name}.parquet")
             )
             for idx, ((_, row), (_, expected_row)) in enumerate(
                 zip(output.iterrows(), expected_output.iterrows())

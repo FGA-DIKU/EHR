@@ -19,8 +19,8 @@ FINETUNE_CFG = "finetune_config.yaml"
 
 VOCABULARY_FILE = "vocabulary.pt"
 PROCESSED_DATA_DIR = "processed_data"
-OUTCOMES_FILE = "outcomes.csv"
-INDEX_DATES_FILE = "index_dates.csv"
+OUTCOMES_FILE = "outcomes.parquet"
+INDEX_DATES_FILE = "index_dates.parquet"
 
 
 def get_args(default_config_name, default_run_name=None):

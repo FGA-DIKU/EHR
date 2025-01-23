@@ -8,11 +8,6 @@ def exclude_incorrect_event_ages(
     return df[(df["age"] >= min_age) & (df["age"] <= max_age)]
 
 
-def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
-    """Exclude events (row) with (any) NaNs"""
-    return df.dropna()
-
-
 def exclude_pids_from_data(data: dd.DataFrame, pids_to_exclude: list) -> dd.DataFrame:
     """
     Assumes that the table has a column named PID.

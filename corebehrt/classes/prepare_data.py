@@ -51,8 +51,8 @@ class DatasetPreparer:
         data = PatientDataset(patients=patient_list)
 
         # Loading and processing outcomes
-        outcomes = pd.read_csv(paths_cfg.outcome)
-        exposures = pd.read_csv(paths_cfg.exposure)
+        outcomes = pd.read_parquet(paths_cfg.outcome)
+        exposures = pd.read_parquet(paths_cfg.exposure)
 
         logger.info("Handling outcomes")
         outcomehandler = OutcomeHandler(
@@ -109,8 +109,10 @@ class DatasetPreparer:
         save_vocabulary(vocab, self.processed_dir)
         if self.cfg.get("save_processed_data", False):
             data.save(self.processed_dir)
-            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
-            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
+            outcomes.to_parquet(join(self.processed_dir, OUTCOMES_FILE), index=False)
+            index_dates.to_parquet(
+                join(self.processed_dir, INDEX_DATES_FILE), index=False
+            )
 
         return data
 
