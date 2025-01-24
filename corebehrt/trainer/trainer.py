@@ -121,6 +121,13 @@ class EHRTrainer:
         self.log(
             f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
         )
+        try:
+            import mlflow
+
+            self.run = mlflow
+            self.log("Successfully imported MLFlow for metrics logging")
+        except:
+            pass
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
@@ -148,6 +155,8 @@ class EHRTrainer:
                 self._clip_gradients()
                 self._update_and_log(step_loss, train_loop, epoch_loss)
                 step_loss = 0
+            if (i % 100 == 0) and self.device == "cuda":
+                self.run_log_gpu(step=i)
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -183,9 +192,13 @@ class EHRTrainer:
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                self.run_log("Learning Rate", current_lr)
+                self.run_log(name="LR", value=current_lr, description="Learning Rate")
                 break
-        self.run_log("Train loss", step_loss / self.accumulation_steps)
+        self.run_log(
+            name="Train loss",
+            value=step_loss / self.accumulation_steps,
+            description="Train loss",
+        )
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader
@@ -245,8 +258,10 @@ class EHRTrainer:
         len_train_loop: int,
     ) -> None:
         for k, v in val_metrics.items():
-            self.run_log(name=k, value=v)
-        self.run_log(name="Val loss", value=val_loss)
+            self.run_log(name=k, value=v, step=epoch, description=f"Validation {k}")
+        self.run_log(
+            name="Val loss", value=val_loss, step=epoch, description="Validation loss"
+        )
         self.log(
             f"Epoch {epoch} train loss: {sum(epoch_loss) / (len_train_loop / self.accumulation_steps)}"
         )
@@ -402,9 +417,35 @@ class EHRTrainer:
         else:
             print(message)
 
-    def run_log(self, name, value):
+    def run_log_gpu(self, step=None):
+        """Logs the GPU memory usage to the run"""
+        memory_allocated = torch.cuda.memory_allocated(device=self.device) / 1e9
+        max_memory_reserved = torch.cuda.max_memory_reserved(device=self.device) / 1e9
+        memory_cached = torch.cuda.memory_reserved(device=self.device) / 1e9
+        self.run_log(
+            name="GPU Memory",
+            value=memory_allocated,
+            description="GPU Memory Allocated in GB",
+            step=step,
+        )
+        self.run_log(
+            name="GPU Max Memory",
+            value=max_memory_reserved,
+            description="GPU Max Memory Allocated in GB",
+            step=step,
+        )
+        self.run_log(
+            name="GPU Cached Memory",
+            value=memory_cached,
+            description="GPU Memory Cached in GB",
+            step=step,
+        )
+
+    def run_log(self, name, value, description="", step=None):
         if self.run is not None:
-            self.run.log_metric(name=name, value=value)
+            self.run.log_metric(
+                name=name, value=value, description=description, step=step
+            )
         else:
             self.log(f"{name}: {value}")
 
