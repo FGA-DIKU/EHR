@@ -39,7 +39,11 @@ class Initializer:
             vocab_size = len(train_dataset.vocabulary)
             model = BertEHRModel(
                 ModernBertConfig(
-                    **self.cfg.model, vocab_size=vocab_size, pad_token_id=0
+                    **self.cfg.model,
+                    vocab_size=vocab_size,
+                    pad_token_id=0,
+                    cls_token_id=1,
+                    sep_token_id=2,
                 )
             )
         return model
