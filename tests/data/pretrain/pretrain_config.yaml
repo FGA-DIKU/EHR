@@ -24,14 +24,12 @@ metrics:
     _target_: corebehrt.evaluation.metrics.PrecisionAtK
     topk: 10
 model:
-  abspos_embeddings: false
   hidden_size: 96
   intermediate_size: 64
-  linear: true
   num_attention_heads: 3
   num_hidden_layers: 3
-  plusplus: true
   type_vocab_size: 240
+  embedding_dropout: 0.1
 optimizer:
   eps: 1.0e-06
   lr: 0.0005
@@ -48,7 +46,7 @@ trainer_args:
   batch_size: 32
   early_stopping: null
   effective_batch_size: 32
-  epochs: 5
+  epochs: 2
   gradient_clip:
     clip_value: 1.0
   info: true

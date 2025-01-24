@@ -23,7 +23,6 @@ data:
     replace_ratio: .1
     ignore_special_tokens: true
   truncation_len: 20
-
   val_ratio: 0.2
   min_len: 2
 
@@ -39,16 +38,14 @@ trainer_args:
   early_stopping: null # num_epochs or null/false
 
 model:
-  # type_vocab_size should be > truncation_len//2 if sep token else >truncation len
-  # !!! If you want to feed longer sequences during finetuning adjust type_vocab_size accordingly
-  linear: true
   hidden_size: 96
   num_hidden_layers: 3
   num_attention_heads: 3
   intermediate_size: 64
-  type_vocab_size: 240 #  if discrete_abspos_embeddings: true, give the range of abspos in months
-  plusplus: true
-  abspos_embeddings: false
+  
+  type_vocab_size: 240 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
+  embedding_dropout: 0.1 
+  
 optimizer:
   lr: 5e-4
   eps: 1e-6
@@ -57,7 +54,6 @@ scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
   num_warmup_epochs: 2
   num_training_epochs: 3
-
 
 metrics:
   top1:

@@ -1,21 +1,21 @@
 import logging
 import os
 from os.path import join
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 import torch
 from torch.optim import AdamW
 from torch.utils.data import Sampler
-from transformers import BertConfig
+from transformers import ModernBertConfig
 
+from corebehrt.classes.model import BertEHRModel, BertForFineTuning
 from corebehrt.common.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import CHECKPOINTS_DIR
 from corebehrt.data.utils import Utilities
 from corebehrt.evaluation.utils import get_sampler
-from corebehrt.classes.model import BertEHRModel, BertForFineTuning
 
-logger = logging.getLogger(__name__)  # Get the logger for this module
+logger = logging.getLogger(__name__)
 
 
 class Initializer:
@@ -38,9 +38,12 @@ class Initializer:
             logger.info("Initializing new model")
             vocab_size = len(train_dataset.vocabulary)
             model = BertEHRModel(
-                BertConfig(
+                ModernBertConfig(
                     **self.cfg.model,
                     vocab_size=vocab_size,
+                    pad_token_id=0,
+                    cls_token_id=1,
+                    sep_token_id=2,
                 )
             )
         return model

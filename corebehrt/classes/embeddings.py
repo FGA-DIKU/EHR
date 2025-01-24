@@ -33,12 +33,11 @@ class EhrEmbeddings(nn.Module):
         vocab_size: int,
         hidden_size: int,
         type_vocab_size: int,
-        layer_norm_eps: float,
-        hidden_dropout_prob: float,
+        embedding_dropout: float,
     ):
         super().__init__()
-        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
-        self.dropout = nn.Dropout(hidden_dropout_prob)
+        self.LayerNorm = nn.LayerNorm(hidden_size)
+        self.dropout = nn.Dropout(embedding_dropout)
 
         # Initalize embeddings
         self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)

@@ -1,39 +1,36 @@
 import torch
 import torch.nn as nn
-from transformers import BertModel
-from transformers.models.roformer.modeling_roformer import RoFormerEncoder
+from transformers import ModernBertModel
 
 from corebehrt.classes.embeddings import EhrEmbeddings
-from corebehrt.classes.activations import SwiGLU
 from corebehrt.classes.heads import FineTuneHead, MLMHead
 
 
-class BertEHREncoder(BertModel):
+class BertEHREncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
         self.embeddings = EhrEmbeddings(
             vocab_size=config.vocab_size,
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
-            layer_norm_eps=config.layer_norm_eps,
-            hidden_dropout_prob=config.hidden_dropout_prob,
+            embedding_dropout=config.embedding_dropout,
         )
-
-        # Activate transformer++ recipe
-        config.rotary_value = False
-        self.encoder = RoFormerEncoder(config)
-        for layer in self.encoder.layer:
-            layer.intermediate.intermediate_act_fn = SwiGLU(config.intermediate_size)
 
     def forward(self, batch: dict):
+        input_ids = batch["concept"]
+        token_type_ids = batch["segment"]
+        attention_mask = torch.ones_like(input_ids)
         position_ids = {key: batch[key] for key in ["age", "abspos"]}
-        outputs = super().forward(
-            input_ids=batch["concept"],
-            attention_mask=torch.ones_like(batch["concept"]),
-            token_type_ids=batch["segment"],
+
+        inputs_embeds = self.embeddings(
+            input_ids=input_ids,
+            token_type_ids=token_type_ids,
             position_ids=position_ids,
         )
-        return outputs
+
+        return super().forward(
+            inputs_embeds=inputs_embeds, attention_mask=attention_mask
+        )
 
 
 class BertEHRModel(BertEHREncoder):
@@ -43,7 +40,6 @@ class BertEHRModel(BertEHREncoder):
         self.cls = MLMHead(
             hidden_size=config.hidden_size,
             vocab_size=config.vocab_size,
-            layer_norm_eps=config.layer_norm_eps,
         )
 
     def forward(self, batch: dict):
