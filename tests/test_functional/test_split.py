@@ -86,13 +86,13 @@ class TestSplitFunctions(unittest.TestCase):
     # 2) split_pids_into_train_val
     # ------------------------------------------------------------------------------
     def test_split_pids_into_train_val(self):
-        # 60-40 split
+        # 80-20 split
         random.seed(42)  # for reproducibility
-        train_ds, val_ds = split_pids_into_train_val(self.dataset, split=0.6)
+        train_ds, val_ds = split_pids_into_train_val(self.dataset, val_split=0.2)
 
-        # Expect 3 train, 2 val (since we have 5 total)
-        self.assertEqual(len(train_ds), 3)
-        self.assertEqual(len(val_ds), 2)
+        # Expect 4 train, 1 val (since we have 5 total)
+        self.assertEqual(len(train_ds), 4)
+        self.assertEqual(len(val_ds), 1)
 
         all_split_pids = train_ds.get_pids() + val_ds.get_pids()
         self.assertCountEqual(all_split_pids, self.all_pids)
