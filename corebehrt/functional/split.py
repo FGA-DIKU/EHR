@@ -36,17 +36,19 @@ def split_pids_into_pt_ft_test(
 
 
 def split_pids_into_train_val(
-    data: PatientDataset, split: float
+    data: PatientDataset, val_split: float
 ) -> Tuple[PatientDataset, PatientDataset]:
     """
-    Splits data into train and val. Returns two dataframes.
+    Splits data into train and val.
+    Returns two PatientDatasets.
     """
-    assert split < 1 and split > 0, "Split must be between 0 and 1"
+    assert val_split < 1 and val_split > 0, "Split must be between 0 and 1"
+    train_split = 1 - val_split
     random.seed(42)
     pids = copy.deepcopy(data.get_pids())
     random.shuffle(pids)
-    train_pids = pids[: int(len(pids) * split)]
-    val_pids = pids[int(len(pids) * split) :]
+    train_pids = pids[: int(len(pids) * train_split)]
+    val_pids = pids[int(len(pids) * train_split) :]
     train_data = data.filter_by_pids(train_pids)
     val_data = data.filter_by_pids(val_pids)
     return train_data, val_data
