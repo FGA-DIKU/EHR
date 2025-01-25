@@ -129,6 +129,13 @@ class EHRTrainer:
         self.log(
             f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
         )
+        try:
+            import mlflow
+
+            self.run = mlflow
+            self.log("Successfully imported MLFlow for metrics logging")
+        except:
+            pass
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
