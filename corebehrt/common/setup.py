@@ -2,9 +2,10 @@ import argparse
 import logging
 import os
 import uuid
-from os.path import join, splitext, basename
-from shutil import rmtree, copyfile
+from os.path import basename, join, splitext
+from shutil import copyfile, rmtree
 
+from corebehrt.common.checks import check_categories
 from corebehrt.common.config import Config, load_config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -320,6 +321,20 @@ class DirectoryPreparer:
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
         self.create_directory("cohort", clear=True)
+
+        ## Further config checks
+        if self.cfg.selection.get("categories", False):
+            check_categories(self.cfg.selection.categories)
+        if self.cfg.get("index_date", False):
+            if not self.cfg.index_date.get("mode", False):
+                raise ValueError("index_date must specify 'mode' in the configuration")
+            if not (
+                hasattr(self.cfg.index_date, "absolute")
+                or hasattr(self.cfg.index_date, "relative")
+            ):
+                raise ValueError(
+                    "index_date must specify either 'absolute' or 'relative' configuration"
+                )
 
     def setup_finetune(self) -> None:
         """
