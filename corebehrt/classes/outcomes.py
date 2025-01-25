@@ -1,21 +1,21 @@
 import logging
-import operator
 from datetime import datetime
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 import numpy as np
 import pandas as pd
 
-from corebehrt.functional.filter import filter_events_by_abspos
 from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     get_abspos_from_origin_point,
-    get_first_event_by_pid,
     remove_missing_timestamps,
 )
 
 logger = logging.getLogger(__name__)
+
+PID_COL = "PID"
+TIMESTAMP_COL = "TIMESTAMP"
 
 
 class OutcomeMaker:
@@ -48,7 +48,7 @@ class OutcomeMaker:
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
             timestamps["abspos"] = get_abspos_from_origin_point(
-                timestamps["TIMESTAMP"], self.origin_point
+                timestamps[TIMESTAMP_COL], self.origin_point
             )
             timestamps["abspos"] = timestamps["abspos"].astype(int)
             outcome_tables[outcome] = timestamps
@@ -56,7 +56,7 @@ class OutcomeMaker:
 
     def match_patient_info(self, patients_info: dict, match: List[List]) -> pd.Series:
         """Get timestamps of interest from patients_info"""
-        return patients_info[["PID", match]].dropna()
+        return patients_info[[PID_COL, match]].dropna()
 
     def match_concepts(
         self,
@@ -85,133 +85,14 @@ class OutcomeMaker:
         return concepts_plus[mask].drop(columns=["ADMISSION_ID", "CONCEPT"])
 
 
-class OutcomeHandler:
-    # !TODO: Move this to separate file and make it a constant
-    ORIGIN_POINT = datetime(2020, 1, 26)
-
-    def __init__(
-        self,
-        index_date: Dict[str, int] = None,
-        select_patient_group: str = None,
-        exclude_pre_followup_outcome_patients: bool = False,
-        n_hours_start_followup: int = 0,
-    ):
-        """
-        index_date (optional): default None (indexing based on exposures). If given use same index date for all patients
-        select_patient_group (optional): select only exposed or unexposed patients
-        exclude_pre_followup_outcome_patients (optional): remove patients with outcome before follow-up start
-        n_hours_start_followup (optional): number of hours to start follow-up after exposure (looking for positive label)
-        """
-        self.index_date = index_date
-        self.select_patient_group = select_patient_group
-        self.exclude_pre_followup_outcome_patients = (
-            exclude_pre_followup_outcome_patients
-        )
-        self.n_hours_start_followup = n_hours_start_followup
-
-    def handle(
-        self,
-        data_pids: List[str],
-        outcomes: pd.DataFrame,
-        exposures: pd.DataFrame,
-        index_dates: pd.Series,
-    ) -> Tuple[Dict[str, List], Dict[str, List]]:
-        """
-        data: Patient Data
-        outcomes: DataFrame with outcome timestamps
-        exposures: DataFrame with exposure timestamps
-
-        The following steps are taken:
-         1. Filter outcomes and censor outcomes to only include patients which are presnet in the Data
-         2. Pick earliest exposure timestamp as index_date for the exposed patients
-         3. Assign index timestamp to patients without it (save which patients were actually with an exposure)
-         4. Optionally select only exposed/unexposed patients
-         5. Optinally remove patients with outcome(s) before start of follow-up period
-         6. Select first outcome after start of follow-up for each patient
-         7. Assign outcome- and index dates to data.
-        """
-        self.check_input(outcomes, exposures)
-        # Step 1: Filter outcomes and index_dates to include only relevant patients
-        outcomes = filter_table_by_pids(outcomes, data_pids)
-        index_dates = filter_table_by_pids(exposures, data_pids)
-
-        # Step 2: Pick earliest exposure ts as index date for each patient
-        index_dates = get_first_event_by_pid(exposures)
-
-        # Step 3 (Optional): Use a specific index date for all
-        if self.index_date:
-            index_dates = self.compute_abspos_for_index_date(data_pids)
-
-        # Step 5: Assign censoring to patients without it (random assignment)
-        logger.info(f"Number of exposed patients: {len(set(index_dates.index))}")
-
-        # Step 6: Select first outcome after censoring for each patient
-        outcomes = self.get_first_outcome_in_follow_up(
-            outcomes, index_dates, self.n_hours_start_followup
-        )
-
-        # Step 8: Assign outcomes and censor outcomes to data
-        index_dates = self.synchronize_patients(data_pids, index_dates)
-        outcomes = self.synchronize_patients(data_pids, outcomes)
-        return index_dates, outcomes
-
-    def synchronize_patients(
-        self, data_pids: List[str], timestamps: pd.Series
-    ) -> pd.Series:
-        """
-        Synchronize patients in timestamps with data.
-        timestamps should be indexed by PID.
-        PIDs in timestamps that are not present in data will be assigned nan as timestamp.
-        """
-        logger.info("Synchronizing patients in data with timestamps.")
-        timestamps = timestamps.reindex(data_pids)
-        timestamps = timestamps.astype(pd.Float64Dtype())
-        return timestamps
-
-    def check_input(self, outcomes, exposures):
-        """Check that outcomes and exposures have columns PID and abspos."""
-        required_columns = {"PID", "abspos"}
-        for df, name in [(outcomes, "outcomes"), (exposures, "exposures")]:
-            if not required_columns.issubset(set(df.columns)):
-                raise ValueError(f"{name} must have columns PID and abspos.")
-
-    def compute_abspos_for_index_date(self, pids: List) -> pd.Series:
-        """
-        Create a pandas series hlding the same abspos based on self.index_date if not None.
-        """
-        logger.info(f"Using {self.index_date} as index_date for all patients.")
-        index_datetime = datetime(**self.index_date)
-        logger.warning(
-            f"Using {self.ORIGIN_POINT} as origin point. Make sure is the same as used for feature creation."
-        )
-        outcome_abspos = get_abspos_from_origin_point(
-            [index_datetime], self.ORIGIN_POINT
-        )
-        return pd.Series(outcome_abspos * len(pids), index=pids)
-
-    def get_first_outcome_in_follow_up(
-        self,
-        outcomes: pd.DataFrame,
-        index_dates: pd.Series,
-        n_hours_start_followup: int,
-    ) -> pd.Series:
-        """Get the first outcome event occurring at or after the follow-up date for each PID.
-
-        Args:
-            outcomes: DataFrame containing outcome events with columns PID and abspos
-            index_dates: Series mapping PIDs to their index dates (in abspos)
-            n_hours_start_followup: Number of hours after index date to start follow-up period
-
-        Returns:
-            Series mapping PIDs to abspos of their first outcome event during follow-up.
-            Only includes PIDs that had an outcome during follow-up.
-        """
-        start_followup_date = index_dates + n_hours_start_followup
-        filtered_outcomes = filter_events_by_abspos(
-            outcomes, start_followup_date, operator.ge
-        )
-        first_outcome = get_first_event_by_pid(filtered_outcomes)
-        return first_outcome
+def get_binary_outcomes(
+    index_dates: pd.Series,
+    outcomes: pd.DataFrame,
+    start_follow_up: float = 0,
+    end_follow_up: float = None,
+):
+    """Get binary outcomes for each patient."""
+    raise NotImplementedError
 
 
 class IndexDateHandler:
@@ -220,7 +101,7 @@ class IndexDateHandler:
         """Create a timestamp series for given PIDs."""
         timestamp = datetime(**timestamp)
         return pd.Series(
-            data=timestamp, index=pd.Index(list(pids), name="PID"), name="TIMESTAMP"
+            data=timestamp, index=pd.Index(list(pids), name=PID_COL), name=TIMESTAMP_COL
         )
 
     @staticmethod
@@ -229,8 +110,8 @@ class IndexDateHandler:
     ) -> pd.Series:
         """Get index timestamps for exposed patients."""
         hours_delta = pd.Timedelta(hours=n_hours_from_exposure)
-        exposures = exposures[exposures["PID"].isin(pids)]
-        return exposures["TIMESTAMP"] + hours_delta
+        exposures = filter_table_by_pids(exposures, pids)
+        return exposures[TIMESTAMP_COL] + hours_delta
 
     @staticmethod
     def draw_index_dates_for_unexposed(
@@ -254,7 +135,7 @@ class IndexDateHandler:
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Determine index dates based on mode."""
-        pids = set(patients_info["PID"].unique())
+        pids = set(patients_info[PID_COL].unique())
 
         if index_date_mode == "absolute":
             return cls.create_timestamp_series(pids, index_date_params)

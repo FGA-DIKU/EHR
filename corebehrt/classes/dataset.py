@@ -106,8 +106,7 @@ class PatientDataset:
         """Assigns binary outcomes to each patient in the dataset.
 
         Takes a pandas Series mapping patient IDs to outcomes absolute positions and assigns a binary outcome
-        to each patient in the dataset. The outcome is 1.0 if the patient has a non-null
-        outcome in the Series, and 0.0 otherwise.
+        to each patient in the dataset.
 
         Args:
             outcomes (pd.Series): Series with patient IDs as index and outcomes as values.
@@ -116,7 +115,6 @@ class PatientDataset:
         Returns:
             PatientDataset: Returns self for method chaining.
         """
-        outcomes = pd.notna(outcomes).astype(int)
         for p in self.patients:
             p.outcome = outcomes[p.pid]
 

@@ -21,10 +21,10 @@ def filter_by_initial_pids(
         exposed_only: If True, keep only patients with exposures
     """
     if initial_pids:
-        patients_info = patients_info[patients_info[PID_COL].isin(initial_pids)]
+        patients_info = filter_patients_by_pids(patients_info, initial_pids)
 
     if exposed_only and exposures is not None:
-        patients_info = patients_info[patients_info[PID_COL].isin(exposures[PID_COL])]
+        patients_info = filter_patients_by_pids(patients_info, exposures[PID_COL])
 
     return patients_info
 
@@ -111,3 +111,9 @@ def apply_exclusion_filters(
         patients_info = patients_info[~patients_info[PID_COL].isin(patients_to_exclude)]
 
     return patients_info
+
+
+def filter_patients_by_pids(df, pids):
+    """Filter using PID column in dataframe."""
+    pids = set(pids)
+    return df[df[PID_COL].isin(pids)]

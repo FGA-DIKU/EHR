@@ -8,7 +8,6 @@ import pandas as pd
 from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.dataset import PatientDataset
-from corebehrt.classes.outcomes import OutcomeHandler
 from corebehrt.common.config import Config
 from corebehrt.common.setup import INDEX_DATES_FILE, OUTCOMES_FILE, PROCESSED_DATA_DIR
 from corebehrt.functional.convert import dataframe_to_patient_list
@@ -16,13 +15,18 @@ from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_vocabulary
 from corebehrt.functional.truncate import truncate_patient
+from corebehrt.classes.patient_filter import filter_patients_by_pids
 from corebehrt.functional.utils import (
     get_background_length,
     get_non_priority_tokens,
     normalize_segments_for_patient,
 )
+from corebehrt.classes.outcomes import get_binary_outcomes
+import torch
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
+
+PID_COL = "PID"
 
 
 # TODO: Add option to load test set only!
@@ -35,6 +39,11 @@ class DatasetPreparer:
     def prepare_finetune_data(self) -> PatientDataset:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
+        cohort_dir = self.cfg.paths.cohort
+
+        pids = set(torch.load(join(cohort_dir, "pids.pt")))
+        index_dates = torch.load(join(cohort_dir, "index_dates.pt"))
+        # ! we need to convert index_dates to abspos
 
         # Load tokenized data
         with ProgressBar(dt=10):
@@ -43,7 +52,10 @@ class DatasetPreparer:
                     paths_cfg.tokenized,
                     "features_finetune",
                 )
-            ).compute()
+            )
+            df = filter_patients_by_pids(df, pids)
+            # !TODO: if index date is the same for all patients, then we can filter by index_dates
+            df = df.compute()
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
@@ -52,21 +64,19 @@ class DatasetPreparer:
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
-        exposures = pd.read_csv(paths_cfg.exposure)
+        outcomes = filter_patients_by_pids(outcomes, pids)
 
         logger.info("Handling outcomes")
-        outcomehandler = OutcomeHandler(
-            index_date=self.cfg.outcome.get("index_date", None),
-        )
-
-        index_dates, outcomes = outcomehandler.handle(
-            data.get_pids(),
-            outcomes=outcomes,
-            exposures=exposures,
+        # Outcome Handler now only needs to do 2 things: outcome is in follow up window
+        binary_outcomes = get_binary_outcomes(
+            index_dates,
+            outcomes,
+            data_cfg.get("start_follow_up", 0),
+            data_cfg.get("end_follow_up", None),
         )
 
         logger.info("Assigning outcomes")
-        data = data.assign_outcomes(outcomes)
+        data = data.assign_outcomes(binary_outcomes)
 
         # Data censoring
         censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
