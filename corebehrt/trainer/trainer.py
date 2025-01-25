@@ -93,6 +93,14 @@ class EHRTrainer:
         )
         self.sampler = sampler
         self.cfg = cfg
+        try:
+            import mlflow
+
+            mlflow.autolog()
+            self.run = mlflow
+            print("Successfully imported MLFlow for metrics logging")
+        except Exception as e:
+            print(f"Failed to import MLFlow: {e}")
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
@@ -121,13 +129,6 @@ class EHRTrainer:
         self.log(
             f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
         )
-        try:
-            import mlflow
-
-            self.run = mlflow
-            self.log("Successfully imported MLFlow for metrics logging")
-        except:
-            pass
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
@@ -192,12 +193,11 @@ class EHRTrainer:
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                self.run_log(name="LR", value=current_lr, description="Learning Rate")
+                self.run_log(name="LR", value=current_lr)
                 break
         self.run_log(
             name="Train loss",
             value=step_loss / self.accumulation_steps,
-            description="Train loss",
         )
 
     def validate_and_log(
@@ -258,10 +258,8 @@ class EHRTrainer:
         len_train_loop: int,
     ) -> None:
         for k, v in val_metrics.items():
-            self.run_log(name=k, value=v, step=epoch, description=f"Validation {k}")
-        self.run_log(
-            name="Val loss", value=val_loss, step=epoch, description="Validation loss"
-        )
+            self.run_log(name=k, value=v, step=epoch)
+        self.run_log(name="Val loss", value=val_loss, step=epoch)
         self.log(
             f"Epoch {epoch} train loss: {sum(epoch_loss) / (len_train_loop / self.accumulation_steps)}"
         )
@@ -425,27 +423,22 @@ class EHRTrainer:
         self.run_log(
             name="GPU Memory",
             value=memory_allocated,
-            description="GPU Memory Allocated in GB",
             step=step,
         )
         self.run_log(
             name="GPU Max Memory",
             value=max_memory_reserved,
-            description="GPU Max Memory Allocated in GB",
             step=step,
         )
         self.run_log(
             name="GPU Cached Memory",
             value=memory_cached,
-            description="GPU Memory Cached in GB",
             step=step,
         )
 
-    def run_log(self, name, value, description="", step=None):
-        if self.run is not None:
-            self.run.log_metric(
-                name=name, value=value, description=description, step=step
-            )
+    def run_log(self, name, value, step=None):
+        if self.run is not None and hasattr(self.run, "log_metric"):
+            self.run.log_metric(key=name, value=value, step=step)
         else:
             self.log(f"{name}: {value}")
 
