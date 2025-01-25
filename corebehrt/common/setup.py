@@ -305,6 +305,22 @@ class DirectoryPreparer:
         self.write_config("model", source="features", name=DATA_CFG)
         self.write_config("model", name=PRETRAIN_CFG)
 
+    def setup_select_cohort(self) -> None:
+        """
+        Validates path config and sets up directories for select_cohort.
+        """
+        # Setup logging
+        self.setup_logging("select_cohort")
+
+        # Validate and create directories
+        self.check_file("patients_info")
+        self.check_file("outcome")
+        if self.cfg.paths.get("initial_pids", False):
+            self.check_file("initial_pids")
+        if self.cfg.paths.get("exposure", False):
+            self.check_file("exposure")
+        self.create_directory("cohort", clear=True)
+
     def setup_finetune(self) -> None:
         """
         Validates path config and sets up directories for finetune.
