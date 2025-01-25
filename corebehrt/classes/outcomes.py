@@ -1,7 +1,7 @@
 import logging
 import operator
 from datetime import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -114,6 +114,7 @@ class OutcomeHandler:
         data_pids: List[str],
         outcomes: pd.DataFrame,
         exposures: pd.DataFrame,
+        index_dates: pd.Series,
     ) -> Tuple[Dict[str, List], Dict[str, List]]:
         """
         data: Patient Data
@@ -143,7 +144,6 @@ class OutcomeHandler:
 
         # Step 5: Assign censoring to patients without it (random assignment)
         logger.info(f"Number of exposed patients: {len(set(index_dates.index))}")
-        index_dates = self.draw_index_dates_for_unexposed(index_dates, data_pids)
 
         # Step 6: Select first outcome after censoring for each patient
         outcomes = self.get_first_outcome_in_follow_up(
@@ -174,20 +174,6 @@ class OutcomeHandler:
         for df, name in [(outcomes, "outcomes"), (exposures, "exposures")]:
             if not required_columns.issubset(set(df.columns)):
                 raise ValueError(f"{name} must have columns PID and abspos.")
-
-    @staticmethod
-    def draw_index_dates_for_unexposed(
-        censoring_timestamps: pd.Series, data_pids: List[str]
-    ) -> pd.Series:
-        """Draw censor dates for patients that are not in the censor_timestamps."""
-        np.random.seed(42)
-        missing_pids = set(data_pids) - set(censoring_timestamps.index)
-        random_abspos = np.random.choice(
-            censoring_timestamps.values, size=len(missing_pids)
-        )
-        new_entries = pd.Series(random_abspos, index=missing_pids)
-        censoring_timestamps = pd.concat([censoring_timestamps, new_entries])
-        return censoring_timestamps
 
     def compute_abspos_for_index_date(self, pids: List) -> pd.Series:
         """
@@ -226,3 +212,58 @@ class OutcomeHandler:
         )
         first_outcome = get_first_event_by_pid(filtered_outcomes)
         return first_outcome
+
+
+class IndexDateHandler:
+    @staticmethod
+    def create_timestamp_series(pids: Set[str], timestamp: dict) -> pd.Series:
+        """Create a timestamp series for given PIDs."""
+        timestamp = datetime(**timestamp)
+        return pd.Series(
+            data=timestamp, index=pd.Index(list(pids), name="PID"), name="TIMESTAMP"
+        )
+
+    @staticmethod
+    def get_index_timestamps_for_exposed(
+        pids: Set[str], n_hours_from_exposure: int, exposures: pd.DataFrame
+    ) -> pd.Series:
+        """Get index timestamps for exposed patients."""
+        hours_delta = pd.Timedelta(hours=n_hours_from_exposure)
+        exposures = exposures[exposures["PID"].isin(pids)]
+        return exposures["TIMESTAMP"] + hours_delta
+
+    @staticmethod
+    def draw_index_dates_for_unexposed(
+        censoring_timestamps: pd.Series, data_pids: List[str]
+    ) -> pd.Series:
+        """Draw censor dates for patients not in censor_timestamps."""
+        np.random.seed(42)
+        missing_pids = set(data_pids) - set(censoring_timestamps.index)
+        random_abspos = np.random.choice(
+            censoring_timestamps.values, size=len(missing_pids)
+        )
+        new_entries = pd.Series(random_abspos, index=missing_pids)
+        return pd.concat([censoring_timestamps, new_entries])
+
+    @classmethod
+    def determine_index_dates(
+        cls,
+        patients_info: pd.DataFrame,
+        index_date_mode: str,
+        index_date_params: dict,
+        exposures: Optional[pd.DataFrame] = None,
+    ) -> pd.Series:
+        """Determine index dates based on mode."""
+        pids = set(patients_info["PID"].unique())
+
+        if index_date_mode == "absolute":
+            return cls.create_timestamp_series(pids, index_date_params)
+
+        if index_date_mode == "relative":
+            n_hours = index_date_params["n_hours_from_exposure"]
+            exposed_timestamps = cls.get_index_timestamps_for_exposed(
+                pids, n_hours, exposures
+            )
+            return cls.draw_index_dates_for_unexposed(exposed_timestamps, pids)
+
+        raise ValueError(f"Unsupported index date mode: {index_date_mode}")

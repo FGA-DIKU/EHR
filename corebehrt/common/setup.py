@@ -14,6 +14,7 @@ CHECKPOINTS_DIR = "checkpoints"
 
 # Configuration destination names in output folders
 DATA_CFG = "data_config.yaml"
+COHORT_CFG = "cohort_config.yaml"
 OUTCOMES_CFG = "outcomes_config.yaml"
 PRETRAIN_CFG = "pretrain_config.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
@@ -89,6 +90,7 @@ class DirectoryPreparer:
                 "tokenized": DATA_CFG,
                 "outcomes": OUTCOMES_CFG,
                 "model": PRETRAIN_CFG,
+                "cohort": COHORT_CFG,
             }[directory]
 
         path = self.check_path(directory, use_root=True)
@@ -321,6 +323,8 @@ class DirectoryPreparer:
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
         self.create_directory("cohort", clear=True)
+
+        self.write_config("cohort", name=COHORT_CFG)
 
         ## Further config checks
         if self.cfg.selection.get("categories", False):
