@@ -17,7 +17,7 @@ loader:
 outcomes:
   TEST_OUTCOME: 
     type: [CONCEPT]
-    match: [['157']]
+    match: [['157', '169']]
     exclude: ['157141000119108']
     match_how: contains
     case_sensitive: true

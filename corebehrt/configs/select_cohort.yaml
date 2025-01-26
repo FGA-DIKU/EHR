@@ -14,7 +14,7 @@ paths:
 
 selection:
   exclude_prior_outcomes: true # Exclude patients who had the outcome before index date
-  exposed_only: true # Exclude patients who are not exposed
+  exposed_only: false # Exclude patients who are not exposed
   age:
     min_years: 18 # Minimum age to include (inclusive)
     max_years: 120 # Maximum age to include (inclusive)
@@ -25,7 +25,7 @@ selection:
 index_date: # if not provided we can use exposures to get the index dates
   mode: absolute # absolute or relative (to exposure)
   absolute: 
-    year: 2020
+    year: 2015
     month: 1
     day: 26
   relative: # takes first exposure as index date

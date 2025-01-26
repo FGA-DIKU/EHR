@@ -6,6 +6,8 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
+  cohort: ./outputs/cohort
+
   # tokenized_file: "features_finetune.pt" # can also be a list
   # tokenized_pids: "pids_finetune.pt" # can also be a list
  
