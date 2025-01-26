@@ -7,7 +7,7 @@ from corebehrt.classes.patient_filter import (
     filter_by_age,
     filter_by_categories,
     filter_by_initial_pids,
-    filter_patients_by_pids,
+    filter_df_by_pids,
 )
 from corebehrt.common.constants import (
     BIRTHDATE_COL,
@@ -90,27 +90,27 @@ class TestFilterFunctions(unittest.TestCase):
         )
 
     # ----------------------------------------------------------------------
-    # filter_patients_by_pids
+    # filter_df_by_pids
     # ----------------------------------------------------------------------
-    def test_filter_patients_by_pids_empty(self):
+    def test_filter_df_by_pids_empty(self):
         """If pids is empty, expect an empty DataFrame."""
-        result = filter_patients_by_pids(self.patients_info, set())
+        result = filter_df_by_pids(self.patients_info, set())
         self.assertTrue(result.empty)
 
-    def test_filter_patients_by_pids_subset(self):
+    def test_filter_df_by_pids_subset(self):
         """Filter by a subset of PIDs."""
         pids_to_keep = {"p1", "p3"}
-        result = filter_patients_by_pids(self.patients_info, pids_to_keep)
+        result = filter_df_by_pids(self.patients_info, pids_to_keep)
         self.assertEqual(len(result), 2)
         self.assertSetEqual(set(result[PID_COL]), pids_to_keep)
 
-    def test_filter_patients_by_pids_nonexistent_pids(self):
+    def test_filter_df_by_pids_nonexistent_pids(self):
         """If the set of PIDs doesn't appear in patients_info, result should be empty."""
         pids_to_keep = {"xyz", "abc"}
-        result = filter_patients_by_pids(self.patients_info, pids_to_keep)
+        result = filter_df_by_pids(self.patients_info, pids_to_keep)
         self.assertTrue(result.empty, "Expected no matching rows for nonexistent PIDs")
 
-    def test_filter_patients_by_pids_missing_pid_col(self):
+    def test_filter_df_by_pids_missing_pid_col(self):
         """
         Test behavior if patients_info is missing the PID_COL column.
         This might be a scenario you handle with an exception or by ignoring.
@@ -118,7 +118,7 @@ class TestFilterFunctions(unittest.TestCase):
         df_no_pid = self.patients_info.drop(columns=[PID_COL])  # remove the PID column
         # You may expect KeyError or a custom error. Let's verify KeyError:
         with self.assertRaises(KeyError):
-            _ = filter_patients_by_pids(df_no_pid, {"p1"})
+            _ = filter_df_by_pids(df_no_pid, {"p1"})
 
     # ----------------------------------------------------------------------
     # filter_by_initial_pids

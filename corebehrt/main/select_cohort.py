@@ -39,7 +39,7 @@ def main_select_cohort(config_path: str):
 
     logger.info("Saving cohort")
     torch.save(pids, join(cfg.paths.cohort, PID_FILE))
-    index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE), index=False)
+    index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE))
 
 
 def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
@@ -68,6 +68,7 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
 
     logger.info("Determining index dates")
+
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,
         cfg.index_date["mode"],
