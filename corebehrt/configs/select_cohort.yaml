@@ -23,13 +23,13 @@ selection:
       include: [M] # include only M/ exclude keyword can be used as well.
 
 index_date: # if not provided we can use exposures to get the index dates
-  mode: absolute # absolute or relative (to exposure)
+  mode: relative # absolute or relative (to exposure)
   absolute: 
     year: 2015
     month: 1
     day: 26
   relative: # takes first exposure as index date
-    n_hours_from_exposure: -24 # 24 hours before exposure
+    n_hours_from_exposure: -24 # negative means before exposure, 0 by default
 
 split_ratios:
   train: 0.8 
