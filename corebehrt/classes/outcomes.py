@@ -83,16 +83,6 @@ class OutcomeMaker:
         return concepts_plus[mask].drop(columns=["ADMISSION_ID", "CONCEPT"])
 
 
-def get_binary_outcomes(
-    index_dates: pd.Series,
-    outcomes: pd.DataFrame,
-    start_follow_up: float = 0,
-    end_follow_up: float = None,
-):
-    """Get binary outcomes for each patient."""
-    raise NotImplementedError
-
-
 class IndexDateHandler:
     @staticmethod
     def create_timestamp_series(pids: Set[str], timestamp: dict) -> pd.Series:
@@ -109,7 +99,10 @@ class IndexDateHandler:
         """Get index timestamps for exposed patients."""
         hours_delta = pd.Timedelta(hours=n_hours_from_exposure)
         exposures = filter_table_by_pids(exposures, pids)
-        return exposures[TIMESTAMP_COL] + hours_delta
+        # Set PID as index and get timestamp series
+        result = exposures.set_index(PID_COL)[TIMESTAMP_COL] + hours_delta
+        result.index.name = PID_COL  # Ensure index name is set to PID_COL
+        return result
 
     @staticmethod
     def draw_index_dates_for_unexposed(
@@ -121,8 +114,14 @@ class IndexDateHandler:
         random_abspos = np.random.choice(
             censoring_timestamps.values, size=len(missing_pids)
         )
-        new_entries = pd.Series(random_abspos, index=missing_pids)
-        return pd.concat([censoring_timestamps, new_entries])
+        new_entries = pd.Series(
+            random_abspos, index=pd.Index(list(missing_pids), name=PID_COL)
+        )
+        result = pd.concat([censoring_timestamps, new_entries])
+        result.index.name = (
+            PID_COL  # Ensure the final concatenated series has PID_COL as index name
+        )
+        return result
 
     @classmethod
     def determine_index_dates(
@@ -133,13 +132,14 @@ class IndexDateHandler:
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Determine index dates based on mode."""
+
         pids = set(patients_info[PID_COL].unique())
 
         if index_date_mode == "absolute":
             return cls.create_timestamp_series(pids, index_date_params)
 
         if index_date_mode == "relative":
-            n_hours = index_date_params["n_hours_from_exposure"]
+            n_hours = index_date_params.get("n_hours_from_exposure", 0)
             exposed_timestamps = cls.get_index_timestamps_for_exposed(
                 pids, n_hours, exposures
             )
