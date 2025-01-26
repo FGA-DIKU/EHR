@@ -13,13 +13,16 @@ from corebehrt.classes.patient_filter import (
     filter_by_initial_pids,
 )
 from corebehrt.common.config import load_config
-from corebehrt.common.setup import DirectoryPreparer, get_args
+from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.common.setup import (
+    DirectoryPreparer,
+    get_args,
+    INDEX_DATES_FILE,
+    PID_FILE,
+)
 from corebehrt.functional.utils import select_first_event
 
 CONFIG_PATH = "./corebehrt/configs/select_cohort.yaml"
-# Constants
-PID_COL = "PID"
-TIMESTAMP_COL = "TIMESTAMP"
 
 
 def main_select_cohort(config_path: str):
@@ -33,8 +36,8 @@ def main_select_cohort(config_path: str):
     pids, index_dates = select_cohort(cfg)
     logger.info("Finished cohort selection")
 
-    torch.save(pids, join(cfg.paths.cohort, "pids.pt"))
-    torch.save(index_dates, join(cfg.paths.cohort, "index_dates.pt"))
+    torch.save(pids, join(cfg.paths.cohort, PID_FILE))
+    index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE), index=False)
 
 
 def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
@@ -88,7 +91,7 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         outcome_before_index_date=cfg.selection.get("outcome_before_index_date", False),
     )
 
-    return patients_info["PID"].unique().tolist(), index_dates
+    return patients_info[PID_COL].unique().tolist(), index_dates
 
 
 def load_data(cfg):

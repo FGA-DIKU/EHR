@@ -5,9 +5,12 @@ from typing import Tuple
 
 import dask.dataframe as dd
 import pandas as pd
+import torch
 from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.dataset import PatientDataset
+from corebehrt.classes.outcomes import get_binary_outcomes
+from corebehrt.classes.patient_filter import filter_patients_by_pids
 from corebehrt.common.config import Config
 from corebehrt.common.setup import INDEX_DATES_FILE, OUTCOMES_FILE, PROCESSED_DATA_DIR
 from corebehrt.functional.convert import dataframe_to_patient_list
@@ -15,18 +18,13 @@ from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_vocabulary
 from corebehrt.functional.truncate import truncate_patient
-from corebehrt.classes.patient_filter import filter_patients_by_pids
 from corebehrt.functional.utils import (
     get_background_length,
     get_non_priority_tokens,
     normalize_segments_for_patient,
 )
-from corebehrt.classes.outcomes import get_binary_outcomes
-import torch
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
-
-PID_COL = "PID"
 
 
 # TODO: Add option to load test set only!

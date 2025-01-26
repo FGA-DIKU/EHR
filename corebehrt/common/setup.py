@@ -23,6 +23,7 @@ VOCABULARY_FILE = "vocabulary.pt"
 PROCESSED_DATA_DIR = "processed_data"
 OUTCOMES_FILE = "outcomes.csv"
 INDEX_DATES_FILE = "index_dates.csv"
+PID_FILE = "pids.pt"
 
 
 def get_args(default_config_name, default_run_name=None):

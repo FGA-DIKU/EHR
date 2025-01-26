@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Set
 import numpy as np
 import pandas as pd
 
+from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
@@ -13,9 +14,6 @@ from corebehrt.functional.utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-PID_COL = "PID"
-TIMESTAMP_COL = "TIMESTAMP"
 
 
 class OutcomeMaker:

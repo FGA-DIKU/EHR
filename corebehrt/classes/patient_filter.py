@@ -2,8 +2,7 @@ from typing import Optional, Set
 
 import pandas as pd
 
-PID_COL = "PID"
-TIMESTAMP_COL = "TIMESTAMP"
+from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
 
 
 def filter_by_initial_pids(
