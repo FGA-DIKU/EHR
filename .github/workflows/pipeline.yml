@@ -36,6 +36,11 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.create_outcomes
             
+            - name: main.select_cohort
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.select_cohort
+
             - name: main.finetune_cv
               run: |
                 source .venv/bin/activate
