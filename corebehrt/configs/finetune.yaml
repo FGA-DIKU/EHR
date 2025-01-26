@@ -27,8 +27,6 @@ paths:
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 model:
-  #extend_head: 
-  # hidden_size: null
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
     bidirectional: true
@@ -37,7 +35,7 @@ data:
   val_split: 0.1
   test_split: 0.1
   truncation_len: 30
-  min_len: 2
+  min_len: 2 # 0 by default
 
 
 outcome: # we will convert outcomes to binary based on whether at least one outcome is in the follow up window
