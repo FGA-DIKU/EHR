@@ -41,6 +41,10 @@ Pretrains the model on the tokenized features.
 Creates the outcomes from the formatted data.
 Outcomes are stored as absolute positions.
 
+### 3.1 Create Cohort
+Creates a cohort from the formatted data.
+Cohort is stored as a list of PIDs and a table of index_dates
+
 ### 4. Finetune
 Finetunes the pretrained model on the outcomes.
 
