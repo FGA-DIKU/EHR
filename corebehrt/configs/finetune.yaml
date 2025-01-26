@@ -38,13 +38,13 @@ data:
   test_split: 0.1
   truncation_len: 30
   min_len: 2
-  censorer:
-   _target_: corebehrt.data_fixes.censor.EQ_Censorer
 
-outcome: 
+
+outcome: # we will convert outcomes to binary based on whether at least one outcome is in the follow up window
   n_hours_censoring: -10 # censor time after index date (negative means before)
-  n_hours_start_follow_up: -1 # start follow up (considering outcomes) time after index date (negative means before)
-  first_time_outcomes_only: false # only consider patients with no outcome before index date/ patient with outcome before index date are excluded
+  n_hours_start_follow_up: 1 # start follow up (considering outcomes) time after index date (negative means before)
+  n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)
+  
 
 trainer_args:
   sampler: true
