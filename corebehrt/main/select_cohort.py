@@ -22,6 +22,8 @@ from corebehrt.common.setup import (
 )
 from corebehrt.functional.utils import select_first_event
 
+logger = logging.getLogger("select_cohort")
+
 CONFIG_PATH = "./corebehrt/configs/select_cohort.yaml"
 
 
@@ -31,11 +33,11 @@ def main_select_cohort(config_path: str):
     DirectoryPreparer(cfg).setup_select_cohort()
 
     logger = logging.getLogger("select_cohort")
+
     logger.info("Starting cohort selection")
-
     pids, index_dates = select_cohort(cfg)
-    logger.info("Finished cohort selection")
 
+    logger.info("Saving cohort")
     torch.save(pids, join(cfg.paths.cohort, PID_FILE))
     index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE), index=False)
 
@@ -50,47 +52,46 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     Returns:
         Tuple of final patient IDs and their index dates
     """
-    # Load initial data
+    logger.info("Loading data")
     patients_info, outcomes, exposures, initial_pids = load_data(cfg)
+    logger.info("N patients_info: %d", len(patients_info))
+    logger.info("Patients in initial_pids: %d", len(initial_pids))
 
-    # Instantiate selector and index date handler
-
-    # Apply initial PID filters
+    logger.info("Filtering by initial_pids")
     patients_info = filter_by_initial_pids(
         patients_info,
         initial_pids,
         exposures,
         exposed_only=cfg.selection.get("exposed_only", False),
     )
-
-    # Apply category filters
+    logger.info("Filtering by categories")
     patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
 
-    # Determine index dates
+    logger.info("Determining index dates")
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,
         cfg.index_date["mode"],
         cfg.index_date.get("absolute", cfg.index_date.get("relative")),
         exposures,
     )
+    patients_info = patients_info.merge(
+        index_dates, on=PID_COL
+    )  # the TIMESTAMP column is the index date.
 
-    # Apply age filtering
+    logger.info("Filtering by age")
     patients_info = filter_by_age(
         patients_info,
-        index_dates,
         min_age=cfg.selection.get("age_min"),
         max_age=cfg.selection.get("age_max"),
     )
 
-    # Apply additional exclusion filters
+    logger.info("Applying additional exclusion filters")
     patients_info = apply_exclusion_filters(
         patients_info,
-        index_dates,
         outcomes,
         dead_before_index_date=cfg.selection.get("dead_before_index_date", False),
-        outcome_before_index_date=cfg.selection.get("outcome_before_index_date", False),
+        outcome_before_index_date=cfg.selection.get("exclude_prior_outcomes", False),
     )
-
     return patients_info[PID_COL].unique().tolist(), index_dates
 
 
@@ -123,7 +124,10 @@ def read_table(path: str, parse_dates: List[str] = []) -> pd.DataFrame:
     if path.endswith(".csv"):
         return pd.read_csv(path, parse_dates=parse_dates)
     elif path.endswith(".parquet"):
-        return pd.read_parquet(path)
+        df = pd.read_parquet(path)
+        for col in parse_dates:
+            df[col] = pd.to_datetime(df[col])
+        return df
     else:
         raise ValueError(f"Unsupported file type: {path}")
 
