@@ -132,17 +132,21 @@ class IndexDateHandler:
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Determine index dates based on mode."""
-
         pids = set(patients_info[PID_COL].unique())
 
+        result = None
         if index_date_mode == "absolute":
-            return cls.create_timestamp_series(pids, index_date_params)
-
-        if index_date_mode == "relative":
+            result = cls.create_timestamp_series(pids, index_date_params)
+        elif index_date_mode == "relative":
             n_hours = index_date_params.get("n_hours_from_exposure", 0)
             exposed_timestamps = cls.get_index_timestamps_for_exposed(
                 pids, n_hours, exposures
             )
-            return cls.draw_index_dates_for_unexposed(exposed_timestamps, pids)
+            result = cls.draw_index_dates_for_unexposed(exposed_timestamps, pids)
+        else:
+            raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 
-        raise ValueError(f"Unsupported index date mode: {index_date_mode}")
+        # Ensure the series has both index name and series name
+        result.index.name = PID_COL
+        result.name = TIMESTAMP_COL
+        return result
