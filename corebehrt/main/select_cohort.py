@@ -54,6 +54,7 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     """
     logger.info("Loading data")
     patients_info, outcomes, exposures, initial_pids = load_data(cfg)
+    patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
     logger.info("N patients_info: %d", len(patients_info))
     logger.info("Patients in initial_pids: %d", len(initial_pids))
 
@@ -68,11 +69,11 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
 
     logger.info("Determining index dates")
-
+    mode = cfg.index_date["mode"]
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,
-        cfg.index_date["mode"],
-        cfg.index_date.get("absolute", cfg.index_date.get("relative")),
+        mode,
+        cfg.index_date[mode],
         exposures,
     )
     patients_info = patients_info.merge(
