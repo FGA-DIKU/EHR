@@ -72,7 +72,6 @@ def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
             f"Cannot include and exclude values for column '{column}' simultaneously."
         )
 
-    df = df.copy()
     if include_values is not None:
         df = df[df[column].isin(include_values)]
     elif exclude_values is not None:
