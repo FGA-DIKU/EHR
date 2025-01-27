@@ -61,7 +61,7 @@ def filter_by_age(
 def apply_exclusion_filters(
     patients_info: pd.DataFrame,
     outcomes: pd.DataFrame,
-    dead_before_index_date: bool = False,
+    dead_before_index_date: bool = True,
     outcome_before_index_date: bool = False,
 ) -> pd.DataFrame:
     """Remove patients based on death and outcome criteria.
