@@ -19,9 +19,6 @@ def get_binary_outcomes(
     Returns:
         Series with PID index and int (0 or 1) values indicating if outcome occurred in window
     """
-    # Convert hours to integer positions (assuming hourly data)
-    start_pos = n_hours_start_follow_up
-    end_pos = n_hours_end_follow_up
 
     # Create a mask for outcomes within the follow-up window
     merged = pd.merge(
@@ -34,9 +31,9 @@ def get_binary_outcomes(
     merged["rel_pos"] = merged[ABSPOS_COL] - merged["index_abspos"]
 
     # Check if outcome is within window
-    in_window = merged["rel_pos"] >= start_pos
-    if end_pos is not None:
-        in_window &= merged["rel_pos"] <= end_pos
+    in_window = merged["rel_pos"] >= n_hours_start_follow_up
+    if n_hours_end_follow_up is not None:
+        in_window &= merged["rel_pos"] <= n_hours_end_follow_up
 
     # Group by patient and check if any outcome is within window
     has_outcome = merged[in_window].groupby(PID_COL).size() > 0
