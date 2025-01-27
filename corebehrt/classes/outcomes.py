@@ -85,9 +85,8 @@ class OutcomeMaker:
 
 class IndexDateHandler:
     @staticmethod
-    def create_timestamp_series(pids: Set[str], timestamp: dict) -> pd.Series:
+    def create_timestamp_series(pids: Set[str], timestamp: datetime) -> pd.Series:
         """Create a timestamp series for given PIDs."""
-        timestamp = datetime(**timestamp)
         return pd.Series(
             data=timestamp, index=pd.Index(list(pids), name=PID_COL), name=TIMESTAMP_COL
         )
@@ -106,7 +105,8 @@ class IndexDateHandler:
 
     @staticmethod
     def draw_index_dates_for_unexposed(
-        censoring_timestamps: pd.Series, data_pids: List[str]
+        data_pids: List[str],
+        censoring_timestamps: pd.Series,
     ) -> pd.Series:
         """Draw censor dates for patients not in censor_timestamps."""
         np.random.seed(42)
@@ -128,7 +128,9 @@ class IndexDateHandler:
         cls,
         patients_info: pd.DataFrame,
         index_date_mode: str,
-        index_date_params: dict,
+        *,  # force keyword arguments,
+        absolute_timestamp: Optional[datetime] = None,
+        n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Determine index dates based on mode."""
@@ -136,13 +138,13 @@ class IndexDateHandler:
 
         result = None
         if index_date_mode == "absolute":
-            result = cls.create_timestamp_series(pids, index_date_params)
+            result = cls.create_timestamp_series(pids, absolute_timestamp)
         elif index_date_mode == "relative":
-            n_hours = index_date_params.get("n_hours_from_exposure", 0)
+            n_hours = n_hours_from_exposure or 0
             exposed_timestamps = cls.get_index_timestamps_for_exposed(
                 pids, n_hours, exposures
             )
-            result = cls.draw_index_dates_for_unexposed(exposed_timestamps, pids)
+            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 

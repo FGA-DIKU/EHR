@@ -73,8 +73,9 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,
         mode,
-        cfg.index_date[mode],
-        exposures,
+        absolute_timestamp=cfg.index_date[mode].get("absolute_timestamp"),
+        n_hours_from_exposure=cfg.index_date[mode].get("n_hours_from_exposure"),
+        exposures=exposures,
     )
     patients_info = patients_info.merge(
         index_dates, on=PID_COL

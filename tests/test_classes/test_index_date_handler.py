@@ -50,8 +50,9 @@ class TestIndexDateHandler(unittest.TestCase):
     # --------------------------------------------------------
     def test_create_timestamp_series(self):
         """Check that create_timestamp_series returns a Series with the same length as pids, all the same datetime."""
-        timestamp_dict = {"year": 2020, "month": 6, "day": 15}
-        ts_series = IndexDateHandler.create_timestamp_series(self.pids, timestamp_dict)
+        ts_series = IndexDateHandler.create_timestamp_series(
+            self.pids, datetime(2020, 6, 15)
+        )
 
         self.assertEqual(len(ts_series), len(self.pids))
         # Each PID should map to the same datetime(2020,6,15).
@@ -112,7 +113,7 @@ class TestIndexDateHandler(unittest.TestCase):
         """Missing PIDs get random choice from existing timestamps."""
         # p3, p4 are missing in self.censoring_timestamps => must be assigned random picks
         combined = IndexDateHandler.draw_index_dates_for_unexposed(
-            censoring_timestamps=self.censoring_timestamps, data_pids=self.all_pids
+            data_pids=self.all_pids, censoring_timestamps=self.censoring_timestamps
         )
         self.assertEqual(len(combined), 4)
         self.assertIn("p3", combined.index)
@@ -155,11 +156,10 @@ class TestIndexDateHandler(unittest.TestCase):
     def test_determine_index_dates_absolute(self):
         """Check absolute mode sets the same datetime for all pids."""
         # Using a Config-like dict; you can pass a normal dict if your code permits
-        index_params = Config({"year": 2022, "month": 1, "day": 15})
         result = IndexDateHandler.determine_index_dates(
             patients_info=self.patients_info,
             index_date_mode="absolute",
-            index_date_params=index_params,
+            absolute_timestamp=datetime(2022, 1, 15),
         )
         # We have p1, p2, p3 => each should have 2022-01-15
         self.assertEqual(len(result), 3)
@@ -176,11 +176,10 @@ class TestIndexDateHandler(unittest.TestCase):
         # p1 => exposure=2021-01-01 08:00 => +5 => 2021-01-01 13:00
         # p2 => exposure=2021-01-02 10:00 => +5 => 2021-01-02 15:00
         # p3 => no exposure => random pick from p1,p2 => either 2021-01-01 13:00 or 2021-01-02 15:00
-        index_params = Config({"n_hours_from_exposure": 5})
         result = IndexDateHandler.determine_index_dates(
             patients_info=self.patients_info,
             index_date_mode="relative",
-            index_date_params=index_params,
+            n_hours_from_exposure=5,
             exposures=self.exposures,
         )
 
@@ -205,7 +204,6 @@ class TestIndexDateHandler(unittest.TestCase):
             IndexDateHandler.determine_index_dates(
                 patients_info=self.patients_info,
                 index_date_mode="invalid_mode",
-                index_date_params={},
             )
 
 
