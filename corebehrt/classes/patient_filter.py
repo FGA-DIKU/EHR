@@ -61,7 +61,6 @@ def filter_by_age(
 def apply_exclusion_filters(
     patients_info: pd.DataFrame,
     outcomes: pd.DataFrame,
-    dead_before_index_date: bool = True,
     outcome_before_index_date: bool = False,
 ) -> pd.DataFrame:
     """Remove patients based on death and outcome criteria.
@@ -73,11 +72,10 @@ def apply_exclusion_filters(
         dead_before_index_date: Exclude patients who died before index date
         outcome_before_index_date: Exclude patients with prior outcomes
     """
-    if dead_before_index_date:
-        patients_info = patients_info[
-            patients_info[DEATHDATE_COL].isna()
-            | (patients_info[DEATHDATE_COL] > patients_info[TIMESTAMP_COL])
-        ]
+    patients_info = patients_info[
+        patients_info[DEATHDATE_COL].isna()
+        | (patients_info[DEATHDATE_COL] > patients_info[TIMESTAMP_COL])
+    ]
 
     if outcome_before_index_date and not outcomes.empty:
         earliest_outcomes = outcomes.groupby(PID_COL)[TIMESTAMP_COL].min()

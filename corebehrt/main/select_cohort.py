@@ -93,7 +93,6 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     patients_info = apply_exclusion_filters(
         patients_info,
         outcomes,
-        dead_before_index_date=cfg.selection.get("dead_before_index_date", False),
         outcome_before_index_date=cfg.selection.get("exclude_prior_outcomes", False),
     )
     return patients_info[PID_COL].unique().tolist(), index_dates
