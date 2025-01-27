@@ -1,4 +1,4 @@
-from typing import Optional, Set
+from typing import Optional
 
 import pandas as pd
 
@@ -89,11 +89,9 @@ def apply_exclusion_filters(
         indexed_patients_info = patients_info.set_index(PID_COL, drop=False)
 
         # Determine which patients to exclude:
-        pids_to_exclude = set(
-            indexed_patients_info.index[
-                (earliest_outcomes < indexed_patients_info[TIMESTAMP_COL])
-            ]
-        )
+        pids_to_exclude = indexed_patients_info.index[
+            (earliest_outcomes < indexed_patients_info[TIMESTAMP_COL])
+        ]
 
         # Filter them out
         patients_info = patients_info[~patients_info[PID_COL].isin(pids_to_exclude)]
@@ -101,7 +99,6 @@ def apply_exclusion_filters(
     return patients_info
 
 
-def filter_df_by_pids(df: pd.DataFrame, pids: Set[str]) -> pd.DataFrame:
+def filter_df_by_pids(df: pd.DataFrame, pids: list) -> pd.DataFrame:
     """Filter using PID column in dataframe."""
-    pids = set(pids)
     return df[df[PID_COL].isin(pids)]

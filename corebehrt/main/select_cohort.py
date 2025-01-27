@@ -115,9 +115,9 @@ def load_data(cfg):
     exposures = select_first_event(exposures, PID_COL, TIMESTAMP_COL)
 
     initial_pids = (
-        set(torch.load(cfg.paths.initial_pids))
+        torch.load(cfg.paths.initial_pids)
         if cfg.paths.get("initial_pids", False)
-        else set()
+        else []
     )
 
     return patients_info, outcomes, exposures, initial_pids

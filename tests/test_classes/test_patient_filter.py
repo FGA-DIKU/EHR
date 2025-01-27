@@ -93,7 +93,7 @@ class TestFilterFunctions(unittest.TestCase):
     # ----------------------------------------------------------------------
     def test_filter_df_by_pids_empty(self):
         """If pids is empty, expect an empty DataFrame."""
-        result = filter_df_by_pids(self.patients_info, set())
+        result = filter_df_by_pids(self.patients_info, [])
         self.assertTrue(result.empty)
 
     def test_filter_df_by_pids_subset(self):
