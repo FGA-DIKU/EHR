@@ -10,28 +10,6 @@ from corebehrt.common.constants import (
 )
 
 
-def filter_by_initial_pids(
-    patients_info: pd.DataFrame,
-    initial_pids: Optional[Set[str]] = None,
-    exposures: Optional[pd.DataFrame] = None,
-    exposed_only: bool = False,
-) -> pd.DataFrame:
-    """Filter patients by PIDs and exposure status.
-
-    Args:
-        patients_info: DataFrame with PID column
-        initial_pids: Set of patient IDs to include
-        exposures: DataFrame with PID column
-        exposed_only: If True, keep only patients with exposures
-    """
-    if initial_pids:
-        patients_info = filter_df_by_pids(patients_info, initial_pids)
-    if exposed_only and exposures is not None:
-        patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
-
-    return patients_info
-
-
 def filter_by_categories(
     patients_info: pd.DataFrame, category_filters: Optional[dict] = None
 ) -> pd.DataFrame:

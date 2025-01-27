@@ -10,7 +10,7 @@ from corebehrt.classes.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,
-    filter_by_initial_pids,
+    filter_df_by_pids,
 )
 from corebehrt.common.config import load_config
 from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
@@ -58,13 +58,14 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     logger.info("N patients_info: %d", len(patients_info))
     logger.info("Patients in initial_pids: %d", len(initial_pids))
 
-    logger.info("Filtering by initial_pids")
-    patients_info = filter_by_initial_pids(
-        patients_info,
-        initial_pids,
-        exposures,
-        exposed_only=cfg.selection.get("exposed_only", False),
-    )
+    if initial_pids:
+        logger.info("Filtering by initial_pids")
+        patients_info = filter_df_by_pids(patients_info, initial_pids)
+
+    if cfg.selection.get("exposed_only", False):
+        logger.info("Filtering by exposures")
+        patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
+
     logger.info("Filtering by categories")
     patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
 

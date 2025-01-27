@@ -6,7 +6,6 @@ from corebehrt.classes.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,
-    filter_by_initial_pids,
     filter_df_by_pids,
 )
 from corebehrt.common.constants import (
@@ -119,73 +118,6 @@ class TestFilterFunctions(unittest.TestCase):
         # You may expect KeyError or a custom error. Let's verify KeyError:
         with self.assertRaises(KeyError):
             _ = filter_df_by_pids(df_no_pid, {"p1"})
-
-    # ----------------------------------------------------------------------
-    # filter_by_initial_pids
-    # ----------------------------------------------------------------------
-    def test_filter_by_initial_pids_no_args(self):
-        """No initial_pids, not exposed_only => return the original DataFrame."""
-        result = filter_by_initial_pids(self.patients_info)
-        self.assertEqual(len(result), len(self.patients_info))
-
-    def test_filter_by_initial_pids_with_initial_pids(self):
-        """Filter by a set of initial PIDs only."""
-        result = filter_by_initial_pids(self.patients_info, initial_pids={"p1", "p2"})
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p2"})
-
-    def test_filter_by_initial_pids_exposed_only(self):
-        """If exposed_only=True, keep only patients who appear in exposures."""
-        # exposures mention p1, p3, p4
-        result = filter_by_initial_pids(
-            self.patients_info, exposures=self.exposures, exposed_only=True
-        )
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p3", "p4"})
-
-    def test_filter_by_initial_pids_both_conditions(self):
-        """
-        If both initial_pids and exposed_only are provided,
-        filter by initial_pids first, then require exposures among that subset.
-        """
-        # initial pids => p1, p2 => leaves p1, p2
-        # among p1 and p2, only p1 is in exposures => final = p1
-        result = filter_by_initial_pids(
-            self.patients_info,
-            initial_pids={"p1", "p2"},
-            exposures=self.exposures,
-            exposed_only=True,
-        )
-        self.assertSetEqual(set(result[PID_COL]), {"p1"})
-
-    def test_filter_by_initial_pids_empty_exposures(self):
-        """If exposures is empty and exposed_only=True, expect an empty DataFrame."""
-        empty_exposures = pd.DataFrame({PID_COL: [], TIMESTAMP_COL: []})
-        result = filter_by_initial_pids(
-            self.patients_info, exposures=empty_exposures, exposed_only=True
-        )
-        self.assertTrue(result.empty, "Expected empty since no one is 'exposed'")
-
-    def test_filter_by_initial_pids_no_overlap(self):
-        """
-        If initial_pids do not overlap with exposures at all, and exposed_only=True,
-        expect an empty result after both steps.
-        """
-        # Suppose initial_pids = p2, p3 but exposures mention p1, p4
-        # => after step 1, we get p2, p3 => after step 2, none match exposures => empty
-        result = filter_by_initial_pids(
-            self.patients_info,
-            initial_pids={"p2", "p3"},  # keep just p2, p3 initially
-            exposures=self.exposures,  # mentions p1, p3, p4
-            exposed_only=True,
-        )
-        # Actually, note that p3 *is* in exposures, so it overlaps. Let's correct that example:
-        # Instead, use p2, p5 => neither is in exposures => final empty
-        result = filter_by_initial_pids(
-            self.patients_info,
-            initial_pids={"p2", "p5"},
-            exposures=self.exposures,
-            exposed_only=True,
-        )
-        self.assertTrue(result.empty, "Expected empty because p2,p5 not in exposures")
 
     # ----------------------------------------------------------------------
     # filter_by_categories

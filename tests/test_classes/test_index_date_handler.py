@@ -4,7 +4,6 @@ from datetime import datetime
 import pandas as pd
 
 from corebehrt.classes.outcomes import IndexDateHandler
-from corebehrt.common.config import Config
 from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
 
 
