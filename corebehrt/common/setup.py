@@ -2,9 +2,10 @@ import argparse
 import logging
 import os
 import uuid
-from os.path import join, splitext, basename
-from shutil import rmtree, copyfile
+from os.path import basename, join, splitext
+from shutil import copyfile, rmtree
 
+from corebehrt.common.checks import check_categories
 from corebehrt.common.config import Config, load_config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -13,6 +14,7 @@ CHECKPOINTS_DIR = "checkpoints"
 
 # Configuration destination names in output folders
 DATA_CFG = "data_config.yaml"
+COHORT_CFG = "cohort_config.yaml"
 OUTCOMES_CFG = "outcomes_config.yaml"
 PRETRAIN_CFG = "pretrain_config.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
@@ -21,6 +23,7 @@ VOCABULARY_FILE = "vocabulary.pt"
 PROCESSED_DATA_DIR = "processed_data"
 OUTCOMES_FILE = "outcomes.csv"
 INDEX_DATES_FILE = "index_dates.csv"
+PID_FILE = "pids.pt"
 
 
 def get_args(default_config_name, default_run_name=None):
@@ -88,6 +91,7 @@ class DirectoryPreparer:
                 "tokenized": DATA_CFG,
                 "outcomes": OUTCOMES_CFG,
                 "model": PRETRAIN_CFG,
+                "cohort": COHORT_CFG,
             }[directory]
 
         path = self.check_path(directory, use_root=True)
@@ -304,6 +308,38 @@ class DirectoryPreparer:
         # Write config in output directory.
         self.write_config("model", source="features", name=DATA_CFG)
         self.write_config("model", name=PRETRAIN_CFG)
+
+    def setup_select_cohort(self) -> None:
+        """
+        Validates path config and sets up directories for select_cohort.
+        """
+        # Setup logging
+        self.setup_logging("select_cohort")
+
+        # Validate and create directories
+        self.check_file("patients_info")
+        self.check_file("outcome")
+        if self.cfg.paths.get("initial_pids", False):
+            self.check_file("initial_pids")
+        if self.cfg.paths.get("exposure", False):
+            self.check_file("exposure")
+        self.create_directory("cohort", clear=True)
+
+        self.write_config("cohort", name=COHORT_CFG)
+
+        ## Further config checks
+        if self.cfg.selection.get("categories", False):
+            check_categories(self.cfg.selection.categories)
+        if self.cfg.get("index_date", False):
+            if not self.cfg.index_date.get("mode", False):
+                raise ValueError("index_date must specify 'mode' in the configuration")
+            if not (
+                hasattr(self.cfg.index_date, "absolute")
+                or hasattr(self.cfg.index_date, "relative")
+            ):
+                raise ValueError(
+                    "index_date must specify either 'absolute' or 'relative' configuration"
+                )
 
     def setup_finetune(self) -> None:
         """

@@ -147,3 +147,10 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
 
     # Recreate a new PatientData from the updated dictionary
     return PatientData(**data)
+
+
+def select_first_event(
+    df: pd.DataFrame, pid_col: str, timestamp_col: str
+) -> pd.DataFrame:
+    """Select the first event for each PID."""
+    return df.groupby(pid_col)[timestamp_col].min().reset_index()

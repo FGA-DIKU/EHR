@@ -1,22 +1,32 @@
 import logging
 import os
+from datetime import datetime
 from os.path import join
 from typing import Tuple
 
 import dask.dataframe as dd
 import pandas as pd
+import torch
 from dask.diagnostics import ProgressBar
 
 from corebehrt.classes.dataset import PatientDataset
-from corebehrt.classes.outcomes import OutcomeHandler
-from corebehrt.common.config import Config
-from corebehrt.common.setup import INDEX_DATES_FILE, OUTCOMES_FILE, PROCESSED_DATA_DIR
+from corebehrt.classes.patient_filter import filter_df_by_pids
+from corebehrt.common.config import Config, load_config
+from corebehrt.common.constants import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.common.setup import (
+    INDEX_DATES_FILE,
+    OUTCOMES_FILE,
+    PID_FILE,
+    PROCESSED_DATA_DIR,
+)
 from corebehrt.functional.convert import dataframe_to_patient_list
 from corebehrt.functional.filter import censor_patient, exclude_short_sequences
 from corebehrt.functional.load import load_vocabulary
+from corebehrt.functional.outcomes import get_binary_outcomes
 from corebehrt.functional.save import save_vocabulary
 from corebehrt.functional.truncate import truncate_patient
 from corebehrt.functional.utils import (
+    get_abspos_from_origin_point,
     get_background_length,
     get_non_priority_tokens,
     normalize_segments_for_patient,
@@ -36,14 +46,31 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
+        pids = self.load_cohort(paths_cfg)
+
+        # Load index dates and convert to abspos
+        index_dates = pd.read_csv(
+            join(paths_cfg.cohort, INDEX_DATES_FILE), parse_dates=[TIMESTAMP_COL]
+        )
+        origin_point = load_config(
+            join(paths_cfg.features, "data_config.yaml")
+        ).features.origin_point
+        index_dates[ABSPOS_COL] = get_abspos_from_origin_point(
+            index_dates[TIMESTAMP_COL], datetime(**origin_point)
+        )
+
         # Load tokenized data
-        with ProgressBar(dt=10):
+        with ProgressBar(dt=1):
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
                     "features_finetune",
                 )
-            ).compute()
+            )
+            if pids is not None:
+                df = filter_df_by_pids(df, pids)
+            # !TODO: if index date is the same for all patients, then we can censor here.
+            df = df.compute()
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
@@ -52,24 +79,24 @@ class DatasetPreparer:
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
-        exposures = pd.read_csv(paths_cfg.exposure)
-
+        outcomes = filter_df_by_pids(outcomes, data.get_pids())
         logger.info("Handling outcomes")
-        outcomehandler = OutcomeHandler(
-            index_date=self.cfg.outcome.get("index_date", None),
-        )
-
-        index_dates, outcomes = outcomehandler.handle(
-            data.get_pids(),
-            outcomes=outcomes,
-            exposures=exposures,
+        # Outcome Handler now only needs to do 1 thing: if outcome is in follow up window 1 else 0
+        binary_outcomes = get_binary_outcomes(
+            index_dates,
+            outcomes,
+            data_cfg.get("n_hours_start_follow_up", 0),
+            data_cfg.get("n_hours_end_follow_up", None),
         )
 
         logger.info("Assigning outcomes")
-        data = data.assign_outcomes(outcomes)
+        data = data.assign_outcomes(binary_outcomes)
 
-        # Data censoring
-        censor_dates = index_dates + self.cfg.outcome.n_hours_censoring
+        censor_dates = pd.Series(
+            index_dates[ABSPOS_COL] + self.cfg.outcome.n_hours_censoring,
+            index=index_dates[PID_COL],
+        )
+
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
@@ -118,6 +145,7 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
+        pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
         with ProgressBar(dt=10):
             df = dd.read_parquet(
@@ -125,7 +153,10 @@ class DatasetPreparer:
                     paths_cfg.tokenized,
                     "features_pretrain",
                 )
-            ).compute()
+            )
+            if pids is not None:
+                df = filter_df_by_pids(df, pids)
+            df = df.compute()
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
@@ -137,7 +168,7 @@ class DatasetPreparer:
         background_length = get_background_length(data, vocab)
         data.patients = exclude_short_sequences(
             data.patients,
-            data_cfg.get("min_len", 1) + background_length,
+            data_cfg.get("min_len", 0) + background_length,
         )
 
         # Truncation
@@ -166,3 +197,10 @@ class DatasetPreparer:
         if self.cfg.get("save_processed_data", False):
             data.save(self.processed_dir)
         return data
+
+    @staticmethod
+    def load_cohort(paths_cfg):
+        pids = None
+        if paths_cfg.get("cohort"):
+            pids = set(torch.load(join(paths_cfg.cohort, PID_FILE)))
+        return pids

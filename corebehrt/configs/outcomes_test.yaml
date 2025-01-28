@@ -3,7 +3,7 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data
+  data: ./example_data/example_data_w_labs
   features: ./outputs/features
   outcomes: ./outputs/outcomes
 
@@ -11,19 +11,19 @@ loader:
   concepts: [
     diagnose
   ]
-  batchsize: 50
-  chunksize: 300
+  batchsize: 10_000
+  chunksize: 10_000
 
 outcomes:
   TEST_OUTCOME: 
     type: [CONCEPT]
-    match: [['157']]
+    match: [['157', '169']]
     exclude: ['157141000119108']
     match_how: contains
     case_sensitive: true
   TEST_CENSOR:
     type: [CONCEPT]
-    match: [['10509']]
+    match: [['169']]
     match_how: startswith
     case_sensitive: false
     
