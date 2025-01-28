@@ -96,6 +96,7 @@ class EHRTrainer:
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
+        self._compile_model()
 
     def _set_default_args(self, args):
         default_args = {
@@ -121,6 +122,17 @@ class EHRTrainer:
         self.log(
             f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
         )
+
+    def _compile_model(self):
+        if torch.cuda.is_available() and hasattr(torch, "compile"):
+            try:
+                # Use a more conservative backend
+                self.model = torch.compile(self.model, backend="inductor")
+                self.log("Model successfully compiled")
+            except Exception as e:
+                self.log(
+                    f"Failed to compile model: {e}. Continuing with uncompiled model."
+                )
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
@@ -422,10 +434,12 @@ class EHRTrainer:
         checkpoint_name = os.path.join(
             self.run_folder, "checkpoints", f"checkpoint_epoch{id}_end.pt"
         )
+        model_state_dict = self.model.state_dict()
+        model_state_dict = self._remove_compile_prefix(model_state_dict)
         torch.save(
             {
                 "epoch": epoch,
-                "model_state_dict": self.model.state_dict(),
+                "model_state_dict": model_state_dict,
                 "optimizer_state_dict": self.optimizer.state_dict(),
                 "scheduler_state_dict": (
                     self.scheduler.state_dict() if self.scheduler is not None else None
@@ -434,6 +448,13 @@ class EHRTrainer:
             },
             checkpoint_name,
         )
+
+    def _remove_compile_prefix(self, state_dict: dict) -> dict:
+        """Remove _orig_mod prefix from keys if present. This is needed if the model was compiled with torch.compile."""
+        # Only process if at least one key has the prefix
+        if any("_orig_mod." in k for k in state_dict):
+            return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        return state_dict
 
     def _update_attributes(self, **kwargs):
         for key, value in kwargs.items():
