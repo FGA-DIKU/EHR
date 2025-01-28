@@ -61,7 +61,7 @@ class EHRTrainer:
         self.metrics = (
             {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
         )
-
+        self._compile_model()
         self._initialize_early_stopping()
 
     def _initialize_basic_attributes(
@@ -96,7 +96,6 @@ class EHRTrainer:
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
-        self._compile_model()
 
     def _set_default_args(self, args):
         default_args = {
