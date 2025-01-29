@@ -37,7 +37,6 @@ def main_select_cohort(config_path: str):
 
     logger.info("Starting cohort selection")
     pids, index_dates = select_cohort(cfg)
-
     logger.info("Saving cohort")
     torch.save(pids, join(cfg.paths.cohort, PID_FILE))
     index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE))
@@ -62,13 +61,16 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     if initial_pids:
         logger.info("Filtering by initial_pids")
         patients_info = filter_df_by_pids(patients_info, initial_pids)
+        log_patient_num(logger, patients_info)
 
     if cfg.selection.get("exposed_only", False):
         logger.info("Filtering by exposures")
         patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
+        log_patient_num(logger, patients_info)
 
     logger.info("Filtering by categories")
     patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
+    log_patient_num(logger, patients_info)
 
     logger.info("Determining index dates")
     mode = cfg.index_date["mode"]
@@ -89,14 +91,19 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         min_age=cfg.selection.get("age_min"),
         max_age=cfg.selection.get("age_max"),
     )
-
+    log_patient_num(logger, patients_info)
     logger.info("Applying additional exclusion filters")
     patients_info = apply_exclusion_filters(
         patients_info,
         outcomes,
         outcome_before_index_date=cfg.selection.get("exclude_prior_outcomes", False),
     )
+    log_patient_num(logger, patients_info)
     return patients_info[PID_COL].unique().tolist(), index_dates
+
+
+def log_patient_num(logger, patients_info):
+    logger.info(f"Patient number: {len(patients_info[PID_COL].unique())}")
 
 
 def load_data(cfg):
