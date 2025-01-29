@@ -5,7 +5,6 @@ INPUTS = {
     "features": {"type": "uri_folder"},
     "tokenized": {"type": "uri_folder"},
     "cohort": {"type": "uri_folder"},
-    
     "pretrain_model": {
         "type": "uri_folder",
         "optional": True,
