@@ -26,13 +26,13 @@ data:
     replace_ratio: .1
     ignore_special_tokens: true
   truncation_len: 20
-  val_ratio: 0.2
+  val_ratio: 0.4
   min_len: 2
 
 trainer_args:
-  batch_size: 32
-  effective_batch_size: 64
-  epochs: 5
+  batch_size: 128
+  effective_batch_size: 128
+  epochs: 2
   info: true
   sampler: null
   gradient_clip: 
