@@ -72,6 +72,7 @@ class BertForFineTuning(BertEHREncoder):
         self.loss_fct = nn.BCEWithLogitsLoss()
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
+    @torch._dynamo.disable
     def forward(self, batch: dict):
         outputs = super().forward(batch)
 
