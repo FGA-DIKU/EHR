@@ -7,5 +7,5 @@ ABSPOS_COL = "abspos"
 CONCEPT_FORMAT = "concept.*"
 PATIENTS_INFO_FORMAT = "patients_info.*"
 
-CSV_EXT = "*.csv"
-PARQUET_EXT = "*.parquet"
+CSV_EXT = ".csv"
+PARQUET_EXT = ".parquet"
