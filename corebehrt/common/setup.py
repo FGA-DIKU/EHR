@@ -353,7 +353,7 @@ class DirectoryPreparer:
         self.check_directory("tokenized")
         self.check_directory("pretrain_model")
         self.check_file("outcome")
-        self.check_file("exposure")
+        self.check_directory("cohort")
         self.create_run_directory(
             "model", base="runs", run_name=self.generate_finetune_model_dir_name()
         )
