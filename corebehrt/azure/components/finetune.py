@@ -4,10 +4,8 @@ from corebehrt.main import finetune_cv
 INPUTS = {
     "features": {"type": "uri_folder"},
     "tokenized": {"type": "uri_folder"},
-    "predefined_splits": {
-        "type": "uri_folder",
-        "optional": True,
-    },
+    "cohort": {"type": "uri_folder"},
+    
     "pretrain_model": {
         "type": "uri_folder",
         "optional": True,
@@ -17,7 +15,6 @@ INPUTS = {
         "optional": True,
     },
     "outcome": {"type": "uri_file"},
-    "exposure": {"type": "uri_file"},
 }
 OUTPUTS = {"model": {"type": "uri_folder"}}
 
