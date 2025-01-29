@@ -51,7 +51,8 @@ class ConceptLoader:
 
         return concepts, patients_info
 
-    def read_file(self, file_path: str) -> pd.DataFrame:
+    @staticmethod
+    def read_file(file_path: str) -> pd.DataFrame:
         """Read csv or parquet file and return a DataFrame"""
         _, file_ext = os.path.splitext(file_path)
         if file_ext == CSV_EXT:
@@ -61,12 +62,12 @@ class ConceptLoader:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-        return self._handle_datetime_columns(df)
+        return ConceptLoader._handle_datetime_columns(df)
 
-    @classmethod
-    def _handle_datetime_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+    @staticmethod
+    def _handle_datetime_columns(df: pd.DataFrame) -> pd.DataFrame:
         """Try to convert all potential datetime columns to datetime objects"""
-        for col in cls._detect_date_columns(df):
+        for col in ConceptLoader._detect_date_columns(df):
             df[col] = pd.to_datetime(df[col], errors="coerce")
             df[col] = df[col].dt.tz_localize(None)
         return df
