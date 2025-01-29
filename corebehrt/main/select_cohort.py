@@ -21,6 +21,7 @@ from corebehrt.common.setup import (
     PID_FILE,
 )
 from corebehrt.functional.utils import select_first_event
+from corebehrt.data.concept_loader import ConceptLoader
 
 logger = logging.getLogger("select_cohort")
 
@@ -100,13 +101,11 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
 
 def load_data(cfg):
     """Load patient, outcomes, and exposures data."""
-    patients_info = read_table(
-        cfg.paths.patients_info, parse_dates=["BIRTHDATE", "DEATHDATE"]
-    )
-    outcomes = read_table(cfg.paths.outcome, parse_dates=[TIMESTAMP_COL])
+    patients_info = ConceptLoader.read_file(cfg.paths.patients_info)
+    outcomes = ConceptLoader.read_file(cfg.paths.outcome)
 
     exposures = (
-        read_table(cfg.paths.exposure, parse_dates=[TIMESTAMP_COL])
+        ConceptLoader.read_file(cfg.paths.exposure)
         if cfg.paths.get("exposure", False)
         else outcomes
     )
@@ -120,19 +119,6 @@ def load_data(cfg):
     )
 
     return patients_info, outcomes, exposures, initial_pids
-
-
-def read_table(path: str, parse_dates: List[str] = []) -> pd.DataFrame:
-    """Read table from CSV or Parquet file."""
-    if path.endswith(".csv"):
-        return pd.read_csv(path, parse_dates=parse_dates)
-    elif path.endswith(".parquet"):
-        df = pd.read_parquet(path)
-        for col in parse_dates:
-            df[col] = pd.to_datetime(df[col])
-        return df
-    else:
-        raise ValueError(f"Unsupported file type: {path}")
 
 
 if __name__ == "__main__":
