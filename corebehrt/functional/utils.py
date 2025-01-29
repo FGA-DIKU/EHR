@@ -1,4 +1,4 @@
-""" Random utils, should be structered later """
+"""Random utils, should be structered later"""
 
 from dataclasses import asdict, fields, replace
 from datetime import datetime
