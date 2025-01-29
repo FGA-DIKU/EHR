@@ -1,14 +1,21 @@
-import os
 import glob
+import os
 import random
-import dateutil
-import pandas as pd
-import pyarrow.parquet as pq
 from datetime import datetime
 from typing import Iterator, Tuple
 
-CONCEPT_FORMAT = "concept.*"
-PATIENTS_INFO_FORMAT = "patients_info.*"
+import dateutil
+import pandas as pd
+import pyarrow.parquet as pq
+
+from corebehrt.common.constants import (
+    CONCEPT_FORMAT,
+    CSV_EXT,
+    PARQUET_EXT,
+    PATIENTS_INFO_FORMAT,
+    PID_COL,
+    TIMESTAMP_COL,
+)
 
 
 class ConceptLoader:
@@ -24,7 +31,7 @@ class ConceptLoader:
             for path in concepts_paths
             if os.path.basename(path).split(".")[1] in concepts
         ]
-
+        print("concepts_paths", self.concepts_paths)
         self.patients_info_path = glob.glob(
             os.path.join(data_dir, PATIENTS_INFO_FORMAT)
         )
@@ -37,7 +44,7 @@ class ConceptLoader:
         concepts = pd.concat(
             [self.read_file(p) for p in self.concepts_paths], ignore_index=True
         ).drop_duplicates()
-        concepts = concepts.sort_values("TIMESTAMP")
+        concepts = concepts.sort_values(TIMESTAMP_COL)
 
         """ Process patients info """
         patients_info = self.read_file(self.patients_info_path[0])
@@ -47,10 +54,12 @@ class ConceptLoader:
     def read_file(self, file_path: str) -> pd.DataFrame:
         """Read csv or parquet file and return a DataFrame"""
         _, file_ext = os.path.splitext(file_path)
-        if file_ext == ".csv":
+        if file_ext == CSV_EXT:
             df = pd.read_csv(file_path)
-        elif file_ext == ".parquet":
+        elif file_ext == PARQUET_EXT:
             df = pd.read_parquet(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
 
         return self._handle_datetime_columns(df)
 
@@ -95,7 +104,7 @@ class ConceptLoaderLarge(ConceptLoader):
 
     def process(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
         patients_info = self.read_file(self.patients_info_path[0])
-        patient_ids = patients_info["PID"].unique()
+        patient_ids = patients_info[PID_COL].unique()
         random.seed(42)
         random.shuffle(patient_ids)
 
@@ -104,15 +113,15 @@ class ConceptLoaderLarge(ConceptLoader):
                 [self.read_file_chunk(p, chunk_ids) for p in self.concepts_paths],
                 ignore_index=True,
             ).drop_duplicates()
-            concepts_chunk = concepts_chunk.sort_values(by=["PID", "TIMESTAMP"])
-            patients_info_chunk = patients_info[patients_info["PID"].isin(chunk_ids)]
+            concepts_chunk = concepts_chunk.sort_values(by=[PID_COL, TIMESTAMP_COL])
+            patients_info_chunk = patients_info[patients_info[PID_COL].isin(chunk_ids)]
             yield concepts_chunk, patients_info_chunk
 
     def read_file_chunk(self, file_path: str, chunk_ids: list = None) -> pd.DataFrame:
         chunks = []
         for chunk in self._get_iterator(file_path, self.chunksize):
             filtered_chunk = chunk[
-                chunk["PID"].isin(chunk_ids)
+                chunk[PID_COL].isin(chunk_ids)
             ]  # assuming 'PID' is the patient ID column in this file too
             chunks.append(filtered_chunk)
         chunks_df = pd.concat(chunks, ignore_index=True)
@@ -122,10 +131,12 @@ class ConceptLoaderLarge(ConceptLoader):
     @staticmethod
     def _get_iterator(file_path: str, chunksize: int) -> Iterator[pd.DataFrame]:
         _, file_ext = os.path.splitext(file_path)
-        if file_ext == ".csv":
+        if file_ext == CSV_EXT:
             return pd.read_csv(file_path, chunksize=chunksize)
-        elif file_ext == "parquet":
+        elif file_ext == PARQUET_EXT:
             return ParquetIterator(file_path, chunksize)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
 
     @staticmethod
     def get_patient_batch(patient_ids: list, batch_size: int) -> Iterator[list]:

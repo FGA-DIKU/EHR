@@ -3,3 +3,9 @@ TIMESTAMP_COL = "TIMESTAMP"
 BIRTHDATE_COL = "BIRTHDATE"
 DEATHDATE_COL = "DEATHDATE"
 ABSPOS_COL = "abspos"
+
+CONCEPT_FORMAT = "concept.*"
+PATIENTS_INFO_FORMAT = "patients_info.*"
+
+CSV_EXT = "*.csv"
+PARQUET_EXT = "*.parquet"
