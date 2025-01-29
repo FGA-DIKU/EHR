@@ -2,10 +2,10 @@ from corebehrt.azure import util
 from corebehrt.main import select_cohort
 
 INPUTS = {
-    "patients_info": {"type": "uri_folder"},
-    "initial_pids": {"type": "uri_folder", "optional": True},
-    "exposure": {"type": "uri_folder", "optional": True},
-    "outcome": {"type": "uri_folder"},
+    "patients_info": {"type": "uri_file"},
+    "initial_pids": {"type": "uri_file", "optional": True},
+    "exposure": {"type": "uri_file", "optional": True},
+    "outcome": {"type": "uri_file"},
 }
 OUTPUTS = {"cohort": {"type": "uri_folder"}}
 
@@ -25,4 +25,4 @@ if __name__ == "__main__":
     # Parse args and update config
     util.prepare_config(INPUTS, OUTPUTS)
     # Run command
-    select_cohort.main_data(util.AZURE_CONFIG_FILE)
+    select_cohort.main_select_cohort(util.AZURE_CONFIG_FILE)
