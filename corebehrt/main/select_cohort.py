@@ -88,8 +88,8 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     logger.info("Filtering by age")
     patients_info = filter_by_age(
         patients_info,
-        min_age=cfg.selection.get("age_min"),
-        max_age=cfg.selection.get("age_max"),
+        min_age=cfg.selection.get("min_years"),
+        max_age=cfg.selection.get("max_years"),
     )
     log_patient_num(logger, patients_info)
     logger.info("Applying additional exclusion filters")
