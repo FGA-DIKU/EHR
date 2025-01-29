@@ -38,7 +38,26 @@ The environment must be build, before jobs can be run.
 CoreBEHRT jobs are run using the `job` sub-command:
 
 ```bash
-python -m corebehrt.azure job {create_data,create_outcomes,pretrain,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>]
+python -m corebehrt.azure job {create_data,create_outcomes,pretrain,select_cohort,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>]
+```
+
+Here are more examples of running different job types:
+
+```bash
+# Create data using CPU compute
+python -m corebehrt.azure job create_data CPU-20-LP -e test_pipeline -c azure_configs/create_data.yaml
+
+# Run pretraining on GPU
+python -m corebehrt.azure job pretrain GPU-A100-Single -e test_pipeline -c azure_configs/pretrain.yaml
+
+# Create outcomes using CPU compute
+python -m corebehrt.azure job create_outcomes CPU-20-LP -e test_pipeline -c azure_configs/outcome_mace.yaml
+
+# Select cohort using CPU compute
+python -m corebehrt.azure job select_cohort CPU-20-LP -e test_pipeline -c azure_configs/select_cohort.yaml
+
+# Run fine-tuning with cross-validation on GPU
+python -m corebehrt.azure job finetune_cv GPU-A100-Single -e test_pipeline -c azure_configs/finetune.yaml
 ```
 
 The command starts the specified job using the specified `experiment` and `compute`. Passing pairs `<ouput_id>=<output_name>` using `-o` allows for registering outputs as data assets. The default configuration path (`corebehrt/configs/<job_name>.yaml`) can be overridden with the `-c`/`--config` option.
