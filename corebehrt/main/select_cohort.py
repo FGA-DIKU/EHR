@@ -68,9 +68,10 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
         log_patient_num(logger, patients_info)
 
-    logger.info("Filtering by categories")
-    patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
-    log_patient_num(logger, patients_info)
+    if cfg.selection.get("categories", False):
+        logger.info("Filtering by categories")
+        patients_info = filter_by_categories(patients_info, cfg.selection.categories)
+        log_patient_num(logger, patients_info)
 
     logger.info("Determining index dates")
     mode = cfg.index_date["mode"]
@@ -85,13 +86,15 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         index_dates, on=PID_COL
     )  # the TIMESTAMP column is the index date.
 
-    logger.info("Filtering by age")
-    patients_info = filter_by_age(
-        patients_info,
-        min_age=cfg.selection.get("min_years"),
-        max_age=cfg.selection.get("max_years"),
-    )
-    log_patient_num(logger, patients_info)
+    if cfg.selection.get("age", False):
+        logger.info("Filtering by age")
+        patients_info = filter_by_age(
+            patients_info,
+            min_age=cfg.selection.age.get("min_years"),
+            max_age=cfg.selection.age.get("max_years"),
+        )
+        log_patient_num(logger, patients_info)
+
     logger.info("Applying additional exclusion filters")
     patients_info = apply_exclusion_filters(
         patients_info,
