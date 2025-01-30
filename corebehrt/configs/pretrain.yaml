@@ -46,7 +46,7 @@ model:
   num_attention_heads: 3
   intermediate_size: 64
   
-  type_vocab_size: 250 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
+  type_vocab_size: 1024 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
   embedding_dropout: 0.1 
   max_position_embeddings: 512 # the longest sequence length we will use this model with
   
