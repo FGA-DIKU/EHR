@@ -484,9 +484,12 @@ class EHRTrainer:
         )
         model_state_dict = self.model.state_dict()
         model_state_dict = self._remove_compile_prefix(model_state_dict)
+        model_state_dict = self.model.state_dict()
+        model_state_dict = self._remove_compile_prefix(model_state_dict)
         torch.save(
             {
                 "epoch": epoch,
+                "model_state_dict": model_state_dict,
                 "model_state_dict": model_state_dict,
                 "optimizer_state_dict": self.optimizer.state_dict(),
                 "scheduler_state_dict": (
@@ -496,6 +499,13 @@ class EHRTrainer:
             },
             checkpoint_name,
         )
+
+    def _remove_compile_prefix(self, state_dict: dict) -> dict:
+        """Remove _orig_mod prefix from keys if present. This is needed if the model was compiled with torch.compile."""
+        # Only process if at least one key has the prefix
+        if any("_orig_mod." in k for k in state_dict):
+            return {k.replace("_orig_mod.", ""): v for k, v in state_dict.items()}
+        return state_dict
 
     def _remove_compile_prefix(self, state_dict: dict) -> dict:
         """Remove _orig_mod prefix from keys if present. This is needed if the model was compiled with torch.compile."""
