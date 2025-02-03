@@ -1,44 +1,52 @@
+# Common Module Overview
 
+## config.py
 
-### config.py
-Is this possible to simplify?
+- Is this possible to simplify?
 
-### initalize.py
-Classes: Initalizer, ModelManager
- - How much are these needed?
+## initialize.py
 
-Functional: Basically all
+Classes:
 
-Notes: Avoid config
+- Initializer, ModelManager
+- How much are these needed?
 
-### loader.py
-classes: FeaturesLoader, ModelLoader
- - Possibly combine to a single Loader?
+Functionality:
 
-Functional: Basically all
+- All components are functional
+- Avoid config dependencies
 
-Notes: Revamp to be less dependent on specific file extensions
+## loader.py
 
-### logger.py
-Don't understand? Is this really needed?
+Classes:
 
+- ModelLoader
+- Consider combining into a single Loader
 
-Functional: Basically all
- - Except they should be simplified - make a general function (e.g. just object, name args)
+Functionality:
 
-Notes: Make less dependent on specific naming conventions and inputs
+- All components are functional
+- Need to reduce file extension dependencies
 
-### setup.py
-classes: DirectoryPreparer
+## logger.py
 
-functional: Basically all
+Review needed:
 
-### utils.py
-classes: Data
- - Should we move away from this class?
+- Purpose and necessity unclear
+- Simplify functions to use general arguments (object, name)
+- Reduce dependency on naming conventions
 
-Functional: basically all
+## setup.py
+
+Classes:
+
+- DirectoryPreparer
+
+Functionality:
+
+- All components are functional
 
 Notes:
- - Do we want the Data calss?
- - Avoid config
+
+- Evaluate Data class necessity
+- Remove config dependencies

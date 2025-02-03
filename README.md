@@ -1,87 +1,108 @@
 # COREBEHRT
+
 [![Pipeline test](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml)
 [![Unittests](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml)
 [![Formatting using black](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml)
 [![Lint using flake8](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml)
 
+COREBEHRT is a framework for processing and analyzing Electronic Health Records (EHR) data using BERT-based models.
 
-**COREBEHRT** 
+## Getting Started
 
-## Virtual environment
-For running the tests and pipelines, it is adviced to create a virtual environment, enable it, and install the requirements.
-```
-$ python -m venv .venv
-$ source .venv/bin/activate
-(.venv) $ pip install -r requirements.txt
+### Virtual Environment Setup
+
+For running tests and pipelines, create and activate a virtual environment, then install the required dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+(.venv) pip install -r requirements.txt
 ```
 
 ## Unittests
+
 ### In Linux
+
 Enable your virtual environment and run the unittests:
-```
-(.venv) $ python -m unittest
+
+```bash
+(.venv) python -m unittest
 ```
 
 ## Pipeline
+
 The pipeline can be run from the root directory by executing the following commands:
-```
-(.venv) $ python -m corebehrt.main.create_data
-(.venv) $ python -m corebehrt.main.pretrain
-(.venv) $ python -m corebehrt.main.create_outcomes
-(.venv) $ python -m corebehrt.main.finetune_cv
+
+```bash
+(.venv) python -m corebehrt.main.create_data
+(.venv) python -m corebehrt.main.pretrain
+(.venv) python -m corebehrt.main.create_outcomes
+(.venv) python -m corebehrt.main.finetune_cv
 ```
 
 ### 1. Create Data
-Creates tokenized features from the formatted data.
+
+Processes raw EHR data into tokenized features suitable for model training. This step:
+
+- Converts raw medical concepts into numerical tokens
+- Handles temporal information
+- Creates patient segments
+- Processes background variables (e.g., gender)
 
 ### 2. Pretrain
-Pretrains the model on the tokenized features.
+
+Trains the base BERT model on the tokenized medical data to learn general representations of medical concepts and their relationships. This unsupervised learning phase helps the model understand the underlying patterns in medical data.
 
 ### 3. Create Outcomes
-Creates the outcomes from the formatted data.
-Outcomes are stored as absolute positions.
+
+Generates outcome labels from the formatted data for supervised learning:
+
+- Processes specified medical conditions or events as outcomes
+- Stores outcomes with absolute temporal positions
+- Supports multiple outcome definitions
 
 ### 3.1 Create Cohort
-Creates a cohort from the formatted data.
-Cohort is stored as a list of PIDs and a table of index_dates
+
+Defines the study population by:
+
+- Creating a filtered list of patient IDs based on inclusion/exclusion criteria
+- Generating a table of index dates for temporal alignment
+- Supporting customizable cohort selection criteria
 
 ### 4. Finetune
-Finetunes the pretrained model on the outcomes.
 
+Adapts the pretrained model for specific prediction tasks:
 
-## Classes
-#### [`FeatureCreator`](corebehrt/classes/features.py)
-From the **raw data**
-PID|CONCEPT|ADMISSION_ID|TIMESTAMP|...
----|-------|------------|---------|---
+- Uses supervised learning on the defined outcomes
+- Supports cross-validation
+- Allows for task-specific model optimization
 
-and **patient data**
+## Data Processing
 
-PID|GENDER|BIRTHDATE|DEATHDATE|...
----|------|---------|---------|---
+### Feature Creation
 
-we create: 
+The `FeatureCreator` class transforms raw EHR data into structured features:
 
-PID|concept|abspos|segment|age|...
----|-------|------|-------|---|---
+Input format:
 
-and include the following:
-- background 
-- death event
+| PID | CONCEPT | ADMISSION_ID | TIMESTAMP | ... |
+|-----|---------|--------------|-----------|-----|
 
-#### [`Excluder`](corebehrt/classes/excluder.py)
-- incorrect ages
-- nans
-- normalize segments after exclusion
-- short sequences
+Combined with patient data:
 
-Results are saved in a table.
+| PID | GENDER | BIRTHDATE | DEATHDATE | ... |
+|-----|---------|-----------|-----------|-----|
 
-#### [`EHRTokenizer`](corebehrt/classes/tokenizer.py)
-Currently, still operates on sequences.
-Adds SEP and CLS tokens
-Create vocabulary based on pretrain_data
+Produces:
 
+| PID | concept | abspos | segment | age | ... |
+|-----|---------|--------|---------|-----|-----|
 
-## Azure
-Use the submodule `corebehrt.azure` for running on Azure with SDK v2. See [how-to](corebehrt/azure/README.md).
+## Azure Integration
+
+For running COREBEHRT on Azure cloud infrastructure using SDK v2, refer to the [Azure guide](corebehrt/azure/README.md). This includes:
+
+- Configuration setup for Azure
+- Data store management
+- Job execution in the cloud
+- Environment preparation
