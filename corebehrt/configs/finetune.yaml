@@ -16,8 +16,6 @@ paths:
   # restart_model: ... # Use for restarting from checkpoint
   
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv
-  # Optional:
-  exposure: ./outputs/outcomes/TEST_CENSOR.csv
   
   # predefined_splits: outputs/pretraining/behrt_base
   # exclude_pids: pids_path
@@ -30,8 +28,9 @@ model:
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
     bidirectional: true
+
+cv_splits: 2
 data:
-  cv_splits: 2
   val_split: 0.1
   test_split: 0.1
   truncation_len: 30

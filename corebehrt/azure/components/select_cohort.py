@@ -1,21 +1,18 @@
 from corebehrt.azure import util
-from corebehrt.main import pretrain
+from corebehrt.main import select_cohort
 
 INPUTS = {
-    "features": {"type": "uri_folder"},
-    "tokenized": {"type": "uri_folder"},
-    "cohort": {"type": "uri_folder", "optional": True},
-    "restart_model": {
-        "type": "uri_folder",
-        "optional": True,
-    },
+    "patients_info": {"type": "uri_file"},
+    "initial_pids": {"type": "uri_file", "optional": True},
+    "exposure": {"type": "uri_file", "optional": True},
+    "outcome": {"type": "uri_file"},
 }
-OUTPUTS = {"model": {"type": "uri_folder"}}
+OUTPUTS = {"cohort": {"type": "uri_folder"}}
 
 
 def job(config, compute=None, register_output=dict()):
     return util.setup_job(
-        "pretrain",
+        "select_cohort",
         inputs=INPUTS,
         outputs=OUTPUTS,
         config=config,
@@ -28,4 +25,4 @@ if __name__ == "__main__":
     # Parse args and update config
     util.prepare_config(INPUTS, OUTPUTS)
     # Run command
-    pretrain.main_train(util.AZURE_CONFIG_FILE)
+    select_cohort.main_select_cohort(util.AZURE_CONFIG_FILE)
