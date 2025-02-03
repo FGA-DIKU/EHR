@@ -39,6 +39,9 @@ trainer_args:
     clip_value: 1.0
   shuffle: true
   early_stopping: null # num_epochs or null/false
+  num_workers: 8
+  pin_memory: False
+  persistent_workers: True
 
 model:
   hidden_size: 96
