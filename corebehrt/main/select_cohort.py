@@ -21,6 +21,7 @@ from corebehrt.common.setup import (
     PID_FILE,
 )
 from corebehrt.functional.utils import select_first_event
+from corebehrt.data.concept_loader import ConceptLoader
 
 logger = logging.getLogger("select_cohort")
 
@@ -36,7 +37,6 @@ def main_select_cohort(config_path: str):
 
     logger.info("Starting cohort selection")
     pids, index_dates = select_cohort(cfg)
-
     logger.info("Saving cohort")
     torch.save(pids, join(cfg.paths.cohort, PID_FILE))
     index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE))
@@ -61,13 +61,17 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
     if initial_pids:
         logger.info("Filtering by initial_pids")
         patients_info = filter_df_by_pids(patients_info, initial_pids)
+        log_patient_num(logger, patients_info)
 
     if cfg.selection.get("exposed_only", False):
         logger.info("Filtering by exposures")
         patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
+        log_patient_num(logger, patients_info)
 
-    logger.info("Filtering by categories")
-    patients_info = filter_by_categories(patients_info, cfg.selection.get("categories"))
+    if cfg.selection.get("categories", False):
+        logger.info("Filtering by categories")
+        patients_info = filter_by_categories(patients_info, cfg.selection.categories)
+        log_patient_num(logger, patients_info)
 
     logger.info("Determining index dates")
     mode = cfg.index_date["mode"]
@@ -82,12 +86,14 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         index_dates, on=PID_COL
     )  # the TIMESTAMP column is the index date.
 
-    logger.info("Filtering by age")
-    patients_info = filter_by_age(
-        patients_info,
-        min_age=cfg.selection.get("age_min"),
-        max_age=cfg.selection.get("age_max"),
-    )
+    if cfg.selection.get("age", False):
+        logger.info("Filtering by age")
+        patients_info = filter_by_age(
+            patients_info,
+            min_age=cfg.selection.age.get("min_years"),
+            max_age=cfg.selection.age.get("max_years"),
+        )
+        log_patient_num(logger, patients_info)
 
     logger.info("Applying additional exclusion filters")
     patients_info = apply_exclusion_filters(
@@ -95,18 +101,21 @@ def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
         outcomes,
         outcome_before_index_date=cfg.selection.get("exclude_prior_outcomes", False),
     )
+    log_patient_num(logger, patients_info)
     return patients_info[PID_COL].unique().tolist(), index_dates
+
+
+def log_patient_num(logger, patients_info):
+    logger.info(f"Patient number: {len(patients_info[PID_COL].unique())}")
 
 
 def load_data(cfg):
     """Load patient, outcomes, and exposures data."""
-    patients_info = read_table(
-        cfg.paths.patients_info, parse_dates=["BIRTHDATE", "DEATHDATE"]
-    )
-    outcomes = read_table(cfg.paths.outcome, parse_dates=[TIMESTAMP_COL])
+    patients_info = ConceptLoader.read_file(cfg.paths.patients_info)
+    outcomes = ConceptLoader.read_file(cfg.paths.outcome)
 
     exposures = (
-        read_table(cfg.paths.exposure, parse_dates=[TIMESTAMP_COL])
+        ConceptLoader.read_file(cfg.paths.exposure)
         if cfg.paths.get("exposure", False)
         else outcomes
     )
@@ -120,19 +129,6 @@ def load_data(cfg):
     )
 
     return patients_info, outcomes, exposures, initial_pids
-
-
-def read_table(path: str, parse_dates: List[str] = []) -> pd.DataFrame:
-    """Read table from CSV or Parquet file."""
-    if path.endswith(".csv"):
-        return pd.read_csv(path, parse_dates=parse_dates)
-    elif path.endswith(".parquet"):
-        df = pd.read_parquet(path)
-        for col in parse_dates:
-            df[col] = pd.to_datetime(df[col])
-        return df
-    else:
-        raise ValueError(f"Unsupported file type: {path}")
 
 
 if __name__ == "__main__":
