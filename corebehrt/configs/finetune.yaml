@@ -28,8 +28,8 @@ model:
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
     bidirectional: true
+cv_splits: 2
 data:
-  cv_splits: 2
   val_split: 0.1
   test_split: 0.1
   truncation_len: 30
