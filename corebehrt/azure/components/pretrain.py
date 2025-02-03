@@ -4,10 +4,7 @@ from corebehrt.main import pretrain
 INPUTS = {
     "features": {"type": "uri_folder"},
     "tokenized": {"type": "uri_folder"},
-    "predefined_splits": {
-        "type": "uri_folder",
-        "optional": True,
-    },
+    "cohort": {"type": "uri_folder", "optional": True},
     "restart_model": {
         "type": "uri_folder",
         "optional": True,
