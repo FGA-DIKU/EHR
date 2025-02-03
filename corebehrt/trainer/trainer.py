@@ -1,13 +1,14 @@
 import os
-import yaml
-import torch
 from collections import namedtuple
 
+import torch
+import yaml
 from torch.utils.data import DataLoader, Dataset
+
 from corebehrt.common.config import Config, instantiate_class
-from corebehrt.functional.trainer_utils import dynamic_padding
+from corebehrt.common.constants import DEFAULT_NUM_WORKERS
+from corebehrt.functional.trainer_utils import bucketed_dynamic_padding
 from corebehrt.trainer.utils import (
-    compute_avg_metrics,
     get_tqdm,
     save_curves,
     save_metrics_to_csv,
@@ -100,7 +101,7 @@ class EHRTrainer:
     def _set_default_args(self, args):
         default_args = {
             "save_every_k_steps": float("inf"),
-            "collate_fn": dynamic_padding,
+            "collate_fn": bucketed_dynamic_padding,
         }
         self.args = {**default_args, **args}
         if not (self.args["effective_batch_size"] % self.args["batch_size"] == 0):
@@ -123,7 +124,11 @@ class EHRTrainer:
         )
 
     def _compile_model(self):
-        if torch.cuda.is_available() and hasattr(torch, "compile"):
+        if (
+            torch.cuda.is_available()
+            and hasattr(torch, "compile")
+            and self.cfg.trainer_args.get("compile", True)
+        ):
             try:
                 # Use a more conservative backend
                 self.model = torch.compile(self.model, backend="inductor")
@@ -143,6 +148,7 @@ class EHRTrainer:
         dataloader = self.setup_training()
         self.log("Test validation before starting training")
         self.validate_and_log(0, [0], dataloader)
+
         for epoch in range(self.continue_epoch, self.args["epochs"]):
             self._train_epoch(epoch, dataloader)
             if self.stop_training:
@@ -153,16 +159,17 @@ class EHRTrainer:
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
         step_loss = 0
+
         for i, batch in enumerate(train_loop):
             step_loss += self._train_step(batch).item()
             if (i + 1) % self.accumulation_steps == 0:
                 self._clip_gradients()
                 self._update_and_log(step_loss, train_loop, epoch_loss)
                 step_loss = 0
+            if self.cfg.trainer_args.get("log_gpu", False):
+                if (i % 500 == 0) and torch.cuda.is_available():
+                    self.run_log_gpu()
         self.validate_and_log(epoch, epoch_loss, train_loop)
-        torch.cuda.empty_cache()
-        del train_loop
-        del epoch_loss
 
     def _clip_gradients(self):
         # Then clip them if needed
@@ -336,9 +343,10 @@ class EHRTrainer:
         loop.set_description(mode)
         loss = 0
 
+        # Keep everything on GPU until the end
+        all_logits = []
+        all_targets = []
         metric_values = {name: [] for name in self.metrics}
-        logits_list = [] if self.accumulate_logits else None
-        targets_list = [] if self.accumulate_logits else None
 
         with torch.no_grad():
             for batch in loop:
@@ -347,29 +355,38 @@ class EHRTrainer:
                 loss += outputs.loss.item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
-                    targets_list.append(batch["target"].cpu())
+                    all_logits.append(outputs.logits)  # Keep on GPU
+                    all_targets.append(batch["target"])  # Keep on GPU
                 else:
                     for name, func in self.metrics.items():
                         metric_values[name].append(func(outputs, batch))
 
         if self.accumulate_logits:
+            # Concatenate on GPU
+            logits = torch.cat(all_logits)
+            targets = torch.cat(all_targets)
+            # Only move to CPU when saving
             metric_values = self.process_binary_classification_results(
-                logits_list, targets_list, epoch, mode=mode
+                logits, targets, epoch, mode=mode
             )
         else:
-            metric_values = compute_avg_metrics(metric_values)
+            # Handle both tensor and float metrics
+            metric_values = {
+                name: (
+                    torch.stack(values).mean().cpu().item()
+                    if torch.is_tensor(values[0])
+                    else sum(values) / len(values)
+                )
+                for name, values in metric_values.items()
+            }
 
         self.model.train()
-
         return loss / len(loop), metric_values
 
     def process_binary_classification_results(
         self, logits: list, targets: list, epoch: int, mode="val"
     ) -> dict:
         """Process results specifically for binary classification."""
-        targets = torch.cat(targets)
-        logits = torch.cat(logits)
         batch = {"target": targets}
         outputs = namedtuple("Outputs", ["logits"])(logits)
         metrics = {}
@@ -394,17 +411,31 @@ class EHRTrainer:
             batchsize = self.args.get("test_batch_size", self.args["batch_size"])
         else:
             batchsize = self.args["batch_size"]
+        cuda_kwargs = (
+            {
+                "pin_memory": self.cfg.trainer_args.get("pin_memory", True),
+                "pin_memory_device": str(self.device),
+                "persistent_workers": self.cfg.trainer_args.get(
+                    "persistent_workers", True
+                ),
+            }
+            if torch.cuda.is_available()
+            else {}
+        )
+
         return DataLoader(
             dataset,
             batch_size=batchsize,
             shuffle=False,
             collate_fn=self.args["collate_fn"],
+            num_workers=self.cfg.trainer_args.get("num_workers", DEFAULT_NUM_WORKERS),
+            **cuda_kwargs,
         )
 
     def batch_to_device(self, batch: dict) -> None:
         """Moves a batch to the device in-place"""
         for key, value in batch.items():
-            batch[key] = value.to(self.device)
+            batch[key] = value.to(self.device, non_blocking=True)
 
     def log(self, message: str) -> None:
         """Logs a message to the logger and stdout"""
@@ -418,6 +449,24 @@ class EHRTrainer:
             self.run.log_metric(name=name, value=value)
         else:
             self.log(f"{name}: {value}")
+
+    def run_log_gpu(self):
+        """Logs the GPU memory usage to the run"""
+        memory_allocated = torch.cuda.memory_allocated(device=self.device) / 1e9
+        max_memory_reserved = torch.cuda.max_memory_reserved(device=self.device) / 1e9
+        memory_cached = torch.cuda.memory_reserved(device=self.device) / 1e9
+        self.run_log(
+            name="GPU Memory",
+            value=memory_allocated,
+        )
+        self.run_log(
+            name="GPU Max Memory",
+            value=max_memory_reserved,
+        )
+        self.run_log(
+            name="GPU Cached Memory",
+            value=memory_cached,
+        )
 
     def save_setup(self) -> None:
         """Saves the config and model config"""
