@@ -1,6 +1,6 @@
 """
 Command-line utility for starting CoreBEHRT jobs on Azure clusters.
-Requires installation of azure-ml-ai python package and a valid Azure workspace. 
+Requires installation of azure-ml-ai python package and a valid Azure workspace.
 """
 
 import sys

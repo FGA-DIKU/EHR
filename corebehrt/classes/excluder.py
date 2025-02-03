@@ -1,4 +1,4 @@
-""" Excluder class for excluding incorrect events and patients """
+"""Excluder class for excluding incorrect events and patients"""
 
 from dask import dataframe as dd
 

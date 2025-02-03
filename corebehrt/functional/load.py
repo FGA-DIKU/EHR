@@ -1,4 +1,4 @@
-""" Utils for loading data """
+"""Utils for loading data"""
 
 import os
 from glob import glob
