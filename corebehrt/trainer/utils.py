@@ -32,14 +32,14 @@ def save_curves(
     """Saves the ROC and PRC curves to a csv file in the run folder"""
     roc_name = os.path.join(run_folder, "checkpoints", f"roc_curve_{mode}_{epoch}.npz")
     prc_name = os.path.join(run_folder, "checkpoints", f"prc_curve_{mode}_{epoch}.npz")
-    
+
     # Move to CPU only when needed for numpy conversion
     probas = torch.sigmoid(logits).cpu().numpy()
     targets_np = targets.cpu().numpy()
-    
+
     fpr, tpr, threshold_roc = roc_curve(targets_np, probas)
     precision, recall, threshold_pr = precision_recall_curve(targets_np, probas)
-    
+
     np.savez_compressed(roc_name, fpr=fpr, tpr=tpr, threshold=threshold_roc)
     np.savez_compressed(
         prc_name,
