@@ -8,7 +8,13 @@ import argparse
 
 from corebehrt.common.config import load_config
 
-from corebehrt.azure.components import create_data, create_outcomes, pretrain, finetune
+from corebehrt.azure.components import (
+    create_data,
+    create_outcomes,
+    pretrain,
+    finetune,
+    select_cohort,
+)
 
 from . import environment, util
 
@@ -17,6 +23,7 @@ COMPONENTS = {
     "create_outcomes": create_outcomes,
     "pretrain": pretrain,
     "finetune_cv": finetune,
+    "select_cohort": select_cohort,
 }
 
 
