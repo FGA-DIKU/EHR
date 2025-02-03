@@ -4,6 +4,7 @@ from transformers import ModernBertModel
 
 from corebehrt.classes.embeddings import EhrEmbeddings
 from corebehrt.classes.heads import FineTuneHead, MLMHead
+from transformers.modeling_outputs import MaskedLMOutput, SequenceClassifierOutput
 
 
 class BertEHREncoder(ModernBertModel):
@@ -47,12 +48,17 @@ class BertEHRModel(BertEHREncoder):
 
         sequence_output = outputs[0]  # Last hidden state
         logits = self.cls(sequence_output)
-        outputs.logits = logits
 
+        loss = None
         if batch.get("target") is not None:
-            outputs.loss = self.get_loss(logits, batch["target"])
+            loss = self.get_loss(logits, batch["target"])
 
-        return outputs
+        return MaskedLMOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.get("hidden_states", None),
+            attentions=outputs.get("attentions", None),
+        )
 
     def get_loss(self, logits, labels):
         """Calculate loss for masked language model."""
@@ -66,17 +72,23 @@ class BertForFineTuning(BertEHREncoder):
         self.loss_fct = nn.BCEWithLogitsLoss()
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
+    @torch._dynamo.disable
     def forward(self, batch: dict):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state
         logits = self.cls(sequence_output, batch["attention_mask"])
-        outputs.logits = logits
 
+        loss = None
         if batch.get("target") is not None:
-            outputs.loss = self.get_loss(logits, batch["target"])
+            loss = self.get_loss(logits, batch["target"])
 
-        return outputs
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.get("hidden_states", None),
+            attentions=outputs.get("attentions", None),
+        )
 
     def get_loss(self, hidden_states, labels):
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))

@@ -67,10 +67,10 @@ class DatasetPreparer:
                     "features_finetune",
                 )
             )
-            if pids is not None:
-                df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
+            if pids is not None:
+                df = filter_df_by_pids(df, pids)
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
@@ -154,10 +154,19 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             )
+            df = df.compute()
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
-            df = df.compute()
+        # Take random sample of 10,000 unique patient IDs
+        unique_pids = df[PID_COL].unique()
+        import numpy as np
 
+        if len(unique_pids) > 10_000:
+            selected_pids = np.random.choice(unique_pids, size=10_000, replace=False)
+            df = df[df[PID_COL].isin(selected_pids)]
+            logger.info(
+                f"Sampled {len(selected_pids):,} patients from {len(unique_pids):,} total"
+            )
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
