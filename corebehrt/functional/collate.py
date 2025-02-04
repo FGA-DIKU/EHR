@@ -1,7 +1,5 @@
 import torch
 
-from corebehrt.modules.setup.config import Config
-
 
 def dynamic_padding(batch: list) -> dict:
     """
