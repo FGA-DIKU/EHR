@@ -25,6 +25,14 @@ OUTCOMES_FILE = "outcomes.csv"
 INDEX_DATES_FILE = "index_dates.csv"
 PID_FILE = "pids.pt"
 
+### File Patterns ###
+CONCEPT_FORMAT = "concept.*"
+PATIENTS_INFO_FORMAT = "patients_info.*"
+
+### File Extensions ###
+CSV_EXT = ".csv"
+PARQUET_EXT = ".parquet"
+
 
 def get_args(default_config_name, default_run_name=None):
     """Get command line arguments."""
