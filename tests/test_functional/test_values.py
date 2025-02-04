@@ -10,7 +10,6 @@ from corebehrt.modules.features.normalizer import ValuesNormalizer
 from corebehrt.modules.features.values import ValueCreator
 
 
-
 class TestCreators(unittest.TestCase):
     def _generate_random_pids(self):
         while True:

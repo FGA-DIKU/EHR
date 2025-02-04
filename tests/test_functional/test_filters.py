@@ -7,7 +7,6 @@ from corebehrt.functional.filter import (
 )
 
 
-
 class TestExcludeShortSequences(unittest.TestCase):
     def test_exclude_short_sequences_basic(self):
         # Create some dummy PatientData objects

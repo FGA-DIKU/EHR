@@ -27,7 +27,6 @@ from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
 
 
-
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
 SCHEMA = {
