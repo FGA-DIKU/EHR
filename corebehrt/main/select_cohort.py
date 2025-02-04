@@ -17,10 +17,11 @@ from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.modules.setup.directory import (
     DirectoryPreparer,
-    get_args,
     INDEX_DATES_FILE,
     PID_FILE,
 )
+from corebehrt.functional.setup.args import get_args
+
 from corebehrt.functional.utils import select_first_event
 from corebehrt.modules.features.loader import ConceptLoader
 

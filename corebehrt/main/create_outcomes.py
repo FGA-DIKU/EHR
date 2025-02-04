@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.monitoring.logger import TqdmToLogger
-from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
+from corebehrt.modules.setup.directory import DirectoryPreparer
+from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.features.loader import ConceptLoaderLarge
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
 

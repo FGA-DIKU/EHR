@@ -9,7 +9,9 @@ from corebehrt.modules.setup.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
 )
-from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
+from corebehrt.modules.setup.directory import DirectoryPreparer
+from corebehrt.functional.setup.args import get_args
+
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.features.split import (
