@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 from transformers import ModernBertModel
 
-from corebehrt.modules.embeddings import EhrEmbeddings
-from corebehrt.modules.heads import FineTuneHead, MLMHead
+from corebehrt.modules.model.model.embeddings import EhrEmbeddings
+from corebehrt.modules.model.model.heads import FineTuneHead, MLMHead
 
 
 class BertEHREncoder(ModernBertModel):
