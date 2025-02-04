@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import dask.dataframe as dd
 from datetime import datetime
-from corebehrt.modules.preprocessing.features import FeatureCreator
+from corebehrt.modules.features.features import FeatureCreator
 
 
 class TestFeatureCreator(unittest.TestCase):

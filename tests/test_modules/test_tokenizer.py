@@ -3,7 +3,7 @@ import pandas as pd
 import dask.dataframe as dd
 
 # Import the EHRTokenizer class and constants
-from corebehrt.modules.preprocessing.tokenizer import EHRTokenizer
+from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.functional.constants import (
     CLS_TOKEN,
     PAD_TOKEN,

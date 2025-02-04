@@ -37,7 +37,7 @@ class TestCreateData(TestMainScript):
                         "value_type": "binned",
                         "value_type_kwargs": {"multiplication_factor": 100},
                         "normalize_args": {
-                            "func": "corebehrt.modules.preprocessing.normalizer.ValuesNormalizer.min_max_normalize_results",
+                            "func": "corebehrt.modules.features.normalizer.ValuesNormalizer.min_max_normalize_results",
                             "kwargs": {"min_count": 3},
                         },
                     },
