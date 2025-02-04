@@ -5,13 +5,14 @@ from typing import List, Tuple
 import pandas as pd
 import torch
 
-from corebehrt.modules.outcomes import IndexDateHandler
-from corebehrt.modules.preparation.patient_filter import (
+from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
+from corebehrt.modules.cohort_handling.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,
     filter_df_by_pids,
 )
+
 from corebehrt.common.config import load_config
 from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.common.setup import (

@@ -6,8 +6,8 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
-from corebehrt.modules.preprocessing.normalizer import ValuesNormalizer
-from corebehrt.modules.preprocessing.values import ValueCreator
+from corebehrt.modules.features.values import ValueCreator
+from corebehrt.modules.features.normalizer import ValuesNormalizer
 
 
 class TestCreators(unittest.TestCase):

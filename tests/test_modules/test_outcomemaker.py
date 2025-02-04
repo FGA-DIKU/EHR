@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from corebehrt.modules.outcomes import OutcomeMaker
+from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
 from corebehrt.functional.utils import get_abspos_from_origin_point
 from datetime import datetime
 

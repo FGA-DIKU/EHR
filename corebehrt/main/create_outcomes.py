@@ -11,7 +11,7 @@ from corebehrt.common.config import load_config
 from corebehrt.modules.monitoring.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.data.concept_loader import ConceptLoaderLarge
-from corebehrt.modules.outcomes import OutcomeMaker
+from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
 
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
