@@ -5,7 +5,7 @@ from os.path import join, split
 import torch
 
 from corebehrt.modules.setup.config import load_config
-from corebehrt.modules.trainer.setup import ModelManager
+from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.setup.loader import load_and_select_splits
 from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.modules.monitoring.metric_aggregation import (
