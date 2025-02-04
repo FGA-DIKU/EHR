@@ -2,18 +2,19 @@
 
 import logging
 
-from corebehrt.common.config import load_config
+from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.trainer.setup import Initializer, ModelManager
 from corebehrt.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
 )
-from corebehrt.common.setup import DirectoryPreparer, get_args
+from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.save import save_pids_splits
 from corebehrt.functional.split import load_train_val_split, split_pids_into_train_val
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import MLMDataset
+
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.trainer.trainer import EHRTrainer
 

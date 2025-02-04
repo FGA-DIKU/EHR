@@ -4,10 +4,10 @@ from os.path import join, split
 
 import torch
 
-from corebehrt.common.config import load_config
+from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.trainer.setup import ModelManager
 from corebehrt.common.loader import load_and_select_splits
-from corebehrt.common.setup import DirectoryPreparer, get_args
+from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
 )

@@ -16,8 +16,8 @@ import dask.dataframe as dd
 import torch
 from dask.diagnostics import ProgressBar
 
-from corebehrt.common.config import load_config
-from corebehrt.common.setup import DirectoryPreparer, get_args
+from corebehrt.modules.setup.config import load_config
+from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.modules.features.excluder import Excluder

@@ -13,9 +13,9 @@ from corebehrt.modules.cohort_handling.patient_filter import (
     filter_df_by_pids,
 )
 
-from corebehrt.common.config import load_config
+from corebehrt.modules.setup.config import load_config
 from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
-from corebehrt.common.setup import (
+from corebehrt.modules.setup.directory import (
     DirectoryPreparer,
     get_args,
     INDEX_DATES_FILE,

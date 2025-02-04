@@ -9,11 +9,12 @@ from torch.optim import AdamW
 from torch.utils.data import Sampler, WeightedRandomSampler
 from transformers import ModernBertConfig
 
-from corebehrt.common.config import Config, instantiate_class
+from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
-from corebehrt.common.setup import CHECKPOINTS_DIR
+from corebehrt.modules.setup.directory import CHECKPOINTS_DIR
 from corebehrt.functional.setup import get_last_checkpoint_epoch
 from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
+
 
 logger = logging.getLogger(__name__)
 
