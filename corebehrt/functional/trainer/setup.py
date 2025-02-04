@@ -1,5 +1,3 @@
-import torch
-
 from corebehrt.modules.setup.config import Config
 
 
