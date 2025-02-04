@@ -8,7 +8,7 @@ from corebehrt.main.create_data import main_data
 from corebehrt.modules.setup.directory import DATA_CFG
 
 from .base import TestMainScript
-from corebehrt.functional.convert import dataframe_to_patient_list
+from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 
 
 class TestCreateData(TestMainScript):

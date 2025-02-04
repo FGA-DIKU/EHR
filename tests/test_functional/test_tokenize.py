@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 
 # Import the updated functions and constants
-from corebehrt.functional.tokenize import (
+from corebehrt.functional.features.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,
     tokenize_partition,

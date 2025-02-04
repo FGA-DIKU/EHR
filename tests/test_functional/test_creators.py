@@ -3,7 +3,7 @@ import pandas as pd
 import dask.dataframe as dd
 from datetime import datetime
 
-from corebehrt.functional.creators import (
+from corebehrt.functional.features.creators import (
     create_age_in_years,
     create_abspos,
     create_segments,

@@ -7,7 +7,7 @@ import numpy as np
 import torch
 
 from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
-from corebehrt.functional.split import (
+from corebehrt.functional.features.split import (
     get_n_splits_cv_pids,
     load_train_val_split,
     split_into_test_and_train_val_pids,

@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 
 from corebehrt.modules.setup.constants import PID_COL, ABSPOS_COL
-from corebehrt.functional.outcomes import get_binary_outcomes
+from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 
 
 class TestGetBinaryOutcomes(unittest.TestCase):

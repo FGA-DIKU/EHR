@@ -1,7 +1,7 @@
 import unittest
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.functional.filter import (
+from corebehrt.functional.preparation.filter import (
     exclude_short_sequences,
     censor_patient,
 )

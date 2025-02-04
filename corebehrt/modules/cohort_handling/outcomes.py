@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
-from corebehrt.functional.matching import get_col_booleans
+from corebehrt.functional.cohort_handling.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,
     get_abspos_from_origin_point,
