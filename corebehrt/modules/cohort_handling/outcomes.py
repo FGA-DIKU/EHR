@@ -7,11 +7,11 @@ import pandas as pd
 
 from corebehrt.functional.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.functional.cohort_handling.matching import get_col_booleans
-from corebehrt.functional.utils import (
+from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,
-    get_abspos_from_origin_point,
     remove_missing_timestamps,
 )
+from corebehrt.functional.preparation.utils import get_abspos_from_origin_point
 
 logger = logging.getLogger(__name__)
 

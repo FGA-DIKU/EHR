@@ -3,7 +3,7 @@ from dataclasses import fields, replace
 from typing import List, Optional
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.functional.utils import subset_patient_data
+from corebehrt.functional.preparation.utils import subset_patient_data
 
 
 def truncate_patient(

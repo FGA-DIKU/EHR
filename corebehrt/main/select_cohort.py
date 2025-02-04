@@ -5,6 +5,9 @@ from typing import List, Tuple
 import pandas as pd
 import torch
 
+from corebehrt.functional.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.functional.preparation.filter import select_first_event
+from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
 from corebehrt.modules.cohort_handling.patient_filter import (
     apply_exclusion_filters,
@@ -12,18 +15,13 @@ from corebehrt.modules.cohort_handling.patient_filter import (
     filter_by_categories,
     filter_df_by_pids,
 )
-
+from corebehrt.modules.features.loader import ConceptLoader
 from corebehrt.modules.setup.config import load_config
-from corebehrt.functional.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.modules.setup.directory import (
-    DirectoryPreparer,
     INDEX_DATES_FILE,
     PID_FILE,
+    DirectoryPreparer,
 )
-from corebehrt.functional.setup.args import get_args
-
-from corebehrt.functional.utils import select_first_event
-from corebehrt.modules.features.loader import ConceptLoader
 
 logger = logging.getLogger("select_cohort")
 

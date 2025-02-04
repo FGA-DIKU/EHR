@@ -3,7 +3,7 @@ import unittest
 import dask.dataframe as dd
 import pandas as pd
 
-from corebehrt.functional.utils import filter_table_by_pids
+from corebehrt.functional.preparation.filter import filter_table_by_pids
 
 
 class TestPrepDataUtilsFunctions(unittest.TestCase):

@@ -1,7 +1,32 @@
 from bisect import bisect_right
 from typing import List
 
+import pandas as pd
+
 from corebehrt.modules.preparation.dataset import PatientData
+
+
+def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
+    """
+    Assumes that the table has a column named PID.
+    Returns a new table with only the rows that have a PID in pids
+    """
+    return df[df.PID.isin(set(pids))]
+
+
+def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Assumes that the table has a column named TIMESTAMP.
+    Returns a new table with only the rows that have a TIMESTAMP.
+    """
+    return df[df.TIMESTAMP.notna()]
+
+
+def select_first_event(
+    df: pd.DataFrame, pid_col: str, timestamp_col: str
+) -> pd.DataFrame:
+    """Select the first event for each PID."""
+    return df.groupby(pid_col)[timestamp_col].min().reset_index()
 
 
 def exclude_short_sequences(
