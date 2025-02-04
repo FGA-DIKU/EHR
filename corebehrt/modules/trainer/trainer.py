@@ -1,19 +1,19 @@
 import os
-import yaml
-import torch
 from collections import namedtuple
 
+import torch
+import yaml
 from torch.utils.data import DataLoader, Dataset
-from corebehrt.modules.setup.config import Config, instantiate_class
+
 from corebehrt.functional.trainer.collate import dynamic_padding
+from corebehrt.modules.monitoring.logger import get_tqdm
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_avg_metrics,
     save_curves,
     save_metrics_to_csv,
     save_predictions,
 )
-from corebehrt.modules.monitoring.logger import get_tqdm
-
+from corebehrt.modules.setup.config import Config, instantiate_class
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 

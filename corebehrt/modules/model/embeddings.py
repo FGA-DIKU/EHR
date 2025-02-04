@@ -3,12 +3,12 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-
-# Constants (data dependent) for Time2Vec
-TIME2VEC_AGE_MULTIPLIER = 1e-2
-TIME2VEC_ABSPOS_MULTIPLIER = 1e-4
-TIME2VEC_MIN_CLIP = -100
-TIME2VEC_MAX_CLIP = 100
+from corebehrt.functional.constants import (
+    TIME2VEC_ABSPOS_MULTIPLIER,
+    TIME2VEC_AGE_MULTIPLIER,
+    TIME2VEC_MAX_CLIP,
+    TIME2VEC_MIN_CLIP,
+)
 
 
 class EhrEmbeddings(nn.Module):

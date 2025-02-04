@@ -1,7 +1,4 @@
-"""Excluder class for excluding incorrect events and patients"""
-
 from dask import dataframe as dd
-
 from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 
 
