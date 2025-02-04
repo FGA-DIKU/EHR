@@ -14,7 +14,6 @@ from corebehrt.common.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import CHECKPOINTS_DIR
 from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
-from corebehrt.modules.trainer.setup import get_last_checkpoint_epoch, get_sampler
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +219,7 @@ def get_sampler(cfg, outcomes: List[int]):
     def _inverse_sqrt(x):
         return 1 / np.sqrt(x)
 
-    if cfg.trainer_args["sampler"]:
+    if cfg.trainer_args.get("sampler", None):
         _, counts = np.unique(np.array(outcomes), return_counts=True)
         label_weight = _inverse_sqrt(counts)
 
