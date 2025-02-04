@@ -13,7 +13,7 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 )
 from corebehrt.functional.load import load_pids
 
-from corebehrt.functional.split import (
+from corebehrt.functional.features.split import (
     get_n_splits_cv_pids,
     split_into_test_and_train_val_pids,
 )

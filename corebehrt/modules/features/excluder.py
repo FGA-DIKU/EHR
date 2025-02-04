@@ -2,7 +2,7 @@
 
 from dask import dataframe as dd
 
-from corebehrt.functional.exclude import exclude_incorrect_event_ages
+from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 
 
 class Excluder:

@@ -1,5 +1,5 @@
 from dask import dataframe as dd
-from corebehrt.functional.normalize import min_max_normalize
+from corebehrt.functional.features.normalize import min_max_normalize
 
 
 class ValuesNormalizer:

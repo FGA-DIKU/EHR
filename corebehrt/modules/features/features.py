@@ -3,7 +3,7 @@ from typing import Union
 
 import dask.dataframe as dd
 
-from corebehrt.functional.creators import (
+from corebehrt.functional.features.creators import (
     create_abspos,
     create_age_in_years,
     create_background,
@@ -12,7 +12,7 @@ from corebehrt.functional.creators import (
     assign_index_and_order,
     sort_features,
 )
-from corebehrt.functional.exclude import exclude_event_nans
+from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.utils import (
     check_concepts_columns,
     check_patients_info_columns,

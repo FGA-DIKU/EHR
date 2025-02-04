@@ -19,7 +19,7 @@ from dask.diagnostics import ProgressBar
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
-from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.functional.features.split import split_pids_into_pt_ft_test
 from corebehrt.modules.features.excluder import Excluder
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
@@ -92,7 +92,7 @@ def main_data(config_path):
     features_path = cfg.paths.features
     tokenized_path = cfg.paths.tokenized
 
-    with ProgressBar(dt=10):
+    with ProgressBar(dt=1):
         logger.info("Tokenizing pretrain")
         load_tokenize_and_save(
             features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
@@ -144,7 +144,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         include_values=(getattr(cfg.loader, "include_values", [])),
     ).load()
 
-    with ProgressBar(dt=10):
+    with ProgressBar(dt=1):
         if "values" in cfg.features:
             value_creator = ValueCreator(**cfg.features.values)
             concepts = value_creator(concepts)
