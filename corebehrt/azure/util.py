@@ -2,7 +2,7 @@ import argparse
 from os.path import join
 from datetime import datetime
 from typing import Tuple
-from corebehrt.common.config import Config, load_config
+from corebehrt.modules.setup.config import Config, load_config
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
