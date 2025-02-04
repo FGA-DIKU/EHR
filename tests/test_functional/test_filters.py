@@ -1,10 +1,11 @@
 import unittest
 
-from corebehrt.modules.dataset import PatientData
+from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.functional.filter import (
     exclude_short_sequences,
     censor_patient,
 )
+
 
 
 class TestExcludeShortSequences(unittest.TestCase):

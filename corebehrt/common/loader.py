@@ -7,7 +7,7 @@ import torch
 from transformers import ModernBertConfig
 
 from corebehrt.common.config import Config, load_config
-from corebehrt.modules.dataset import PatientDataset
+from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.functional.setup import get_last_checkpoint_epoch
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

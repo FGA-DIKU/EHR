@@ -7,7 +7,7 @@ from typing import List, Set, Union
 import dask.dataframe as dd
 import pandas as pd
 
-from corebehrt.modules.dataset import PatientData
+from corebehrt.modules.preparation.dataset import PatientData
 
 
 def normalize_segments_for_patient(patient: PatientData) -> PatientData:

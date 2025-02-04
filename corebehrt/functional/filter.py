@@ -1,7 +1,7 @@
 from bisect import bisect_right
 from typing import List
 
-from corebehrt.modules.dataset import PatientData
+from corebehrt.modules.preparation.dataset import PatientData
 
 
 def exclude_short_sequences(
