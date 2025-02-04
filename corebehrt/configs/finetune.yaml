@@ -70,24 +70,29 @@ scheduler:
 
 metrics:
   accuracy:
-    _target_: corebehrt.evaluation.metrics.Accuracy
+    _target_: corebehrt.modules.monitoring.metrics.Accuracy
     threshold: 0.6
   roc_auc:
-    _target_: corebehrt.evaluation.metrics.ROC_AUC
+    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
+
   pr_auc:
-    _target_: corebehrt.evaluation.metrics.PR_AUC
+    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
   precentage_positives:
-    _target_: corebehrt.evaluation.metrics.Percentage_Positives
+    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives
+
   mean_probability:
-    _target_: corebehrt.evaluation.metrics.Mean_Probability
+    _target_: corebehrt.modules.monitoring.metrics.Mean_Probability
   true_positives:
-    _target_: corebehrt.evaluation.metrics.True_Positives
+    _target_: corebehrt.modules.monitoring.metrics.True_Positives
+
   true_negatives:
-    _target_: corebehrt.evaluation.metrics.True_Negatives
+    _target_: corebehrt.modules.monitoring.metrics.True_Negatives
   false_positives:
-    _target_: corebehrt.evaluation.metrics.False_Positives
+    _target_: corebehrt.modules.monitoring.metrics.False_Positives
+
   false_negatives:
-    _target_: corebehrt.evaluation.metrics.False_Negatives
+    _target_: corebehrt.modules.monitoring.metrics.False_Negatives
   
   
+
  

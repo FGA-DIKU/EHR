@@ -11,4 +11,3 @@ def exclude_incorrect_event_ages(
 def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
     """Exclude events (row) with (any) NaNs"""
     return df.dropna()
-

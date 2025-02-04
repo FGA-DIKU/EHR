@@ -1,3 +1,7 @@
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+
 class TqdmToLogger(object):
     """File-like object to redirect tqdm to logger"""
 
@@ -13,3 +17,7 @@ class TqdmToLogger(object):
 
     def flush(self):
         pass
+
+
+def get_tqdm(dataloader: DataLoader) -> tqdm:
+    return tqdm(dataloader, total=len(dataloader), mininterval=10)

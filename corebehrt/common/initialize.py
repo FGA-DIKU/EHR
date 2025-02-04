@@ -13,7 +13,7 @@ from corebehrt.common.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import CHECKPOINTS_DIR
 from corebehrt.data.utils import Utilities
-from corebehrt.evaluation.utils import get_sampler
+from corebehrt.modules.trainer.setup import get_sampler
 
 logger = logging.getLogger(__name__)
 

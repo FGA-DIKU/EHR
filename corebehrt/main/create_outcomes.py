@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from corebehrt.common.config import load_config
-from corebehrt.common.logger import TqdmToLogger
+from corebehrt.modules.monitoring.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.data.concept_loader import ConceptLoaderLarge
 from corebehrt.modules.outcomes import OutcomeMaker

@@ -25,6 +25,7 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
 
     return patient
 
+
 def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
     """
     Filter a DataFrame based on inclusion or exclusion of values in a column.

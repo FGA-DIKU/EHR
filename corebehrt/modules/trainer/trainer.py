@@ -6,13 +6,14 @@ from collections import namedtuple
 from torch.utils.data import DataLoader, Dataset
 from corebehrt.common.config import Config, instantiate_class
 from corebehrt.functional.trainer_utils import dynamic_padding
-from corebehrt.modules.trainer.utils import (
+from corebehrt.modules.monitoring.metric_aggregation import (
     compute_avg_metrics,
-    get_tqdm,
     save_curves,
     save_metrics_to_csv,
     save_predictions,
 )
+from corebehrt.modules.monitoring.logger import get_tqdm
+
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
