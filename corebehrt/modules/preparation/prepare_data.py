@@ -9,10 +9,11 @@ import pandas as pd
 import torch
 from dask.diagnostics import ProgressBar
 
-from corebehrt.modules.dataset import PatientDataset
-from corebehrt.modules.patient_filter import filter_df_by_pids
+from corebehrt.modules.preparation.dataset import PatientDataset
+from corebehrt.modules.preparation.patient_filter import filter_df_by_pids
 from corebehrt.common.config import Config, load_config
 from corebehrt.common.constants import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+
 from corebehrt.common.setup import (
     INDEX_DATES_FILE,
     OUTCOMES_FILE,

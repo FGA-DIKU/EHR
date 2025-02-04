@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from corebehrt.modules.patient_filter import (
+from corebehrt.modules.preparation.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,
