@@ -2,10 +2,8 @@ from datetime import datetime
 
 import dask.dataframe as dd
 
-from corebehrt.functional.utils import (
-    get_abspos_from_origin_point,
-    normalize_segments_series,
-)
+from corebehrt.functional.features.normalize import normalize_segments_series
+from corebehrt.functional.utils import get_abspos_from_origin_point
 
 
 def create_abspos(concepts: dd.DataFrame, origin_point: datetime) -> dd.DataFrame:
