@@ -22,7 +22,7 @@ from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.modules.features.excluder import Excluder
 from corebehrt.modules.features.features import FeatureCreator
-from corebehrt.modules.loader import FormattedDataLoader
+from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
 
