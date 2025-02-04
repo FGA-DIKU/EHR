@@ -13,7 +13,7 @@ from corebehrt.functional.features.creators import (
     sort_features,
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
-from corebehrt.functional.utils import (
+from corebehrt.functional.setup.checks import (
     check_concepts_columns,
     check_patients_info_columns,
 )

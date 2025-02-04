@@ -2,7 +2,7 @@
 
 from dataclasses import asdict, fields
 from datetime import datetime
-from typing import List, Set, Union
+from typing import List, Union
 
 import dask.dataframe as dd
 import pandas as pd
@@ -64,28 +64,6 @@ def get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) 
         for k, v in vocabulary.items()
         if any(k.startswith(prefix) for prefix in low_priority_prefixes)
     }
-
-
-def check_concepts_columns(df: dd.DataFrame) -> None:
-    """Check if required columns are present in concepts."""
-    required_columns = {"PID", "CONCEPT", "TIMESTAMP", "ADMISSION_ID"}
-    check_required_columns(df, required_columns, "concepts")
-
-
-def check_patients_info_columns(
-    df: dd.DataFrame, background_vars: Set[str] = set()
-) -> None:
-    """Check if required columns are present in patients_info."""
-    required_columns = {"PID", "BIRTHDATE", "DEATHDATE"}.union(set(background_vars))
-    check_required_columns(df, required_columns, "patients_info")
-
-
-def check_required_columns(
-    df: dd.DataFrame, required_columns: Set[str], type_: str
-) -> None:
-    if not required_columns.issubset(set(df.columns)):
-        missing_columns = required_columns - set(df.columns)
-        raise ValueError(f"Missing columns in {type_}: {missing_columns}")
 
 
 def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> PatientData:
