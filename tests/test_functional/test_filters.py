@@ -1,6 +1,4 @@
 import unittest
-import operator
-import pandas as pd
 
 from corebehrt.modules.dataset import PatientData
 from corebehrt.functional.filter import (

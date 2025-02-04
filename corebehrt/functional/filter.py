@@ -1,8 +1,6 @@
 from bisect import bisect_right
 from typing import List
 
-import pandas as pd
-
 from corebehrt.modules.dataset import PatientData
 
 
