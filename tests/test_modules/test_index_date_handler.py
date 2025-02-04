@@ -7,7 +7,6 @@ from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
 from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
 
 
-
 class TestIndexDateHandler(unittest.TestCase):
     def setUp(self):
         """Set up sample data for testing IndexDateHandler."""
