@@ -1,5 +1,5 @@
 import dask.dataframe as dd
-from corebehrt.common.config import instantiate_function
+from corebehrt.modules.setup.config import instantiate_function
 
 
 class ValueCreator:

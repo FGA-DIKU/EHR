@@ -8,7 +8,7 @@ from typing import Dict, List, Set, Union
 import dask.dataframe as dd
 import torch
 
-from corebehrt.common.setup import VOCABULARY_FILE
+from corebehrt.modules.setup.directory import VOCABULARY_FILE
 
 
 # Taken from common.loader

@@ -1,6 +1,6 @@
 import torch
 
-from corebehrt.common.config import Config
+from corebehrt.modules.setup.config import Config
 
 
 def replace_steps_with_epochs(

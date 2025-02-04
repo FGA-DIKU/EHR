@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class Initializer:
-
     """Initialize model, optimizer and scheduler."""
 
     def __init__(self, cfg: Config, checkpoint: dict = None, model_path: str = None):

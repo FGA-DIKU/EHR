@@ -5,7 +5,7 @@ from os.path import join
 import torch
 
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.common.setup import VOCABULARY_FILE
+from corebehrt.modules.setup.directory import VOCABULARY_FILE
 
 logger = logging.getLogger(__name__)
 

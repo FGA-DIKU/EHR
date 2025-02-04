@@ -4,7 +4,7 @@ import torch
 from collections import namedtuple
 
 from torch.utils.data import DataLoader, Dataset
-from corebehrt.common.config import Config, instantiate_class
+from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt.functional.trainer_utils import dynamic_padding
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_avg_metrics,
