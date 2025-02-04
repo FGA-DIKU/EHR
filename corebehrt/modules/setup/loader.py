@@ -26,14 +26,6 @@ def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> T
     return checkpoint, epoch
 
 
-def load_model_cfg_from_checkpoint(model_dir: str, config_name: str) -> Config:
-    """
-    Load the model sub section from the configuration file given in the
-    model dir.
-    """
-    return load_config(join(model_dir, f"{config_name}.yaml")).model
-
-
 class ModelLoader:
     def __init__(self, model_path: str, checkpoint_epoch: str = None):
         """Load model from config and checkpoint."""

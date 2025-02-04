@@ -4,7 +4,8 @@ from os.path import join
 
 
 from corebehrt.modules.setup.config import Config
-from corebehrt.modules.setup.loader import ModelLoader, load_model_cfg_from_checkpoint
+from corebehrt.modules.setup.loader import ModelLoader
+from corebehrt.functional.setup.model import load_model_cfg_from_checkpoint
 from corebehrt.modules.setup.directory import CHECKPOINTS_DIR
 from corebehrt.functional.setup.model import get_last_checkpoint_epoch
 from corebehrt.modules.setup.initializer import Initializer
