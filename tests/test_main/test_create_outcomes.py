@@ -2,7 +2,7 @@ from os.path import join, exists
 import pandas as pd
 
 from corebehrt.main.create_outcomes import main_data
-from corebehrt.common.setup import DATA_CFG, OUTCOMES_CFG
+from corebehrt.modules.setup.directory import DATA_CFG, OUTCOMES_CFG
 
 from .base import TestMainScript
 

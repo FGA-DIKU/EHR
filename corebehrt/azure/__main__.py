@@ -6,7 +6,7 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 import sys
 import argparse
 
-from corebehrt.common.config import load_config
+from corebehrt.modules.setup.config import load_config
 
 from corebehrt.azure.components import (
     create_data,

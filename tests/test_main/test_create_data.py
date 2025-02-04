@@ -6,7 +6,7 @@ import torch
 import pandas as pd
 
 from corebehrt.main.create_data import main_data
-from corebehrt.common.setup import DATA_CFG
+from corebehrt.modules.setup.directory import DATA_CFG
 
 from .base import TestMainScript
 
