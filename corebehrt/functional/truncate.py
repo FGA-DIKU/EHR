@@ -208,7 +208,7 @@ def _filter_invalid_positions(
 
     # Identify positions that do not have exactly `unit_len` non-priority tokens
     invalid_indices = []
-    for pos, idx_list in pos_map.items():
+    for _, idx_list in pos_map.items():
         if len(idx_list) != unit_len:
             invalid_indices.extend(idx_list)
 

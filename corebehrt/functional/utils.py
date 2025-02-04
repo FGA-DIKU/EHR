@@ -89,14 +89,6 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df[df.TIMESTAMP.notna()]
 
 
-def get_first_event_by_pid(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Assumes that the table has a column named PID and abspos.
-    Get the first event for each PID in the table.
-    """
-    return df.groupby("PID")["abspos"].min()
-
-
 def get_non_priority_tokens(vocabulary: dict, low_priority_prefixes: List[str]) -> set:
     """
     Get tokens that start with low_priority_prefixes.

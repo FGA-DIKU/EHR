@@ -12,10 +12,3 @@ def exclude_event_nans(df: dd.DataFrame) -> dd.DataFrame:
     """Exclude events (row) with (any) NaNs"""
     return df.dropna()
 
-
-def exclude_pids_from_data(data: dd.DataFrame, pids_to_exclude: list) -> dd.DataFrame:
-    """
-    Assumes that the table has a column named PID.
-    Returns a new table with only the rows that do not have a PID in pids
-    """
-    return data[~data["PID"].isin(set(pids_to_exclude))]
