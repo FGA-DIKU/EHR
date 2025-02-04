@@ -16,7 +16,7 @@ from corebehrt.functional.features.split import (
     load_train_val_split,
     split_pids_into_train_val,
 )
-from corebehrt.functional.trainer_utils import replace_steps_with_epochs
+from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import MLMDataset
 
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer

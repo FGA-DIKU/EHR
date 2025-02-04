@@ -17,7 +17,7 @@ from corebehrt.functional.features.split import (
     get_n_splits_cv_pids,
     split_into_test_and_train_val_pids,
 )
-from corebehrt.functional.trainer_utils import replace_steps_with_epochs
+from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.trainer.trainer import EHRTrainer
