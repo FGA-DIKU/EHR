@@ -29,7 +29,7 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
 
     grouped = df.groupby("PID", sort=False)
     loop = tqdm(
-        grouped, total=len(grouped), desc="Converting to patient list", mininterval=10
+        grouped, total=len(grouped), desc="Converting to patient list", mininterval=1
     )
     for pid, group in loop:
         # Convert each column to a Python list
