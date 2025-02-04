@@ -8,7 +8,7 @@ from transformers import ModernBertConfig
 
 from corebehrt.common.config import Config, load_config
 from corebehrt.modules.dataset import PatientDataset
-from corebehrt.data.utils import Utilities
+from corebehrt.modules.trainer.setup import get_last_checkpoint_epoch
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -24,7 +24,7 @@ def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> T
     if checkpoint is not None:
         epoch = checkpoint["epoch"]
     else:
-        epoch = Utilities.get_last_checkpoint_epoch(join(model_dir, CHECKPOINT_FOLDER))
+        epoch = get_last_checkpoint_epoch(join(model_dir, CHECKPOINT_FOLDER))
     return checkpoint, epoch
 
 
@@ -86,7 +86,7 @@ class ModelLoader:
         """Get checkpoint if set or return the last checkpoint_epoch for this model."""
         if self.checkpoint_epoch is None:
             logger.info("No checkpoint provided. Loading last checkpoint.")
-            self.checkpoint_epoch = Utilities.get_last_checkpoint_epoch(
+            self.checkpoint_epoch = get_last_checkpoint_epoch(
                 join(self.model_path, CHECKPOINT_FOLDER)
             )
         return self.checkpoint_epoch

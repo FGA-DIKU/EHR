@@ -8,12 +8,11 @@ from torch.optim import AdamW
 from torch.utils.data import Sampler
 from transformers import ModernBertConfig
 
-from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
 from corebehrt.common.config import Config, instantiate_class
 from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.common.setup import CHECKPOINTS_DIR
-from corebehrt.data.utils import Utilities
-from corebehrt.modules.trainer.setup import get_sampler
+from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
+from corebehrt.modules.trainer.setup import get_last_checkpoint_epoch, get_sampler
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +204,6 @@ class ModelManager:
         if self.restart_model_path is None:
             return 0
         else:
-            return Utilities.get_last_checkpoint_epoch(
+            return get_last_checkpoint_epoch(
                 join(self.restart_model_path, CHECKPOINTS_DIR)
             )
