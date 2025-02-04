@@ -20,11 +20,12 @@ from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.functional.load import load_vocabulary
 from corebehrt.functional.split import split_pids_into_pt_ft_test
-from corebehrt.modules.excluder import Excluder
-from corebehrt.modules.features import FeatureCreator
+from corebehrt.modules.preprocessing.excluder import Excluder
+from corebehrt.modules.preprocessing.features import FeatureCreator
 from corebehrt.modules.loader import FormattedDataLoader
-from corebehrt.modules.tokenizer import EHRTokenizer
-from corebehrt.modules.values import ValueCreator
+from corebehrt.modules.preprocessing.tokenizer import EHRTokenizer
+from corebehrt.modules.preprocessing.values import ValueCreator
+
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
