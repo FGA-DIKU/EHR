@@ -20,7 +20,7 @@ from corebehrt.functional.preparation.filter import (
     exclude_short_sequences,
 )
 from corebehrt.functional.preparation.truncate import truncate_patient
-from corebehrt.functional.utils import (
+from corebehrt.functional.preparation.utils import (
     get_abspos_from_origin_point,
     get_background_length,
     get_non_priority_tokens,
