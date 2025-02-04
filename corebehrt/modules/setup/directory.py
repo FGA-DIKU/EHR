@@ -5,7 +5,7 @@ import uuid
 from os.path import basename, join, splitext
 from shutil import copyfile, rmtree
 
-from corebehrt.common.checks import check_categories
+from corebehrt.modules.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

@@ -8,10 +8,8 @@ import dateutil
 import pandas as pd
 import pyarrow.parquet as pq
 
-from corebehrt.common.constants import (
-    PID_COL,
-    TIMESTAMP_COL,
-)
+from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
+
 from corebehrt.modules.setup.directory import (
     CONCEPT_FORMAT,
     CSV_EXT,

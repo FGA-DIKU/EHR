@@ -5,7 +5,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.functional.matching import get_col_booleans
 from corebehrt.functional.utils import (
     filter_table_by_pids,

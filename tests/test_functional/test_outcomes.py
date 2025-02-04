@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from corebehrt.common.constants import PID_COL, ABSPOS_COL
+from corebehrt.modules.setup.constants import PID_COL, ABSPOS_COL
 from corebehrt.functional.outcomes import get_binary_outcomes
 
 

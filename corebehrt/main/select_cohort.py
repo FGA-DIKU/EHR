@@ -14,7 +14,7 @@ from corebehrt.modules.cohort_handling.patient_filter import (
 )
 
 from corebehrt.modules.setup.config import load_config
-from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.modules.setup.directory import (
     DirectoryPreparer,
     get_args,

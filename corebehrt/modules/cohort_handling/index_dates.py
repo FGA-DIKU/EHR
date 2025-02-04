@@ -5,7 +5,7 @@ from typing import List, Optional, Set
 import numpy as np
 import pandas as pd
 
-from corebehrt.common.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.functional.utils import filter_table_by_pids
 
 logger = logging.getLogger(__name__)

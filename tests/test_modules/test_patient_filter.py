@@ -8,7 +8,7 @@ from corebehrt.modules.cohort_handling.patient_filter import (
     filter_by_categories,
     filter_df_by_pids,
 )
-from corebehrt.common.constants import (
+from corebehrt.modules.setup.constants import (
     BIRTHDATE_COL,
     DEATHDATE_COL,
     PID_COL,
