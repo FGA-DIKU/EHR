@@ -15,7 +15,7 @@ from corebehrt.functional.split import load_train_val_split, split_pids_into_tra
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.modules.dataset import MLMDataset
 from corebehrt.modules.prepare_data import DatasetPreparer
-from corebehrt.trainer.trainer import EHRTrainer
+from corebehrt.modules.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 

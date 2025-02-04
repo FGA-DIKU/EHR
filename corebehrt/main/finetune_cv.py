@@ -17,7 +17,7 @@ from corebehrt.functional.split import (
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
 from corebehrt.modules.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.prepare_data import DatasetPreparer
-from corebehrt.trainer.trainer import EHRTrainer
+from corebehrt.modules.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
 

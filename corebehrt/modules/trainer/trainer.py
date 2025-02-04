@@ -6,7 +6,7 @@ from collections import namedtuple
 from torch.utils.data import DataLoader, Dataset
 from corebehrt.common.config import Config, instantiate_class
 from corebehrt.functional.trainer_utils import dynamic_padding
-from corebehrt.trainer.utils import (
+from corebehrt.modules.trainer.utils import (
     compute_avg_metrics,
     get_tqdm,
     save_curves,
