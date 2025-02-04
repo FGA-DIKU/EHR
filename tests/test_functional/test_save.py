@@ -5,7 +5,7 @@ import unittest
 
 import torch
 
-from corebehrt.modules.dataset import PatientData, PatientDataset
+from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
 from corebehrt.functional.save import save_pids_splits
 
 
