@@ -6,7 +6,7 @@ import torch
 
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.trainer.setup import ModelManager
-from corebehrt.common.loader import load_and_select_splits
+from corebehrt.modules.setup.loader import load_and_select_splits
 from corebehrt.modules.setup.directory import DirectoryPreparer, get_args
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,

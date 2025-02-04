@@ -6,7 +6,7 @@ from typing import Tuple
 import torch
 from transformers import ModernBertConfig
 
-from corebehrt.common.config import Config, load_config
+from corebehrt.modules.setup.config import Config, load_config
 from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.functional.setup import get_last_checkpoint_epoch
 

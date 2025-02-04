@@ -10,7 +10,7 @@ from torch.utils.data import Sampler, WeightedRandomSampler
 from transformers import ModernBertConfig
 
 from corebehrt.modules.setup.config import Config, instantiate_class
-from corebehrt.common.loader import ModelLoader, load_model_cfg_from_checkpoint
+from corebehrt.modules.setup.loader import ModelLoader, load_model_cfg_from_checkpoint
 from corebehrt.modules.setup.directory import CHECKPOINTS_DIR
 from corebehrt.functional.setup import get_last_checkpoint_epoch
 from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
