@@ -12,7 +12,7 @@ from dask.diagnostics import ProgressBar
 from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
 from corebehrt.modules.setup.config import Config, load_config
-from corebehrt.common.constants import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.modules.setup.constants import ABSPOS_COL, PID_COL, TIMESTAMP_COL
 
 
 from corebehrt.modules.setup.directory import (

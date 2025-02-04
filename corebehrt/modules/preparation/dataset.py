@@ -9,7 +9,7 @@ from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from corebehrt.data.mask import ConceptMasker
+from corebehrt.modules.preparation.mask import ConceptMasker
 
 
 @dataclass

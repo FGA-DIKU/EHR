@@ -22,7 +22,7 @@ from corebehrt.modules.setup.directory import (
     PID_FILE,
 )
 from corebehrt.functional.utils import select_first_event
-from corebehrt.data.concept_loader import ConceptLoader
+from corebehrt.modules.features.loader import ConceptLoader
 
 logger = logging.getLogger("select_cohort")
 
