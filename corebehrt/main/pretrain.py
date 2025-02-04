@@ -3,7 +3,7 @@
 import logging
 
 from corebehrt.common.config import load_config
-from corebehrt.common.initialize import Initializer, ModelManager
+from corebehrt.modules.trainer.setup import Initializer, ModelManager
 from corebehrt.common.loader import (
     load_checkpoint_and_epoch,
     load_model_cfg_from_checkpoint,
