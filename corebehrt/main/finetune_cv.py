@@ -8,9 +8,8 @@ from corebehrt.functional.features.split import (
     get_n_splits_cv_pids,
     split_into_test_and_train_val_pids,
 )
-from corebehrt.functional.load import load_pids
+from corebehrt.functional.io_operations.load import load_and_select_splits, load_pids
 from corebehrt.functional.setup.args import get_args
-from corebehrt.functional.setup.data import load_and_select_splits
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,

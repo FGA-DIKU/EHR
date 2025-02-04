@@ -19,7 +19,7 @@ from dask.diagnostics import ProgressBar
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.functional.setup.args import get_args
-from corebehrt.functional.load import load_vocabulary
+from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.features.split import split_pids_into_pt_ft_test
 from corebehrt.modules.features.excluder import Excluder
 from corebehrt.modules.features.features import FeatureCreator

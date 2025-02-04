@@ -4,7 +4,7 @@ from corebehrt.functional.trainer.setup import (
     replace_steps_with_epochs,
     convert_epochs_to_steps,
 )
-from corebehrt.functional.collate import dynamic_padding
+from corebehrt.functional.trainer.collate import dynamic_padding
 import torch
 
 

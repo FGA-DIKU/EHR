@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import KFold
 
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.functional.load import load_predefined_splits
+from corebehrt.functional.io_operations.load import load_predefined_splits
 
 
 def split_pids_into_pt_ft_test(

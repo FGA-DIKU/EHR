@@ -9,12 +9,13 @@ import dateutil
 import pandas as pd
 import pyarrow.parquet as pq
 
-from corebehrt.functional.load import load_concept, load_patients_info
+from corebehrt.functional.io_operations.load import load_concept, load_patients_info
 from corebehrt.functional.utils import (
     check_concepts_columns,
     check_patients_info_columns,
 )
-from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
+
+from corebehrt.functional.constants import PID_COL, TIMESTAMP_COL
 from corebehrt.modules.setup.directory import (
     CONCEPT_FORMAT,
     CSV_EXT,

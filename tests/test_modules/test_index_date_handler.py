@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 
 from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
-from corebehrt.modules.setup.constants import PID_COL, TIMESTAMP_COL
+from corebehrt.functional.constants import PID_COL, TIMESTAMP_COL
 
 
 class TestIndexDateHandler(unittest.TestCase):

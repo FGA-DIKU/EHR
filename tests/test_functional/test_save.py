@@ -6,7 +6,7 @@ import unittest
 import torch
 
 from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
-from corebehrt.functional.save import save_pids_splits
+from corebehrt.functional.io_operations.save import save_pids_splits
 
 
 class TestSaveFunctions(unittest.TestCase):
