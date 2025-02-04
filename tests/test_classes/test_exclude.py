@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from corebehrt.classes.excluder import Excluder
+from corebehrt.modules.excluder import Excluder
 
 
 class TestExcluder(unittest.TestCase):

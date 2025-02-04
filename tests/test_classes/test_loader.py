@@ -5,7 +5,7 @@ from tempfile import mkdtemp
 
 import pandas as pd
 
-from corebehrt.classes.loader import FormattedDataLoader
+from corebehrt.modules.loader import FormattedDataLoader
 
 
 class TestFormattedDataLoader(unittest.TestCase):

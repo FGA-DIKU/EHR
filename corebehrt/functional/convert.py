@@ -3,7 +3,7 @@ from typing import List
 import pandas as pd
 from tqdm import tqdm
 
-from corebehrt.classes.dataset import PatientData
+from corebehrt.modules.dataset import PatientData
 
 
 def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:

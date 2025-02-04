@@ -8,23 +8,23 @@ Input: Formatted Data
 - truncate train and val
 """
 
+import logging
 import os
 from os.path import join
 
-import logging
 import dask.dataframe as dd
 import torch
 from dask.diagnostics import ProgressBar
 
-from corebehrt.classes.excluder import Excluder
-from corebehrt.classes.features import FeatureCreator
-from corebehrt.classes.tokenizer import EHRTokenizer
 from corebehrt.common.config import load_config
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.functional.split import split_pids_into_pt_ft_test
 from corebehrt.functional.load import load_vocabulary
-from corebehrt.classes.loader import FormattedDataLoader
-from corebehrt.classes.values import ValueCreator
+from corebehrt.functional.split import split_pids_into_pt_ft_test
+from corebehrt.modules.excluder import Excluder
+from corebehrt.modules.features import FeatureCreator
+from corebehrt.modules.loader import FormattedDataLoader
+from corebehrt.modules.tokenizer import EHRTokenizer
+from corebehrt.modules.values import ValueCreator
 
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 

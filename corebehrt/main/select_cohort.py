@@ -5,8 +5,8 @@ from typing import List, Tuple
 import pandas as pd
 import torch
 
-from corebehrt.classes.outcomes import IndexDateHandler
-from corebehrt.classes.patient_filter import (
+from corebehrt.modules.outcomes import IndexDateHandler
+from corebehrt.modules.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,

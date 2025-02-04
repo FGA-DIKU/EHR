@@ -7,7 +7,7 @@ import torch
 from transformers import ModernBertConfig
 
 from corebehrt.common.config import Config, load_config
-from corebehrt.classes.dataset import PatientDataset
+from corebehrt.modules.dataset import PatientDataset
 from corebehrt.data.utils import Utilities
 
 logger = logging.getLogger(__name__)  # Get the logger for this module

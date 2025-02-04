@@ -5,7 +5,7 @@ from typing import List, Tuple
 import numpy as np
 from sklearn.model_selection import KFold
 
-from corebehrt.classes.dataset import PatientDataset
+from corebehrt.modules.dataset import PatientDataset
 from corebehrt.functional.load import load_predefined_splits
 
 

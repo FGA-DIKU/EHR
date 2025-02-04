@@ -5,8 +5,8 @@ from datetime import datetime
 import random
 import numpy as np
 
-from corebehrt.classes.values import ValueCreator
-from corebehrt.classes.normalizer import ValuesNormalizer
+from corebehrt.modules.values import ValueCreator
+from corebehrt.modules.normalizer import ValuesNormalizer
 
 
 class TestCreators(unittest.TestCase):

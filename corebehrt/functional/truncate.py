@@ -2,7 +2,7 @@ from collections import defaultdict
 from dataclasses import fields, replace
 from typing import List, Optional
 
-from corebehrt.classes.dataset import PatientData
+from corebehrt.modules.dataset import PatientData
 from corebehrt.functional.utils import subset_patient_data
 
 

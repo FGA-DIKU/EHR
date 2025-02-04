@@ -4,12 +4,10 @@ from os.path import join, split
 
 import torch
 
-from corebehrt.classes.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.common.config import load_config
 from corebehrt.common.initialize import ModelManager
 from corebehrt.common.loader import load_and_select_splits
 from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.classes.prepare_data import DatasetPreparer
 from corebehrt.evaluation.utils import compute_and_save_scores_mean_std
 from corebehrt.functional.load import load_pids
 from corebehrt.functional.split import (
@@ -17,6 +15,8 @@ from corebehrt.functional.split import (
     split_into_test_and_train_val_pids,
 )
 from corebehrt.functional.trainer_utils import replace_steps_with_epochs
+from corebehrt.modules.dataset import BinaryOutcomeDataset, PatientDataset
+from corebehrt.modules.prepare_data import DatasetPreparer
 from corebehrt.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"

@@ -1,17 +1,17 @@
 """Create tokenized features from formatted data. config template: data.yaml"""
 
+import logging
 from collections import defaultdict
 from os.path import join
-import logging
 
 import pandas as pd
 from tqdm import tqdm
 
-from corebehrt.classes.outcomes import OutcomeMaker
 from corebehrt.common.config import load_config
 from corebehrt.common.logger import TqdmToLogger
 from corebehrt.common.setup import DirectoryPreparer, get_args
 from corebehrt.data.concept_loader import ConceptLoaderLarge
+from corebehrt.modules.outcomes import OutcomeMaker
 
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
