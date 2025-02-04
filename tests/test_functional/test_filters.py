@@ -6,7 +6,6 @@ from corebehrt.modules.dataset import PatientData
 from corebehrt.functional.filter import (
     exclude_short_sequences,
     censor_patient,
-    filter_events_by_abspos,
 )
 
 
@@ -94,73 +93,6 @@ class TestCensorPatient(unittest.TestCase):
         censor_dates = {"P1": 999.0}
         censored = censor_patient(p1, censor_dates)
         self.assertEqual(len(censored.concepts), 1)
-
-
-class TestFilterEventsByAbspos(unittest.TestCase):
-    def test_filter_events_by_abspos_le(self):
-        # Suppose we have event data for multiple patients
-        events = pd.DataFrame(
-            {
-                "PID": ["A", "A", "B", "B"],
-                "abspos": [1.0, 3.0, 5.0, 2.0],
-                "some_feature": [10, 20, 30, 40],
-            }
-        )
-        # Reference abspos for each PID
-        abspos_series = pd.Series([2.0, 3.0], index=["A", "B"])
-
-        result = filter_events_by_abspos(events, abspos_series, operator.le)
-        # For A: abspos <= 2.0 => only row 1.0 remains
-        # For B: abspos <= 3.0 => only row 2.0 remains
-        self.assertEqual(len(result), 2)
-        self.assertListEqual(sorted(result["abspos"].tolist()), [1.0, 2.0])
-
-    def test_filter_events_by_abspos_gt(self):
-        # Another scenario
-        events = pd.DataFrame(
-            {
-                "PID": ["A", "A", "B", "C"],
-                "abspos": [2.0, 4.0, 3.0, 10.0],
-                "info": [101, 102, 103, 999],
-            }
-        )
-        abspos_series = pd.Series([3.0, 1.0, 5.0], index=["A", "B", "C"])
-        # We'll do operator.gt: keep events where event abspos > reference abspos
-        result = filter_events_by_abspos(events, abspos_series, operator.gt)
-
-        # Explanation:
-        # - For PID=A, reference=3.0 => keep events with abspos>3 => abspos=4.0
-        # - For PID=B, reference=1.0 => keep events with abspos>1 => abspos=3.0
-        # - For PID=C, reference=5.0 => keep events with abspos>5 => abspos=10.0
-        self.assertEqual(len(result), 3)
-        self.assertListEqual(sorted(result["abspos"].tolist()), [3.0, 4.0, 10.0])
-
-    def test_filter_events_by_abspos_empty_series(self):
-        # If the abspos_series is empty, we get no merges
-        events = pd.DataFrame({"PID": ["A", "B"], "abspos": [2.0, 3.0]})
-        abspos_series = pd.Series(dtype=float)  # empty
-
-        result = filter_events_by_abspos(events, abspos_series, operator.le)
-        self.assertEqual(len(result), 0)
-
-    def test_filter_events_by_abspos_unsorted(self):
-        # Test with unsorted abspos values
-        events = pd.DataFrame(
-            {
-                "PID": ["A", "A", "A", "B"],
-                "abspos": [3.0, 1.0, 2.0, 5.0],  # Not in increasing order
-                "info": [101, 102, 103, 104],
-            }
-        )
-        abspos_series = pd.Series([2.0, 4.0], index=["A", "B"])
-
-        result = filter_events_by_abspos(events, abspos_series, operator.le)
-
-        # Should still work correctly regardless of input order
-        # For A: abspos <= 2.0 => keeps events with abspos 1.0 and 2.0
-        # For B: abspos <= 4.0 => no events kept
-        self.assertEqual(len(result), 2)
-        self.assertListEqual(sorted(result["abspos"].tolist()), [1.0, 2.0])
 
 
 if __name__ == "__main__":

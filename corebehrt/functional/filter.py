@@ -25,35 +25,6 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
 
     return patient
 
-
-def filter_events_by_abspos(
-    events: pd.DataFrame,
-    abspos_series: pd.Series,
-    comparison_function: callable,
-) -> pd.DataFrame:
-    """
-    Filters the data based on a timestamp per PID using the specified comparison operator.
-
-    Args:
-        data: DataFrame with 'PID' and 'abspos' columns.
-        abspos_series: Series with index 'PID' and values as abspos.
-        comparison_function: callable e.g., operator.le (<=), operator.ge (>=), operator.lt (<), operator.gt (>).
-    Returns:
-        The filtered DataFrame.
-    """
-
-    # Convert the Series to a DataFrame
-    abspos_df = abspos_series.reset_index()
-    abspos_df.columns = ["PID", "abspos_ref"]
-
-    merged_df = pd.merge(events, abspos_df, on="PID", how="inner")
-    filtered_df = merged_df[
-        comparison_function(merged_df["abspos"], merged_df["abspos_ref"])
-    ]
-
-    return filtered_df.drop(columns=["abspos_ref"])
-
-
 def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
     """
     Filter a DataFrame based on inclusion or exclusion of values in a column.
