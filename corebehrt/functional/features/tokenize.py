@@ -1,8 +1,11 @@
 import pandas as pd
 
-from corebehrt.constants.data import (CLS_TOKEN, SEP_TOKEN,
-                                      SPECIAL_TOKEN_ABSPOS_ADJUSTMENT,
-                                      UNKNOWN_TOKEN)
+from corebehrt.constants.data import (
+    CLS_TOKEN,
+    SEP_TOKEN,
+    SPECIAL_TOKEN_ABSPOS_ADJUSTMENT,
+    UNKNOWN_TOKEN,
+)
 
 
 def add_special_tokens_partition(
