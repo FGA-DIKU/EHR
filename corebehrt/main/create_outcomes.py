@@ -1,37 +1,15 @@
 """Create tokenized features from formatted data. config template: data.yaml"""
 
-from collections import defaultdict
-from os.path import join
 import logging
+from os.path import join
 
-import pandas as pd
-from tqdm import tqdm
-
-from corebehrt.classes.outcomes import OutcomeMaker
-from corebehrt.common.config import load_config
-from corebehrt.common.logger import TqdmToLogger
-from corebehrt.common.setup import DirectoryPreparer, get_args
-from corebehrt.data.concept_loader import ConceptLoaderLarge
+from corebehrt.modules.setup.config import load_config
+from corebehrt.modules.setup.directory import DirectoryPreparer
+from corebehrt.functional.setup.args import get_args
+from corebehrt.modules.features.loader import ConceptLoaderLarge
+from corebehrt.main.helper.create_outcomes import process_data
 
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
-
-
-def process_data(loader, cfg, features_cfg, logger) -> dict:
-    all_outcomes = defaultdict(list)
-    for concept_batch, patient_batch in tqdm(
-        loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
-    ):
-        pids = concept_batch.PID.unique()
-        outcome_tables = OutcomeMaker(cfg.outcomes, features_cfg.features.origin_point)(
-            concept_batch, patient_batch, pids
-        )
-        # Concatenate the tables for each key
-        for key, df in outcome_tables.items():
-            if key in all_outcomes:
-                all_outcomes[key] = pd.concat([all_outcomes[key], df])
-            else:
-                all_outcomes[key] = df
-    return all_outcomes
 
 
 def main_data(config_path):

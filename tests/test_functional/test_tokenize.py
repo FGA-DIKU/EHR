@@ -1,16 +1,12 @@
 import unittest
+
 import pandas as pd
 
-# Import the updated functions and constants
-from corebehrt.functional.tokenize import (
+from corebehrt.constants.data import CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN
+from corebehrt.functional.features.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,
     tokenize_partition,
-)
-from corebehrt.functional.constants import (
-    CLS_TOKEN,
-    SEP_TOKEN,
-    UNKNOWN_TOKEN,
 )
 
 

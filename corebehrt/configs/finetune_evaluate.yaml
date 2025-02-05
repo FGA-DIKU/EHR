@@ -6,18 +6,21 @@ paths:
 
 metrics:
   accuracy:
-    _target_: evaluation.metrics.Accuracy
+    _target_: corebehrt.modules.monitoring.metrics.Accuracy
     threshold: 0.6
   balanced_accuracy:
-    _target_: evaluation.metrics.Balanced_Accuracy
+    _target_: corebehrt.modules.monitoring.metrics.Balanced_Accuracy
+
   precision:
-    _target_: evaluation.metrics.Precision
+    _target_: corebehrt.modules.monitoring.metrics.Precision
   recall:
-    _target_: evaluation.metrics.Recall
+    _target_: corebehrt.modules.monitoring.metrics.Recall
+
   roc_auc:
-    _target_: evaluation.metrics.ROC_AUC
+    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
   pr_auc:
-    _target_: evaluation.metrics.PR_AUC
+    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
+
 
 data:
   min_len: 1

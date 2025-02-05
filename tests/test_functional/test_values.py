@@ -1,12 +1,13 @@
-import unittest
-import pandas as pd
-import dask.dataframe as dd
-from datetime import datetime
 import random
-import numpy as np
+import unittest
+from datetime import datetime
 
-from corebehrt.classes.values import ValueCreator
-from corebehrt.classes.normalizer import ValuesNormalizer
+import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+
+from corebehrt.modules.features.normalizer import ValuesNormalizer
+from corebehrt.modules.features.values import ValueCreator
 
 
 class TestCreators(unittest.TestCase):

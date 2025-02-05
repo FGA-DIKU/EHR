@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from corebehrt.functional.matching import (
+from corebehrt.functional.cohort_handling.matching import (
     get_col_booleans,
     startswith_match,
     contains_match,

@@ -1,8 +1,8 @@
 import random
 import unittest
 
-from corebehrt.classes.dataset import PatientData, PatientDataset
-from corebehrt.functional.truncate import (
+from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
+from corebehrt.functional.preparation.truncate import (
     _get_non_priority_mask,
     _drop_non_priority_tokens,
     _filter_invalid_positions,

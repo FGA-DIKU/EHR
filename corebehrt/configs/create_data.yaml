@@ -30,7 +30,7 @@ values:
   value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
     multiplication_factor: 100
   normalize: # Dict with the function and kwargs for normalizing the values.
-    func: corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
+    func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
     kwargs: # Example kwargs
       min_count: 3
 

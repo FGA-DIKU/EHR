@@ -2,7 +2,7 @@ import os
 import unittest
 import tempfile
 import torch
-from corebehrt.functional.load import load_pids
+from corebehrt.functional.io_operations.load import load_pids
 
 
 class TestLoadPIDs(unittest.TestCase):

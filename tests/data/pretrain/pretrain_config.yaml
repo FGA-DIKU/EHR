@@ -15,19 +15,21 @@ logging:
   path: ./.test_tmp/logs
 metrics:
   mlm_loss:
-    _target_: corebehrt.evaluation.metrics.LossAccessor
+    _target_: corebehrt.modules.monitoring.metrics.LossAccessor
     loss_name: loss
   top1:
-    _target_: corebehrt.evaluation.metrics.PrecisionAtK
+    _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
+
     topk: 1
   top10:
-    _target_: corebehrt.evaluation.metrics.PrecisionAtK
+    _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
     topk: 10
 model:
   hidden_size: 96
   intermediate_size: 64
   num_attention_heads: 3
   num_hidden_layers: 3
+
   type_vocab_size: 240
   embedding_dropout: 0.1
 optimizer:

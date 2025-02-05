@@ -1,8 +1,9 @@
-from os.path import join, exists
+from os.path import exists, join
+
 import pandas as pd
 
+from corebehrt.constants.paths import DATA_CFG, OUTCOMES_CFG
 from corebehrt.main.create_outcomes import main_data
-from corebehrt.common.setup import DATA_CFG, OUTCOMES_CFG
 
 from .base import TestMainScript
 

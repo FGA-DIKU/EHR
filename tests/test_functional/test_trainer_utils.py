@@ -1,10 +1,10 @@
 import unittest
-from corebehrt.common.config import Config
-from corebehrt.functional.trainer_utils import (
+from corebehrt.modules.setup.config import Config
+from corebehrt.functional.trainer.setup import (
     replace_steps_with_epochs,
     convert_epochs_to_steps,
-    dynamic_padding,
 )
+from corebehrt.functional.trainer.collate import dynamic_padding
 import torch
 
 

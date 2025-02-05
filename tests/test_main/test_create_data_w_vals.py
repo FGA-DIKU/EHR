@@ -1,14 +1,14 @@
 from os.path import exists, join
 
 import dask.dataframe as dd
-import torch
 import pandas as pd
+import torch
 
+from corebehrt.constants.paths import DATA_CFG
+from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.main.create_data import main_data
-from corebehrt.common.setup import DATA_CFG
 
 from .base import TestMainScript
-from corebehrt.functional.convert import dataframe_to_patient_list
 
 
 class TestCreateData(TestMainScript):
@@ -37,7 +37,7 @@ class TestCreateData(TestMainScript):
                         "value_type": "binned",
                         "value_type_kwargs": {"multiplication_factor": 100},
                         "normalize_args": {
-                            "func": "corebehrt.classes.normalizer.ValuesNormalizer.min_max_normalize_results",
+                            "func": "corebehrt.modules.features.normalizer.ValuesNormalizer.min_max_normalize_results",
                             "kwargs": {"min_count": 3},
                         },
                     },
