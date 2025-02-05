@@ -2,7 +2,7 @@ from typing import Optional
 
 import pandas as pd
 
-from corebehrt.functional.constants import (
+from corebehrt.constants.data import (
     PID_COL,
     TIMESTAMP_COL,
     BIRTHDATE_COL,

@@ -1,6 +1,6 @@
 import dask.dataframe as dd
 
-from corebehrt.functional.constants import (
+from corebehrt.constants.data import (
     CLS_TOKEN,
     MASK_TOKEN,
     PAD_TOKEN,

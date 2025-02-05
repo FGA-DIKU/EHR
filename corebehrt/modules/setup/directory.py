@@ -4,33 +4,18 @@ import uuid
 from os.path import basename, join, splitext
 from shutil import copyfile, rmtree
 
+from corebehrt.constants.paths import (
+    CHECKPOINTS_DIR,
+    COHORT_CFG,
+    DATA_CFG,
+    FINETUNE_CFG,
+    OUTCOMES_CFG,
+    PRETRAIN_CFG,
+)
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
-
-CHECKPOINTS_DIR = "checkpoints"
-
-# Configuration destination names in output folders
-DATA_CFG = "data_config.yaml"
-COHORT_CFG = "cohort_config.yaml"
-OUTCOMES_CFG = "outcomes_config.yaml"
-PRETRAIN_CFG = "pretrain_config.yaml"
-FINETUNE_CFG = "finetune_config.yaml"
-
-VOCABULARY_FILE = "vocabulary.pt"
-PROCESSED_DATA_DIR = "processed_data"
-OUTCOMES_FILE = "outcomes.csv"
-INDEX_DATES_FILE = "index_dates.csv"
-PID_FILE = "pids.pt"
-
-### File Patterns ###
-CONCEPT_FORMAT = "concept.*"
-PATIENTS_INFO_FORMAT = "patients_info.*"
-
-### File Extensions ###
-CSV_EXT = ".csv"
-PARQUET_EXT = ".parquet"
 
 
 class DirectoryPreparer:

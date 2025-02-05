@@ -2,7 +2,8 @@ from os.path import exists, getmtime, join
 
 import yaml
 
-from corebehrt.modules.setup.directory import DATA_CFG, PRETRAIN_CFG, PROCESSED_DATA_DIR
+from corebehrt.constants.paths import (DATA_CFG, PRETRAIN_CFG,
+                                       PROCESSED_DATA_DIR)
 from corebehrt.main.pretrain import main_train
 
 from .base import TestMainScript

@@ -9,8 +9,8 @@ from typing import Dict, List, Set, Tuple, Union
 import dask.dataframe as dd
 import torch
 
+from corebehrt.constants.paths import VOCABULARY_FILE
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.modules.setup.directory import VOCABULARY_FILE
 
 logger = logging.getLogger(__name__)
 

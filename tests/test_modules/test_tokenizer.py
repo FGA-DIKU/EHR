@@ -4,7 +4,7 @@ import dask.dataframe as dd
 
 # Import the EHRTokenizer class and constants
 from corebehrt.modules.features.tokenizer import EHRTokenizer
-from corebehrt.functional.constants import (
+from corebehrt.constants.data import (
     CLS_TOKEN,
     PAD_TOKEN,
     SEP_TOKEN,

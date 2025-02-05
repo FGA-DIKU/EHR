@@ -1,14 +1,14 @@
 from os.path import exists, join
 
 import dask.dataframe as dd
-import torch
 import pandas as pd
+import torch
 
+from corebehrt.constants.paths import DATA_CFG
+from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.main.create_data import main_data
-from corebehrt.modules.setup.directory import DATA_CFG
 
 from .base import TestMainScript
-from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 
 
 class TestCreateData(TestMainScript):
