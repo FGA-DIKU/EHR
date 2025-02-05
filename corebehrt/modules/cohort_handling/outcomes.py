@@ -11,7 +11,7 @@ from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,
     remove_missing_timestamps,
 )
-from corebehrt.functional.preparation.utils import get_abspos_from_origin_point
+from corebehrt.functional.utils.time import get_abspos_from_origin_point
 
 logger = logging.getLogger(__name__)
 

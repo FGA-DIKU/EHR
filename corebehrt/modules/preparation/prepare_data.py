@@ -10,6 +10,12 @@ import torch
 from dask.diagnostics import ProgressBar
 
 from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.constants.paths import (
+    INDEX_DATES_FILE,
+    OUTCOMES_FILE,
+    PID_FILE,
+    PROCESSED_DATA_DIR,
+)
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
 from corebehrt.functional.io_operations.load import load_vocabulary
@@ -21,19 +27,13 @@ from corebehrt.functional.preparation.filter import (
 )
 from corebehrt.functional.preparation.truncate import truncate_patient
 from corebehrt.functional.preparation.utils import (
-    get_abspos_from_origin_point,
     get_background_length,
     get_non_priority_tokens,
 )
+from corebehrt.functional.utils.time import get_abspos_from_origin_point
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
 from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.modules.setup.config import Config, load_config
-from corebehrt.constants.paths import (
-    INDEX_DATES_FILE,
-    OUTCOMES_FILE,
-    PID_FILE,
-    PROCESSED_DATA_DIR,
-)
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
