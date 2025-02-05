@@ -1,11 +1,8 @@
-from dataclasses import asdict, fields
 from datetime import datetime
 from typing import List, Union
 
 import dask.dataframe as dd
 import pandas as pd
-
-from corebehrt.modules.preparation.dataset import PatientData
 
 
 def get_abspos_from_origin_point(
