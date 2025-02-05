@@ -40,7 +40,7 @@ tokenizer:
   #cutoffs:
    # D: 3 # diagnosis
    # M: 4 # medication
-
+# This is for the excluding incorrect ages
 excluder:
   min_age: -1
   max_age: 120
