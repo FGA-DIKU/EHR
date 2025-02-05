@@ -1,27 +1,13 @@
 import logging
 from os.path import join
-from typing import List, Tuple
 
-import pandas as pd
 import torch
 
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
 from corebehrt.constants.paths import INDEX_DATES_FILE, PID_FILE
-from corebehrt.functional.preparation.filter import select_first_event
 from corebehrt.functional.setup.args import get_args
-from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
-from corebehrt.modules.cohort_handling.patient_filter import (
-    apply_exclusion_filters,
-    filter_by_age,
-    filter_by_categories,
-    filter_df_by_pids,
-)
-from corebehrt.modules.features.loader import ConceptLoader
+from corebehrt.main.helper.select_cohort import select_cohort
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
-
-
-logger = logging.getLogger("select_cohort")
 
 CONFIG_PATH = "./corebehrt/configs/select_cohort.yaml"
 
@@ -34,99 +20,10 @@ def main_select_cohort(config_path: str):
     logger = logging.getLogger("select_cohort")
 
     logger.info("Starting cohort selection")
-    pids, index_dates = select_cohort(cfg)
+    pids, index_dates = select_cohort(cfg, logger)
     logger.info("Saving cohort")
     torch.save(pids, join(cfg.paths.cohort, PID_FILE))
     index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE))
-
-
-def select_cohort(cfg) -> Tuple[List[str], pd.Series]:
-    """
-    Select cohort by applying multiple filtering steps.
-
-    Args:
-        cfg: Configuration dictionary
-
-    Returns:
-        Tuple of final patient IDs and their index dates
-    """
-    logger.info("Loading data")
-    patients_info, outcomes, exposures, initial_pids = load_data(cfg)
-    patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
-    logger.info("N patients_info: %d", len(patients_info))
-    logger.info("Patients in initial_pids: %d", len(initial_pids))
-
-    if initial_pids:
-        logger.info("Filtering by initial_pids")
-        patients_info = filter_df_by_pids(patients_info, initial_pids)
-        log_patient_num(logger, patients_info)
-
-    if cfg.selection.get("exposed_only", False):
-        logger.info("Filtering by exposures")
-        patients_info = filter_df_by_pids(patients_info, exposures[PID_COL])
-        log_patient_num(logger, patients_info)
-
-    if cfg.selection.get("categories", False):
-        logger.info("Filtering by categories")
-        patients_info = filter_by_categories(patients_info, cfg.selection.categories)
-        log_patient_num(logger, patients_info)
-
-    logger.info("Determining index dates")
-    mode = cfg.index_date["mode"]
-    index_dates = IndexDateHandler.determine_index_dates(
-        patients_info,
-        mode,
-        absolute_timestamp=cfg.index_date[mode].get("absolute_timestamp"),
-        n_hours_from_exposure=cfg.index_date[mode].get("n_hours_from_exposure"),
-        exposures=exposures,
-    )
-    patients_info = patients_info.merge(
-        index_dates, on=PID_COL
-    )  # the TIMESTAMP column is the index date.
-
-    if cfg.selection.get("age", False):
-        logger.info("Filtering by age")
-        patients_info = filter_by_age(
-            patients_info,
-            min_age=cfg.selection.age.get("min_years"),
-            max_age=cfg.selection.age.get("max_years"),
-        )
-        log_patient_num(logger, patients_info)
-
-    logger.info("Applying additional exclusion filters")
-    patients_info = apply_exclusion_filters(
-        patients_info,
-        outcomes,
-        outcome_before_index_date=cfg.selection.get("exclude_prior_outcomes", False),
-    )
-    log_patient_num(logger, patients_info)
-    return patients_info[PID_COL].unique().tolist(), index_dates
-
-
-def log_patient_num(logger, patients_info):
-    logger.info(f"Patient number: {len(patients_info[PID_COL].unique())}")
-
-
-def load_data(cfg):
-    """Load patient, outcomes, and exposures data."""
-    patients_info = ConceptLoader.read_file(cfg.paths.patients_info)
-    outcomes = ConceptLoader.read_file(cfg.paths.outcome)
-
-    exposures = (
-        ConceptLoader.read_file(cfg.paths.exposure)
-        if cfg.paths.get("exposure", False)
-        else outcomes
-    )
-
-    exposures = select_first_event(exposures, PID_COL, TIMESTAMP_COL)
-
-    initial_pids = (
-        torch.load(cfg.paths.initial_pids)
-        if cfg.paths.get("initial_pids", False)
-        else []
-    )
-
-    return patients_info, outcomes, exposures, initial_pids
 
 
 if __name__ == "__main__":
