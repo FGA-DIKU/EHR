@@ -1,12 +1,12 @@
 from os.path import exists, join
 
 import dask.dataframe as dd
-from tests.helpers import compute_column_checksum
-import torch
 import pandas as pd
+import torch
 
+from corebehrt.constants.paths import DATA_CFG
 from corebehrt.main.create_data import main_data
-from corebehrt.modules.setup.directory import DATA_CFG
+from tests.helpers import compute_column_checksum
 
 from .base import TestMainScript
 

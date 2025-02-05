@@ -1,4 +1,4 @@
-from corebehrt.functional.constants import PID_COL, ABSPOS_COL
+from corebehrt.constants.data import PID_COL, ABSPOS_COL
 import pandas as pd
 
 

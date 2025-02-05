@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 import torch.nn as nn
 
-from corebehrt.functional.constants import (
+from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_MULTIPLIER,
     TIME2VEC_AGE_MULTIPLIER,
     TIME2VEC_MAX_CLIP,

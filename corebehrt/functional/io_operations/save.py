@@ -4,8 +4,8 @@ from os.path import join
 
 import torch
 
+from corebehrt.constants.paths import VOCABULARY_FILE
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.modules.setup.directory import VOCABULARY_FILE
 
 logger = logging.getLogger(__name__)
 

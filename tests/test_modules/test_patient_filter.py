@@ -2,17 +2,17 @@ import unittest
 
 import pandas as pd
 
+from corebehrt.constants.data import (
+    BIRTHDATE_COL,
+    DEATHDATE_COL,
+    PID_COL,
+    TIMESTAMP_COL,
+)
 from corebehrt.modules.cohort_handling.patient_filter import (
     apply_exclusion_filters,
     filter_by_age,
     filter_by_categories,
     filter_df_by_pids,
-)
-from corebehrt.modules.setup.constants import (
-    BIRTHDATE_COL,
-    DEATHDATE_COL,
-    PID_COL,
-    TIMESTAMP_COL,
 )
 
 
