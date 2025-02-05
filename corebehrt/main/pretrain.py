@@ -1,8 +1,6 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
 import logging
-from os.path import join
-from typing import Tuple
 
 from corebehrt.functional.features.split import (
     load_train_val_split,
@@ -11,20 +9,16 @@ from corebehrt.functional.features.split import (
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.io_operations.save import save_pids_splits
 from corebehrt.functional.setup.args import get_args
-from corebehrt.functional.setup.model import (
-    get_last_checkpoint_epoch,
-    load_model_cfg_from_checkpoint,
-)
+from corebehrt.functional.setup.model import load_model_cfg_from_checkpoint
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
+from corebehrt.main.helper.pretrain import load_checkpoint_and_epoch
 from corebehrt.modules.preparation.dataset import MLMDataset
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.initializer import Initializer
-from corebehrt.modules.setup.loader import ModelLoader
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
-from corebehrt.modules.setup.directory import CHECKPOINTS_DIR
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 
@@ -104,18 +98,6 @@ def main_train(config_path):
     logger.info("Start training")
     trainer.train()
     logger.info("Done")
-
-
-def load_checkpoint_and_epoch(model_dir: str, checkpoint_epoch: str = None) -> Tuple:
-    """Load checkpoint and epoch from config."""
-    checkpoint = ModelLoader(
-        model_dir, checkpoint_epoch=checkpoint_epoch
-    ).load_checkpoint()
-    if checkpoint is not None:
-        epoch = checkpoint["epoch"]
-    else:
-        epoch = get_last_checkpoint_epoch(join(model_dir, CHECKPOINTS_DIR))
-    return checkpoint, epoch
 
 
 if __name__ == "__main__":
