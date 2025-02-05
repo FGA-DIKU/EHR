@@ -15,3 +15,14 @@ TIMESTAMP_COL = "TIMESTAMP"
 BIRTHDATE_COL = "BIRTHDATE"
 DEATHDATE_COL = "DEATHDATE"
 ABSPOS_COL = "abspos"
+
+### Schema ###
+SCHEMA = {
+    "PID": "str",
+    "age": "float32",
+    "abspos": "float64",
+    "segment": "int32",
+}
+
+FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
+TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
