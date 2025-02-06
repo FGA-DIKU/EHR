@@ -1,12 +1,13 @@
 import copy
 import random
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 from sklearn.model_selection import KFold
 
-from corebehrt.modules.preparation.dataset import PatientDataset
+from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.functional.io_operations.load import load_predefined_splits
+from corebehrt.modules.preparation.dataset import PatientDataset
 
 
 def split_pids_into_pt_ft_test(
@@ -33,6 +34,24 @@ def split_pids_into_pt_ft_test(
     finetune_pids = pids[int(n * pretrain) : int(n * (pretrain + finetune))]
     test_pids = pids[int(n * (pretrain + finetune)) :]
     return pretrain_pids, finetune_pids, test_pids
+
+
+def split_test(pids: list, test_ratio: float) -> Tuple[list, list]:
+    """Split patient IDs into train and test sets.
+
+    Args:
+        pids: List of patient IDs to split
+        test_ratio: Fraction of patients to use for test set (between 0 and 1)
+
+    Returns:
+        Tuple containing:
+            - train_pids: List of patient IDs for training
+            - test_pids: List of patient IDs for testing
+    """
+    n_test = int(len(pids) * test_ratio)
+    test_pids = pids[:n_test]
+    train_pids = pids[n_test:]
+    return train_pids, test_pids
 
 
 def split_pids_into_train_val(
@@ -112,3 +131,37 @@ def split_into_test_and_train_val_pids(pids: list, test_split: float):
     set_test_pids = set(test_pids)
     train_val_pids = [pid for pid in pids if pid not in set_test_pids]
     return test_pids, train_val_pids
+
+
+def create_folds(pids: list, num_folds: int, seed: int = 42) -> List[Dict[str, list]]:
+    """
+    Create k folds from a list of PIDs.
+    example output:
+
+    {
+        "fold_0": {
+            "train": [1, 2, 3],
+            "val": [4, 5, 6]
+        }
+    }
+
+    Args:
+        pids (list): List of patient IDs.
+        num_folds (int): Number of folds.
+        seed (int): Random seed for reproducibility.
+
+    Returns:
+        list: List of folds with train and val PIDs.
+    """
+    rng = np.random.default_rng(seed)
+    pids_array = np.array(pids)
+    rng.shuffle(pids_array)  # Shuffle before splitting
+
+    kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
+    folds = [{TRAIN_KEY: [], VAL_KEY: []} for _ in range(num_folds)]
+
+    for i, (train_idx, val_idx) in enumerate(kf.split(pids_array)):
+        folds[i][TRAIN_KEY] = [pids_array[idx] for idx in train_idx]
+        folds[i][VAL_KEY] = [pids_array[idx] for idx in val_idx]
+
+    return folds

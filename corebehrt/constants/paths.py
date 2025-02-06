@@ -15,11 +15,14 @@ PROCESSED_DATA_DIR = "processed_data"
 OUTCOMES_FILE = "outcomes.csv"
 INDEX_DATES_FILE = "index_dates.csv"
 PID_FILE = "pids.pt"
+TEST_PIDS_FILE = "test_pids.pt"
+FOLDS_FILE = "folds.pt"
 
 ### File Patterns ###
 CONCEPT_FORMAT = "concept.*"
 PATIENTS_INFO_FORMAT = "patients_info.*"
 
 ### File Extensions ###
+
 CSV_EXT = ".csv"
 PARQUET_EXT = ".parquet"

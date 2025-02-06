@@ -26,3 +26,8 @@ SCHEMA = {
 
 FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
 TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
+
+### Folds and Splits###
+TRAIN_KEY = "train"
+VAL_KEY = "val"
+TEST_KEY = "test"

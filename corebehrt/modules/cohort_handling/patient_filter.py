@@ -50,10 +50,10 @@ def filter_by_age(
         patients_info[TIMESTAMP_COL] - patients_info[BIRTHDATE_COL]
     ).dt.total_seconds() / (365.25 * 24 * 60 * 60)
     if min_age is not None:
-        patients_info = patients_info[age_in_years >= min_age]
+        patients_info = patients_info.loc[age_in_years >= min_age]
 
     if max_age is not None:
-        patients_info = patients_info[age_in_years <= max_age]
+        patients_info = patients_info.loc[age_in_years <= max_age]
 
     return patients_info
 
