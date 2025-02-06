@@ -48,8 +48,9 @@ Thank you for considering contributing to our project! Please follow the guideli
 
 - Follow existing code style
 - Add tests for new features
-- Update documentation as needed
+- Update documentation as neede
 - All CI checks must pass
 - Keep changes focused and atomic
+- **Important:** If you add new scripts or change input/output paths, update [azure components](corebehrt/azure/components) and [azure main](corebehrt/azure/__main__.py) accordingly.
 
 Thank you for contributing! 🚀
