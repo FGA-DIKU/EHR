@@ -6,7 +6,6 @@ import numpy as np
 from sklearn.model_selection import KFold
 
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
-from corebehrt.functional.io_operations.load import load_predefined_splits
 from corebehrt.modules.preparation.dataset import PatientDataset
 
 
@@ -71,31 +70,6 @@ def split_pids_into_train_val(
     train_data = data.filter_by_pids(train_pids)
     val_data = data.filter_by_pids(val_pids)
     return train_data, val_data
-
-
-def load_train_val_split(
-    data: PatientDataset, split_path: str
-) -> Tuple[PatientDataset, PatientDataset]:
-    """Load predefined train/validation split from disk and filter data accordingly.
-
-    Args:
-        data: PatientDataset containing all patients
-        split_path: Path to directory containing train_pids.pt and val_pids.pt files
-
-    Returns:
-        Tuple containing:
-            - train_dataset: PatientDataset filtered to only include training patients
-            - val_dataset: PatientDataset filtered to only include validation patients
-
-    The split files should be PyTorch tensors containing patient IDs for each split.
-    The function expects files named 'train_pids.pt' and 'val_pids.pt' in the split_path directory.
-    """
-    splits = ["train", "val"]
-    pids = load_predefined_splits(split_path, splits)
-    train_pids, val_pids = pids
-    train_dataset = data.filter_by_pids(train_pids)
-    val_dataset = data.filter_by_pids(val_pids)
-    return train_dataset, val_dataset
 
 
 def get_n_splits_cv_pids(n_splits: int, train_val_pids: List[str]):
