@@ -1,11 +1,9 @@
-from os.path import join
-from typing import Tuple
 from os.path import exists, join
+from typing import Tuple
 
-from corebehrt.constants.paths import FOLDS_FILE
 import torch
 
-from corebehrt.constants.paths import CHECKPOINTS_DIR
+from corebehrt.constants.paths import CHECKPOINTS_DIR, FOLDS_FILE
 from corebehrt.functional.features.split import TRAIN_KEY, VAL_KEY
 from corebehrt.functional.setup.model import get_last_checkpoint_epoch
 from corebehrt.modules.preparation.dataset import PatientDataset
