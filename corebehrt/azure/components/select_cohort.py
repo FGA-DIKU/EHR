@@ -4,6 +4,7 @@ from corebehrt.main import select_cohort
 INPUTS = {
     "patients_info": {"type": "uri_file"},
     "initial_pids": {"type": "uri_file", "optional": True},
+    "exclude_pids": {"type": "uri_file", "optional": True},
     "exposure": {"type": "uri_file", "optional": True},
     "outcome": {"type": "uri_file"},
 }
