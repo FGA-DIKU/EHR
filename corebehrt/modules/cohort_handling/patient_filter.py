@@ -58,45 +58,48 @@ def filter_by_age(
     return patients_info
 
 
-def apply_exclusion_filters(
-    patients_info: pd.DataFrame,
-    outcomes: pd.DataFrame,
-    outcome_before_index_date: bool = False,
-) -> pd.DataFrame:
-    """Remove patients based on death and outcome criteria.
+def filter_by_death(patients_info: pd.DataFrame) -> pd.DataFrame:
+    """Remove patients who died before their index date.
 
     Args:
         patients_info: DataFrame with DEATHDATE_COL and TIMESTAMP_COL columns in datetime format
-        index_dates: Series of reference dates for exclusion in datetime format
-        outcomes: DataFrame with PID and TIMESTAMP columns in datetime format
-        dead_before_index_date: Exclude patients who died before index date
-        outcome_before_index_date: Exclude patients with prior outcomes
     """
-    patients_info = patients_info[
+    return patients_info[
         patients_info[DEATHDATE_COL].isna()
         | (patients_info[DEATHDATE_COL] > patients_info[TIMESTAMP_COL])
     ]
 
-    if outcome_before_index_date and not outcomes.empty:
-        earliest_outcomes = outcomes.groupby(PID_COL)[TIMESTAMP_COL].min()
 
-        # Align earliest_outcomes with the patients we still have
-        earliest_outcomes = earliest_outcomes.reindex(patients_info[PID_COL].unique())
+def filter_by_prior_outcomes(
+    patients_info: pd.DataFrame,
+    outcomes: pd.DataFrame,
+) -> pd.DataFrame:
+    """Remove patients who had outcomes before their index date.
 
-        # Ensure patients_info is indexed by PID to compare properly
-        indexed_patients_info = patients_info.set_index(PID_COL, drop=False)
+    Args:
+        patients_info: DataFrame with PID_COL and TIMESTAMP_COL columns
+        outcomes: DataFrame with PID_COL and TIMESTAMP_COL columns in datetime format
+    """
+    if outcomes.empty:
+        return patients_info
 
-        # Determine which patients to exclude:
-        pids_to_exclude = indexed_patients_info.index[
-            (earliest_outcomes < indexed_patients_info[TIMESTAMP_COL])
-        ]
+    earliest_outcomes = outcomes.groupby(PID_COL)[TIMESTAMP_COL].min()
+    earliest_outcomes = earliest_outcomes.reindex(patients_info[PID_COL].unique())
 
-        # Filter them out
-        patients_info = patients_info[~patients_info[PID_COL].isin(pids_to_exclude)]
+    indexed_patients_info = patients_info.set_index(PID_COL, drop=False)
 
-    return patients_info
+    pids_to_exclude = indexed_patients_info.index[
+        (earliest_outcomes < indexed_patients_info[TIMESTAMP_COL])
+    ]
+
+    return patients_info[~patients_info[PID_COL].isin(pids_to_exclude)]
 
 
 def filter_df_by_pids(df: pd.DataFrame, pids: list) -> pd.DataFrame:
     """Filter using PID column in dataframe."""
     return df[df[PID_COL].isin(pids)]
+
+
+def exclude_pids_from_df(df: pd.DataFrame, pids: list) -> pd.DataFrame:
+    """Exclude using PID column in dataframe."""
+    return df[~df[PID_COL].isin(pids)]
