@@ -9,7 +9,6 @@ import torch
 from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
 from corebehrt.functional.features.split import (
     get_n_splits_cv_pids,
-    load_train_val_split,
     split_into_test_and_train_val_pids,
     split_pids_into_pt_ft_test,
     split_pids_into_train_val,
@@ -96,17 +95,6 @@ class TestSplitFunctions(unittest.TestCase):
 
         all_split_pids = train_ds.get_pids() + val_ds.get_pids()
         self.assertCountEqual(all_split_pids, self.all_pids)
-
-    # ------------------------------------------------------------------------------
-    # 3) load_train_val_split
-    # ------------------------------------------------------------------------------
-    def test_load_train_val_split(self):
-        # We have train_pids.pt = ["pid1", "pid2"], val_pids.pt = ["pid3", "pid4", "pid5"]
-        train_ds, val_ds = load_train_val_split(self.dataset, self.split_path)
-        # Check train
-        self.assertListEqual(sorted(train_ds.get_pids()), ["pid1", "pid2"])
-        # Check val
-        self.assertListEqual(sorted(val_ds.get_pids()), ["pid3", "pid4", "pid5"])
 
     # ------------------------------------------------------------------------------
     # 4) get_n_splits_cv_pids
