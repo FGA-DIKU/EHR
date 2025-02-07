@@ -1,11 +1,10 @@
 import os
-from os.path import join, split
+from os.path import join
 
 import torch
 
-from corebehrt.constants.train import DEFAULT_CV_SPLITS, DEFAULT_VAL_SPLIT
+from corebehrt.constants.train import DEFAULT_VAL_SPLIT
 from corebehrt.functional.features.split import get_n_splits_cv_pids
-from corebehrt.functional.io_operations.load import load_and_select_splits
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
@@ -17,45 +16,48 @@ def cv_loop_predefined_splits(
     logger,
     finetune_folder: str,
     data: PatientDataset,
-    predefined_splits_dir: str,
+    folds: list,
     test_data: PatientDataset,
 ) -> int:
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir
-    fold_dirs = [
-        join(predefined_splits_dir, d)
-        for d in os.listdir(predefined_splits_dir)
-        if os.path.isdir(os.path.join(predefined_splits_dir, d)) and "fold_" in d
-    ]
-    cv_splits = len(fold_dirs)
-    for fold_dir in fold_dirs:
-        fold = int(split(fold_dir)[1].split("_")[1])
-        logger.info(f"Training fold {fold}/{len(fold_dirs)}")
-        train_data, val_data = load_and_select_splits(fold_dir, data)
+    for fold, (train_pids, val_pids) in enumerate(folds):
+        logger.info(f"Training fold {fold}/{len(folds)}")
+
+        train_data = data.filter_by_pids(train_pids)
+        val_data = data.filter_by_pids(val_pids)
+
         finetune_fold(
             cfg, logger, finetune_folder, train_data, val_data, fold, test_data
         )
-    return cv_splits
+
+    return len(fold)
 
 
 def cv_loop(
     cfg,
     logger,
     finetune_folder: str,
-    data: PatientDataset,
-    train_val_pids: list,
+    train_val_data: PatientDataset,
     test_data: PatientDataset,
+    cv_folds: int,
 ) -> None:
     """Loop over cross validation folds."""
-    cv_splits = cfg.get("cv_splits", DEFAULT_CV_SPLITS)
+
+    train_val_pids = train_val_data.get_pids()
     for fold, (train_pids, val_pids) in enumerate(
-        get_n_splits_cv_pids(cv_splits, train_val_pids)
+        get_n_splits_cv_pids(
+            cv_folds,
+            train_val_pids,
+            val_split=cfg.data.get("val_split", DEFAULT_VAL_SPLIT),
+        )
     ):
         fold += 1
-        logger.info(f"Training fold {fold}/{cv_splits}")
+        logger.info(f"Training fold {fold}/{cv_folds}")
         logger.info("Splitting data")
-        train_data = data.filter_by_pids(train_pids)
-        val_data = data.filter_by_pids(val_pids)
+        train_data = train_val_data.filter_by_pids(train_pids)
+        val_data = train_val_data.filter_by_pids(val_pids)
+
         finetune_fold(
             cfg,
             logger,
@@ -65,33 +67,6 @@ def cv_loop(
             fold,
             test_data,
         )
-
-
-def finetune_without_cv(
-    cfg,
-    logger,
-    finetune_folder: str,
-    data: PatientDataset,
-    train_val_pids: list,
-    test_data: PatientDataset = None,
-) -> None:
-    val_split = cfg.data.get("val_split", DEFAULT_VAL_SPLIT)
-    logger.info(
-        f"Splitting train_val of length {len(train_val_pids)} into train and val with val_split={val_split}"
-    )
-    train_pids = train_val_pids[: int(len(train_val_pids) * (1 - val_split))]
-    val_pids = train_val_pids[int(len(train_val_pids) * (1 - val_split)) :]
-    train_data = data.filter_by_pids(train_pids)
-    val_data = data.filter_by_pids(val_pids)
-    finetune_fold(
-        cfg,
-        logger,
-        finetune_folder,
-        train_data,
-        val_data,
-        1,
-        test_data,
-    )
 
 
 def finetune_fold(
