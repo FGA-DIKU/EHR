@@ -34,12 +34,7 @@ class TestCreateData(TestMainScript):
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
                     "background_vars": ["GENDER"],
                     "values": {
-                        "value_type": "binned",
-                        "value_type_kwargs": {"multiplication_factor": 100},
-                        "normalize_args": {
-                            "func": "corebehrt.modules.features.normalizer.ValuesNormalizer.min_max_normalize_results",
-                            "kwargs": {"min_count": 3},
-                        },
+                        "value_creator_kwargs": {"num_bins": 100},
                     },
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},

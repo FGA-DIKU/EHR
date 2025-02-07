@@ -7,23 +7,18 @@ import pandas as pd
 from corebehrt.modules.preparation.dataset import PatientData
 
 
-def min_max_normalize(df: pd.DataFrame, min_count: int) -> pd.Series:
-    """
-    Performs min-max normalisation on a dataframe.
-    """
-    mask = (
-        (df["count"] >= min_count)
-        & ~df["count"].isna()
-        & ~df["RESULT"].isna()
-        & ~df["min"].isna()
-        & ~df["max"].isna()
-    )
-    normed_result = np.where(
-        mask, (df["RESULT"] - df["min"]) / (df["max"] - df["min"]), -1
-    )
+import pandas as pd
 
-    return pd.Series(normed_result, index=df.index)
 
+def min_max_normalize(x: pd.Series) -> pd.Series:
+    """
+    Performs min-max normalisation on a Series. If the series only contains a single value, it will be replaced with 'UNIQUE'.
+    """
+    x = pd.to_numeric(x, errors="coerce")
+    x = x.dropna()
+    if x.nunique() == 1:
+        return pd.Series(["UNIQUE"] * len(x), index=x.index)
+    return (x - x.min()) / (x.max() - x.min())
 
 def normalize_segments_for_patient(patient: PatientData) -> PatientData:
     normalized_segments = normalize_segments(patient.segments)

@@ -11,7 +11,8 @@ loader:
   concept_types: [
     diagnose,
     medication,
-    labtest
+    labtest,
+    procedure,
   ]
   include_values: [labtest]
 
@@ -25,13 +26,8 @@ features:
   background_vars: ['GENDER']
   # Arguments for adding values to the data
   values:
-    value_type: binned # How you want the values. Either binned or quantile are supported.
-    value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
-      multiplication_factor: 100
-    normalize_args: # Dict with the function and kwargs for normalizing the values.
-      func: corebehrt.modules.features.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
-      kwargs: # Example kwargs
-        min_count: 2
+    value_creator_kwargs: 
+      num_bins: 100
 
 tokenizer:
   sep_tokens: true
