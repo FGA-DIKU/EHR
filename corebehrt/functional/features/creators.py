@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import dask.dataframe as dd
+import numpy as np
 
 from corebehrt.functional.features.normalize import normalize_segments_series
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
@@ -151,6 +152,7 @@ def create_segments(concepts: dd.DataFrame) -> dd.DataFrame:
     Returns:
         concepts with a new 'segment' column
     """
+    concepts["segment"] = np.nan
     # Assign maximum segment to 'Death' concepts
     concepts = concepts.map_partitions(_assign_segments)
     concepts = concepts.map_partitions(assign_segments_to_death)
