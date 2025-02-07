@@ -2,8 +2,10 @@ from collections import defaultdict
 from dataclasses import fields, replace
 from typing import List, Optional
 
-from corebehrt.modules.preparation.dataset import PatientData
+import pandas as pd
+
 from corebehrt.functional.preparation.utils import subset_patient_data
+from corebehrt.modules.preparation.dataset import PatientData
 
 
 def truncate_patient(
@@ -234,3 +236,39 @@ def _get_non_priority_mask(
         List[bool]: A list of booleans, one per token in `patient.concepts`.
     """
     return [token in non_priority_tokens for token in patient.concepts]
+
+
+def truncate_patient_df(
+    pdf: pd.DataFrame, max_len: int, background_length: int, sep_token: str
+) -> pd.DataFrame:
+    """
+    Truncate rows for one patient's data to `max_len`,
+    preserving:
+      - The first `background_length` items at the start
+      - The tail until reaching `max_len`.
+    If the boundary item is the SEP token, shift the tail by 1.
+
+    `pdf` is a subset of rows for a single PID.
+    """
+    # Optional: sort by abspos if needed
+    pdf = pdf.sort_values("abspos", ascending=True)
+    total_length = len(pdf)
+    if total_length <= max_len:
+        return pdf
+
+    tail_length = max_len - background_length
+
+    # Get the row in the boundary position
+    if tail_length > 0:
+        boundary_idx = total_length - tail_length
+        boundary_token = pdf["concept"].iloc[boundary_idx]
+        if boundary_token == sep_token:
+            tail_length = max(tail_length - 1, 0)
+
+    # Take front + tail
+    front_df = pdf.iloc[:background_length]
+    tail_df = (
+        pdf.iloc[-tail_length:] if tail_length > 0 else pdf.iloc[0:0]
+    )  # empty DF if 0
+    truncated_df = pd.concat([front_df, tail_df])
+    return truncated_df
