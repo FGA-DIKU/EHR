@@ -72,23 +72,38 @@ def split_pids_into_train_val(
     return train_data, val_data
 
 
-def get_n_splits_cv_pids(n_splits: int, train_val_pids: List[str]):
+def get_n_splits_cv_pids(
+    n_splits: int, train_val_pids: List[str], val_split: float = 0.2, seed: int = 42
+):
     """Split patient IDs into n cross-validation folds.
 
     Args:
-        dataset: PatientDataset containing all patients
-        n_splits: Number of CV folds
+        n_splits: Number of CV folds (must be >= 1)
         train_val_pids: List of patient IDs to split
+        val_split: Fraction of patients to use for validation set (between 0 and 1)
+        only used if
+        seed: Random seed for reproducibility
 
     Returns:
         List of (train_pids, val_pids) tuples for each fold
     """
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+    if n_splits < 1:
+        raise ValueError("n_splits must be >= 1")
+
     train_val_pids = np.array(train_val_pids)
-    for train_idx, val_idx in kf.split(train_val_pids):
-        train_pids = train_val_pids[train_idx].tolist()
-        val_pids = train_val_pids[val_idx].tolist()
-        yield train_pids, val_pids
+
+    if n_splits == 1:
+        # For single split, use 80-20 split by default
+        split_idx = int((1 - val_split) * len(train_val_pids))
+        np.random.shuffle(train_val_pids)
+        yield train_val_pids[:split_idx].tolist(), train_val_pids[split_idx:].tolist()
+    else:
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+        for train_idx, val_idx in kf.split(train_val_pids):
+            train_pids = train_val_pids[train_idx].tolist()
+            val_pids = train_val_pids[val_idx].tolist()
+            yield train_pids, val_pids
 
 
 def split_into_test_and_train_val_pids(pids: list, test_split: float):
