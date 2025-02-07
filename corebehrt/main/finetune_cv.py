@@ -1,10 +1,11 @@
 import logging
+import os
 from os.path import join
 
 # os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 import torch
 
-from corebehrt.constants.paths import TEST_PIDS_FILE
+from corebehrt.constants.paths import FOLDS_FILE, PROCESSED_DATA_DIR, TEST_PIDS_FILE
 from corebehrt.constants.train import DEFAULT_CV_FOLDS, DEFAULT_VAL_SPLIT
 from corebehrt.functional.features.split import split_into_test_and_train_val_pids
 from corebehrt.functional.setup.args import get_args
@@ -42,7 +43,9 @@ def main_finetune(config_path):
         test_pids, train_val_pids = split_into_test_and_train_val_pids(
             data.get_pids(), cfg.data.get("test_split", None)
         )
-        torch.save(test_pids, join(cfg.paths.model, TEST_PIDS_FILE))
+    processed_data_dir = join(cfg.paths.model, PROCESSED_DATA_DIR)
+    os.makedirs(processed_data_dir, exist_ok=True)
+    torch.save(test_pids, join(processed_data_dir, TEST_PIDS_FILE))
 
     test_data = data.filter_by_pids(test_pids)
     train_val_data = data.filter_by_pids(train_val_pids)
@@ -58,7 +61,7 @@ def main_finetune(config_path):
         val_split = cfg.data.get("val_split", DEFAULT_VAL_SPLIT)
         logger.info(f"Using cross validation with {n_folds} folds")
         folds = get_n_folds(n_folds, train_val_pids, val_split)
-
+    torch.save(folds, join(processed_data_dir, FOLDS_FILE))
     cv_loop(
         cfg,
         logger,
