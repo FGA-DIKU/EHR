@@ -25,7 +25,10 @@ from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
 )
-from corebehrt.functional.preparation.truncate import truncate_patient
+from corebehrt.functional.preparation.truncate import (
+    truncate_patient,
+    truncate_patient_df,
+)
 from corebehrt.functional.preparation.utils import (
     get_background_length,
     get_background_length_dd,
@@ -75,7 +78,6 @@ class DatasetPreparer:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
-
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
@@ -167,7 +169,7 @@ class DatasetPreparer:
 
             background_length = get_background_length_dd(df, vocab)
             df = df.groupby(PID_COL, group_keys=False).apply(
-                truncate_patient_dd,
+                truncate_patient_df,
                 max_len=data_cfg.truncation_len,
                 background_length=background_length,
                 sep_token=vocab["[SEP]"],
@@ -175,7 +177,6 @@ class DatasetPreparer:
             )
             df = df.reset_index(drop=False)
             df = df.compute()
-
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
@@ -206,40 +207,3 @@ class DatasetPreparer:
         if paths_cfg.get("cohort"):
             pids = set(torch.load(join(paths_cfg.cohort, PID_FILE)))
         return pids
-
-
-def truncate_patient_dd(
-    pdf: pd.DataFrame, max_len: int, background_length: int, sep_token: str
-) -> pd.DataFrame:
-    """
-    Truncate rows for one patient's data to `max_len`,
-    preserving:
-      - The first `background_length` items at the start
-      - The tail until reaching `max_len`.
-    If the boundary item is the SEP token, shift the tail by 1.
-
-    `pdf` is a subset of rows for a single PID.
-    """
-    # Optional: sort by abspos if needed
-    pdf = pdf.sort_values("abspos", ascending=True)
-
-    total_length = len(pdf)
-    if total_length <= max_len:
-        return pdf
-
-    tail_length = max_len - background_length
-
-    # Get the row in the boundary position
-    if tail_length > 0:
-        boundary_idx = total_length - tail_length
-        boundary_token = pdf["concept"].iloc[boundary_idx]
-        if boundary_token == sep_token:
-            tail_length = max(tail_length - 1, 0)
-
-    # Take front + tail
-    front_df = pdf.iloc[:background_length]
-    tail_df = (
-        pdf.iloc[-tail_length:] if tail_length > 0 else pdf.iloc[0:0]
-    )  # empty DF if 0
-    truncated_df = pd.concat([front_df, tail_df])
-    return truncated_df
