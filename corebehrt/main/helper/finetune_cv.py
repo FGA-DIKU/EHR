@@ -4,6 +4,7 @@ from os.path import join
 import torch
 
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
+from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.functional.features.split import get_n_splits_cv_pids
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
@@ -11,17 +12,19 @@ from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
 
 
-def cv_loop_predefined_splits(
+def cv_loop(
     cfg,
     logger,
     finetune_folder: str,
     data: PatientDataset,
     folds: list,
     test_data: PatientDataset,
-) -> int:
+) -> None:
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir
-    for fold, (train_pids, val_pids) in enumerate(folds):
+    for fold, fold_dict in enumerate(folds):
+        train_pids = fold_dict[TRAIN_KEY]
+        val_pids = fold_dict[VAL_KEY]
         logger.info(f"Training fold {fold}/{len(folds)}")
 
         train_data = data.filter_by_pids(train_pids)
@@ -31,42 +34,29 @@ def cv_loop_predefined_splits(
             cfg, logger, finetune_folder, train_data, val_data, fold, test_data
         )
 
-    return len(fold)
 
+def get_n_folds(
+    n_folds: int, train_val_pids: list, val_split: float = DEFAULT_VAL_SPLIT
+) -> list:
+    """
+    Generate cross-validation folds from a list of patient IDs.
+     Args:
+        n_folds (int): Number of cross-validation folds to generate.
+        train_val_pids (list): List of patient IDs to split into folds.
+        val_split (float, optional): Fraction of data to use for validation in each fold.
+            Defaults to DEFAULT_VAL_SPLIT. Only used if n_folds > 1.
 
-def cv_loop(
-    cfg,
-    logger,
-    finetune_folder: str,
-    train_val_data: PatientDataset,
-    test_data: PatientDataset,
-    cv_folds: int,
-) -> None:
-    """Loop over cross validation folds."""
-
-    train_val_pids = train_val_data.get_pids()
-    for fold, (train_pids, val_pids) in enumerate(
-        get_n_splits_cv_pids(
-            cv_folds,
-            train_val_pids,
-            val_split=cfg.data.get("val_split", DEFAULT_VAL_SPLIT),
-        )
-    ):
-        fold += 1
-        logger.info(f"Training fold {fold}/{cv_folds}")
-        logger.info("Splitting data")
-        train_data = train_val_data.filter_by_pids(train_pids)
-        val_data = train_val_data.filter_by_pids(val_pids)
-
-        finetune_fold(
-            cfg,
-            logger,
-            finetune_folder,
-            train_data,
-            val_data,
-            fold,
-            test_data,
-        )
+    Returns:
+        list: List of dictionaries, where each dictionary contains train and validation
+            patient IDs for a fold. Keys are TRAIN_KEY and VAL_KEY.
+    """
+    folds_iter = get_n_splits_cv_pids(
+        n_folds,
+        train_val_pids,
+        val_split=val_split,
+    )
+    folds = [{TRAIN_KEY: fold[0], VAL_KEY: fold[1]} for fold in folds_iter]
+    return folds
 
 
 def finetune_fold(

@@ -5,10 +5,10 @@ from os.path import join
 import torch
 
 from corebehrt.constants.paths import TEST_PIDS_FILE
-from corebehrt.constants.train import DEFAULT_CV_SPLITS
+from corebehrt.constants.train import DEFAULT_CV_FOLDS, DEFAULT_VAL_SPLIT
 from corebehrt.functional.features.split import split_into_test_and_train_val_pids
 from corebehrt.functional.setup.args import get_args
-from corebehrt.main.helper.finetune_cv import cv_loop, cv_loop_predefined_splits
+from corebehrt.main.helper.finetune_cv import cv_loop, get_n_folds
 from corebehrt.main.helper.pretrain import get_splits_path
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
@@ -50,23 +50,28 @@ def main_finetune(config_path):
     if cfg.data.get("predefined_folds", False):
         folds_path = get_splits_path(cfg.paths)
         folds = torch.load(folds_path)
-        logger.info(f"Using {len(folds)} predefined folds")
-        cv_folds = cv_loop_predefined_splits(
-            cfg,
-            logger,
-            cfg.paths.model,
-            train_val_data,
-            folds,
-            test_data,
-        )
+        n_folds = len(folds)
+        logger.info(f"Using {n_folds} predefined folds")
 
     else:
-        cv_folds = cfg.data.get("cv_folds", DEFAULT_CV_SPLITS)
-        logger.info(f"Using cross validation with {cv_folds} folds")
-        cv_loop(cfg, logger, cfg.paths.model, train_val_data, test_data, cv_folds)
-    compute_and_save_scores_mean_std(cv_folds, cfg.paths.model, mode="val")
+        n_folds = cfg.data.get("cv_folds", DEFAULT_CV_FOLDS)
+        val_split = cfg.data.get("val_split", DEFAULT_VAL_SPLIT)
+        logger.info(f"Using cross validation with {n_folds} folds")
+        folds = get_n_folds(n_folds, train_val_pids, val_split)
+
+    cv_loop(
+        cfg,
+        logger,
+        cfg.paths.model,
+        train_val_data,
+        folds,
+        test_data,
+    )
+
+    compute_and_save_scores_mean_std(n_folds, cfg.paths.model, mode="val")
     if len(test_data) > 0:
-        compute_and_save_scores_mean_std(cv_folds, cfg.paths.model, mode="test")
+        compute_and_save_scores_mean_std(n_folds, cfg.paths.model, mode="test")
+
     logger.info("Done")
 
 
