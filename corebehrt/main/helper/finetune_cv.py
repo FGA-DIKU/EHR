@@ -23,11 +23,10 @@ def cv_loop(
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir
     for fold, fold_dict in enumerate(folds):
-        fold += 1 # 1-indexed
+        fold += 1  # 1-indexed
         train_pids = fold_dict[TRAIN_KEY]
         val_pids = fold_dict[VAL_KEY]
         logger.info(f"Training fold {fold}/{len(folds)}")
-
 
         train_data = data.filter_by_pids(train_pids)
         val_data = data.filter_by_pids(val_pids)
