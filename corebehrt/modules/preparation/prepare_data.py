@@ -25,9 +25,13 @@ from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
 )
-from corebehrt.functional.preparation.truncate import truncate_patient
+from corebehrt.functional.preparation.truncate import (
+    truncate_patient,
+    truncate_patient_df,
+)
 from corebehrt.functional.preparation.utils import (
     get_background_length,
+    get_background_length_dd,
     get_non_priority_tokens,
 )
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
@@ -74,7 +78,6 @@ class DatasetPreparer:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
-
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
@@ -150,42 +153,39 @@ class DatasetPreparer:
 
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
-        with ProgressBar(dt=10):
+        vocab = load_vocabulary(paths_cfg.tokenized)
+
+        with ProgressBar(dt=1):
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
                     "features_pretrain",
                 )
             )
-            if pids is not None:
-                df = filter_df_by_pids(df, pids)
-            df = df.compute()
+            df = df.set_index(PID_COL, drop=True)
 
+            if pids is not None:
+                df = df.loc[pids]
+
+            background_length = get_background_length_dd(df, vocab)
+            df = df.groupby(PID_COL, group_keys=False).apply(
+                truncate_patient_df,
+                max_len=data_cfg.truncation_len,
+                background_length=background_length,
+                sep_token=vocab["[SEP]"],
+                meta=df._meta,
+            )
+            df = df.reset_index(drop=False)
+            df = df.compute()
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
 
-        # Excluding short sequences
         logger.info("Excluding short sequences")
         background_length = get_background_length(data, vocab)
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
-        )
-
-        # Truncation
-        non_priority_tokens = (
-            None
-            if data_cfg.get("low_priority_prefixes", None) is None
-            else get_non_priority_tokens(vocab, data_cfg.low_priority_prefixes)
-        )
-        data.patients = data.process_in_parallel(
-            truncate_patient,
-            max_len=data_cfg.truncation_len,
-            background_length=background_length,
-            sep_token=vocab["[SEP]"],
-            non_priority_tokens=non_priority_tokens,
         )
 
         # Normalize segments
