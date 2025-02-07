@@ -7,6 +7,7 @@ paths:
   features: ./outputs/features
   tokenized: ./outputs/tokenized
   cohort: ./outputs/cohort
+  # test_pids: pids_path # path to file with pids to use for test set
 
   # tokenized_file: "features_finetune.pt" # can also be a list
   # tokenized_pids: "pids_finetune.pt" # can also be a list
@@ -17,8 +18,7 @@ paths:
   
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv
   
-  # predefined_splits: outputs/pretraining/behrt_base
-  # exclude_pids: pids_path
+  
 
 ## OUTPUTS
   model: ./outputs/finetuning # Save model/outputs to this folder
@@ -29,10 +29,10 @@ model:
     _target_: ehr2vec.model.heads.ClassifierGRU
     bidirectional: true
 
-cv_splits: 2
 data:
-  val_split: 0.1
-  test_split: 0.1
+  cv_folds: 2 # fo splitting data into k folds
+  test_split: 0.1 # only used if predefined_folds is false and test_pids is not provided
+  predefined_folds: false # using predefined folds, ignore cv_folds if true
   truncation_len: 30
   min_len: 2 # 0 by default
 
