@@ -28,6 +28,7 @@ from corebehrt.functional.preparation.filter import (
 from corebehrt.functional.preparation.truncate import truncate_patient
 from corebehrt.functional.preparation.utils import (
     get_background_length,
+    get_background_length_dd,
     get_non_priority_tokens,
 )
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
@@ -150,42 +151,40 @@ class DatasetPreparer:
 
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
-        with ProgressBar(dt=10):
+        vocab = load_vocabulary(paths_cfg.tokenized)
+
+        with ProgressBar(dt=1):
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
                     "features_pretrain",
                 )
             )
+            df = df.set_index(PID_COL, drop=True)
+
             if pids is not None:
-                df = filter_df_by_pids(df, pids)
+                df = df.loc[pids]
+
+            background_length = get_background_length_dd(df, vocab)
+            df = df.groupby(PID_COL, group_keys=False).apply(
+                truncate_patient_dd,
+                max_len=data_cfg.truncation_len,
+                background_length=background_length,
+                sep_token=vocab["[SEP]"],
+                meta=df._meta,
+            )
+            df = df.reset_index(drop=False)
             df = df.compute()
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
 
-        # Excluding short sequences
         logger.info("Excluding short sequences")
         background_length = get_background_length(data, vocab)
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
-        )
-
-        # Truncation
-        non_priority_tokens = (
-            None
-            if data_cfg.get("low_priority_prefixes", None) is None
-            else get_non_priority_tokens(vocab, data_cfg.low_priority_prefixes)
-        )
-        data.patients = data.process_in_parallel(
-            truncate_patient,
-            max_len=data_cfg.truncation_len,
-            background_length=background_length,
-            sep_token=vocab["[SEP]"],
-            non_priority_tokens=non_priority_tokens,
         )
 
         # Normalize segments
@@ -207,3 +206,40 @@ class DatasetPreparer:
         if paths_cfg.get("cohort"):
             pids = set(torch.load(join(paths_cfg.cohort, PID_FILE)))
         return pids
+
+
+def truncate_patient_dd(
+    pdf: pd.DataFrame, max_len: int, background_length: int, sep_token: str
+) -> pd.DataFrame:
+    """
+    Truncate rows for one patient's data to `max_len`,
+    preserving:
+      - The first `background_length` items at the start
+      - The tail until reaching `max_len`.
+    If the boundary item is the SEP token, shift the tail by 1.
+
+    `pdf` is a subset of rows for a single PID.
+    """
+    # Optional: sort by abspos if needed
+    pdf = pdf.sort_values("abspos", ascending=True)
+
+    total_length = len(pdf)
+    if total_length <= max_len:
+        return pdf
+
+    tail_length = max_len - background_length
+
+    # Get the row in the boundary position
+    if tail_length > 0:
+        boundary_idx = total_length - tail_length
+        boundary_token = pdf["concept"].iloc[boundary_idx]
+        if boundary_token == sep_token:
+            tail_length = max(tail_length - 1, 0)
+
+    # Take front + tail
+    front_df = pdf.iloc[:background_length]
+    tail_df = (
+        pdf.iloc[-tail_length:] if tail_length > 0 else pdf.iloc[0:0]
+    )  # empty DF if 0
+    truncated_df = pd.concat([front_df, tail_df])
+    return truncated_df
