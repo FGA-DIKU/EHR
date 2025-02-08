@@ -205,5 +205,5 @@ class DatasetPreparer:
     def load_cohort(paths_cfg):
         pids = None
         if paths_cfg.get("cohort"):
-            pids = set(torch.load(join(paths_cfg.cohort, PID_FILE)))
+            pids = torch.load(join(paths_cfg.cohort, PID_FILE))
         return pids
