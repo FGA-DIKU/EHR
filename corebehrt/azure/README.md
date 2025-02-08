@@ -80,11 +80,24 @@ from corebehrt.azure import environment
 environment.build()
 ```
 
+### Azure configuration
+
+When running on Azure, you should create/modify an `.amlignore` file in the root folder to exclude unnecessary directories from being uploaded to the compute instance. Create the file with the following contents:
+
+```text
+tests/
+example_data/
+notebooks/
+```
+
+This will speed up job submission, and reduce unnecessary data transfer.
+
 ### Running jobs (script)
 
 Each CoreBEHRT main can be run from a script/notebook as well:
 
 ```python
+
 from corebehrt.azure import util
 from corebehrt.azure.components import <main_module>
 
@@ -94,3 +107,4 @@ util.run_job(job, <experiment>)
 ```
 
 where `<main_module>` is `create_data`, `create_outcomes`, `pretrain` or `finetune_cv`.
+
