@@ -6,7 +6,7 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
-  cohort: ./outputs/cohort
+  cohort: ./outputs/cohort # path to cohort directory
   # test_pids: pids_path # path to file with pids to use for test set
 
   # tokenized_file: "features_finetune.pt" # can also be a list

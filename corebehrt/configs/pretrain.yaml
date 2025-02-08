@@ -12,7 +12,7 @@ paths:
   # restart_model: ... # Use for restarting from checkpoint
 
   ## optional
-  # cohort: ... # path to a file containing pids to use for pretraining
+  # cohort: ... # path to cohort directory
 
 ## OUTPUTS
   model: ./outputs/pretraining # Save model/outputs to this folder
