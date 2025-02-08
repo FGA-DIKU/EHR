@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
+from transformers import ModernBertConfig
+from transformers.models.modernbert.modeling_modernbert import ModernBertEmbeddings
 
 from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_MULTIPLIER,
@@ -11,71 +13,80 @@ from corebehrt.constants.model import (
 )
 
 
-class EhrEmbeddings(nn.Module):
+class EhrEmbeddings(ModernBertEmbeddings):
     """
-    Forward inputs:
-        input_ids: torch.LongTensor             - (batch_size, sequence_length)
-        token_type_ids: torch.LongTensor        - (batch_size, sequence_length)
-        position_ids: dict(str, torch.Tensor)   - (batch_size, sequence_length)
-            We abuse huggingface's standard position_ids to pass additional information (age, abspos)
-            This makes BertModel's forward method compatible with our EhrEmbeddings
-
-    Config:
-        vocab_size: int                         - size of the vocabulary
-        hidden_size: int                        - size of the hidden layer
-        type_vocab_size: int                    - size of max segments
-        layer_norm_eps: float                   - epsilon for layer normalization
-        hidden_dropout_prob: float              - dropout probability
+    Extends ModernBertEmbeddings to also handle:
+      - Time2Vec embeddings for age/abspos
+      - segment (token_type) embeddings
+      - use similar compilation technique as in ModernBertModel
     """
 
-    def __init__(
-        self,
-        vocab_size: int,
-        hidden_size: int,
-        type_vocab_size: int,
-        embedding_dropout: float,
-    ):
-        super().__init__()
-        self.LayerNorm = nn.LayerNorm(hidden_size)
-        self.dropout = nn.Dropout(embedding_dropout)
-
-        # Initalize embeddings
-        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
+    def __init__(self, config: ModernBertConfig):
+        super().__init__(config)
         self.age_embeddings = Time2Vec(
-            hidden_size,
+            config.hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
         self.abspos_embeddings = Time2Vec(
-            hidden_size,
+            config.hidden_size,
             init_scale=TIME2VEC_ABSPOS_MULTIPLIER,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
-        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
+        self.segment_embeddings = nn.Embedding(
+            config.type_vocab_size, config.hidden_size
+        )
+
+    @torch.compile(dynamic=True)
+    def compiled_embeddings(
+        self,
+        input_ids: torch.LongTensor,
+        segment_ids: torch.LongTensor,
+        age_float: torch.FloatTensor,
+        abspos_float: torch.FloatTensor,
+    ) -> torch.Tensor:
+        concept_embeds = self.tok_embeddings(input_ids)
+        segment_embeds = self.segment_embeddings(segment_ids)
+        age_embeds = self.age_embeddings(age_float)
+        abspos_embeds = self.abspos_embeddings(abspos_float)
+
+        # Sum all embeddings before normalization
+        hidden_states = concept_embeds + segment_embeds + age_embeds + abspos_embeds
+        return self.drop(self.norm(hidden_states))
 
     def forward(
         self,
-        input_ids: torch.LongTensor,  # concepts
-        token_type_ids: torch.LongTensor = None,  # segments
-        position_ids: Dict[str, torch.Tensor] = None,  # age and abspos
-        inputs_embeds: torch.Tensor = None,
+        input_ids: Optional[torch.LongTensor] = None,
+        segment_ids: Optional[torch.LongTensor] = None,
+        age_float: Optional[torch.FloatTensor] = None,
+        abspos_float: Optional[torch.FloatTensor] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
         **kwargs
     ) -> torch.Tensor:
         if inputs_embeds is not None:
-            return inputs_embeds
+            hidden_states = inputs_embeds
+        else:
+            if self.config.reference_compile:
+                # Use compiled version that handles all embeddings at once
+                hidden_states = self.compiled_embeddings(
+                    input_ids, segment_ids, age_float, abspos_float
+                )
+            else:
+                # Non-compiled path
+                concept_embeds = self.tok_embeddings(input_ids)
+                segment_embeds = self.segment_embeddings(segment_ids)
+                age_embeds = self.age_embeddings(age_float)
+                abspos_embeds = self.abspos_embeddings(abspos_float)
 
-        embeddings = self.concept_embeddings(input_ids)
+                # Sum all embeddings before normalization
+                hidden_states = (
+                    concept_embeds + segment_embeds + age_embeds + abspos_embeds
+                )
+                hidden_states = self.drop(self.norm(hidden_states))
 
-        embeddings += self.segment_embeddings(token_type_ids)
-        embeddings += self.age_embeddings(position_ids["age"])
-        embeddings += self.abspos_embeddings(position_ids["abspos"])
-
-        embeddings = self.LayerNorm(embeddings)
-        embeddings = self.dropout(embeddings)
-
-        return embeddings
+        return hidden_states
 
 
 class Time2Vec(torch.nn.Module):

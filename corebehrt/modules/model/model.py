@@ -9,23 +9,17 @@ from corebehrt.modules.model.heads import FineTuneHead, MLMHead
 class BertEHREncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
-        self.embeddings = EhrEmbeddings(
-            vocab_size=config.vocab_size,
-            hidden_size=config.hidden_size,
-            type_vocab_size=config.type_vocab_size,
-            embedding_dropout=config.embedding_dropout,
-        )
+        self.embeddings = EhrEmbeddings(config)
 
     def forward(self, batch: dict):
         input_ids = batch["concept"]
-        token_type_ids = batch["segment"]
         attention_mask = torch.ones_like(input_ids)
-        position_ids = {key: batch[key] for key in ["age", "abspos"]}
 
         inputs_embeds = self.embeddings(
             input_ids=input_ids,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
+            segment_ids=batch["segment"],
+            age_float=batch["age"],
+            abspos_float=batch["abspos"],
         )
 
         return super().forward(
