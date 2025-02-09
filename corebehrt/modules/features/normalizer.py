@@ -21,7 +21,15 @@ class ValuesNormalizer:
                 )
             )
         )
-        return concepts
+
+        # Add index + order
+        concepts["index"] = concepts.index
+        values = concepts.dropna(subset=["RESULT"])
+        values["CONCEPT"] = values["RESULT"]
+        concepts["order"] = 0
+        values["order"] = 1
+        concatted = dd.concat([concepts, values])
+        return concatted.drop(columns=["RESULT"], axis=1)
 
     @staticmethod
     def min_max_normalize(series: dd.groupby.SeriesGroupBy, num_bins=100) -> dd.Series:

@@ -10,7 +10,7 @@ from corebehrt.modules.features.excluder import Excluder
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
-from corebehrt.modules.features.values import ValueCreator
+# from corebehrt.modules.features.values import ValueCreator
 from corebehrt.modules.features.normalizer import ValuesNormalizer
 
 
@@ -50,10 +50,9 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     with ProgressBar(dt=1):
         if "values" in cfg.features:
             concepts = ValuesNormalizer.min_max_normalize_results(
-                concepts, num_bins=self.value_creator_kwargs.get("num_bins", 100)
+                concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100)
             )
             cfg.features.pop("values")
-
         feature_creator = FeatureCreator(**cfg.features)
         features = feature_creator(patients_info, concepts)
 

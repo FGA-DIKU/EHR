@@ -16,7 +16,7 @@ import pyarrow.parquet as pq
 
 DEFAULT_N = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
-DEFAULT_WRITE_DIR = "tmp/example_data_large"
+DEFAULT_WRITE_DIR = "tmp/example_data_w_labs"
 DEFAULT_BATCH_SIZE = 200_000
 
 
@@ -192,7 +192,7 @@ def generate_concepts_batch(
 
     if result_col:
         results = np.random.randint(100, 200, size=len(repeated_patients_info))
-        concepts_data["RESULT"] = results
+        concepts_data["RESULT"] = results.astype(str)
 
     # Filter out rows where TIMESTAMP is less than BIRTHDATE
     concepts_data = concepts_data[

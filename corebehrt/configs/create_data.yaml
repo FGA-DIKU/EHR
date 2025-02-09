@@ -12,7 +12,6 @@ loader:
     diagnose,
     medication,
     labtest,
-    procedure,
   ]
   include_values: [labtest]
 
