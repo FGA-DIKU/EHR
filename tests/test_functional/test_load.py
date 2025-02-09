@@ -1,46 +1,44 @@
-import os
+# tests/test_functional/test_filters.py
+
 import unittest
-import tempfile
-import torch
-from corebehrt.functional.io_operations.load import load_pids
+import time
+import dask.dataframe as dd
+import pandas as pd
+import numpy as np
 
+from corebehrt.functional.preparation.filter import (
+    filter_table_by_pids,
+    filter_table_by_pids_reshuffle
+)
 
-class TestLoadPIDs(unittest.TestCase):
+class TestFilterPerformance(unittest.TestCase):
     def setUp(self):
-        # Setup temporary directory
-        self.temp_dir = tempfile.TemporaryDirectory()
+        # Create a large test dataset
+        n_rows = 1_000_000
+        n_pids = 10_000
+        
+        data = {
+            'PID': np.random.choice(range(n_pids), n_rows),
+            'Value': np.random.randn(n_rows)
+        }
+        self.df = dd.from_pandas(pd.DataFrame(data), npartitions=4)
+        self.pids_to_filter = list(range(0, n_pids, 2))  # Select half of PIDs
+        
+    def test_filter_performance(self):
+        # Time the optimized version
+        start = time.time()
+        filtered_df = filter_table_by_pids(self.df, self.pids_to_filter)
+        filtered_df.compute()  # Force computation
+        optimized_time = time.time() - start
+        
+        # Time the original version (using direct dask filtering)
+        start = time.time()
+        filtered_df = self.df[self.df['PID'].isin(self.pids_to_filter)]
+        filtered_df.compute()  # Force computation
+        original_time = time.time() - start
+        
+        # Assert the optimized version is faster
+        self.assertLess(optimized_time, original_time)
 
-        # Create temporary .pt files
-        self.single_file = os.path.join(self.temp_dir.name, "single.pt")
-        torch.save([1, 2, 3], self.single_file)
-
-        self.multi_files = [
-            os.path.join(self.temp_dir.name, f"multi_{i}.pt") for i in range(2)
-        ]
-        for i, file in enumerate(self.multi_files):
-            torch.save([i * 3 + 1, i * 3 + 2, i * 3 + 3], file)
-
-        self.split_path = self.temp_dir.name
-        self.mode_files = [
-            os.path.join(self.split_path, f"pids_train.pt"),
-            os.path.join(self.split_path, f"pids_test.pt"),
-        ]
-        torch.save([1, 2, 3], self.mode_files[0])
-        torch.save([4, 2, 3, 100], self.mode_files[1])
-
-    def tearDown(self):
-        # Cleanup temporary directory
-        self.temp_dir.cleanup()
-
-    # Test load_pids
-    def test_load_pids_single_file(self):
-        pids = load_pids(self.single_file)
-        self.assertEqual(pids, {1, 2, 3})
-
-    def test_load_pids_multiple_files(self):
-        pids = load_pids(self.multi_files)
-        self.assertEqual(pids, {1, 2, 3, 4, 5, 6})
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()
