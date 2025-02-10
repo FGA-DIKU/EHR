@@ -162,10 +162,9 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             )
-            df = df.set_index(PID_COL, drop=True)
-
             if pids is not None:
-                df = df.loc[pids]
+                df = filter_df_by_pids(df, pids)
+            df = df.set_index(PID_COL, drop=True)
             df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             df = df.compute()
