@@ -25,7 +25,4 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
-    # Parse args and update config
-    util.prepare_config(INPUTS, OUTPUTS)
-    # Run command
-    pretrain.main_train(util.AZURE_CONFIG_FILE)
+    util.run_main(pretrain.main_train, INPUTS, OUTPUTS)
