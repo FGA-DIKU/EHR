@@ -1,5 +1,3 @@
-from corebehrt.azure.util import is_azure_available
-
 MLFLOW_AVAILABLE = False
 
 try:
@@ -13,10 +11,10 @@ except:
 
 def is_mlflow_available() -> bool:
     """
-    Checks if azure and mlflow modules are available.
+    Checks if mlflow module is available.
     """
     global MLFLOW_AVAILABLE
-    return is_azure_available() and MLFLOW_AVAILABLE
+    return MLFLOW_AVAILABLE
 
 
 def start_run():
