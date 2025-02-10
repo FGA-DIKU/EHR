@@ -14,48 +14,6 @@ def filter_with_index_loc(df, pids):
     df = df.set_index("PID", drop=True)
     df = df.loc[pids]
     df = df.reset_index(drop=False)
-
-    end_time = time.time()
-    return end_time - start_time
-
-
-def filter_with_isin(df, pids):
-    """Filter using isin approach"""
-    start_time = time.time()
-
-    df = df[df["PID"].isin(pids)]
-
-    end_time = time.time()
-    return end_time - start_time
-
-
-def filter_with_isin_with_index(df, pids):
-    """Filter using isin approach with index"""
-    start_time = time.time()
-    df = df.PID.isin(pids)
-    df = df.set_index("PID", drop=True)
-    df = df.reset_index(drop=False)
-    df = df.compute()
-    end_time = time.time()
-    return end_time - start_time
-
-
-import argparse
-import time
-
-import dask.dataframe as dd
-import numpy as np
-from dask.diagnostics import ProgressBar
-from generate_features import create_large_dataframe
-
-
-def filter_with_index_loc(df, pids):
-    """Filter using set_index + loc approach"""
-    start_time = time.time()
-
-    df = df.set_index("PID", drop=True)
-    df = df.loc[pids]
-    df = df.reset_index(drop=False)
     df = df.compute()
     end_time = time.time()
     return end_time - start_time
@@ -96,6 +54,7 @@ def main(n_runs=5, n_patients=10_000, mean_events_per_patient=10, sample_size=10
         n_patients=n_patients, mean_events_per_patient=mean_events_per_patient
     )
     df_copy = df.copy(deep=True)
+    df_copy2 = df.copy(deep=True)
     # Convert to Dask DataFrame
 
     with ProgressBar():
@@ -106,17 +65,19 @@ def main(n_runs=5, n_patients=10_000, mean_events_per_patient=10, sample_size=10
             )
             df_dask = dd.from_pandas(df, npartitions=100)
             df_dask_copy = dd.from_pandas(df_copy, npartitions=100)
+            df_dask_copy2 = dd.from_pandas(df_copy2, npartitions=100)
+
             # Test isin approach
-            isin_time = filter_with_isin(df_dask_copy, test_pids)
+            isin_time = filter_with_isin(df_dask, test_pids)
             isin_times.append(isin_time)
 
             # Test index+loc approach
-            index_loc_time = filter_with_index_loc(df_dask, test_pids)
+            index_loc_time = filter_with_index_loc(df_dask_copy, test_pids)
             index_loc_times.append(index_loc_time)
 
             # Test loc if index is already set
             loc_if_index_already_set_time = filter_with_loc_if_index_already_set(
-                df_dask, test_pids
+                df_dask_copy2, test_pids
             )
             loc_if_index_already_set_times.append(loc_if_index_already_set_time)
 
