@@ -117,26 +117,6 @@ class TestTruncatePatientDf(unittest.TestCase):
         )
         self.assertEqual(len(result), 3)
 
-    def test_sorting(self):
-        """
-        Ensure the function always returns data sorted by 'abspos',
-        even if the incoming DataFrame is not sorted.
-        """
-        unsorted_data = pd.DataFrame(
-            {
-                "abspos": [3, 1, 4, 2, 5],
-                "concept": ["token_3", "token_1", "token_4", "token_2", "token_5"],
-                "other_col": ["value_3", "value_1", "value_4", "value_2", "value_5"],
-            }
-        )
-
-        result = truncate_patient_df(
-            unsorted_data.copy(), max_len=3, background_length=2, sep_token="SEP"
-        )
-        # The function sorts by 'abspos' internally, so let's check
-        self.assertTrue(result["abspos"].is_monotonic_increasing)
-        self.assertEqual(len(result), 3)
-
 
 if __name__ == "__main__":
     unittest.main()

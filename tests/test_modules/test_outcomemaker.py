@@ -1,10 +1,10 @@
 import unittest
+from datetime import datetime
 
 import pandas as pd
 
+from corebehrt.functional.utils.time import get_abspos_from_origin_point
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
-from corebehrt.functional.preparation.utils import get_abspos_from_origin_point
-from datetime import datetime
 
 
 class TestOutcomeMaker(unittest.TestCase):

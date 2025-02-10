@@ -78,6 +78,7 @@ class DatasetPreparer:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
+        self._check_sorted(df)
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
@@ -162,21 +163,13 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             )
-            df = df.set_index(PID_COL, drop=True)
-
             if pids is not None:
-                df = df.loc[pids]
-
-            background_length = get_background_length_dd(df, vocab)
-            df = df.groupby(PID_COL, group_keys=False).apply(
-                truncate_patient_df,
-                max_len=data_cfg.truncation_len,
-                background_length=background_length,
-                sep_token=vocab["[SEP]"],
-                meta=df._meta,
-            )
+                df = filter_df_by_pids(df, pids)
+            df = df.set_index(PID_COL, drop=True)
+            df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             df = df.compute()
+        self._check_sorted(df)
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
@@ -202,8 +195,36 @@ class DatasetPreparer:
         return data
 
     @staticmethod
+    def _truncate(
+        df: dd.DataFrame, vocab: dict, truncation_length: int
+    ) -> dd.DataFrame:
+        """
+        Truncate the dataframe to the truncation length.
+        """
+        background_length = get_background_length_dd(df, vocab)
+
+        df = df.groupby(PID_COL, group_keys=False).apply(
+            truncate_patient_df,
+            max_len=truncation_length,
+            background_length=background_length,
+            sep_token=vocab["[SEP]"],
+            meta=df._meta,
+        )
+        return df
+
+    @staticmethod
     def load_cohort(paths_cfg):
         pids = None
         if paths_cfg.get("cohort"):
-            pids = set(torch.load(join(paths_cfg.cohort, PID_FILE)))
+            pids = torch.load(join(paths_cfg.cohort, PID_FILE))
         return pids
+
+    @staticmethod
+    def _check_sorted(df: pd.DataFrame, n_patients: int = 10):
+        """Verify abspos sorting within each sampled patient"""
+        sample_patients = df[PID_COL].unique()[:n_patients]
+        for pid in sample_patients:
+
+            patient_df = df[df[PID_COL] == pid]
+            if not patient_df[ABSPOS_COL].is_monotonic_increasing:
+                raise ValueError(f"Patient {pid} has unsorted abspos values")

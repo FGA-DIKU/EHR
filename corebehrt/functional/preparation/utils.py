@@ -19,7 +19,7 @@ def get_background_length_dd(df: dd.DataFrame, vocabulary: dict) -> int:
     Get the length of the background sentence for a dask DataFrame, including first SEP token.
 
     Args:
-        df: Dask DataFrame containing patient data
+        df: Dask DataFrame containing patient data. Assumes PID to be index
         vocabulary: Dictionary mapping tokens to IDs
 
     Returns:

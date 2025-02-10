@@ -2,16 +2,17 @@
 
 import logging
 
-from corebehrt.functional.features.split import (
-    load_train_val_split,
-    split_pids_into_train_val,
-)
+from corebehrt.functional.features.split import split_pids_into_train_val
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.io_operations.save import save_pids_splits
 from corebehrt.functional.setup.args import get_args
 from corebehrt.functional.setup.model import load_model_cfg_from_checkpoint
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
-from corebehrt.main.helper.pretrain import load_checkpoint_and_epoch
+from corebehrt.main.helper.pretrain import (
+    load_checkpoint_and_epoch,
+    load_train_val_split,
+    get_splits_path,
+)
 from corebehrt.modules.preparation.dataset import MLMDataset
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
@@ -47,9 +48,9 @@ def main_train(config_path):
     data = DatasetPreparer(cfg).prepare_pretrain_data()
 
     # Splitting data
-    predefined_splits_path = cfg.paths.get("predefined_splits", False)
-    if predefined_splits_path:
-        train_data, val_data = load_train_val_split(data, predefined_splits_path)
+    if cfg.data.get("predefined_splits", False):
+        splits_path = get_splits_path(cfg.paths)
+        train_data, val_data = load_train_val_split(data, splits_path)
     else:
         train_data, val_data = split_pids_into_train_val(
             data, cfg.data.get("val_ratio", 0.2)
