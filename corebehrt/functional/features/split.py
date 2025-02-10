@@ -96,10 +96,11 @@ def get_n_splits_cv_pids(
     if n_splits == 1:
         # For single split, use 80-20 split by default
         split_idx = int((1 - val_split) * len(train_val_pids))
-        np.random.shuffle(train_val_pids)
+        rng = np.random.RandomState(seed)
+        rng.shuffle(train_val_pids)
         yield train_val_pids[:split_idx].tolist(), train_val_pids[split_idx:].tolist()
     else:
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
         for train_idx, val_idx in kf.split(train_val_pids):
             train_pids = train_val_pids[train_idx].tolist()
             val_pids = train_val_pids[val_idx].tolist()
