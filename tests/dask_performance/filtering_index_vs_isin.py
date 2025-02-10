@@ -14,7 +14,7 @@ def filter_with_index_loc(df, pids):
     df = df.set_index("PID", drop=True)
     df = df.loc[pids]
     df = df.reset_index(drop=False)
-
+    df = df.compute()
     end_time = time.time()
     return end_time - start_time
 
@@ -24,12 +24,12 @@ def filter_with_isin(df, pids):
     start_time = time.time()
 
     df = df[df["PID"].isin(pids)]
-
+    df = df.compute()
     end_time = time.time()
     return end_time - start_time
 
 
-def main(n_runs=5, n_patients=10_000, mean_events_per_patient=10):
+def main(n_runs=5, n_patients=10_000, mean_events_per_patient=10, sample_size=10_000):
     index_loc_times = []
     isin_times = []
 
@@ -37,25 +37,23 @@ def main(n_runs=5, n_patients=10_000, mean_events_per_patient=10):
     df = create_large_dataframe(
         n_patients=n_patients, mean_events_per_patient=mean_events_per_patient
     )
+    df_copy = df.copy(deep=True)
     # Convert to Dask DataFrame
-    df = dd.from_pandas(df, npartitions=100)
-    # Test both approaches with same data
-    test_pids = np.random.choice(df["PID"].compute().unique(), size=1000, replace=False)
 
     with ProgressBar():
         for _ in range(n_runs):
-            # Create fresh copy of dataframe for each test
-            df_copy = df.copy()
-
+            # Test both approaches with same data
+            test_pids = np.random.choice(
+                df["PID"].unique(), size=sample_size, replace=False
+            )
+            df_dask = dd.from_pandas(df, npartitions=100)
+            df_dask_copy = dd.from_pandas(df_copy, npartitions=100)
             # Test isin approach
-            isin_time = filter_with_isin(df_copy, test_pids)
+            isin_time = filter_with_isin(df_dask_copy, test_pids)
             isin_times.append(isin_time)
 
-            # Create fresh copy of dataframe for each test
-            df_copy = df.copy()
-
             # Test index+loc approach
-            index_loc_time = filter_with_index_loc(df_copy, test_pids)
+            index_loc_time = filter_with_index_loc(df_dask, test_pids)
             index_loc_times.append(index_loc_time)
 
     print(
@@ -83,6 +81,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n-runs", type=int, default=5, help="Number of test runs (default: 5)"
     )
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=10_000,
+        help="Number of PIDs to sample for filtering (default: 10,000)",
+    )
 
     args = parser.parse_args()
 
@@ -90,4 +94,5 @@ if __name__ == "__main__":
         n_runs=args.n_runs,
         n_patients=args.n_patients,
         mean_events_per_patient=args.events_per_patient,
+        sample_size=args.sample_size,
     )
