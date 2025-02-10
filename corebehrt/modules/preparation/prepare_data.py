@@ -53,7 +53,7 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
-        pids = self.load_cohort(paths_cfg)
+        pids = self._load_cohort(paths_cfg)
 
         # Load index dates and convert to abspos
         index_dates = pd.read_csv(
@@ -74,10 +74,10 @@ class DatasetPreparer:
                     "features_finetune",
                 )
             )
-            if pids is not None:
-                df = filter_df_by_pids(df, pids)
+            df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
+            self._check_sorted(df)
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
@@ -151,7 +151,7 @@ class DatasetPreparer:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
-        pids = self.load_cohort(paths_cfg)
+        pids = self._load_cohort(paths_cfg)
         # Load tokenized data + vocab
         vocab = load_vocabulary(paths_cfg.tokenized)
 
@@ -162,13 +162,16 @@ class DatasetPreparer:
                     "features_pretrain",
                 )
             )
-            df = df.set_index(PID_COL, drop=True)
+            df = filter_df_by_pids(df, pids)
 
-            if pids is not None:
-                df = df.loc[pids]
+            df = df.set_index(PID_COL, drop=True)
             df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             df = df.compute()
+
+            self._check_sorted(
+                df
+            )  # in case changes to earlier parts of the pipeline will break this
 
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
@@ -213,8 +216,17 @@ class DatasetPreparer:
         return df
 
     @staticmethod
-    def load_cohort(paths_cfg):
+    def _load_cohort(paths_cfg):
         pids = None
         if paths_cfg.get("cohort"):
             pids = torch.load(join(paths_cfg.cohort, PID_FILE))
         return pids
+
+    @staticmethod
+    def _check_sorted(df: pd.DataFrame):
+        """Check if abspos is sorted within pid for a sample of patients"""
+        sample_patients = df[PID_COL].unique()[:10]
+        for pid in sample_patients:
+            patient_df = df[df[PID_COL] == pid]
+            if not patient_df[ABSPOS_COL].is_monotonic_increasing:
+                raise ValueError(f"Patient {pid} has unsorted abspos values")
