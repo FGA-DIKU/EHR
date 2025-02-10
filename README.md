@@ -25,7 +25,6 @@ COREBEHRT helps researchers and data scientists preprocess EHR data, train model
     - [3. Create Outcomes](#3-create-outcomes)
     - [3.1 Create Cohort](#31-create-cohort)
     - [4. Finetune](#4-finetune)
-      - [Out-of-Time Evaluation](#out-of-time-evaluation)
   - [Azure Integration](#azure-integration)
   - [Contributing](#contributing)
   - [License](#license)
@@ -67,6 +66,7 @@ source .venv/bin/activate
 
 ## Pipeline
 
+Below is a high-level description of the steps in the COREBEHRT pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
 The pipeline can be run from the root directory by executing the following commands:
 
 ```bash
@@ -80,115 +80,47 @@ The pipeline can be run from the root directory by executing the following comma
 
 ### 1. Create Data
 
-This step converts **raw EHR data** into **tokenized features** suitable for model training. The core tasks include:
+- **Goal**: Convert **formatted EHR data** into **tokenized features** suitable for model training.
+- **Key Tasks**:
+  - **Vocabulary Mapping**: Translates raw medical concepts (e.g., diagnoses, procedures) into numerical tokens.
+  - **Temporal Alignment**: Converts timestamps into relative positions (e.g., hours or days from an index date).
+  - **Incorporate Background Variables**: Incorporates static features such as age, gender, or other demographics.
+- **Efficient Output**: Produces a structured parquet format that can be rapidly loaded in subsequent steps.
 
-- **Vocabulary Mapping**: Translates raw medical concepts (e.g., diagnoses, procedures) into numerical tokens.
-- **Temporal Alignment**: Converts timestamps into relative positions (e.g., hours or days from an index date).
-- **Patient Segmentation**: Splits patients into fixed-length segments for model input.
-- **Background Variables**: Incorporates static features such as age, gender, or other demographics.
-- **Efficient Output**: Produces a structured binary or parquet format that can be rapidly loaded in subsequent steps.
-
-If you need a starting point for raw EHR data formatting, consider using the [EHR_PREPROCESS](https://github.com/kirilklein/ehr_preprocess.git) repository to generate pre-cleaned CSV files. For example, you might have:
-
-- **`patients_info.csv`** (holding patient-level metadata)
-
-  | PID  | BIRTHDATE   | DEATHDATE   | GENDER | …   |
-  |------|-------------|-------------|--------|-----|
-  | p1   | 1980-01-01  | 2022-06-01  | M      | …   |
-  | p2   | 1975-03-12  | NaN         | F      | …   |
-  | …    | …           | …           | …      | …   |
-
-- **`concept.diagnose.csv`, `concept.procedure.csv`, `concept.medication.csv`, `concept.lab.csv`, …** (event-level data)
-
-  | TIMESTAMP   | PID  | ADMISSION_ID | CONCEPT  | …   |
-  |-------------|------|--------------|----------|-----|
-  | 2012-01-05  | p1   | adm101       | D123     | …   |
-  | 2012-01-05  | p1   | adm101       | D124     | …   |
-  | 2015-03-20  | p2   | adm205       | D786     | …   |
-  | …           | …    | …            | …        | …   |
-
-These files feed into the **Create Data** pipeline, which merges, tokenizes, and structures the data for subsequent **Pretrain** and **Finetune** steps.
+If you need a starting point for raw EHR data formatting, consider using the [EHR_PREPROCESS](https://github.com/kirilklein/ehr_preprocess.git) repository to generate pre-cleaned CSV files.
 
 ### 2. Pretrain
 
-Trains the base BERT model on the tokenized medical data:
-
-- Uses masked language modeling to learn contextual representations
-- Processes large volumes of unlabeled EHR sequences
-- Captures temporal and semantic relationships between medical concepts
-- Saves checkpoints for downstream finetuning
-- Supports distributed training on multiple GPUs
+- **Goal**: Train a ModernBERT model via masked language modeling.
+- **Key Tasks**:
+  - Large scale self-supervised training on EHR sequences
+  - Embedding temporal relationships between medical events
+  - Saves checkpoints for downstream finetuning
 
 ### 3. Create Outcomes
 
-Generates outcome labels from the formatted data for supervised learning:
-
-- Processes specified medical conditions or events as binary outcomes
-- Handles time-to-event data with censoring
-- Stores outcomes aligned with absolute temporal positions
-- Supports multiple concurrent outcome definitions
-- Includes validation checks for outcome integrity
+- **Goal**: Generate outcomes from the formatted data for supervised learning.
+- **Key Tasks**:
+  - Search for specific concepts (medications, diagnoses, procedures) in the data
+  - Optionally create exposure definitions for more complex study designs
 
 ### 3.1 Create Cohort
 
-Defines the study population by:
+- **Goal**: Define the study population
+- **Key Tasks**:
 
-- Applying inclusion/exclusion criteria based on diagnoses, procedures, or demographics
-- Generating index dates for temporal alignment of patient trajectories
-- Supporting both point-in-time and period-based cohort definitions
-- Enabling stratified sampling of sub-populations
-- Maintaining train/validation/test splits
+  - Apply inclusion/exclusion criteria (e.g. age, prior outcomes)
+  - Generate index dates for each patient
+  - Produce folds and test set for cross-validation
 
 ### 4. Finetune
 
-Adapts the pretrained model for specific prediction tasks:
+- **Goal**: Adapt the pretrained model for specific binary outcomes
+- **Key Tasks**:
+  - K-fold cross-validation
+  - Includes early stopping and evaluation on test set
 
-- Performs supervised learning on defined binary outcomes
-- Implements k-fold cross-validation with stratification
-- Supports both classification and time-to-event prediction
-- Enables transfer learning from pretrained checkpoints
-- Includes early stopping and model selection based on validation metrics
-- Allows specification of excluded patient IDs for held-out test sets
-
-#### Out-of-Time Evaluation
-
-To perform temporal validation (out-of-time evaluation) of your models, follow these steps:
-
-1. **Split Data**
-   - Use `select_cohort` to create separate test and cross-validation sets
-   - Use absolute index date:
-   - Example configuration:
-
-     ```yaml
-     absolute:
-       year: 2015
-       month: 1
-       day: 26
-     ```
-
-2. **Train Model**
-   - For out of time training (not implemented yet)
-     - Set outcomes_val to have a shifted censoring/start follow up/end follow up for validation set
-   - During cross-validation training, set an end-of-follow-up date
-   - This date acts as a temporal cutoff, ignoring all outcomes that occur after it
-   - Example configuration:
-  
-     ```yaml
-     n_hours_censoring: 0        # censor at index_date
-     n_hours_start_follow_up: 100    # start 100 hours after index_date
-     n_hours_end_follow_up: 10000    # end 10k hours after index_date
-     ```
-
-3. **Validate Model**
-   - Run validation on the test set using the validation script
-   - Move censoring shift and start follow-up as needed, e.g. after the training cutoff date
-   - Example configuration:
-  
-     ```yaml
-     n_hours_censoring: 10000        # censor till end of train cutoff
-     n_hours_start_follow_up: 10100  # start 10k+100 hours after train cutoff
-     n_hours_end_follow_up: null     # end follow up at the end of test set
-     ```
+For a detailed overview of the pipeline, see the [main README](corebehrt/main/README.md).
 
 ## Azure Integration
 
