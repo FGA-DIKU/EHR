@@ -430,7 +430,7 @@ class EHRTrainer:
         )
 
     def run_log(self, name, value, step=None):
-        if azure.mlflow_available():
+        if azure.is_mlflow_available():
             azure.log_metric(name, value, step=step)
         else:
             self.log(f"{name}: {value}")
