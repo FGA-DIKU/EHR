@@ -8,6 +8,11 @@ except:
     pass
 
 
+def mlflow_available():
+    global MLFLOW_AVAILABLE
+    return MLFLOW_AVAILABLE
+
+
 def start_run():
     if MLFLOW_AVAILABLE:
         mlflow.start_run()
