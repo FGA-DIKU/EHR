@@ -166,17 +166,10 @@ class DatasetPreparer:
 
             if pids is not None:
                 df = df.loc[pids]
-
-            background_length = get_background_length_dd(df, vocab)
-            df = df.groupby(PID_COL, group_keys=False).apply(
-                truncate_patient_df,
-                max_len=data_cfg.truncation_len,
-                background_length=background_length,
-                sep_token=vocab["[SEP]"],
-                meta=df._meta,
-            )
+            df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             df = df.compute()
+
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
@@ -200,6 +193,24 @@ class DatasetPreparer:
         if self.cfg.get("save_processed_data", False):
             data.save(self.processed_dir)
         return data
+
+    @staticmethod
+    def _truncate(
+        df: dd.DataFrame, vocab: dict, truncation_length: int
+    ) -> dd.DataFrame:
+        """
+        Truncate the dataframe to the truncation length.
+        """
+        background_length = get_background_length_dd(df, vocab)
+
+        df = df.groupby(PID_COL, group_keys=False).apply(
+            truncate_patient_df,
+            max_len=truncation_length,
+            background_length=background_length,
+            sep_token=vocab["[SEP]"],
+            meta=df._meta,
+        )
+        return df
 
     @staticmethod
     def load_cohort(paths_cfg):
