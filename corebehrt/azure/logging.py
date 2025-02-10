@@ -8,16 +8,16 @@ except:
     pass
 
 
-def start_run(self):
+def start_run():
     if MLFLOW_AVAILABLE:
         mlflow.start_run()
 
 
-def end_run(self):
+def end_run():
     if MLFLOW_AVAILABLE:
         mlflow.end_run()
 
 
-def log_metric(self, *args, **kwargs):
+def log_metric(*args, **kwargs):
     if MLFLOW_AVAILABLE:
         mlflow.log_metric(*args, **kwargs)
