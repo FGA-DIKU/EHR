@@ -78,6 +78,7 @@ class DatasetPreparer:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
             df = df.compute()
+        self._check_sorted(df)
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         vocab = load_vocabulary(paths_cfg.tokenized)
@@ -168,7 +169,7 @@ class DatasetPreparer:
             df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             df = df.compute()
-
+        self._check_sorted(df)
         patient_list = dataframe_to_patient_list(df)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
@@ -217,3 +218,13 @@ class DatasetPreparer:
         if paths_cfg.get("cohort"):
             pids = torch.load(join(paths_cfg.cohort, PID_FILE))
         return pids
+
+    @staticmethod
+    def _check_sorted(df: pd.DataFrame, n_patients: int = 10):
+        """Verify abspos sorting within each sampled patient"""
+        sample_patients = df[PID_COL].unique()[:n_patients]
+        for pid in sample_patients:
+
+            patient_df = df[df[PID_COL] == pid]
+            if not patient_df[ABSPOS_COL].is_monotonic_increasing:
+                raise ValueError(f"Patient {pid} has unsorted abspos values")

@@ -250,8 +250,6 @@ def truncate_patient_df(
 
     `pdf` is a subset of rows for a single PID.
     """
-    # Optional: sort by abspos if needed
-    pdf = pdf.sort_values("abspos", ascending=True)
     total_length = len(pdf)
     if total_length <= max_len:
         return pdf
