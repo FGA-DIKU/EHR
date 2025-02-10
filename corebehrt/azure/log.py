@@ -25,6 +25,11 @@ def end_run():
         mlflow.end_run()
 
 
+def autolog(*args, **kwargs):
+    if is_mlflow_available():
+        mlflow.autolog(*args, **kwargs)
+
+
 def log_metric(*args, **kwargs):
     if is_mlflow_available():
         mlflow.log_metric(*args, **kwargs)
