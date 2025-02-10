@@ -35,18 +35,22 @@ def split_pids_into_pt_ft_test(
     return pretrain_pids, finetune_pids, test_pids
 
 
-def split_test(pids: list, test_ratio: float) -> Tuple[list, list]:
+def split_test(pids: list, test_ratio: float, seed: int = 42) -> Tuple[list, list]:
     """Split patient IDs into train and test sets.
 
     Args:
         pids: List of patient IDs to split
         test_ratio: Fraction of patients to use for test set (between 0 and 1)
+        seed: Random seed for reproducibility
 
     Returns:
         Tuple containing:
             - train_pids: List of patient IDs for training
             - test_pids: List of patient IDs for testing
     """
+    pids = pids.copy()  # Make a copy to avoid modifying original
+    random.seed(seed)
+    random.shuffle(pids)
     n_test = int(len(pids) * test_ratio)
     test_pids = pids[:n_test]
     train_pids = pids[n_test:]
