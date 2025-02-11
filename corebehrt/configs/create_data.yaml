@@ -27,6 +27,7 @@ features:
   values:
     value_creator_kwargs: 
       num_bins: 100
+      normalize_function: corebehrt.functional.features.normalize.min_max_normalize
 
 tokenizer:
   sep_tokens: true

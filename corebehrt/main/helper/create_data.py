@@ -11,7 +11,7 @@ from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 # from corebehrt.modules.features.values import ValueCreator
-from corebehrt.modules.features.normalizer import ValuesNormalizer
+from corebehrt.modules.features.values import ValuesCreator
 
 
 def load_tokenize_and_save(
@@ -49,8 +49,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
 
     with ProgressBar(dt=1):
         if "values" in cfg.features:
-            concepts = ValuesNormalizer.min_max_normalize_results(
-                concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100)
+            concepts = ValuesCreator.bin_results(
+                concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100), normalize_function=cfg.features.values.value_creator_kwargs.get("normalize_function", None)
             )
             cfg.features.pop("values")
         feature_creator = FeatureCreator(**cfg.features)

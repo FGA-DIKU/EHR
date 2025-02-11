@@ -6,7 +6,8 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
-from corebehrt.modules.features.normalizer import ValuesNormalizer
+from corebehrt.modules.features.values import ValuesCreator
+from corebehrt.functional.features.normalize import min_max_normalize
 
 
 class TestCreators(unittest.TestCase):
@@ -83,9 +84,10 @@ class TestCreators(unittest.TestCase):
 
     def test_normalise_and_create_binned_value(self):
 
-        binned_values = ValuesNormalizer.min_max_normalize_results(
+        binned_values = ValuesCreator.bin_results(
             self.concepts,
             num_bins=100,
+            normalize_function="corebehrt.functional.features.normalize.min_max_normalize",
         ).compute()
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
@@ -112,17 +114,17 @@ class TestCreators(unittest.TestCase):
             for item in sublist
             if item is not None
         ]
-
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
 
     def test_combined_concept_input(self):
-        binned_values = ValuesNormalizer.min_max_normalize_results(
+        binned_values = ValuesCreator.bin_results(
             self.concepts_comb,
             num_bins=100,
+            normalize_function="corebehrt.functional.features.normalize.min_max_normalize",
         ).compute()
 
         sorted_concepts = list(
-            binned_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
+            binned_values.sort_values(by=["TIMESTAMP", "index", "order"]).sort_index()["CONCEPT"]
         )
 
         expected_binned_concepts = [
@@ -150,33 +152,8 @@ class TestCreators(unittest.TestCase):
             for item in sublist
             if item is not None
         ]
-        print('In the combined test')
-        print(sorted_concepts)
-        print(expected_flattened_binned_concepts)
 
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
-
-
-    # def test_create_quantile_value(self):
-    #     quantile_values = ValueCreator.add_quantile_values(
-    #         self.concepts_quantiles
-    #     ).compute()
-    #     sorted_concepts = list(
-    #         quantile_values.sort_values(by=["index", "order"]).sort_index()["CONCEPT"]
-    #     )
-    #     expected_quantile_concepts = [
-    #         [lab, "VAL_" + value if value.startswith("Q") else None]
-    #         for lab, values in self.lab_dict_quantiles.items()
-    #         for value in values
-    #     ]
-    #     expected_flattened_quantile_concepts = [
-    #         item
-    #         for sublist in expected_quantile_concepts
-    #         for item in sublist
-    #         if item is not None
-    #     ]
-
-    #     self.assertEqual(sorted_concepts, expected_flattened_quantile_concepts)
 
 
 if __name__ == "__main__":

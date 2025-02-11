@@ -34,7 +34,7 @@ class TestCreateData(TestMainScript):
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
                     "background_vars": ["GENDER"],
                     "values": {
-                        "value_creator_kwargs": {"num_bins": 100},
+                        "value_creator_kwargs": {"num_bins": 100, "normalize_function": "corebehrt.functional.features.normalize.min_max_normalize"},
                     },
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
