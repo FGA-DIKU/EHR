@@ -202,7 +202,7 @@ class FormattedDataLoader:
             (
                 self._remove_values(self._load_concept(concept_type))
                 if concept_type not in self.include_values
-                else self._load_concept(concept_type)
+                else self._load_concept(concept_type, include_values=True)
             )
             for concept_type in self.concept_types
         ]
@@ -231,7 +231,7 @@ class FormattedDataLoader:
             return concepts.drop(columns=["RESULT"])
         return concepts
 
-    def _load_concept(self, concept_type: str):
+    def _load_concept(self, concept_type: str, include_values: bool = False) -> dd.DataFrame:
         """
         Load concept data from formatted_data_dir.
         Expects TIMESTAMP column to be present.

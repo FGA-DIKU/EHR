@@ -80,7 +80,7 @@ def load_patients_info(folder: str, pattern: str = "patients_info.*") -> dd.Data
     return df
 
 
-def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
+def load_concept(folder: str, concept_type: str, include_values: bool = False) -> dd.DataFrame:
     """
     Load concept data from formatted_data_dir.
     Expects TIMESTAMP column to be present.
@@ -91,7 +91,7 @@ def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
     if file.endswith(".parquet"):
         df = dd.read_parquet(file, parse_dates=["TIMESTAMP"])
     elif file.endswith(".csv"):
-        if concept_type == "labtest":
+        if include_values:
             df = dd.read_csv(file, parse_dates=["TIMESTAMP"], dtype={"RESULT": "string"})
         else:
             df = dd.read_csv(file, parse_dates=["TIMESTAMP"])
