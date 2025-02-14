@@ -6,6 +6,7 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
+  cohort: ./outputs/cohort # path to cohort directory
   # test_pids: pids_path # path to file with pids to use for test set
 
   # tokenized_file: "features_finetune.pt" # can also be a list
@@ -32,7 +33,7 @@ data:
   cv_folds: 2 # fo splitting data into k folds
   test_split: 0.2 # only used if predefined_folds is false and test_pids is not provided
   val_split: 0.2 # only used if predefined_folds is false and cv_folds is 1
-  predefined_folds: false # using predefined folds, ignore cv_folds if true
+  predefined_folds: true # using predefined folds, ignore cv_folds if true
   truncation_len: 30
   min_len: 2 # 0 by default
 
