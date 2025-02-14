@@ -41,7 +41,7 @@ def main_finetune(config_path):
     else:
         logger.info("Randomly splitting test data")
         test_pids, train_val_pids = split_into_test_and_train_val_pids(
-            data.get_pids(), cfg.data.get("test_split", None)
+            data.get_pids(), cfg.data.get("test_split", 0)
         )
     processed_data_dir = join(cfg.paths.model, PROCESSED_DATA_DIR)
     os.makedirs(processed_data_dir, exist_ok=True)

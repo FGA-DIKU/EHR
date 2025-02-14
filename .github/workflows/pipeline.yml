@@ -45,3 +45,8 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv
+
+            - name: main.finetune_predefined
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_predefined.yaml

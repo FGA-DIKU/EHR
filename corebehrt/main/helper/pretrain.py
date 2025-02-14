@@ -70,3 +70,4 @@ def get_splits_path(path_cfg) -> str:
     splits_path = join(cohort_dir, FOLDS_FILE)
     if not exists(splits_path):
         raise ValueError(f"Splits file not found at {splits_path}")
+    return splits_path
