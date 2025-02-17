@@ -19,7 +19,6 @@ def is_mlflow_available() -> bool:
     return MLFLOW_AVAILABLE
 
 
-@contextmanager
 def start_run(name: str = None, nested: bool = False):
     """
     Starts an mlflow run. Used in the Azure wrapper and should
@@ -31,7 +30,13 @@ def start_run(name: str = None, nested: bool = False):
     if is_mlflow_available():
         return mlflow.start_run(run_name=name, nested=nested)
     else:
-        yield None
+        # Return a dummpy context manager so as to not raise an
+        # error if mlflow is not available
+        @contextmanager
+        def dummy_cm():
+            yield None
+
+        return dummy_cm
 
 
 def end_run():
