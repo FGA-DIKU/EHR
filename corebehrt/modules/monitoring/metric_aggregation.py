@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from corebehrt.azure.log import log_table
+from corebehrt.azure.log import log_metrics
 
 
 def compute_avg_metrics(metric_values: dict):
@@ -90,6 +90,11 @@ def compute_and_save_scores_mean_std(
     scores = pd.concat(scores)
     scores_mean_std = scores.groupby("metric")["value"].agg(["mean", "std"])
     date = datetime.now().strftime("%Y%m%d-%H%M")
-
     scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}"))
-    log_table(scores_mean_std, "mean_std")
+
+    # Log to Azure
+    dct = {}
+    for idx, row in scores_mean_std.iterrows():
+        for col in scores_mean_std.columns:
+            dct[f"{col}.{idx}"] = row[col]
+    log_metrics(dct)

@@ -7,7 +7,6 @@ from .log import (
     log_params,
     log_image,
     log_figure,
-    log_table,
     autolog,
 )
 
@@ -20,6 +19,5 @@ __all__ = [
     log_params,
     log_image,
     log_figure,
-    log_table,
     autolog,
 ]

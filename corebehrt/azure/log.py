@@ -140,17 +140,3 @@ def log_figure(*args, **kwargs):
     """
     if is_mlflow_available():
         mlflow.log_figure(*args, **kwargs)
-
-
-def log_table(table: pd.DataFrame, table_name: str):
-    """
-    Log a table (e.g. pandas DataFrame)
-
-    :param table: e.g. pandas DataFrame.
-    """
-    if is_mlflow_available():
-        for idx, row in table.iterrows():
-            row_dict = {f"{table_name}.{idx}": idx} | {
-                f"{table_name}.{col}": row[col] for col in table.columns
-            }
-            mlflow.log_metrics(row_dict)
