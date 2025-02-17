@@ -65,10 +65,10 @@ class FeatureCreator:
         print('Concatted ', len(features))
         # Trying saving intermediate features
         features.to_parquet(
-            cfg.paths.save_dir_intermediate, write_index=False
+            f'{save_dir}/concat_data', write_index=False
         )
 
-        features = dd.read_parquet(cfg.paths.save_dir_intermediate)
+        features = dd.read_parquet(f'{save_dir}/concat_data')
         print('Loading concatted ', len(features))
 
         features = create_age_in_years(features)

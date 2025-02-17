@@ -53,8 +53,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
                 concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100), normalize_function=cfg.features.values.value_creator_kwargs.get("normalize_function", None)
             )
             cfg.features.pop("values")
-        feature_creator = FeatureCreator(**cfg.features, save_dir=cfg.paths.features)
-        features = feature_creator(patients_info, concepts)
+        feature_creator = FeatureCreator(**cfg.features)
+        features = feature_creator(patients_info, concepts, save_dir=cfg.paths.features)
 
         features = excluder.exclude_incorrect_events(features)
 
