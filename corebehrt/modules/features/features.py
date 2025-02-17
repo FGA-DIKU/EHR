@@ -18,7 +18,6 @@ from corebehrt.functional.setup.checks import (
     check_patients_info_columns,
 )
 
-
 class FeatureCreator:
     """
     A class to create features from patient information and concepts DataFrames.
@@ -52,6 +51,7 @@ class FeatureCreator:
         self,
         patients_info: dd.DataFrame,
         concepts: dd.DataFrame,
+        save_dir: str = None,
     ) -> dd.DataFrame:
 
         check_concepts_columns(concepts)
@@ -62,14 +62,29 @@ class FeatureCreator:
         background = create_background(patients_info, self.background_vars)
         death = create_death(patients_info)
         features = dd.concat([concepts, background, death])
+        print('Concatted ', len(features))
+        # Trying saving intermediate features
+        features.to_parquet(
+            cfg.paths.save_dir_intermediate, write_index=False
+        )
+
+        features = dd.read_parquet(cfg.paths.save_dir_intermediate)
+        print('Loading concatted ', len(features))
+
         features = create_age_in_years(features)
+        print('Created age ', len(features))
         features = create_abspos(features, self.origin_point)
+        print('Created abspos ', len(features))
 
         features = assign_index_and_order(features)
+        print('Assigned index and order ', len(features))
         features = exclude_event_nans(features)
+        print('Excluded event nans ', len(features))
         features = sort_features(features)
+        print('Sorted features ', len(features))
 
         features = create_segments(features)
+        print('Created segments ', len(features))
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
 
         return features

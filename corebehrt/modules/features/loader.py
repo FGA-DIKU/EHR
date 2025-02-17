@@ -237,4 +237,4 @@ class FormattedDataLoader:
         Expects TIMESTAMP column to be present.
         Returns a dask dataframe.
         """
-        return load_concept(self.folder, concept_type)
+        return load_concept(self.folder, concept_type, include_values=include_values)
