@@ -13,6 +13,8 @@ Trains a transformer-based model on EHR sequences using **masked language modeli
 ### 3️- Create Outcome  
 Defines and extracts **clinical outcome labels** from EHR records, specifying **inclusion/exclusion criteria** for patient events.
 
+
+
 ### 4️- Select Cohort  
 Filters patients based on **age, gender, prior diagnoses, exposure, and other clinical criteria** to create a study group.
 
