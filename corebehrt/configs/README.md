@@ -13,8 +13,6 @@ Trains a transformer-based model on EHR sequences using **masked language modeli
 ### 3️- Create Outcome  
 Defines and extracts **clinical outcome labels** from EHR records, specifying **inclusion/exclusion criteria** for patient events.
 
-
-
 ### 4️- Select Cohort  
 Filters patients based on **age, gender, prior diagnoses, exposure, and other clinical criteria** to create a study group.
 
@@ -29,7 +27,7 @@ Fine-tunes the pretrained model for **predicting clinical outcomes** and evaluat
 # Common Items
 ## Logging Configuration
 
-## Purpose
+### Purpose
 This section defines how logging should be handled in the model, ensuring that execution details are recorded for debugging/ monitoring.
 
 ### Level
@@ -38,22 +36,32 @@ Defines the logging severity level.
 - **Options**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 - **Current setting**: `INFO` (Logs general system messages)
 
-### Path
-# Directory Configuration for Input and Output Data
+## Path
+### Directory Configuration for Input and Output Data
 
 This document defines the directories used for input and output data in various processes.
 
-| Parameter   | Description                          | Used In                        | Default Value                        |
+| Parameter   | Description                          | Used In                        | Order of Usage                        |
 |------------|--------------------------------------|--------------------------------|--------------------------------------|
-| **data**   | Location of input data              | `create_data`, `outcome`       | `./example_data/example_data_w_labs` |
-| **tokenized** | Directory for tokenized data    | `create_data`, `pretrain`      | `./outputs/tokenized`               |
-| **features**  | Directory for extracted features  | `create_data`, `pretrain`, `outcome` | `./outputs/features`          |
-| **outcomes**  | Directory for outcome data       | `outcome`, `fine_tune`         | `./outputs/outcomes`                |
-| **cohort**    | Directory for patient cohort data | `fine_tune`, `select_cohort`   | `./outputs/cohort`                  |
-| **model**     | Output directory for saved models | `pretrain`                     | `./outputs/pretraining`             |
+| **data**   | Location of input data              | `create_data`, `outcome`       | Raw input data                      |
+| **tokenized** | Directory for tokenized data    | `create_data`, `pretrain`      | Data preprocessing (tokenization)   |
+| **features**  | Directory for extracted features  | `create_data`, `pretrain`, `outcome` | Feature extraction (used in multiple stages) |
+| **model**     | Output directory for saved models | `pretrain`, `fine_tune`        | Model training begins (pretraining, fine-tune) |
+| **cohort**    | Directory for patient cohort data | `fine_tune`, `select_cohort`   | Selected patient data for fine-tuning |
+| **outcomes**  | Directory for outcome data       | `outcome`, `fine_tune`         | Final results after training/fine-tuning |
 
 
+## Data Processing & Loading  
 
-## create_data
+This section defines the parameters for data ingestion, transformation, and processing.  
 
-## create_outcomes
+| Parameter                      | Description                                                        | Used In             | Order of Execution                           |
+|---------------------------------|--------------------------------------------------------------------|---------------------|----------------------------------------------|
+| **Concept Types**               | Specifies the medical concepts to be included (e.g., `diagnose`, `medication`, `labtest`). | `create_data`       | Define relevant medical concepts.           |
+| **Normalization**               | Standardizes numerical values to ensure consistency across datasets. | `create_data`       | Apply data normalization techniques.        |
+| **Batch Size**                  | Determines the volume of data processed in a single iteration. | `outcome`           | Configure batch size for processing.        |
+| **Truncation Length**           | Sets a maximum limit on sequence lengths to maintain uniformity. | `pretrain`, `fine_tune` | Enforce sequence length constraints.  |
+| **Masking & Replacement Ratios** | Defines the proportion of data to be masked or replaced during preprocessing. | `pretrain`          | Apply masking and replacement strategies.   |
+
+        |
+
