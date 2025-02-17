@@ -130,4 +130,7 @@ def finetune_fold(
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
     trainer.model = model
     trainer.test_dataset = test_dataset
-    trainer._evaluate(epoch, mode="test")
+    val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
+    with log_metrics_to_dir("Best model"):
+        log_metric("Validation loss", val_loss)
+        log_metrics(val_metrics)
