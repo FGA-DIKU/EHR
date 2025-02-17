@@ -32,9 +32,10 @@ def cv_loop(
         train_data = data.filter_by_pids(train_pids)
         val_data = data.filter_by_pids(val_pids)
 
-        finetune_fold(
-            cfg, logger, finetune_folder, train_data, val_data, fold, test_data
-        )
+        with setup_metrics_dir(f"Fold {fold}"):
+            finetune_fold(
+                cfg, logger, finetune_folder, train_data, val_data, fold, test_data
+            )
 
 
 def get_n_folds(
@@ -121,8 +122,7 @@ def finetune_fold(
         run_folder=fold_folder,
         last_epoch=epoch,
     )
-    with setup_metrics_dir(f"Fold {fold}"):
-        trainer.train()
+    trainer.train()
 
     logger.info("Load best finetuned model to compute test scores")
     modelmanager_trained = ModelManager(cfg, fold)
@@ -131,6 +131,6 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
     val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
-    with setup_metrics_dir("Best model"):
-        log_metric("Validation loss", val_loss)
-        log_metrics(val_metrics)
+    
+    log_metric("Best Validation Loss", val_loss)
+    log_metrics({f"Best {k}":v for k,v in val_metrics.items())
