@@ -2,6 +2,7 @@ import os
 from os.path import join
 
 import torch
+import pandas as pd
 
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
@@ -10,7 +11,7 @@ from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
-from corebehrt.azure import log_metric, log_metrics, setup_metrics_dir
+from corebehrt.azure import log_table, setup_metrics_dir
 
 
 def cv_loop(
@@ -130,7 +131,11 @@ def finetune_fold(
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
     trainer.model = model
     trainer.test_dataset = test_dataset
+
     val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
 
-    log_metric("Best Validation Loss", val_loss)
-    log_metrics({f"Best {k}": v for k, v in val_metrics.items()})
+    # Transform to table for logging in Azure
+    table = pd.DataFrame(
+        {"Validation loss": val_loss, **{k: [v] for k, v in val_metrics.items()}}
+    )
+    log_table(table, "best_in_fold.json")

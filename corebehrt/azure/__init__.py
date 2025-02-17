@@ -7,5 +7,19 @@ from .log import (
     log_params,
     log_image,
     log_figure,
+    log_table,
     autolog,
-)  # noqa: F401
+)
+
+__all__ = [
+    is_mlflow_available,
+    setup_metrics_dir,
+    log_metric,
+    log_metrics,
+    log_param,
+    log_params,
+    log_image,
+    log_figure,
+    log_table,
+    autolog,
+]
