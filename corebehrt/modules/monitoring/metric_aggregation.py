@@ -91,6 +91,5 @@ def compute_and_save_scores_mean_std(
     scores_mean_std = scores.groupby("metric")["value"].agg(["mean", "std"])
     date = datetime.now().strftime("%Y%m%d-%H%M")
 
-    file_name = f"{mode}_scores_mean_std_{date}"
-    scores_mean_std.to_csv(join(finetune_folder, f"{file_name}.csv"))
-    log_table(scores_mean_std, f"{file_name}.json")
+    scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}"))
+    log_table(scores_mean_std, "mean_std")

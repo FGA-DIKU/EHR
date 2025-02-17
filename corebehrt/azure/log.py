@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import pandas as pd
 
 MLFLOW_AVAILABLE = False
 
@@ -141,12 +142,15 @@ def log_figure(*args, **kwargs):
         mlflow.log_figure(*args, **kwargs)
 
 
-def log_table(*args, **kwargs):
+def log_table(table: pd.DataFrame, table_name: str):
     """
     Log a table (e.g. pandas DataFrame)
 
     :param table: e.g. pandas DataFrame.
-    :param artifact_file: filename to save the table to.
     """
     if is_mlflow_available():
-        mlflow.log_table(*args, **kwargs)
+        for idx, row in table.iterrows():
+            row_dict = {f"{table_name}.{idx}": idx} | {
+                f"{table_name}.{col}": row[col] for col in table.columns
+            }
+            mlflow.log_metrics(row_dict)
