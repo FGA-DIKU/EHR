@@ -54,7 +54,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             )
             cfg.features.pop("values")
         feature_creator = FeatureCreator(**cfg.features)
-        features = feature_creator(patients_info, concepts, save_dir=cfg.paths.features)
+        features = feature_creator(patients_info, concepts, save_dir=cfg.paths.intermediate)
 
         features = excluder.exclude_incorrect_events(features)
 
