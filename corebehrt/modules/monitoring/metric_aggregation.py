@@ -7,6 +7,8 @@ import pandas as pd
 import torch
 from sklearn.metrics import precision_recall_curve, roc_curve
 
+from corebehrt.azure.log import log_table
+
 
 def compute_avg_metrics(metric_values: dict):
     """Computes the average of the metric values when metric is not zero and not NaN"""
@@ -88,4 +90,7 @@ def compute_and_save_scores_mean_std(
     scores = pd.concat(scores)
     scores_mean_std = scores.groupby("metric")["value"].agg(["mean", "std"])
     date = datetime.now().strftime("%Y%m%d-%H%M")
-    scores_mean_std.to_csv(join(finetune_folder, f"{mode}_scores_mean_std_{date}.csv"))
+
+    file_name = f"{mode}_scores_mean_std_{date}"
+    scores_mean_std.to_csv(join(finetune_folder, f"{file_name}.csv"))
+    log_table(scores_mean_std, f"{file_name}.json")

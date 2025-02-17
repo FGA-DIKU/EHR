@@ -36,7 +36,7 @@ def start_run(name: str = None, nested: bool = False):
         def dummy_cm():
             yield None
 
-        return dummy_cm
+        return dummy_cm()
 
 
 def end_run():
@@ -139,3 +139,14 @@ def log_figure(*args, **kwargs):
     """
     if is_mlflow_available():
         mlflow.log_figure(*args, **kwargs)
+
+
+def log_table(*args, **kwargs):
+    """
+    Log a table (e.g. pandas DataFrame)
+
+    :param table: e.g. pandas DataFrame.
+    :param artifact_file: filename to save the table to.
+    """
+    if is_mlflow_available():
+        mlflow.log_table(*args, **kwargs)
