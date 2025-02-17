@@ -10,7 +10,7 @@ from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
-from corebehrt.azure import log_metrics_to_dir
+from corebehrt.azure import log_metric, log_metrics, setup_metrics_dir
 
 
 def cv_loop(
@@ -121,7 +121,7 @@ def finetune_fold(
         run_folder=fold_folder,
         last_epoch=epoch,
     )
-    with log_metrics_to_dir(f"Fold {fold}"):
+    with setup_metrics_dir(f"Fold {fold}"):
         trainer.train()
 
     logger.info("Load best finetuned model to compute test scores")
@@ -131,6 +131,6 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
     val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
-    with log_metrics_to_dir("Best model"):
+    with setup_metrics_dir("Best model"):
         log_metric("Validation loss", val_loss)
         log_metrics(val_metrics)
