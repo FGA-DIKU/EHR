@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 MLFLOW_AVAILABLE = False
 
 try:
@@ -17,6 +19,7 @@ def is_mlflow_available() -> bool:
     return MLFLOW_AVAILABLE
 
 
+@contextmanager
 def start_run(name: str = None, nested: bool = False):
     """
     Starts an mlflow run. Used in the Azure wrapper and should
@@ -26,7 +29,9 @@ def start_run(name: str = None, nested: bool = False):
     :param nested: If the run should be nested.
     """
     if is_mlflow_available():
-        mlflow.start_run(run_name=name, nested=nested)
+        return mlflow.start_run(run_name=name, nested=nested)
+    else:
+        yield None
 
 
 def end_run():
@@ -38,7 +43,7 @@ def end_run():
         mlflow.end_run()
 
 
-def log_metrics_to_dir(name: str):
+def setup_metrics_dir(name: str):
     """
     Shorthand for starting a sub-run where metrics will be logged.
     Use as context manager.
