@@ -45,7 +45,7 @@ def log_metrics_to_dir(name: str):
 
     :param name: Name of azure "sub-dir"/metrics pane.
     """
-    return self.start_run(name=name, nested=True)
+    return start_run(name=name, nested=True)
 
 
 #
