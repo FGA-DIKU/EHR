@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-import pandas as pd
 
 MLFLOW_AVAILABLE = False
 

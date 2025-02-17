@@ -2,7 +2,6 @@ import os
 from os.path import join
 
 import torch
-import pandas as pd
 
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
