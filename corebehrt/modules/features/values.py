@@ -26,7 +26,6 @@ class ValuesCreator:
                 )
             )
         )
-        print(concepts.head())
 
         # Add index + order
         concepts["index"] = concepts.index
