@@ -1,7 +1,6 @@
 # CoreBEHRT Configuration Files Overview 
-This repository contains configuration files for processing **Electronic Health Record (EHR) data** using CoreBEHRT.
+This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT, providing an overview of multiple configuration files used in different stages of data processing and modeling.  
 
-This document provides an overview of multiple configuration files used in different stages of data processing and modeling. Each configuration file serves a specific purpose, such as data creation, pretraining, finetuning, evaluation, and cohort selection. Below is a summary of each configuration file.
 
 ## Pipeline Overview  
 The configuration files define different stages of data processing and modeling in the CoreBEHRT pipeline. These stages include:
