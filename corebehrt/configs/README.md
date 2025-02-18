@@ -1,19 +1,10 @@
 # CoreBEHRT Configuration Files Overview 
 This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT, providing an overview of multiple configuration files used in different stages of data processing and modeling.  
 
-
-### Create Data (`create_data`)  
-- Loads and processes **raw EHR data**, extracting key clinical concepts (**diagnoses, medications, procedures ,lab tests**).  
-- Defines **data paths** for raw, tokenized, and feature-extracted data.  
-- Tokenizes patient records into structured sequences for modeling.  
-- Extracts **background variables** (e.g., `GENDER`) and sets a **reference timestamp** (`2020-01-26`).  
-- Configures **value processing**, including **binning, normalization**, and **handling missing values**.  
-- Splits the dataset into **pretraining (72%), finetuning (18%), and test (10%)** subsets.  
-
 ### **Create Data (`create_data`)**  
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
 
-#### 📌 **Key Functions:**  
+#### **Key Functions:**  
 - Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.  
 - Defines **data paths** for raw data, tokenized sequences, and extracted features.  
 - Tokenizes **patient records** into structured sequences for modeling.  
