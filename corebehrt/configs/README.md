@@ -26,19 +26,71 @@ The configuration files define different stages of data processing and modeling 
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
 
-### Define Outcomes (`outcome`)  
-- Specifies **clinical outcome labels** from EHR records.  
-- Defines **inclusion/exclusion criteria** for patient events.  
 
-###  Select Cohort (`select_cohort`)  
-- Filters patients based on **age, gender, diagnoses, and exposures**.  
-- Creates a study group for further analysis.  
+### Define Outcomes (`outcome`)  
+- Extracts and processes **clinical outcome labels** from EHR records.  
+- Loads **diagnosis-related concepts** with a batch size of **10,000**.  
+- Filters and structures outcome data from `./example_data/example_data_w_labs`.  
+- Defines **TEST_OUTCOME**:  
+  - Matches concepts **157, 169** while **excluding 157141000119108**.  
+  - Uses **case-sensitive matching** and checks if values **contain** specified concepts.  
+- Defines **TEST_CENSOR**:  
+  - Matches concept **169** using **case-insensitive "startswith" filtering**.  
+- Saves processed outcome labels to `./outputs/outcomes/`.  
+
+
+### **Select Cohort (`select_cohort`)**  
+This configuration selects a **subset of patients** based on predefined criteria for further analysis.
+- Loads **patient information** from `patients_info.csv`.  
+- Filters patients based on:  
+  - **Age range**: Includes only patients between **18 - 120 years**.  
+  - **Gender**: Includes only **male (`M`)** patients.  
+  - **Exposure status**: Uses `TEST_CENSOR.csv`, if provided.  
+  - **Outcome history**: Excludes patients who had the outcome **before the index date**.  
+- Defines the **index date** as:  
+  - **Absolute date**: `2015-01-26`.  
+  - **Relative to exposure**: `24 hours before first exposure`.  
+- Splits the selected cohort into:  
+  - **80% training**, **10% validation**, and **10% testing**.  
+- Saves the final **cohort data** to `./outputs/cohort/`.  
 
 ###  Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)  
 - Fine-tunes the pretrained model for **predicting clinical outcomes**.  
 - Evaluates performance using **accuracy, precision, recall, and AUC scores**.  
 
-Each section below summarizes the key components of these configurations.
+### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
+This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.
+
+#### **🔹 Fine-Tuning (`fine_tune`)**
+- Loads **pretrained model** from `./outputs/pretraining/`.  
+- Uses **tokenized data, extracted features, and cohort selection** for training.  
+- **Trains a classifier (`ClassifierGRU`)** in a **bidirectional** mode.  
+- Converts **outcome labels to binary values** based on their presence in a follow-up window.  
+- Uses a **truncation length of 30** and removes sequences **shorter than 2 tokens**.  
+- Splits the data into:  
+  - **10% validation**  
+  - **10% test set**  
+- Trains for **3 epochs** with:  
+  - **Batch size of 8**  
+  - **Validation batch size of 16**  
+  - **Gradient clipping (1.0)**  
+  - **Early stopping after 20 epochs**  
+- Uses **learning rate `5e-4`** with **warmup steps (10)** and **total training steps (100)**.  
+- Saves the **fine-tuned model** to `./outputs/finetuning/`.  
+
+#### **🔹 Evaluation (`finetune_evaluate`)**
+- Loads the **fine-tuned model** from `../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_5_days_post_TEST_OUTCOME_test`.  
+- Runs evaluation using **a test dataset** located in the same directory.  
+- Computes various **performance metrics**, including:  
+  - **Accuracy** (Threshold: `0.6`)  
+  - **Balanced Accuracy**  
+  - **Precision & Recall**  
+  - **ROC-AUC & PR-AUC**  
+  - **True/False Positives & Negatives**  
+  - **Mean Probability & Percentage of Positives**  
+
+This step **fine-tunes the model on clinical outcomes** and then **evaluates its predictive performance** before deployment. 🚀  
+
 
 
 ## Notes  
