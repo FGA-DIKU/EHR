@@ -7,12 +7,24 @@ This document provides an overview of multiple configuration files used in diffe
 The configuration files define different stages of data processing and modeling in the CoreBEHRT pipeline. These stages include:
 
 ### Create Data (`create_data`)  
-- Extracts **EHR data** (diagnoses, medications, lab tests).  
-- Tokenizes records and generates structured features.  
+- Loads and processes **raw EHR data**, extracting key clinical concepts (**diagnoses, medications, procedures ,lab tests**).  
+- Defines **data paths** for raw, tokenized, and feature-extracted data.  
+- Tokenizes patient records into structured sequences for modeling.  
+- Extracts **background variables** (e.g., `GENDER`) and sets a **reference timestamp** (`2020-01-26`).  
+- Configures **value processing**, including **binning, normalization**, and **handling missing values**.  
+- Splits the dataset into **pretraining (72%), finetuning (18%), and test (10%)** subsets.  
+
 
 ### Pretrain (`pretrain`)  
-- Trains a transformer-based model on **EHR sequences** using **masked language modeling (MLM)**.  
-- Learns patient data representations for downstream tasks.  
+- Trains a **transformer-based model** on **EHR sequences** using **masked language modeling (MLM)**.  
+- Loads **tokenized patient records** and **structured features** as inputs.  
+- Applies **80% masking** and **10% token replacement** during MLM training.  
+- Uses a **truncation length of 20** and filters out sequences **shorter than 2 tokens**.  
+- Splits data into **80% training and 20% validation**.  
+- Trains for **5 epochs** with a **batch size of 32** (effective batch size: **64**).  
+- Optimizes using **Adam with LR = 5e-4**, **gradient clipping (1.0)**, and **linear warmup for 2 epochs**.  
+- Saves pretrained models to `./outputs/pretraining/`.  
+- Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
 
 ### Define Outcomes (`outcome`)  
 - Specifies **clinical outcome labels** from EHR records.  
