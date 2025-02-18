@@ -60,16 +60,14 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 - Splits data into:  
   - **training**  
   - **validation**  
-- Trains for **5 epochs** with:  
-  - **Batch size of 32** (effective batch size: **64**)  
-  - **Gradient clipping** to stabilize training  
+- Trains for **5 epochs** 
 - Optimizes using **Adam optimizer** 
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
 
 ---
 
-### **Hyperparameters for `Pretrain`**  
+### **Hyperparameters for `Pretrain`**  stage
 
 | **Parameter**        | **Description**                                          | **Value** |
 |----------------------|----------------------------------------------------------|----------|
@@ -102,10 +100,6 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 | `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
 
 ---
-
-This version ensures **clarity, structure, and easy reference** while keeping the documentation **concise and well-organized**. 🚀 Let me know if you need any refinements! 😊
-
-
 ### Define Outcomes (`outcome`)  
 - Extracts and processes **clinical outcome labels** from EHR records.  
 - Loads **diagnosis-related concepts** with a batch size of **10,000**.  
