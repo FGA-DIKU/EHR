@@ -49,6 +49,9 @@ def create_conda_cfg() -> None:
     with open(REQUIREMENTS_FILE, "r") as f:
         lines = f.readlines()
 
+    # Add lines
+    lines += ["mlflow", "azureml-mlflow"]
+
     # Create and save conda config
     cfg = {
         "name": "CoreBEHRT",
