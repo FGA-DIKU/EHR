@@ -17,19 +17,15 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 - Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.  
 - Defines **data paths** for raw data, tokenized sequences, and extracted features.  
 - Tokenizes **patient records** into structured sequences for modeling.  
-- Extracts **background variables** (e.g., `GENDER`) and sets a **reference timestamp** (`2020-01-26`).  
+- Extracts **background variables** and sets a **reference timestamp** .  
 - Configures **value processing**, including:  
   - **Binning** values into categories.  
   - **Normalization** for feature scaling.  
   - **Handling missing values**.  
-- Splits the dataset into:  
-  - **72% for pretraining**  
-  - **18% for finetuning**  
-  - **10% for testing**  
-
+- Splits the dataset into: **pretraining, finetuning, testing**  
 ---
 
-### 📊 **Hyperparameters for `create_data`**  
+### **Hyperparameters for `create_data`**  
 
 | **Parameter**        | **Description**                                            | **Value** |
 |----------------------|------------------------------------------------------------|----------|
@@ -52,10 +48,6 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 | `split_ratios.test`  | Percentage of data for testing                           | `0.1` |
 
 ---
-
-This version keeps **hyperparameters neatly organized** in a table while maintaining **clear documentation**. 🚀 Let me know if you need any tweaks!
-
-
 ### Pretrain (`pretrain`)  
 - Trains a **transformer-based model** on **EHR sequences** using **masked language modeling (MLM)**.  
 - Loads **tokenized patient records** and **structured features** as inputs.  
