@@ -134,6 +134,7 @@ def finetune_fold(
     trainer.test_dataset = test_dataset
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     if len(test_data) > 0:
         test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
         log_best_metrics(test_loss, test_metrics, "test")
@@ -172,3 +173,18 @@ def check_for_overlap(folds: List[dict], test_pids: list, logger) -> None:
     row = {"validation_loss": val_loss, **val_metrics}
     log_metrics({f"best.{k}": v for k, v in row.items()})
 >>>>>>> 3dcaa31 (Azure logging (#137))
+=======
+    if len(test_data) > 0:
+        test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
+        log_best_metrics(test_loss, test_metrics, "test")
+
+
+def log_best_metrics(loss: float, metrics: dict, split: str) -> None:
+    """
+    Logs a dict of metrics, where each metric is prepended by 'best.<split>.'.
+    Example: 'val_loss' -> 'best.val.val_loss'
+    """
+    row = {f"{split}_loss": loss, **metrics}
+    prefixed = {f"best.{split}.{k}": v for k, v in row.items()}
+    log_metrics(prefixed)
+>>>>>>> 9d2d9fb (fix: log best metric only if test set present (#140))
