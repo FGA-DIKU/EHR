@@ -2,9 +2,6 @@
 This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT, providing an overview of multiple configuration files used in different stages of data processing and modeling.  
 
 
-## Pipeline Overview  
-The configuration files define different stages of data processing and modeling in the CoreBEHRT pipeline. These stages include:
-
 ### Create Data (`create_data`)  
 - Loads and processes **raw EHR data**, extracting key clinical concepts (**diagnoses, medications, procedures ,lab tests**).  
 - Defines **data paths** for raw, tokenized, and feature-extracted data.  
@@ -12,6 +9,51 @@ The configuration files define different stages of data processing and modeling 
 - Extracts **background variables** (e.g., `GENDER`) and sets a **reference timestamp** (`2020-01-26`).  
 - Configures **value processing**, including **binning, normalization**, and **handling missing values**.  
 - Splits the dataset into **pretraining (72%), finetuning (18%), and test (10%)** subsets.  
+
+### **Create Data (`create_data`)**  
+This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
+
+#### 📌 **Key Functions:**  
+- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.  
+- Defines **data paths** for raw data, tokenized sequences, and extracted features.  
+- Tokenizes **patient records** into structured sequences for modeling.  
+- Extracts **background variables** (e.g., `GENDER`) and sets a **reference timestamp** (`2020-01-26`).  
+- Configures **value processing**, including:  
+  - **Binning** values into categories.  
+  - **Normalization** for feature scaling.  
+  - **Handling missing values**.  
+- Splits the dataset into:  
+  - **72% for pretraining**  
+  - **18% for finetuning**  
+  - **10% for testing**  
+
+---
+
+### 📊 **Hyperparameters for `create_data`**  
+
+| **Parameter**        | **Description**                                            | **Value** |
+|----------------------|------------------------------------------------------------|----------|
+| `logging.level`      | Log verbosity level                                        | `INFO`   |
+| `logging.path`       | Path to save logs                                          | `./outputs/logs` |
+| `paths.data`         | Raw EHR data directory                                    | `./example_data/example_data_w_labs` |
+| `paths.tokenized`    | Tokenized data directory                                  | `./outputs/tokenized` |
+| `paths.features`     | Extracted features directory                              | `./outputs/features` |
+| `loader.concept_types` | Types of concepts to extract (`diagnoses`, `medications`, `procedures`, `lab tests`) | `["diagnose", "medication", "labtest"]` |
+| `loader.include_values` | Values to include                                      | `["labtest"]` |
+| `features.background_vars` | Background demographic variables                     | `["GENDER"]` |
+| `features.origin_point` | Reference timestamp                                    | `2020-01-26` |
+| `values.value_type`  | Type of value binning                                     | `binned` |
+| `values.normalize.func` | Normalization function                                 | `min_max_normalize_results` |
+| `values.normalize.kwargs.min_count` | Minimum count for normalization          | `3` |
+| `excluder.min_age`   | Minimum age for inclusion                                | `-1` |
+| `excluder.max_age`   | Maximum age for inclusion                                | `120` |
+| `split_ratios.pretrain` | Percentage of data for pretraining                    | `0.72` |
+| `split_ratios.finetune` | Percentage of data for finetuning                     | `0.18` |
+| `split_ratios.test`  | Percentage of data for testing                           | `0.1` |
+
+---
+
+This version keeps **hyperparameters neatly organized** in a table while maintaining **clear documentation**. 🚀 Let me know if you need any tweaks!
 
 
 ### Pretrain (`pretrain`)  
