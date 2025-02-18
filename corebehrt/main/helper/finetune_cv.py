@@ -131,8 +131,16 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
 
-    val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
+    if len(test_data) > 0:
+        test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
+        log_best_metrics(test_loss, test_metrics, "test")
 
-    # Transform to table for logging in Azure
-    row = {"validation_loss": val_loss, **val_metrics}
-    log_metrics({f"best.{k}": v for k, v in row.items()})
+
+def log_best_metrics(loss: float, metrics: dict, split: str) -> None:
+    """
+    Logs a dict of metrics, where each metric is prepended by 'best.<split>.'.
+    Example: 'val_loss' -> 'best.val.val_loss'
+    """
+    row = {f"{split}_loss": loss, **metrics}
+    prefixed = {f"best.{split}.{k}": v for k, v in row.items()}
+    log_metrics(prefixed)
