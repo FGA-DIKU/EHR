@@ -11,6 +11,9 @@ OUTPUTS = {"cohort": {"type": "uri_folder"}}
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     from corebehrt.main import select_cohort
 
+=======
+>>>>>>> 3dcaa31 (Azure logging (#137))
     util.run_main(select_cohort.main_select_cohort, INPUTS, OUTPUTS)

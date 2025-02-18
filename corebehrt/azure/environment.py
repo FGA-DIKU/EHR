@@ -51,7 +51,11 @@ def create_conda_cfg() -> None:
         lines = f.readlines()
 
     # Add lines
+<<<<<<< HEAD
     lines += ADDITIONAL_DEPENDENCIES
+=======
+    lines += ["mlflow", "azureml-mlflow"]
+>>>>>>> 3dcaa31 (Azure logging (#137))
 
     # Create and save conda config
     cfg = {
