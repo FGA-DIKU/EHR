@@ -53,8 +53,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             shard_path = f"{path_name}/{shard}"
             shard_n = shard.split('.')[0]
 
-            if int(shard_n) > 5:
-                continue
+            # if int(shard_n) > 5:
+            #     continue
 
             print(shard_path)
             
@@ -72,5 +72,5 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
 
             features = excluder.exclude_incorrect_events(features)
             features.to_parquet(
-                f'{split_save_path}/{shard_n}', index=False, schema=pa.schema(FEATURES_SCHEMA)
+                f'{split_save_path}/{shard_n}.parquet', index=False, schema=pa.schema(FEATURES_SCHEMA)
             )

@@ -53,7 +53,7 @@ def main_data(config_path):
     # TODO: temporary fix/check until we split the script into two.
     # As cfg.paths.features is always set, its value cannot be used to decide
     # if features are present.
-    if os.path.exists(join(cfg.paths.features, "part.0.parquet")):
+    if os.path.exists(join(cfg.paths.features, "held_out", "0.parquet")):
         logger.info("Reusing existing features")
     else:
         logger.info("Create and process features")
