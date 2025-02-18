@@ -1,7 +1,7 @@
 # CoreBEHRT Configuration Files Overview 
 This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT, providing an overview of multiple configuration files used in different stages of data processing and modeling.  
 
-### **Create Data (`create_data`)**  
+### **Create Data (`create_data.yaml`)**  
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
 
 #### **Key Functions:**  
@@ -16,7 +16,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 - Splits the dataset into: **pretraining, finetuning, testing**  
 ---
 
-### **Hyperparameters for `create_data`**  
+### **Hyperparameters for `create data stage`**  
 
 | **Parameter**        | **Description**                                            | **Value** |
 |----------------------|------------------------------------------------------------|----------|
@@ -39,7 +39,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 | `split_ratios.test`  | Percentage of data for testing                           | `0.1` |
 
 ---
-### Pretrain (`pretrain`)  
+### Pretrain (`pretrain.yaml`)  
 - Trains a **transformer-based model** on **EHR sequences** using **masked language modeling (MLM)**.  
 - Loads **tokenized patient records** and **structured features** as inputs.  
 - Applies **80% masking** and **10% token replacement** during MLM training.  
@@ -49,6 +49,61 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 - Optimizes using **Adam with LR = 5e-4**, **gradient clipping (1.0)**, and **linear warmup for 2 epochs**.  
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
+
+### **Pretrain (`pretrain`)**  
+This step **trains a transformer-based model** on **EHR sequences** using **masked language modeling (MLM)** to learn meaningful patient data representations.  
+
+#### **Key Functions:**  
+- Loads **tokenized patient records** and **structured features** as inputs.  
+- Applies **80% masking** and **10% token replacement** during MLM training.  
+- Uses a **truncation length of 20** and filters out sequences **shorter than 2 tokens**.  
+- Splits data into:  
+  - **training**  
+  - **validation**  
+- Trains for **5 epochs** with:  
+  - **Batch size of 32** (effective batch size: **64**)  
+  - **Gradient clipping** to stabilize training  
+- Optimizes using **Adam optimizer** 
+- Saves pretrained models to `./outputs/pretraining/`.  
+- Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
+
+---
+
+### **Hyperparameters for `Pretrain`**  
+
+| **Parameter**        | **Description**                                          | **Value** |
+|----------------------|----------------------------------------------------------|----------|
+| `logging.level`      | Log verbosity level                                      | `INFO`   |
+| `logging.path`       | Path to save logs                                        | `./outputs/logs` |
+| `paths.features`     | Extracted features directory                            | `./outputs/features` |
+| `paths.tokenized`    | Tokenized data directory                                | `./outputs/tokenized` |
+| `data.dataset.select_ratio` | Percentage of dataset to use                     | `1.0` |
+| `data.dataset.masking_ratio` | Percentage of tokens masked                      | `0.8` |
+| `data.dataset.replace_ratio` | Percentage of tokens replaced                    | `0.1` |
+| `data.dataset.ignore_special_tokens` | Ignore special tokens in masking         | `true` |
+| `data.truncation_len` | Maximum sequence length                                | `20` |
+| `data.val_ratio`     | Validation set percentage                               | `0.2` |
+| `data.min_len`      | Minimum sequence length                                 | `2` |
+| `trainer_args.batch_size` | Training batch size                                 | `32` |
+| `trainer_args.effective_batch_size` | Effective batch size                     | `64` |
+| `trainer_args.epochs` | Number of training epochs                              | `5` |
+| `trainer_args.gradient_clip.clip_value` | Gradient clipping value               | `1.0` |
+| `trainer_args.shuffle` | Shuffle training data                                 | `true` |
+| `optimizer.lr`       | Learning rate                                           | `5e-4` |
+| `optimizer.eps`      | Epsilon value for Adam optimizer                        | `1e-6` |
+| `scheduler._target_` | Learning rate scheduler                                | `transformers.get_linear_schedule_with_warmup` |
+| `scheduler.num_warmup_epochs` | Number of warmup epochs                        | `2` |
+| `scheduler.num_training_epochs` | Total training epochs                        | `3` |
+| `metrics.top1._target_` | Top-1 precision metric                               | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
+| `metrics.top1.topk` | Top-k value for top-1 precision                         | `1` |
+| `metrics.top10._target_` | Top-10 precision metric                             | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
+| `metrics.top10.topk` | Top-k value for top-10 precision                        | `10` |
+| `metrics.mlm_loss._target_` | MLM loss function                                | `corebehrt.modules.monitoring.metrics.LossAccessor` |
+| `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
+
+---
+
+This version ensures **clarity, structure, and easy reference** while keeping the documentation **concise and well-organized**. 🚀 Let me know if you need any refinements! 😊
 
 
 ### Define Outcomes (`outcome`)  
