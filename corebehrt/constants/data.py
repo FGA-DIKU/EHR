@@ -18,14 +18,14 @@ ABSPOS_COL = "abspos"
 
 ### Schema ###
 SCHEMA = {
-    "PID": "str",
+    "subject_id": "str",
     "age": "float32",
     "abspos": "float64",
     "segment": "int32",
 }
 
-FEATURES_SCHEMA = {**SCHEMA, "concept": "str"}
-TOKENIZED_SCHEMA = {**SCHEMA, "concept": "int32"}
+FEATURES_SCHEMA = {**SCHEMA, "code": "str"}
+TOKENIZED_SCHEMA = {**SCHEMA, "code": "int32"}
 
 ### Folds and Splits###
 TRAIN_KEY = "train"

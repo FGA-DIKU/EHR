@@ -11,7 +11,8 @@ from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
-
+import os
+import pyarrow as pa
 
 def load_tokenize_and_save(
     features_path: str,
@@ -40,23 +41,36 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
-    concepts, patients_info = FormattedDataLoader(
-        cfg.paths.data,
-        cfg.loader.concept_types,
-        include_values=(getattr(cfg.loader, "include_values", [])),
-    ).load()
 
-    with ProgressBar(dt=1):
-        if "values" in cfg.features:
-            value_creator = ValueCreator(**cfg.features.values)
-            concepts = value_creator(concepts)
-            cfg.features.pop("values")
+    for split_name in ["train", "tuning", "held_out"]:
+        path_name = f"{cfg.paths.data}/{split_name}"
+        if not os.path.exists(path_name):
+            ValueError(f"Path {path_name} does not exist")
+        
+        split_save_path = f"{cfg.paths.features}/{split_name}"
+        os.makedirs(split_save_path, exist_ok=True)
+        for shard in os.listdir(path_name):
+            shard_path = f"{path_name}/{shard}"
+            shard_n = shard.split('.')[0]
 
-        feature_creator = FeatureCreator(**cfg.features)
-        features = feature_creator(patients_info, concepts)
+            if int(shard_n) > 5:
+                continue
 
-        features = excluder.exclude_incorrect_events(features)
+            print(shard_path)
+            
+            concepts = FormattedDataLoader(
+                shard_path,
+            ).load()
 
-        features.to_parquet(
-            cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
-        )
+            if "values" in cfg.features:
+                concepts = ValueCreator.bin_results(
+                    concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100)
+                )
+            features_args = {k: v for k, v in cfg.features.items() if k != "values"}
+            feature_creator = FeatureCreator(**features_args)
+            features = feature_creator(concepts)
+
+            features = excluder.exclude_incorrect_events(features)
+            features.to_parquet(
+                f'{split_save_path}/{shard_n}', index=False, schema=pa.schema(FEATURES_SCHEMA)
+            )

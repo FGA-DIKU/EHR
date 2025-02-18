@@ -63,43 +63,43 @@ def main_data(config_path):
         )
         logger.info("Finished feature creation and processing")
 
-    logger.info("Get all pids")
-    df = dd.read_parquet(cfg.paths.features)
-    pids = df.PID.unique().compute().tolist()
+    # logger.info("Get all pids")
+    # df = dd.read_parquet(cfg.paths.features)
+    # pids = df.PID.unique().compute().tolist()
 
-    logger.info("Split pids")
-    pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
-        pids, **cfg.split_ratios
-    )
+    # logger.info("Split pids")
+    # pretrain_pids, finetune_pids, test_pids = split_pids_into_pt_ft_test(
+    #     pids, **cfg.split_ratios
+    # )
 
-    logger.info("Tokenizing")
+    # logger.info("Tokenizing")
 
-    vocabulary = None
-    if "vocabulary" in cfg.paths:
-        logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
-        vocabulary = load_vocabulary(cfg.paths.vocabulary)
-    tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
+    # vocabulary = None
+    # if "vocabulary" in cfg.paths:
+    #     logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
+    #     vocabulary = load_vocabulary(cfg.paths.vocabulary)
+    # tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
 
-    features_path = cfg.paths.features
-    tokenized_path = cfg.paths.tokenized
+    # features_path = cfg.paths.features
+    # tokenized_path = cfg.paths.tokenized
 
-    with ProgressBar(dt=1):
-        logger.info("Tokenizing pretrain")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
-        )
-        tokenizer.freeze_vocabulary()
-        logger.info("Tokenizing finetune")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "finetune", finetune_pids
-        )
-        logger.info("Tokenizing test")
-        load_tokenize_and_save(
-            features_path, tokenizer, tokenized_path, "test", test_pids
-        )
+    # with ProgressBar(dt=1):
+    #     logger.info("Tokenizing pretrain")
+    #     load_tokenize_and_save(
+    #         features_path, tokenizer, tokenized_path, "pretrain", pretrain_pids
+    #     )
+    #     tokenizer.freeze_vocabulary()
+    #     logger.info("Tokenizing finetune")
+    #     load_tokenize_and_save(
+    #         features_path, tokenizer, tokenized_path, "finetune", finetune_pids
+    #     )
+    #     logger.info("Tokenizing test")
+    #     load_tokenize_and_save(
+    #         features_path, tokenizer, tokenized_path, "test", test_pids
+    #     )
 
-    torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
-    logger.info("Finished tokenizing")
+    # torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
+    # logger.info("Finished tokenizing")
 
 
 if __name__ == "__main__":

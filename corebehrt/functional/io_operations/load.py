@@ -7,6 +7,7 @@ from os.path import join
 from typing import Dict, List, Set, Tuple, Union
 
 import dask.dataframe as dd
+import pandas as pd
 import torch
 
 from corebehrt.constants.paths import VOCABULARY_FILE
@@ -80,22 +81,21 @@ def load_patients_info(folder: str, pattern: str = "patients_info.*") -> dd.Data
     return df
 
 
-def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
+def load_concept(path) -> pd.DataFrame:
     """
     Load concept data from formatted_data_dir.
-    Expects TIMESTAMP column to be present.
+    Expects time column to be present.
     Returns a dask dataframe.
     """
-    file = get_file_with_pattern(folder, f"concept.{concept_type}.*")
 
-    if file.endswith(".parquet"):
-        df = dd.read_parquet(file, parse_dates=["TIMESTAMP"])
-    elif file.endswith(".csv"):
-        df = dd.read_csv(file, parse_dates=["TIMESTAMP"])
+    if path.endswith(".parquet"):
+        df = pd.read_parquet(path, parse_dates=["time"], index_col=0)
+    elif path.endswith(".csv"):
+        df = pd.read_csv(path, parse_dates=["time"], index_col=0)
     else:
         raise ValueError(f"Unknown file type: {file}")
 
-    df["TIMESTAMP"] = df["TIMESTAMP"].dt.tz_localize(
+    df["time"] = df["time"].dt.tz_localize(
         None
     )  # to prevent tz-naive/tz-aware issues
     return df

@@ -3,36 +3,26 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_data_w_labs
+  data: ./example_data/example_MEDS_data
   tokenized: ./outputs/tokenized
   features: ./outputs/features
   
-loader:
-  concept_types: [
-    diagnose,
-    medication,
-    labtest
-  ]
-  include_values: [labtest]
+# loader:
+#   concept_types: [
+#     diagnose,
+#     medication,
+#     labtest
+#   ]
+#   include_values: [labtest]
 
 features:
-  #ages: true
   origin_point:
     year: 2020
     month: 1
     day: 26
-  #segment: true
-  background_vars: ['GENDER']
-
-# Arguments for adding values to the data
-values:
-  value_type: binned # How you want the values. Either binned or quantile are supported.
-  value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
-    multiplication_factor: 100
-  normalize: # Dict with the function and kwargs for normalizing the values.
-    func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
-    kwargs: # Example kwargs
-      min_count: 3
+  values:
+    value_creator_kwargs:
+      num_bins: 100
 
 tokenizer:
   sep_tokens: true
@@ -43,7 +33,7 @@ tokenizer:
 
 excluder:
   min_age: -1
-  max_age: 120
+  max_age: 40
 
 split_ratios:
   pretrain: 0.72 # 80% of 90%

@@ -19,7 +19,6 @@ from corebehrt.constants.paths import (
 from corebehrt.functional.io_operations.load import load_concept, load_patients_info
 from corebehrt.functional.setup.checks import (
     check_concepts_columns,
-    check_patients_info_columns,
 )
 
 
@@ -188,31 +187,15 @@ class FormattedDataLoader:
 
     def __init__(
         self,
-        folder: str,
-        concept_types: List[str],
-        include_values: List[str] = [],
+        path: str,
     ):
-        self.folder = folder
-        self.concept_types = concept_types
-        self.include_values = include_values
+        self.path = path
 
     def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
-        concepts = [
-            (
-                self._remove_values(self._load_concept(concept_type))
-                if concept_type not in self.include_values
-                else self._load_concept(concept_type)
-            )
-            for concept_type in self.concept_types
-        ]
-        concepts = dd.concat(concepts)
+        concepts = self._load_concept(self.path)
         check_concepts_columns(concepts)
-
-        patients_info = self._load_patients_info()
-        check_patients_info_columns(patients_info)
-
-        return concepts, patients_info
+        return concepts
 
     def _load_patients_info(self) -> dd.DataFrame:
         """
@@ -231,10 +214,10 @@ class FormattedDataLoader:
             return concepts.drop(columns=["RESULT"])
         return concepts
 
-    def _load_concept(self, concept_type: str):
+    def _load_concept(self, path: str):
         """
         Load concept data from formatted_data_dir.
         Expects TIMESTAMP column to be present.
         Returns a dask dataframe.
         """
-        return load_concept(self.folder, concept_type)
+        return load_concept(path)
