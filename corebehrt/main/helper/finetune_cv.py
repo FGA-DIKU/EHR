@@ -10,6 +10,7 @@ from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
+from corebehrt.azure import log_metrics, setup_metrics_dir
 
 
 def cv_loop(
@@ -31,9 +32,10 @@ def cv_loop(
         train_data = data.filter_by_pids(train_pids)
         val_data = data.filter_by_pids(val_pids)
 
-        finetune_fold(
-            cfg, logger, finetune_folder, train_data, val_data, fold, test_data
-        )
+        with setup_metrics_dir(f"Fold {fold}"):
+            finetune_fold(
+                cfg, logger, finetune_folder, train_data, val_data, fold, test_data
+            )
 
 
 def get_n_folds(
@@ -128,4 +130,9 @@ def finetune_fold(
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
     trainer.model = model
     trainer.test_dataset = test_dataset
-    trainer._evaluate(epoch, mode="test")
+
+    val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
+
+    # Transform to table for logging in Azure
+    row = {"validation_loss": val_loss, **val_metrics}
+    log_metrics({f"best.{k}": v for k, v in row.items()})

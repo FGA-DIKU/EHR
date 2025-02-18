@@ -14,6 +14,7 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     save_predictions,
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
+from corebehrt import azure
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -98,6 +99,9 @@ class EHRTrainer:
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
 
+        # Enable auto-logging (if available)
+        azure.autolog()
+
     def _set_default_args(self, args):
         default_args = {
             "save_every_k_steps": float("inf"),
@@ -149,6 +153,10 @@ class EHRTrainer:
                 self._clip_gradients()
                 self._update_and_log(step_loss, train_loop, epoch_loss)
                 step_loss = 0
+
+            if (i % 100 == 0) and self.device == "cuda":
+                self.run_log_gpu(step=i)
+
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -184,9 +192,9 @@ class EHRTrainer:
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                self.run_log("Learning Rate", current_lr)
+                self.run_log(name="Learning Rate", value=current_lr)
                 break
-        self.run_log("Train loss", step_loss / self.accumulation_steps)
+        self.run_log(name="Train loss", value=step_loss / self.accumulation_steps)
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader
@@ -246,8 +254,8 @@ class EHRTrainer:
         len_train_loop: int,
     ) -> None:
         for k, v in val_metrics.items():
-            self.run_log(name=k, value=v)
-        self.run_log(name="Val loss", value=val_loss)
+            self.run_log(name=k, value=v, step=epoch)
+        self.run_log(name="Val loss", value=val_loss, step=epoch)
         self.log(
             f"Epoch {epoch} train loss: {sum(epoch_loss) / (len_train_loop / self.accumulation_steps)}"
         )
@@ -403,9 +411,30 @@ class EHRTrainer:
         else:
             print(message)
 
-    def run_log(self, name, value):
-        if self.run is not None:
-            self.run.log_metric(name=name, value=value)
+    def run_log_gpu(self, step=None):
+        """Logs the GPU memory usage to the run"""
+        memory_allocated = torch.cuda.memory_allocated(device=self.device) / 1e9
+        max_memory_reserved = torch.cuda.max_memory_reserved(device=self.device) / 1e9
+        memory_cached = torch.cuda.memory_reserved(device=self.device) / 1e9
+        self.run_log(
+            name="GPU Memory",
+            value=memory_allocated,
+            step=step,
+        )
+        self.run_log(
+            name="GPU Max Memory",
+            value=max_memory_reserved,
+            step=step,
+        )
+        self.run_log(
+            name="GPU Cached Memory",
+            value=memory_cached,
+            step=step,
+        )
+
+    def run_log(self, name, value, step=None):
+        if azure.is_mlflow_available():
+            azure.log_metric(name, value, step=step)
         else:
             self.log(f"{name}: {value}")
 

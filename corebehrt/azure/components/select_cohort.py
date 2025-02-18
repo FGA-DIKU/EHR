@@ -23,7 +23,4 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
-    # Parse args and update config
-    util.prepare_config(INPUTS, OUTPUTS)
-    # Run command
-    select_cohort.main_select_cohort(util.AZURE_CONFIG_FILE)
+    util.run_main(select_cohort.main_select_cohort, INPUTS, OUTPUTS)
