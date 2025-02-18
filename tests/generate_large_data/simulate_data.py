@@ -249,7 +249,7 @@ def generate_concepts_batch(
     # Generate CONCEPT column using vectorized operations
     concepts = np.random.randint(0, n_unique_concepts, size=len(repeated_patients_info))
     if prefix != "":
-        concepts = [f"{prefix}_{c}" for c in concepts]
+        concepts = [f"{prefix}{c}" for c in concepts]
     # Create the DataFrame
     concepts_data = pd.DataFrame(
         {

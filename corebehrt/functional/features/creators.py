@@ -55,6 +55,9 @@ def create_background(
     concepts.loc[bg_rows.index, 'time'] = concepts.loc[bg_rows.index, 'birthdate']
     concepts.loc[bg_rows.index, 'code'] = 'BG_' + concepts.loc[bg_rows.index, 'code']
 
+    adm_rows = concepts[concepts['code'].str.contains('ADMISSION') | concepts['code'].str.contains('DISCHARGE')]
+    concepts.loc[adm_rows.index, 'code'] = 'ADM_' + concepts.loc[adm_rows.index, 'code']
+
     return concepts
 
 

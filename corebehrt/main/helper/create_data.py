@@ -13,28 +13,34 @@ from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
 import os
 import pyarrow as pa
+import pandas as pd
 
 def load_tokenize_and_save(
     features_path: str,
     tokenizer: EHRTokenizer,
     tokenized_path: str,
     split: str,
-    pids: list,
 ):
     """
-    Load df for selected pids, tokenize and write to tokenized_path.
+    Load df for split, tokenize and write to tokenized_path.
     """
-    df = dd.read_parquet(features_path, filters=[("PID", "in", set(pids))]).set_index(
-        "PID"
-    )
-    df = tokenizer(df).reset_index()
-    df.to_parquet(
-        join(tokenized_path, f"features_{split}"),
-        write_index=False,
-        schema=TOKENIZED_SCHEMA,
-    )
-    torch.save(pids, join(tokenized_path, f"pids_{split}.pt"))
+    pids = []
+    for shard in os.listdir(join(features_path, split)):
+        shard_path = join(features_path, split, shard)  
+        shard_n = shard.split('.')[0]
+        df = pd.read_parquet(shard_path).set_index(
+            "subject_id"
+        )
 
+        df = tokenizer(df).reset_index()
+        os.makedirs(join(tokenized_path, f"features_{split}"), exist_ok=True)
+        df.to_parquet(
+            join(tokenized_path, f"features_{split}", f"{shard_n}.parquet"),
+            index=False,
+            schema=pa.schema(TOKENIZED_SCHEMA),
+        )
+        pids.extend(df['subject_id'].tolist())
+    torch.save(pids, join(tokenized_path, f"pids_{split}.pt"))
 
 def create_and_save_features(excluder: Excluder, cfg) -> None:
     """
@@ -71,6 +77,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             features = feature_creator(concepts)
 
             features = excluder.exclude_incorrect_events(features)
+            print(features)
             features.to_parquet(
                 f'{split_save_path}/{shard_n}.parquet', index=False, schema=pa.schema(FEATURES_SCHEMA)
             )
