@@ -158,7 +158,7 @@ class TestIndexDateHandler(unittest.TestCase):
         result = IndexDateHandler.determine_index_dates(
             patients_info=self.patients_info,
             index_date_mode="absolute",
-            absolute_timestamp=datetime(2022, 1, 15),
+            absolute_timestamp={"year": 2022, "month": 1, "day": 15},
         )
         # We have p1, p2, p3 => each should have 2022-01-15
         self.assertEqual(len(result), 3)
