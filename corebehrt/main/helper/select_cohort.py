@@ -19,7 +19,7 @@ from corebehrt.modules.features.loader import ConceptLoader
 
 
 def select_cohort(
-    path_cfg, selection_cfg, index_date_cfg, logger
+    path_cfg, selection_cfg, index_date_cfg, test_ratio, logger
 ) -> Tuple[List[str], pd.Series, List[str], List[str]]:
     """
     Select cohort by applying multiple filtering steps.
@@ -93,10 +93,8 @@ def select_cohort(
         exposures=exposures,
     )
 
-    # Split cohort into training/validation and test sets based on patient IDs.
-    # This split is done after index date calculation so that subsequent filtering and outcome definitions
-    # are applied to a fully defined cohort.
-    test_ratio = index_date_cfg.get("test_ratio", 0)
+    # This split is done after index date calculation but before any filtering based on index dates
+    # the final split ratios might be slightly different from the test_ratio due to the filtering steps
     train_val_pids, test_pids = split_test(patients_info[PID_COL].tolist(), test_ratio)
 
     # For out-of-time evaluation with absolute index dates:

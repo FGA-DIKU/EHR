@@ -28,7 +28,11 @@ def main_select_cohort(config_path: str):
     logger.info("Starting cohort selection")
     path_cfg = cfg.paths
     pids, index_dates, train_val_pids, test_pids = select_cohort(
-        path_cfg, cfg.selection, cfg.index_date, logger
+        path_cfg,
+        cfg.selection,
+        cfg.index_date,
+        test_ratio=cfg.test_ratio,
+        logger=logger,
     )
     logger.info("Saving cohort")
     torch.save(pids, join(path_cfg.cohort, PID_FILE))

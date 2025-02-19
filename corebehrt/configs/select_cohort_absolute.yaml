@@ -29,7 +29,6 @@ index_date: # if not provided we can use exposures to get the index dates
       year: 2020
       month: 1
       day: 1
-    val_shift_hours: 24 # shift the validation set by this many hours
     test_shift_hours: 48 # shift the test set by this many hours
 
 cv_folds: 5 # can be set to 1 if only a simple train/val split is needed
