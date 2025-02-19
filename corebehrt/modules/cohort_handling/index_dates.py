@@ -63,7 +63,14 @@ class IndexDateHandler:
         n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
-        """Determine index dates based on mode."""
+        """Determine index dates based on mode.
+        Args:
+            patients_info: pd.DataFrame with patients info
+            index_date_mode: str, "absolute" or "relative"
+            absolute_timestamp: dict with year, month, day (required if index_date_mode == "absolute")
+            n_hours_from_exposure: int (required if index_date_mode == "relative")
+            exposures: pd.DataFrame (required if index_date_mode == "relative")
+        """
         pids = set(patients_info[PID_COL].unique())
 
         result = None

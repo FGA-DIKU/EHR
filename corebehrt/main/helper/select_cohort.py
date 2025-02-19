@@ -14,22 +14,43 @@ from corebehrt.modules.cohort_handling.patient_filter import (
     filter_by_prior_outcomes,
     filter_df_by_pids,
 )
+from corebehrt.functional.features.split import split_test
 from corebehrt.modules.features.loader import ConceptLoader
 
 
-def select_cohort(cfg, logger) -> Tuple[List[str], pd.Series]:
+def select_cohort(cfg, logger) -> Tuple[List[str], pd.Series, List[str], List[str]]:
     """
     Select cohort by applying multiple filtering steps.
 
+    The process includes:
+      1. Loading and initial filtering of patient data.
+      2. Determining index dates based on the selected mode (absolute or relative).
+      3. Splitting the cohort into training/validation and test sets.
+      4. Applying a test shift (for absolute index dates) to simulate future prediction,
+         so that test patients have a shifted index date.
+      5. Further filtering based on age, death, and prior outcomes.
+
+    The rationale behind absolute index dates and test shift is to simulate a real-world deployment scenario:
+      - The model is trained using data up to a fixed cutoff (absolute index date),
+        with input data defined relative to that date.
+      - For testing, the index date is shifted (using test_shift_hours) to mimic a
+        future prediction scenario, ensuring that both input and outcome windows are
+        appropriately aligned with a prospective evaluation.
 
     Args:
         cfg: Configuration dictionary
-
+        logger: Logger object
     Returns:
-        Tuple of final patient IDs and their index dates
+        Tuple of:
+          - Final patient IDs (list)
+          - Series of index dates (with potential test shift applied)
+          - Train/validation patient IDs (list)
+          - Test patient IDs (list)
     """
     logger.info("Loading data")
     patients_info, outcomes, exposures, initial_pids, exclude_pids = load_data(cfg)
+
+    # Remove duplicate patient records (keep first occurrence)
     patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
     logger.info("N patients_info: %d", len(patients_info))
     logger.info("Patients in initial_pids: %d", len(initial_pids))
@@ -55,15 +76,35 @@ def select_cohort(cfg, logger) -> Tuple[List[str], pd.Series]:
         patients_info = filter_by_categories(patients_info, cfg.selection.categories)
         log_patient_num(logger, patients_info)
 
+    # Determine index dates for all patients
+    # For absolute mode, a fixed date is assigned; for relative, it's computed based on exposures.
     logger.info("Determining index dates")
     mode = cfg.index_date["mode"]
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,
         mode,
-        absolute_timestamp=cfg.index_date[mode],
+        absolute_timestamp=cfg.index_date[mode].get("date"),
         n_hours_from_exposure=cfg.index_date[mode].get("n_hours_from_exposure"),
         exposures=exposures,
     )
+
+    # Split cohort into training/validation and test sets based on patient IDs.
+    # This split is done after index date calculation so that subsequent filtering and outcome definitions
+    # are applied to a fully defined cohort.
+    test_ratio = cfg.get("test_ratio", 0)
+    train_val_pids, test_pids = split_test(patients_info[PID_COL].tolist(), test_ratio)
+
+    # For out-of-time evaluation with absolute index dates:
+    # If a test shift is provided, adjust the index dates for test patients.
+    # This simulates that while the model is trained on data up to the cutoff date,
+    # predictions (and corresponding outcome follow-up) are made on a later time period.
+    if mode == "absolute":
+        test_shift_hours = cfg.index_date["absolute"].get("test_shift_hours", 0)
+        if test_shift_hours:
+            index_dates.loc[test_pids] += pd.Timedelta(hours=test_shift_hours)
+
+    # Merge the (possibly shifted) index dates back into the patient info DataFrame.
+    # The TIMESTAMP_COL now holds the index date for each patient.
     patients_info = patients_info.merge(
         index_dates, on=PID_COL
     )  # the TIMESTAMP column is the index date.
@@ -85,7 +126,12 @@ def select_cohort(cfg, logger) -> Tuple[List[str], pd.Series]:
         logger.info("Filtering by prior outcomes")
         patients_info = filter_by_prior_outcomes(patients_info, outcomes)
         log_patient_num(logger, patients_info)
-    return patients_info[PID_COL].unique().tolist(), index_dates
+    return (
+        patients_info[PID_COL].unique().tolist(),
+        index_dates,
+        train_val_pids,
+        test_pids,
+    )
 
 
 def log_patient_num(logger, patients_info):
