@@ -26,19 +26,22 @@ def main_select_cohort(config_path: str):
     logger = logging.getLogger("select_cohort")
 
     logger.info("Starting cohort selection")
-    pids, index_dates, train_val_pids, test_pids = select_cohort(cfg, logger)
+    path_cfg = cfg.paths
+    pids, index_dates, train_val_pids, test_pids = select_cohort(
+        path_cfg, cfg.selection, cfg.index_date, logger
+    )
     logger.info("Saving cohort")
-    torch.save(pids, join(cfg.paths.cohort, PID_FILE))
-    index_dates.to_csv(join(cfg.paths.cohort, INDEX_DATES_FILE))
+    torch.save(pids, join(path_cfg.cohort, PID_FILE))
+    index_dates.to_csv(join(path_cfg.cohort, INDEX_DATES_FILE))
 
     if len(test_pids) > 0:
-        torch.save(test_pids, join(cfg.paths.cohort, TEST_PIDS_FILE))
+        torch.save(test_pids, join(path_cfg.cohort, TEST_PIDS_FILE))
 
     if len(train_val_pids) > 0:
         folds = create_folds(
             train_val_pids, cfg.get("cv_folds", 1), cfg.get("seed", 42)
         )
-        torch.save(folds, join(cfg.paths.cohort, FOLDS_FILE))
+        torch.save(folds, join(path_cfg.cohort, FOLDS_FILE))
 
 
 if __name__ == "__main__":
