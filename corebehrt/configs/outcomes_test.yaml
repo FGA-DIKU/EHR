@@ -3,27 +3,21 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_data_w_labs
-  features: ./outputs/features
-  outcomes: ./outputs/outcomes
-
-loader:
-  concepts: [
-    diagnose
-  ]
-  batchsize: 10_000
-  chunksize: 10_000
+  data: ./example_data/example_MEDS_data
+  patient_info: ./outputs/features/patient_info.parquet
+  outcomes: ./outputs/outcomes/
+  features: ./outputs/features/
 
 outcomes:
   TEST_OUTCOME: 
-    type: [CONCEPT]
-    match: [['157', '169']]
+    type: [code]
+    match: [['D10', 'D02']]
     exclude: ['157141000119108']
-    match_how: contains
+    match_how: startswith
     case_sensitive: true
   TEST_CENSOR:
-    type: [CONCEPT]
-    match: [['169']]
+    type: [code]
+    match: [['M112']]
     match_how: startswith
     case_sensitive: false
     

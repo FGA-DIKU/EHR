@@ -18,6 +18,7 @@ ABSPOS_COL = "abspos"
 CONCEPT_COL = "code"
 AGE_COL = "age"
 SEGMENT_COL = "segment"
+VALUE_COL = "numeric_value"
 
 ### Schema ###
 SCHEMA = {

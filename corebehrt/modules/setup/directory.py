@@ -264,6 +264,7 @@ class DirectoryPreparer:
 
         # Validate and create directories
         self.check_directory("data", use_root=False)
+        self.check_file("patient_info")
         self.check_directory("features")
         self.create_directory("outcomes")
 

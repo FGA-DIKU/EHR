@@ -95,7 +95,6 @@ class ConceptLoaderLarge(ConceptLoader):
 
     def __init__(
         self,
-        concepts: list = ["diagnosis", "medication"],
         data_dir: str = "formatted_data",
         chunksize=10000,
         batchsize=100000,
@@ -147,6 +146,55 @@ class ConceptLoaderLarge(ConceptLoader):
     def get_patient_batch(patient_ids: list, batch_size: int) -> Iterator[list]:
         for i in range(0, len(patient_ids), batch_size):
             yield patient_ids[i : i + batch_size]
+
+
+class ShardLoader:
+    def __init__(
+        self,
+        data_dir: str,
+        splits: List[str] = ["train", "tuning", "held_out"],
+        patient_info_path: str = None,
+    ):
+        self.data_dir = data_dir
+        self.splits = splits
+        self.patient_info_path = patient_info_path if patient_info_path else os.path.join(data_dir, "patients_info.parquet")
+
+    def __call__(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
+        return self.process()
+
+    def process(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
+        if os.path.exists(self.patient_info_path):
+            patients_info = self.read_file(self.patient_info_path)
+        else:
+            patients_info = None
+        
+        for split in self.splits:
+            path_name = os.path.join(self.data_dir, split)
+            if not os.path.exists(path_name):
+                raise ValueError(f"Path {path_name} does not exist")
+            
+            for shard in os.listdir(path_name):
+                shard_path = os.path.join(path_name, shard)
+                df = self.read_file(shard_path)
+                if patients_info is not None:
+                    yield df, patients_info[patients_info[PID_COL].isin(df[PID_COL].unique())]
+                else:
+                    yield df, None
+
+    @staticmethod
+    def read_file(file_path: str) -> pd.DataFrame:
+        """Read csv or parquet file and return a DataFrame"""
+        _, file_ext = os.path.splitext(file_path)
+        if file_ext == CSV_EXT:
+            df = pd.read_csv(file_path)
+        elif file_ext == PARQUET_EXT:
+            df = pd.read_parquet(file_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_ext}")
+
+        if TIMESTAMP_COL in df.columns:
+            df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")
+        return df
 
 
 class ParquetIterator:
