@@ -11,6 +11,7 @@ from corebehrt.functional.features.split import split_into_test_and_train_val_pi
 from corebehrt.functional.setup.args import get_args
 from corebehrt.main.helper.finetune_cv import cv_loop, get_n_folds
 from corebehrt.main.helper.pretrain import get_splits_path
+from corebehrt.main.helper.finetune_cv import check_for_overlap
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
 )
@@ -47,7 +48,6 @@ def main_finetune(config_path):
         if cfg.paths.get("test_pids", None) is not None:
             logger.info("Using predefined test data")
             test_pids = torch.load(cfg.paths.test_pids)
-            train_val_pids = [pid for pid in data.get_pids() if pid not in test_pids]
         else:
             if not cfg.data.get("predefined_folds", False):
                 logger.info("Randomly splitting test data")
@@ -72,6 +72,7 @@ def main_finetune(config_path):
     if cfg.data.get("predefined_folds", False):
         folds_path = get_splits_path(cfg.paths)
         folds = torch.load(folds_path)
+        check_for_overlap(folds, test_pids, logger)
         n_folds = len(folds)
         logger.info(f"Using {n_folds} predefined folds")
 
