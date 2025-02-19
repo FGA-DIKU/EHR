@@ -18,12 +18,12 @@ paths:
   
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv
   
-  
-
 ## OUTPUTS
   model: ./outputs/finetuning # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
+evaluate: false # evaluate best model on test sets
+
 model:
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
@@ -48,10 +48,10 @@ trainer_args:
   sampler: true
   sample_weight_function:
     _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
-  batch_size: 8
-  val_batch_size: 16
-  effective_batch_size: 16
-  epochs: 3
+  batch_size: 128
+  val_batch_size: 128
+  effective_batch_size: 128
+  epochs: 2
   info: true
   gradient_clip: 
     clip_value: 1.0
