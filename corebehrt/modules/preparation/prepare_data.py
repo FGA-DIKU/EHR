@@ -160,7 +160,7 @@ class DatasetPreparer:
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
-                    "features_pretrain",
+                    "features_train",
                 )
             )
             if pids is not None:

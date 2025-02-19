@@ -6,7 +6,7 @@ import pandas as pd
 
 from corebehrt.functional.preparation.utils import subset_patient_data
 from corebehrt.modules.preparation.dataset import PatientData
-
+from corebehrt.constants.data import CONCEPT_COL
 
 def truncate_patient(
     patient: PatientData,
@@ -259,7 +259,7 @@ def truncate_patient_df(
     # Get the row in the boundary position
     if tail_length > 0:
         boundary_idx = total_length - tail_length
-        boundary_token = pdf["concept"].iloc[boundary_idx]
+        boundary_token = pdf[CONCEPT_COL].iloc[boundary_idx]
         if boundary_token == sep_token:
             tail_length = max(tail_length - 1, 0)
 

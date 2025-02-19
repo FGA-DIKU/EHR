@@ -4,7 +4,7 @@ from typing import List
 import dask.dataframe as dd
 
 from corebehrt.modules.preparation.dataset import PatientData
-
+from corebehrt.constants.data import CONCEPT_COL
 
 def get_background_length(patients: List[PatientData], vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
@@ -32,7 +32,7 @@ def get_background_length_dd(df: dd.DataFrame, vocabulary: dict) -> int:
         return 2  # Return default length for empty DataFrame
     # Get data for first patient using index
     sub = df.loc[first_idx[0]].compute()
-    example_concepts = set(sub["concept"].unique())
+    example_concepts = set(sub[CONCEPT_COL].unique())
     background_length = len(example_concepts & background_tokens)
     return background_length + 2
 

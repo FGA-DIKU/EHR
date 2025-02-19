@@ -10,11 +10,14 @@ MASK_TOKEN = "[MASK]"
 PAD_TOKEN = "[PAD]"
 
 ### Columns ###
-PID_COL = "PID"
-TIMESTAMP_COL = "TIMESTAMP"
-BIRTHDATE_COL = "BIRTHDATE"
+PID_COL = "subject_id"
+TIMESTAMP_COL = "time"
+BIRTHDATE_COL = "birthdate"
 DEATHDATE_COL = "DEATHDATE"
 ABSPOS_COL = "abspos"
+CONCEPT_COL = "code"
+AGE_COL = "age"
+SEGMENT_COL = "segment"
 
 ### Schema ###
 SCHEMA = {
