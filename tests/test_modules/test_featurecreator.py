@@ -1,8 +1,11 @@
+import os
+import shutil
 import unittest
 import pandas as pd
 import dask.dataframe as dd
 from datetime import datetime
 from corebehrt.modules.features.features import FeatureCreator
+from os.path import join
 
 
 class TestFeatureCreator(unittest.TestCase):
@@ -40,6 +43,7 @@ class TestFeatureCreator(unittest.TestCase):
             }
         )
 
+        self.tmp_folder_base = "temp_feature_creator"
         # Convert pandas DataFrames to Dask DataFrames with npartitions=2
         self.concepts = dd.from_pandas(self.concepts_pd, npartitions=2)
         self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=2)
@@ -52,14 +56,37 @@ class TestFeatureCreator(unittest.TestCase):
             [0, 1, 1, 2, 0, 1, 1, 0, 1, 1, 0, 1, 1], name="segment"  # bg + death
         )
 
+    def tearDown(self):
+        shutil.rmtree(self.tmp_folder, ignore_errors=True)
+
+    def with_tmp_dir(func):
+        def wrapper(self, *args, **kwargs):
+            test_name = func.__name__
+            unique_tmp_folder = f"{self.tmp_folder_base}_{test_name}"
+            os.makedirs(unique_tmp_folder, exist_ok=True)
+            self.tmp_folder = unique_tmp_folder  # Override the instance tmp_folder
+            try:
+                result = func(self, *args, **kwargs)
+                return result
+            finally:
+                shutil.rmtree(self.tmp_folder, ignore_errors=True)
+
+        return wrapper
+
+    @with_tmp_dir
     def test_create_ages(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         self.assertIn("age", result_df.columns)
         self.assertTrue(all(result_df["age"] >= 0))
 
+    @with_tmp_dir
     def test_create_segments(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         self.assertIn("segment", result_df.columns)
 
@@ -74,54 +101,74 @@ class TestFeatureCreator(unittest.TestCase):
             (result_df["segment"].values == self.expected_segments.values).all()
         )
 
+    @with_tmp_dir
     def test_create_abspos(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         self.assertIn("abspos", result_df.columns)
         # Additional testing can be done here, e.g., checking specific values
 
+    @with_tmp_dir
     def test_create_background(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         self.assertTrue(any(result_df["concept"].str.startswith("BG_GENDER")))
 
+    @with_tmp_dir
     def test_create_death(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         self.assertTrue(any(result_df["concept"] == "Death"))
         self.assertEqual(
             sum(result_df["concept"] == "Death"), 1
         )  # Only one patient has death info
 
+    @with_tmp_dir
     def test_all_features_created(self):
-        result = self.feature_creator(self.patients_info, self.concepts)
+        result = self.feature_creator(
+            self.patients_info, self.concepts, self.tmp_folder
+        )
         result_df = result.compute()
         expected_columns = {"PID", "concept", "age", "segment", "abspos"}
         self.assertTrue(expected_columns.issubset(set(result_df.columns)))
 
+    @with_tmp_dir
     def test_no_background_vars(self):
         feature_creator = FeatureCreator(background_vars=[])
-        result = feature_creator(self.patients_info, self.concepts)
+        result = feature_creator(self.patients_info, self.concepts, self.tmp_folder)
         result_df = result.compute()
         self.assertFalse(any(result_df["concept"].str.startswith("BG_")))
 
+    @with_tmp_dir
     def test_origin_point_as_dict(self):
         feature_creator = FeatureCreator(
             origin_point={"year": 2020, "month": 1, "day": 1}
         )
-        result = feature_creator(self.patients_info, self.concepts)
+        result = feature_creator(self.patients_info, self.concepts, self.tmp_folder)
         result_df = result.compute()
         self.assertIn("abspos", result_df.columns)
 
+    @with_tmp_dir
     def test_invalid_background_var(self):
         feature_creator = FeatureCreator(background_vars=["INVALID_COLUMN"])
         with self.assertRaises(ValueError):
-            feature_creator(self.patients_info, self.concepts).compute()
+            feature_creator(
+                self.patients_info, self.concepts, self.tmp_folder
+            ).compute()
 
+    @with_tmp_dir
     def test_missing_required_columns(self):
         concepts_missing_column = self.concepts.drop("ADMISSION_ID", axis=1)
         with self.assertRaises(ValueError):
-            self.feature_creator(self.patients_info, concepts_missing_column).compute()
+            self.feature_creator(
+                self.patients_info, concepts_missing_column, self.tmp_folder
+            ).compute()
 
 
 if __name__ == "__main__":
