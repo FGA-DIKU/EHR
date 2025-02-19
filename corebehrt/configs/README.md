@@ -5,7 +5,7 @@ This repository contains configuration files for processing Electronic Health Re
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
 
 #### **Key Functions:**  
-- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.  
+- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures and lab tests**.  
 - Defines **data paths** for raw data, tokenized sequences, and extracted features.  
 - Tokenizes **patient records** into structured sequences for modeling.  
 - Extracts **background variables** and sets a **reference timestamp** .  
@@ -13,30 +13,26 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
   - **Binning** values into categories.  
   - **Normalization** for feature scaling.  
   - **Handling missing values**.  
-- Splits the dataset into: **pretraining, finetuning, testing**  
+- Splits the dataset into: **pretrain, finetune and test**  
 ---
 
-### **Hyperparameters for `create data stage`**  
+### **Hyperparameters for the `create data` stage**  
 
-| **Parameter**        | **Description**                                            | **Value** |
-|----------------------|------------------------------------------------------------|----------|
-| `logging.level`      | Log verbosity level                                        | `INFO`   |
-| `logging.path`       | Path to save logs                                          | `./outputs/logs` |
-| `paths.data`         | Raw EHR data directory                                    | `./example_data/example_data_w_labs` |
-| `paths.tokenized`    | Tokenized data directory                                  | `./outputs/tokenized` |
-| `paths.features`     | Extracted features directory                              | `./outputs/features` |
-| `loader.concept_types` | Types of concepts to extract (`diagnoses`, `medications`, `procedures`, `lab tests`) | `["diagnose", "medication", "labtest"]` |
-| `loader.include_values` | Values to include                                      | `["labtest"]` |
-| `features.background_vars` | Background demographic variables                     | `["GENDER"]` |
-| `features.origin_point` | Reference timestamp                                    | `2020-01-26` |
-| `values.value_type`  | Type of value binning                                     | `binned` |
-| `values.normalize.func` | Normalization function                                 | `min_max_normalize_results` |
-| `values.normalize.kwargs.min_count` | Minimum count for normalization          | `3` |
-| `excluder.min_age`   | Minimum age for inclusion                                | `-1` |
-| `excluder.max_age`   | Maximum age for inclusion                                | `120` |
-| `split_ratios.pretrain` | Percentage of data for pretraining                    | `0.72` |
-| `split_ratios.finetune` | Percentage of data for finetuning                     | `0.18` |
-| `split_ratios.test`  | Percentage of data for testing                           | `0.1` |
+_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))_  
+
+| **Parameter**                     | **Description**                                           | **Value** |
+|-----------------------------------|-----------------------------------------------------------|----------|
+| `loader.concept_types`            | Types of concepts to extract (`diagnoses`, `medications`, `procedures`, `lab tests`) | `["diagnose", "medication", "labtest"]` |
+| `loader.include_values`           | Values to include                                       | `["labtest"]` |
+| `features.background_vars`        | Background demographic variables                        | `["GENDER"]` |
+| `features.origin_point`           | Reference timestamp                                     | `2020-01-26` |
+| `values.value_type`               | Type of value binning                                  | `binned` |
+| `values.normalize.func`           | Normalization function                                | `min_max_normalize_results` |
+| `values.normalize.kwargs.min_count` | Minimum count for normalization                     | `3` |
+| `excluder.min_age`                | Minimum age for inclusion                            | `-1` |
+| `excluder.max_age`                | Maximum age for inclusion                            | `120` |
+| `split_ratios.pretrain`           | Percentage of data for pretraining                   | `0.72` |
+| `split_ratios.finetune`           | Percentage of data for finetuning                    | `0.18` |
 
 ---
 ### Pretrain (`pretrain.yaml`)    
@@ -304,6 +300,20 @@ This step **fine-tunes the model on clinical outcomes** and then **evaluates its
 - For detailed configurations, check the respective YAML/JSON files.  
 
 # Common Items
+## **Common Hyperparameters (Shared Across All Stages)**  
+
+| **Parameter**              | **Description**                                      | **Value** |
+|----------------------------|------------------------------------------------------|----------|
+| `logging.level`            | Log verbosity level                                  | `INFO`   |
+| `logging.path`             | Path to save logs                                    | `./outputs/logs` |
+| `paths.features`           | Extracted features directory                        | `./outputs/features` |
+| `paths.tokenized`          | Tokenized data directory                            | `./outputs/tokenized` |
+| `paths.data`               | Raw EHR data directory                              | `./example_data/example_data_w_labs` |
+| `split_ratios.test`        | Percentage of data for testing                      | `0.1` |
+| `trainer_args.batch_size`  | Training batch size                                 | `32` |
+| `trainer_args.epochs`      | Number of training epochs                           | `5` |
+| `optimizer.lr`             | Learning rate                                       | `5e-4` |
+
 ## Logging Configuration
 
 ### Purpose
