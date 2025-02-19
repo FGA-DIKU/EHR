@@ -47,7 +47,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
-
+    combined_patient_info = pd.DataFrame()
     for split_name in ["train", "tuning", "held_out"]:
         path_name = f"{cfg.paths.data}/{split_name}"
         if not os.path.exists(path_name):
@@ -59,10 +59,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             shard_path = f"{path_name}/{shard}"
             shard_n = shard.split('.')[0]
 
-            # if int(shard_n) > 5:
-            #     continue
-
-            print(shard_path)
+            if int(shard_n) > 5:
+                continue
             
             concepts = FormattedDataLoader(
                 shard_path,
@@ -74,10 +72,14 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
                 )
             features_args = {k: v for k, v in cfg.features.items() if k != "values"}
             feature_creator = FeatureCreator(**features_args)
-            features = feature_creator(concepts)
+            features, patient_info = feature_creator(concepts)
+            combined_patient_info = pd.concat([combined_patient_info, patient_info])
 
             features = excluder.exclude_incorrect_events(features)
             print(features)
             features.to_parquet(
                 f'{split_save_path}/{shard_n}.parquet', index=False, schema=pa.schema(FEATURES_SCHEMA)
             )
+    patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
+    print(combined_patient_info.head())
+    combined_patient_info.to_parquet(patient_info_path, index=False)

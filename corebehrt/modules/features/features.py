@@ -52,7 +52,7 @@ class FeatureCreator:
     ) -> pd.DataFrame:
 
         check_features_columns(concepts)
-        features = create_background(concepts)
+        features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features, self.origin_point)
 
@@ -64,4 +64,4 @@ class FeatureCreator:
         features = features.drop(columns=["admission_id", "time", "birthdate"])
         features["subject_id"] = features["subject_id"].astype(str)
 
-        return features
+        return features, patient_info
