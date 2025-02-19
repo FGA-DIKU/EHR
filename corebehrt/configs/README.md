@@ -39,18 +39,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 | `split_ratios.test`  | Percentage of data for testing                           | `0.1` |
 
 ---
-### Pretrain (`pretrain.yaml`)  
-- Trains a **transformer-based model** on **EHR sequences** using **masked language modeling (MLM)**.  
-- Loads **tokenized patient records** and **structured features** as inputs.  
-- Applies **80% masking** and **10% token replacement** during MLM training.  
-- Uses a **truncation length of 20** and filters out sequences **shorter than 2 tokens**.  
-- Splits data into **80% training and 20% validation**.  
-- Trains for **5 epochs** with a **batch size of 32** (effective batch size: **64**).  
-- Optimizes using **Adam with LR = 5e-4**, **gradient clipping (1.0)**, and **linear warmup for 2 epochs**.  
-- Saves pretrained models to `./outputs/pretraining/`.  
-- Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
-
-### **Pretrain (`pretrain`)**  
+### Pretrain (`pretrain.yaml`)    
 This step **trains a transformer-based model** on **EHR sequences** using **masked language modeling (MLM)** to learn meaningful patient data representations.  
 
 #### **Key Functions:**  
@@ -100,20 +89,48 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 | `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
 
 ---
-### Define Outcomes (`outcome`)  
-- Extracts and processes **clinical outcome labels** from EHR records.  
-- Loads **diagnosis-related concepts** with a batch size of **10,000**.  
+### **Define Outcomes (`outcome.yaml`)**  
+This step **extracts and processes clinical outcome labels** from EHR records to be used in downstream modeling.  
+
+#### **Key Functions:**  
+- Loads **diagnosis-related concepts** with a **batch size of 10,000** to optimize processing speed.  
 - Filters and structures outcome data from `./example_data/example_data_w_labs`.  
 - Defines **TEST_OUTCOME**:  
-  - Matches concepts **157, 169** while **excluding 157141000119108**.  
+  - Matches concepts **157, 169**, but **excludes 157141000119108**.  
   - Uses **case-sensitive matching** and checks if values **contain** specified concepts.  
 - Defines **TEST_CENSOR**:  
   - Matches concept **169** using **case-insensitive "startswith" filtering**.  
 - Saves processed outcome labels to `./outputs/outcomes/`.  
 
+---
 
+### **Hyperparameters for `outcome`**  
+
+| **Parameter**        | **Description**                                          | **Value** |
+|----------------------|----------------------------------------------------------|----------|
+| `logging.level`      | Log verbosity level                                      | `INFO`   |
+| `logging.path`       | Path to save logs                                        | `./outputs/logs` |
+| `paths.data`         | Raw EHR data directory                                  | `./example_data/example_data_w_labs` |
+| `paths.features`     | Extracted features directory                            | `./outputs/features` |
+| `paths.outcomes`     | Output directory for processed outcomes                 | `./outputs/outcomes` |
+| `loader.concepts`    | List of concepts to extract                            | `["diagnose"]` |
+| `loader.batchsize`   | Number of samples processed in a single batch          | `10,000` |
+| `loader.chunksize`   | Number of samples read at once from file               | `10,000` |
+| `outcomes.TEST_OUTCOME.type` | Type of outcome                                | `["CONCEPT"]` |
+| `outcomes.TEST_OUTCOME.match` | Concepts to include                           | `[['157', '169']]` |
+| `outcomes.TEST_OUTCOME.exclude` | Concepts to exclude                         | `['157141000119108']` |
+| `outcomes.TEST_OUTCOME.match_how` | Matching method                           | `contains` |
+| `outcomes.TEST_OUTCOME.case_sensitive` | Case-sensitive matching              | `true` |
+| `outcomes.TEST_CENSOR.type` | Type of censoring outcome                      | `["CONCEPT"]` |
+| `outcomes.TEST_CENSOR.match` | Concepts to include for censoring              | `[['169']]` |
+| `outcomes.TEST_CENSOR.match_how` | Matching method for censoring               | `startswith` |
+| `outcomes.TEST_CENSOR.case_sensitive` | Case-sensitive matching for censoring | `false` |
+
+---
 ### **Select Cohort (`select_cohort`)**  
-This configuration selects a **subset of patients** based on predefined criteria for further analysis.
+This configuration **selects a subset of patients** based on predefined criteria for further analysis.  
+
+#### **Key Functions:**  
 - Loads **patient information** from `patients_info.csv`.  
 - Filters patients based on:  
   - **Age range**: Includes only patients between **18 - 120 years**.  
@@ -124,8 +141,37 @@ This configuration selects a **subset of patients** based on predefined criteria
   - **Absolute date**: `2015-01-26`.  
   - **Relative to exposure**: `24 hours before first exposure`.  
 - Splits the selected cohort into:  
-  - **80% training**, **10% validation**, and **10% testing**.  
+  - **training, validation, and testing**.  
 - Saves the final **cohort data** to `./outputs/cohort/`.  
+
+---
+
+### **Hyperparameters for `select_cohort`**  
+
+| **Parameter**              | **Description**                                            | **Value** |
+|----------------------------|------------------------------------------------------------|----------|
+| `logging.level`            | Log verbosity level                                        | `INFO`   |
+| `logging.path`             | Path to save logs                                          | `./outputs/logs` |
+| `paths.patients_info`      | Patient information file                                   | `./example_data/example_data_w_labs/patients_info.csv` |
+| `paths.initial_pids`       | Initial patient IDs (optional)                            | `./outputs/tokenized/pids_finetune.pt` |
+| `paths.exposure`           | Exposure file (optional)                                  | `./outputs/outcomes/TEST_CENSOR.csv` |
+| `paths.outcome`            | Outcome file                                             | `./outputs/outcomes/TEST_OUTCOME.csv` |
+| `paths.cohort`             | Output directory for cohort data                         | `./outputs/cohort/` |
+| `selection.exclude_prior_outcomes` | Exclude patients with prior outcomes             | `true` |
+| `selection.exposed_only`   | Include only exposed patients                            | `false` |
+| `selection.age.min_years`  | Minimum age for inclusion                                | `18` |
+| `selection.age.max_years`  | Maximum age for inclusion                                | `120` |
+| `selection.categories.GENDER.include` | Gender selection                              | `["M"]` |
+| `index_date.mode`          | Index date mode (absolute/relative)                     | `relative` |
+| `index_date.absolute.year` | Absolute index year                                     | `2015` |
+| `index_date.absolute.month`| Absolute index month                                    | `1` |
+| `index_date.absolute.day`  | Absolute index day                                      | `26` |
+| `index_date.relative.n_hours_from_exposure` | Relative index time before exposure    | `-24` |
+| `split_ratios.train`       | Percentage of data for training                         | `0.8` |
+| `split_ratios.val`         | Percentage of data for validation                       | `0.1` |
+| `split_ratios.test`        | Percentage of data for testing                          | `0.1` |
+
+---
 
 ###  Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)  
 - Fine-tunes the pretrained model for **predicting clinical outcomes**.  
@@ -162,7 +208,93 @@ This phase **fine-tunes** the pretrained model on specific clinical outcomes and
   - **True/False Positives & Negatives**  
   - **Mean Probability & Percentage of Positives**  
 
-This step **fine-tunes the model on clinical outcomes** and then **evaluates its predictive performance** before deployment. 🚀  
+
+
+### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
+This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.
+
+#### **🔹 Fine-Tuning (`fine_tune`)**
+- Loads **pretrained model** from `./outputs/pretraining/`.  
+- Uses **tokenized data, extracted features, and cohort selection** for training.  
+- **Trains a classifier (`ClassifierGRU`)** in a **bidirectional** mode.  
+- Converts **outcome labels to binary values** based on their presence in a follow-up window.  
+- Uses a **truncation length of 30** and removes sequences **shorter than 2 tokens**.  
+- Splits the data into:  
+  - **10% validation**  
+  - **10% test set**  
+- Trains for **3 epochs** with:  
+  - **Batch size of 8**  
+  - **Validation batch size of 16**  
+  - **Gradient clipping (1.0)**  
+  - **Early stopping after 20 epochs**  
+- Uses **learning rate `5e-4`** with **warmup steps (10)** and **total training steps (100)**.  
+- Saves the **fine-tuned model** to `./outputs/finetuning/`.  
+
+#### **🔹 Evaluation (`finetune_evaluate`)**
+- Loads the **fine-tuned model** from `../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_5_days_post_TEST_OUTCOME_test`.  
+- Runs evaluation using **a test dataset** located in the same directory.  
+- Computes various **performance metrics**, including:  
+  - **Accuracy** (Threshold: `0.6`)  
+  - **Balanced Accuracy**  
+  - **Precision & Recall**  
+  - **ROC-AUC & PR-AUC**  
+  - **True/False Positives & Negatives**  
+  - **Mean Probability & Percentage of Positives**  
+
+This step **fine-tunes the model on clinical outcomes** and then **evaluates its predictive performance** before deployment. 
+
+---
+
+###  **Hyperparameters for `fine_tune` & `finetune_evaluate`**  
+
+| **Parameter**                        | **Description**                                          | **Value** |
+|--------------------------------------|----------------------------------------------------------|----------|
+| `logging.level`                      | Log verbosity level                                      | `INFO`   |
+| `logging.path`                       | Path to save logs                                       | `./outputs/logs` |
+| `paths.features`                     | Extracted features directory                            | `./outputs/features` |
+| `paths.tokenized`                    | Tokenized data directory                                | `./outputs/tokenized` |
+| `paths.cohort`                       | Cohort selection directory                             | `./outputs/cohort` |
+| `paths.pretrain_model`               | Path to pretrained model                               | `./outputs/pretraining/` |
+| `paths.outcome`                      | Outcome file location                                  | `./outputs/outcomes/TEST_OUTCOME.csv` |
+| `paths.model`                        | Path to save fine-tuned model                         | `./outputs/finetuning/` |
+| `model.cls._target_`                 | Model architecture (ClassifierGRU)                    | `ehr2vec.model.heads.ClassifierGRU` |
+| `model.cls.bidirectional`            | Whether the GRU model is bidirectional                | `true` |
+| `cv_splits`                          | Number of cross-validation splits                     | `2` |
+| `data.val_split`                     | Validation set percentage                             | `0.1` |
+| `data.test_split`                    | Test set percentage                                   | `0.1` |
+| `data.truncation_len`                | Maximum sequence length                               | `30` |
+| `data.min_len`                       | Minimum sequence length                               | `2` |
+| `outcome.n_hours_censoring`          | Hours to censor after index date                     | `-10` |
+| `outcome.n_hours_start_follow_up`    | Start of follow-up period                            | `1` |
+| `outcome.n_hours_end_follow_up`      | End of follow-up period                              | `null` |
+| `trainer_args.batch_size`            | Training batch size                                  | `8` |
+| `trainer_args.val_batch_size`        | Validation batch size                                | `16` |
+| `trainer_args.effective_batch_size`  | Effective batch size                                 | `16` |
+| `trainer_args.epochs`                | Number of training epochs                           | `3` |
+| `trainer_args.gradient_clip.clip_value` | Gradient clipping value                          | `1.0` |
+| `trainer_args.shuffle`               | Shuffle training data                               | `true` |
+| `trainer_args.early_stopping`        | Early stopping patience                             | `20` |
+| `trainer_args.stopping_criterion`    | Stopping criterion                                  | `roc_auc` |
+| `optimizer.lr`                       | Learning rate                                       | `5e-4` |
+| `optimizer.eps`                      | Epsilon value for Adam optimizer                    | `1e-6` |
+| `scheduler._target_`                 | Learning rate scheduler                            | `transformers.get_linear_schedule_with_warmup` |
+| `scheduler.num_warmup_steps`         | Number of warmup steps                              | `10` |
+| `scheduler.num_training_steps`       | Total number of training steps                      | `100` |
+| `metrics.accuracy._target_`          | Accuracy metric                                    | `corebehrt.modules.monitoring.metrics.Accuracy` |
+| `metrics.accuracy.threshold`         | Accuracy threshold                                 | `0.6` |
+| `metrics.roc_auc._target_`           | ROC-AUC metric                                    | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
+| `metrics.pr_auc._target_`            | PR-AUC metric                                     | `corebehrt.modules.monitoring.metrics.PR_AUC` |
+| `metrics.precision._target_`         | Precision metric                                  | `corebehrt.modules.monitoring.metrics.Precision` |
+| `metrics.recall._target_`            | Recall metric                                     | `corebehrt.modules.monitoring.metrics.Recall` |
+| `metrics.mean_probability._target_`  | Mean probability metric                           | `corebehrt.modules.monitoring.metrics.Mean_Probability` |
+| `metrics.percentage_positives._target_` | Percentage of positive predictions              | `corebehrt.modules.monitoring.metrics.Percentage_Positives` |
+| `metrics.true_positives._target_`    | True Positives metric                             | `corebehrt.modules.monitoring.metrics.True_Positives` |
+| `metrics.true_negatives._target_`    | True Negatives metric                             | `corebehrt.modules.monitoring.metrics.True_Negatives` |
+| `metrics.false_positives._target_`   | False Positives metric                            | `corebehrt.modules.monitoring.metrics.False_Positives` |
+| `metrics.false_negatives._target_`   | False Negatives metric                            | `corebehrt.modules.monitoring.metrics.False_Negatives` |
+
+---
+
 
 
 
