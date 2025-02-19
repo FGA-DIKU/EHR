@@ -167,12 +167,18 @@ Our pipeline simulates a real-world deployment scenario by distinguishing the da
 
 **Example Configuration:**
 
+With this example config we fine-tune the model using data available up to 01/01/2020, predicting outcomes from 01/01/2020-01/01/2021. For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
+
+In select cohort:
+
 - **Absolute Index Date:** January 1, 2020  
 - **test_shift_hours:** 365 * 24 (1 year)
-- During fine-tuning, we use the following configuration:
-  - **n_hours_censoring:** 0 (censor outcomes occurring within 24 hours before the index date)  
-  - **n_hours_start_follow_up:** 0
-  - **n_hours_end_follow_up:** 365 * 24 (1 year)
+
+Fine-tuning configuration (outcome):
+
+- **n_hours_censoring:** 0 (censor outcomes occurring within 24 hours before the index date)  
+- **n_hours_start_follow_up:** 0
+- **n_hours_end_follow_up:** 365 * 24 (1 year)
 
 **Process Overview:**
 
