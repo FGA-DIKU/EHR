@@ -1,5 +1,25 @@
-# CoreBEHRT Configuration Files Overview 
-This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT, providing an overview of multiple configuration files used in different stages of data processing and modeling.  
+# CoreBEHRT Configuration Files Overview
+
+This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT. Below is an overview of the key configuration files used in different stages of data processing and modeling.
+
+## Configuration Files Summary
+
+| **Configuration File**       | **Purpose**                                              | **Key Functions** |
+|-----------------------------|----------------------------------------------------------|-------------------|
+| `create_data.yaml`          | Prepares structured EHR data for modeling               | Extracts clinical concepts (diagnoses, medications, procedures, lab tests), tokenizes records, normalizes values, and splits datasets into pretrain, finetune, and test sets. |
+| `pretrain.yaml`             | Pretrains a transformer-based model using Masked Language Modeling (MLM) | Applies token masking, sequence truncation, and optimizes model parameters using Adam optimizer. Evaluates performance using MLM loss and precision metrics. |
+| `outcome.yaml`              | Extracts clinical outcome labels for downstream modeling | Efficiently loads diagnosis-related data, applies filtering based on predefined criteria, and saves outcomes for further analysis. |
+| `select_cohort.yaml`        | Selects a subset of patients based on predefined criteria | Filters patients based on age, gender, and exposure history, defines an index date, and splits data into training, validation, and test sets. |
+| `fine_tune.yaml`            | Fine-tunes the pretrained model on clinical outcome prediction | Loads pretrained model, trains a classifier (GRU-based), converts outcome labels into binary classification, and optimizes training with gradient clipping and early stopping. |
+| `finetune_evaluate.yaml`    | Evaluates the fine-tuned model's predictive performance | Computes metrics such as accuracy, precision, recall, ROC-AUC, PR-AUC, and tracks false/true positive and negative predictions. |
+
+## Additional Notes
+- Each configuration file is optimized for efficient handling of large-scale EHR data.
+- Preprocessing steps include concept extraction, tokenization, value normalization, and dataset splitting.
+- Training and evaluation steps leverage transformer-based models with fine-tuning and metric tracking.
+
+For more details on specific configuration files, refer to their respective `.yaml` files.
+
 
 ### **Create Data (`create_data.yaml`)**  
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
@@ -267,33 +287,4 @@ Defines the logging severity level.
 
 - **Options**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 - **Current setting**: `INFO` (Logs general system messages)
-
-## Path
-### Directory Configuration for Input and Output Data
-
-This document defines the directories used for input and output data in various processes.
-
-| Parameter   | Description                          | Used In                        | Order of Usage                        |
-|------------|--------------------------------------|--------------------------------|--------------------------------------|
-| **data**   | Location of input data              | `create_data`, `outcome`       | Raw input data                      |
-| **tokenized** | Directory for tokenized data    | `create_data`, `pretrain`      | Data preprocessing (tokenization)   |
-| **features**  | Directory for extracted features  | `create_data`, `pretrain`, `outcome` | Feature extraction (used in multiple stages) |
-| **model**     | Output directory for saved models | `pretrain`, `fine_tune`        | Model training begins (pretraining, fine-tune) |
-| **cohort**    | Directory for patient cohort data | `fine_tune`, `select_cohort`   | Selected patient data for fine-tuning |
-| **outcomes**  | Directory for outcome data       | `outcome`, `fine_tune`         | Final results after training/fine-tuning |
-
-
-## Data Processing & Loading  
-
-This section defines the parameters for data ingestion, transformation, and processing.  
-
-| Parameter                      | Description                                                        | Used In             | Order of Execution                           |
-|---------------------------------|--------------------------------------------------------------------|---------------------|----------------------------------------------|
-| **Concept Types**               | Specifies the medical concepts to be included (e.g., `diagnose`, `medication`, `labtest`). | `create_data`       | Define relevant medical concepts.           |
-| **Normalization**               | Standardizes numerical values to ensure consistency across datasets. | `create_data`       | Apply data normalization techniques.        |
-| **Batch Size**                  | Determines the volume of data processed in a single iteration. | `outcome`           | Configure batch size for processing.        |
-| **Truncation Length**           | Sets a maximum limit on sequence lengths to maintain uniformity. | `pretrain`, `fine_tune` | Enforce sequence length constraints.  |
-| **Masking & Replacement Ratios** | Defines the proportion of data to be masked or replaced during preprocessing. | `pretrain`          | Apply masking and replacement strategies.   |
-
-        |
 
