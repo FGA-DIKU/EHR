@@ -9,7 +9,7 @@ import dateutil
 import pandas as pd
 import pyarrow.parquet as pq
 
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, SCHEMA
 from corebehrt.constants.paths import (
     CONCEPT_FORMAT,
     CSV_EXT,
@@ -66,28 +66,38 @@ class ConceptLoader:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-        return ConceptLoader._handle_datetime_columns(df)
+        df = ConceptLoader._handle_types_columns(df)
 
-    @staticmethod
-    def _handle_datetime_columns(df: pd.DataFrame) -> pd.DataFrame:
-        """Try to convert all potential datetime columns to datetime objects"""
-        for col in ConceptLoader._detect_date_columns(df):
-            df[col] = pd.to_datetime(df[col], errors="coerce")
-            df[col] = df[col].dt.tz_localize(None)
         return df
 
     @staticmethod
-    def _detect_date_columns(df: pd.DataFrame) -> Iterator[str]:
-        for col in df.columns:
-            if isinstance(df[col], datetime):
-                continue
-            if "TIME" in col.upper() or "DATE" in col.upper():
-                try:
-                    first_non_na = df.loc[df[col].notna(), col].iloc[0]
-                    dateutil.parser.parse(first_non_na)
-                    yield col
-                except:
-                    continue
+    def _handle_types_columns(df: pd.DataFrame) -> pd.DataFrame:
+        """Try to convert all potential types columns to the correct type"""
+        filtered_schema = {col: dtype for col, dtype in SCHEMA.items() if col in df.columns}
+        df = df.astype(filtered_schema)
+        if TIMESTAMP_COL in df.columns:
+            df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")        
+        return df
+    # @staticmethod
+    # def _handle_datetime_columns(df: pd.DataFrame) -> pd.DataFrame:
+    #     """Try to convert all potential datetime columns to datetime objects"""
+    #     for col in ConceptLoader._detect_date_columns(df):
+    #         df[col] = pd.to_datetime(df[col], errors="coerce")
+    #         df[col] = df[col].dt.tz_localize(None)
+    #     return df
+
+    # @staticmethod
+    # def _detect_date_columns(df: pd.DataFrame) -> Iterator[str]:
+    #     for col in df.columns:
+    #         if isinstance(df[col], datetime):
+    #             continue
+    #         if "TIME" in col.upper() or "DATE" in col.upper():
+    #             try:
+    #                 first_non_na = df.loc[df[col].notna(), col].iloc[0]
+    #                 dateutil.parser.parse(first_non_na)
+    #                 yield col
+    #             except:
+    #                 continue
 
 
 class ConceptLoaderLarge(ConceptLoader):

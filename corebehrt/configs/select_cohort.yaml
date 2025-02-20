@@ -4,8 +4,8 @@ logging:
 
 paths:
   ### Inputs
-  patients_info: ./example_data/example_data_w_labs/patients_info.csv
-  initial_pids: ./outputs/tokenized/pids_finetune.pt # Initial patients to select from [list of pids] (optional)
+  patients_info: ./outputs/features/patient_info.parquet
+  initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
   exposure: ./outputs/outcomes/TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv # Outcome
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
@@ -21,14 +21,14 @@ selection:
   age:
     min_years: 18 # Minimum age to include (inclusive)
     max_years: 120 # Maximum age to include (inclusive)
-  categories: # here we can include OR exclude categories
-    GENDER: # column name in the data
-      include: [M] # include only M/ exclude keyword can be used as well.
+  # categories: # here we can include OR exclude categories
+  #   GENDER: # column name in the data
+  #     include: [M] # include only M/ exclude keyword can be used as well.
 
 index_date: # if not provided we can use exposures to get the index dates
   mode: relative # absolute or relative (to exposure)
   absolute: 
-    year: 2015
+    year: 2020
     month: 1
     day: 26
   relative: # takes first exposure as index date
