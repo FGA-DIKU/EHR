@@ -13,18 +13,21 @@ This repository contains configuration files for processing Electronic Health Re
 | `fine_tune.yaml`            | Fine-tunes the pretrained model on clinical outcome prediction | Loads pretrained model, trains a classifier (GRU-based), converts outcome labels into binary classification, and optimizes training with gradient clipping and early stopping. |
 | `finetune_evaluate.yaml`    | Evaluates the fine-tuned model's predictive performance | Computes metrics such as accuracy, precision, recall, ROC-AUC, PR-AUC, and tracks false/true positive and negative predictions. |
 
-## Additional Notes
+### Additional Notes
 - Each configuration file is optimized for efficient handling of large-scale EHR data.
-- Preprocessing steps include concept extraction, tokenization, value normalization, and dataset splitting.
+- Preprocessing steps include:
+    - concept extraction
+    - tokenization
+    - value normalization,
+    - dataset splitting.
 - Training and evaluation steps leverage transformer-based models with fine-tuning and metric tracking.
 
-For more details on specific configuration files, refer to their respective `.yaml` files.
+In the following sections, each configuration file is explained in detail.
 
-
-### **Create Data (`create_data.yaml`)**  
+## **Create Data (`create_data.yaml`)**  
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
 
-#### **Key Functions:**  
+### **Key Functions:**  
 - Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures and lab tests**.  
 - Defines **data paths** for raw data, tokenized sequences, and extracted features.  
 - Tokenizes **patient records** into structured sequences for modeling.  
@@ -33,11 +36,12 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
   - **Binning** values into categories.  
   - **Normalization** for feature scaling.  
   - **Handling missing values**.  
-- Splits the dataset into: **pretrain, finetune and test**  
+- Splits the dataset into: **pretrain, finetune and test sets**  
 
 ### **Hyperparameters for the `create data` stage**  
 
-_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))_  
+_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+
 
 | **Parameter**                     | **Description**                                           | **Value** |
 |-----------------------------------|-----------------------------------------------------------|----------|
