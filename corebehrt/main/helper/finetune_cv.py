@@ -1,9 +1,12 @@
 import os
 from os.path import join
 from typing import List
+from typing import List
 
 import torch
 
+from corebehrt.azure import log_metrics, setup_metrics_dir
+from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
@@ -12,7 +15,6 @@ from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
-from corebehrt.azure import log_metrics, setup_metrics_dir
 
 
 def cv_loop(
@@ -133,8 +135,7 @@ def finetune_fold(
     trainer.model = model
     trainer.test_dataset = test_dataset
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+
     if len(test_data) > 0:
         test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
         log_best_metrics(test_loss, test_metrics, "test")
@@ -166,25 +167,3 @@ def check_for_overlap(folds: List[dict], test_pids: list, logger) -> None:
             "which may lead to data leakage and overly optimistic results. "
             "Please verify this overlap is intentional for your use case."
         )
-=======
-    val_loss, val_metrics = trainer._evaluate(epoch, mode="test")
-
-    # Transform to table for logging in Azure
-    row = {"validation_loss": val_loss, **val_metrics}
-    log_metrics({f"best.{k}": v for k, v in row.items()})
->>>>>>> 3dcaa31 (Azure logging (#137))
-=======
-    if len(test_data) > 0:
-        test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
-        log_best_metrics(test_loss, test_metrics, "test")
-
-
-def log_best_metrics(loss: float, metrics: dict, split: str) -> None:
-    """
-    Logs a dict of metrics, where each metric is prepended by 'best.<split>.'.
-    Example: 'val_loss' -> 'best.val.val_loss'
-    """
-    row = {f"{split}_loss": loss, **metrics}
-    prefixed = {f"best.{split}.{k}": v for k, v in row.items()}
-    log_metrics(prefixed)
->>>>>>> 9d2d9fb (fix: log best metric only if test set present (#140))
