@@ -7,14 +7,6 @@ paths:
   tokenized: ./outputs/tokenized
   features: ./outputs/features
   
-# loader:
-#   concept_types: [
-#     diagnose,
-#     medication,
-#     labtest
-#   ]
-#   include_values: [labtest]
-
 features:
   origin_point:
     year: 2020
@@ -34,8 +26,3 @@ tokenizer:
 excluder:
   min_age: -1
   max_age: 40
-
-split_ratios:
-  pretrain: 0.72 # 80% of 90%
-  finetune: 0.18 # 20% of 90%
-  test: 0.1

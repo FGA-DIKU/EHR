@@ -89,9 +89,9 @@ def load_concept(path) -> pd.DataFrame:
     """
 
     if path.endswith(".parquet"):
-        df = pd.read_parquet(path, parse_dates=["time"], index_col=0)
+        df = pd.read_parquet(path)
     elif path.endswith(".csv"):
-        df = pd.read_csv(path, parse_dates=["time"], index_col=0)
+        df = pd.read_csv(path, index_col=0)
     else:
         raise ValueError(f"Unknown file type: {file}")
 

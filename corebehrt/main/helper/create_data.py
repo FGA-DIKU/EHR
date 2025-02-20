@@ -55,7 +55,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         
         split_save_path = f"{cfg.paths.features}/{split_name}"
         os.makedirs(split_save_path, exist_ok=True)
-        for shard in os.listdir(path_name):
+        shards = [shard for shard in os.listdir(path_name) if not shard.startswith('.')] # MEDS on azure makes hidden files
+        for shard in shards:
             shard_path = f"{path_name}/{shard}"
             shard_n = shard.split('.')[0]
 

@@ -130,7 +130,7 @@ def main_write(
             complete_shard = pd.concat([shard_concept, shard_bg], axis=0).sort_values(by=['subject_id', 'time'])
             complete_shard = complete_shard.reset_index(drop=True)
             os.makedirs(f"{write_dir}/{split_name}", exist_ok=True)
-            complete_shard.to_csv(f"{write_dir}/{split_name}/{counter}.csv", index=True)
+            complete_shard.to_parquet(f"{write_dir}/{split_name}/{counter}.parquet", index=True)
             counter += 1
 
 if __name__ == "__main__":
