@@ -78,26 +78,26 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 | `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
 
 ---
-# Define Outcomes (`outcome.yaml`)
+### Define Outcomes (`outcome.yaml`)
 This step **extracts and processes clinical outcome labels** from EHR records to support downstream modeling. The process is designed for efficiency, handling large volumes of diagnosis-related concepts while ensuring accurate filtering and classification.
 
-## Key Functions
+#### Key Functions
 
-### Efficient Data Loading  
+##### Efficient Data Loading  
 - Loads diagnosis-related concepts in **optimized batches** to enhance processing speed.  
 - Reads data in **manageable chunks** for efficient handling.  
 
-### Outcome Labeling  
+##### Outcome Labeling  
 - **Defines `TEST_OUTCOME`**:  
   - Identifies specific clinical concepts but **excludes certain values** based on predefined criteria.  
   - Uses **case-sensitive matching** with a **"contains" filter** for concept identification.  
 - **Defines `TEST_CENSOR`**:  
   - Matches relevant concepts using **case-insensitive "startswith" filtering**.  
 
-### Output Storage  
+##### Output Storage  
 - Saves processed **outcome labels** to `./outputs/outcomes/`.  
 
-## Hyperparameters for `outcome`
+### Hyperparameters for `outcome`
 
 | **Parameter**                   | **Description**                                        | **Value** |
 |----------------------------------|--------------------------------------------------------|----------|
