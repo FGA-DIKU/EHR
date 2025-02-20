@@ -44,12 +44,10 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 - Splits data into:  
   - **training**  
   - **validation**  
-- Trains for **5 epochs** 
+- Trains for **number of epochs** 
 - Optimizes using **Adam optimizer** 
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
-
----
 
 ### **Hyperparameters for `Pretrain`**  stage
 
@@ -80,42 +78,47 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 | `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
 
 ---
-### **Define Outcomes (`outcome.yaml`)**  
-This step **extracts and processes clinical outcome labels** from EHR records to be used in downstream modeling.  
+# Define Outcomes (`outcome.yaml`)
+This step **extracts and processes clinical outcome labels** from EHR records to support downstream modeling. The process is designed for efficiency, handling large volumes of diagnosis-related concepts while ensuring accurate filtering and classification.
 
-#### **Key Functions:**  
-- Loads **diagnosis-related concepts** with a **batch size of 10,000** to optimize processing speed.  
-- Filters and structures outcome data from `./example_data/example_data_w_labs`.  
-- Defines **TEST_OUTCOME**:  
-  - Matches concepts **157, 169**, but **excludes 157141000119108**.  
-  - Uses **case-sensitive matching** and checks if values **contain** specified concepts.  
-- Defines **TEST_CENSOR**:  
-  - Matches concept **169** using **case-insensitive "startswith" filtering**.  
-- Saves processed outcome labels to `./outputs/outcomes/`.  
+## Key Functions
 
----
+### Efficient Data Loading  
+- Loads diagnosis-related concepts in **optimized batches** to enhance processing speed.  
+- Reads data in **manageable chunks** for efficient handling.  
 
-### **Hyperparameters for `outcome`**  
+### Outcome Labeling  
+- **Defines `TEST_OUTCOME`**:  
+  - Identifies specific clinical concepts but **excludes certain values** based on predefined criteria.  
+  - Uses **case-sensitive matching** with a **"contains" filter** for concept identification.  
+- **Defines `TEST_CENSOR`**:  
+  - Matches relevant concepts using **case-insensitive "startswith" filtering**.  
 
-| **Parameter**        | **Description**                                          | **Value** |
-|----------------------|----------------------------------------------------------|----------|
-| `logging.level`      | Log verbosity level                                      | `INFO`   |
-| `logging.path`       | Path to save logs                                        | `./outputs/logs` |
-| `paths.data`         | Raw EHR data directory                                  | `./example_data/example_data_w_labs` |
-| `paths.features`     | Extracted features directory                            | `./outputs/features` |
-| `paths.outcomes`     | Output directory for processed outcomes                 | `./outputs/outcomes` |
-| `loader.concepts`    | List of concepts to extract                            | `["diagnose"]` |
-| `loader.batchsize`   | Number of samples processed in a single batch          | `10,000` |
-| `loader.chunksize`   | Number of samples read at once from file               | `10,000` |
-| `outcomes.TEST_OUTCOME.type` | Type of outcome                                | `["CONCEPT"]` |
-| `outcomes.TEST_OUTCOME.match` | Concepts to include                           | `[['157', '169']]` |
-| `outcomes.TEST_OUTCOME.exclude` | Concepts to exclude                         | `['157141000119108']` |
-| `outcomes.TEST_OUTCOME.match_how` | Matching method                           | `contains` |
-| `outcomes.TEST_OUTCOME.case_sensitive` | Case-sensitive matching              | `true` |
-| `outcomes.TEST_CENSOR.type` | Type of censoring outcome                      | `["CONCEPT"]` |
-| `outcomes.TEST_CENSOR.match` | Concepts to include for censoring              | `[['169']]` |
-| `outcomes.TEST_CENSOR.match_how` | Matching method for censoring               | `startswith` |
-| `outcomes.TEST_CENSOR.case_sensitive` | Case-sensitive matching for censoring | `false` |
+### Output Storage  
+- Saves processed **outcome labels** to `./outputs/outcomes/`.  
+
+## Hyperparameters for `outcome`
+
+| **Parameter**                   | **Description**                                        | **Value** |
+|----------------------------------|--------------------------------------------------------|----------|
+| `paths.outcomes`                 | Directory to store processed outcomes                 | `./outputs/outcomes` |
+| `loader.concepts`                | Concepts to extract                                  | `["diagnose"]` |
+| `loader.batchsize`               | Number of records processed per batch               | `Optimized batch size` |
+| `loader.chunksize`               | Number of records read at once                      | `Optimized chunk size` |
+| `outcomes.TEST_OUTCOME.type`     | Outcome type                                        | `["CONCEPT"]` |
+| `outcomes.TEST_OUTCOME.match`    | Concepts to include                                | `Predefined set` |
+| `outcomes.TEST_OUTCOME.exclude`  | Concepts to exclude                                | `Predefined exclusions` |
+| `outcomes.TEST_OUTCOME.match_how` | Matching method                                    | `contains` |
+| `outcomes.TEST_OUTCOME.case_sensitive` | Case-sensitive matching                      | `true` |
+| `outcomes.TEST_CENSOR.type`      | Censoring outcome type                             | `["CONCEPT"]` |
+| `outcomes.TEST_CENSOR.match`     | Concepts included for censoring                   | `Predefined set` |
+| `outcomes.TEST_CENSOR.match_how` | Censoring match method                            | `startswith` |
+| `outcomes.TEST_CENSOR.case_sensitive` | Case-sensitive censoring matching              | `false` |
+
+## Notes  
+- The batch size and chunk size are **optimized for efficiency** without compromising accuracy.  
+- `TEST_OUTCOME` and `TEST_CENSOR` use **different matching rules** to ensure precise classification.  
+- Processed outcomes are **saved to `./outputs/outcomes/`** for further analysis.  
 
 ---
 ### **Select Cohort (`select_cohort`)**  
