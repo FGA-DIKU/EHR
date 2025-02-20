@@ -47,8 +47,10 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
+    max_shard = 5
     combined_patient_info = pd.DataFrame()
     for split_name in ["train", "tuning", "held_out"]:
+        counter = 0
         path_name = f"{cfg.paths.data}/{split_name}"
         if not os.path.exists(path_name):
             ValueError(f"Path {path_name} does not exist")
@@ -59,9 +61,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         for shard in shards:
             shard_path = f"{path_name}/{shard}"
             shard_n = shard.split('.')[0]
-
-            if int(shard_n) > 5:
-                continue
+            if counter >= max_shard:
+                break
             
             concepts = FormattedDataLoader(
                 shard_path,
@@ -75,9 +76,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             feature_creator = FeatureCreator(**features_args)
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
-
             features = excluder.exclude_incorrect_events(features)
-            print(features)
             features.to_parquet(
                 f'{split_save_path}/{shard_n}.parquet', index=False, schema=pa.schema(FEATURES_SCHEMA)
             )

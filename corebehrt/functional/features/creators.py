@@ -142,6 +142,7 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
     If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
     """
+    concepts = concepts.reset_index(drop=True)
     concepts['admission_id'] = None
     concepts['admission_id'] = concepts['admission_id'].astype(object)
 
@@ -163,16 +164,13 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
 
     # Assign admission_id to concepts outside admissions
     # Concepts within 48 hours of each other are considered to be part of the same admission
-    outside_segments = concepts[concepts['admission_id'].isna()]
-    admission_id = _get_adm_id()
-
-    for subject_id, group in outside_segments.groupby('subject_id'):
-        current_time = None
-        for index, row in group.iterrows():
-            if current_time is None or (row['time'] - current_time).total_seconds() > 48 * 3600:
-                admission_id = _get_adm_id()
-                current_time = row['time']
-            concepts.loc[index, 'admission_id'] = admission_id
+    outside_segments = concepts[concepts['admission_id'].isna()].copy()
+    outside_segments = outside_segments.sort_values(by=['subject_id', 'time'])
+    outside_segments['time_diff'] = outside_segments.groupby('subject_id')['time'].diff().dt.total_seconds()
+    outside_segments['new_admission'] = (outside_segments['time_diff'] > 48 * 3600) | (outside_segments['time_diff'].isna())
+    outside_segments['admission_id'] = outside_segments['new_admission'].cumsum().apply(lambda x: _get_adm_id() if x else None)
+    outside_segments['admission_id'] = outside_segments['admission_id'].ffill()
+    concepts.loc[outside_segments.index, 'admission_id'] = outside_segments['admission_id']
 
     return concepts
 
