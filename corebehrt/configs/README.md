@@ -38,9 +38,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
   - **Handling missing values**.  
 - Splits the dataset into: **pretrain, finetune and test sets**  
 
-### **Hyperparameters for the `create data` stage**  
-
-_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+### Hyperparameters for the `create data` stage:
 
 
 | **Parameter**                     | **Description**                                           | **Value** |
@@ -57,7 +55,9 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 | `split_ratios.pretrain`           | Percentage of data for pretraining                   | `0.72` |
 | `split_ratios.finetune`           | Percentage of data for finetuning                    | `0.18` |
 
+(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 ---
+
 ### Pretrain (`pretrain.yaml`)    
 This step **trains a transformer-based model** on **EHR sequences** using **masked language modeling (MLM)** to learn meaningful patient data representations.  
 
