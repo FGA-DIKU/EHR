@@ -16,7 +16,9 @@ class IndexDateHandler:
     def create_timestamp_series(pids: Set[str], timestamp: datetime) -> pd.Series:
         """Create a timestamp series for given PIDs."""
         return pd.Series(
-            data=timestamp, index=pd.Index(list(pids), name=PID_COL), name=TIMESTAMP_COL
+            data=timestamp,
+            index=pd.Index(list(pids), name=PID_COL),
+            name=TIMESTAMP_COL,
         )
 
     @staticmethod
@@ -57,15 +59,23 @@ class IndexDateHandler:
         patients_info: pd.DataFrame,
         index_date_mode: str,
         *,  # force keyword arguments,
-        absolute_timestamp: Optional[datetime] = None,
+        absolute_timestamp: Optional[dict] = None,
         n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
-        """Determine index dates based on mode."""
+        """Determine index dates based on mode.
+        Args:
+            patients_info: pd.DataFrame with patients info
+            index_date_mode: str, "absolute" or "relative"
+            absolute_timestamp: dict with year, month, day (required if index_date_mode == "absolute")
+            n_hours_from_exposure: int (required if index_date_mode == "relative")
+            exposures: pd.DataFrame (required if index_date_mode == "relative")
+        """
         pids = set(patients_info[PID_COL].unique())
 
         result = None
         if index_date_mode == "absolute":
+            absolute_timestamp = datetime(**absolute_timestamp)
             result = cls.create_timestamp_series(pids, absolute_timestamp)
         elif index_date_mode == "relative":
             n_hours = n_hours_from_exposure or 0

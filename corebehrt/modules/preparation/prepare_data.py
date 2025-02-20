@@ -167,6 +167,8 @@ class DatasetPreparer:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
             df = self._truncate(df, vocab, data_cfg.truncation_len)
+            if data_cfg.get("cutoff_date"):
+                df = self._cutoff_data(df, data_cfg.cutoff_date)
             df = df.reset_index(drop=False)
             df = df.compute()
         self._check_sorted(df)
@@ -228,3 +230,14 @@ class DatasetPreparer:
             patient_df = df[df[PID_COL] == pid]
             if not patient_df[ABSPOS_COL].is_monotonic_increasing:
                 raise ValueError(f"Patient {pid} has unsorted abspos values")
+
+    def _cutoff_data(self, df: dd.DataFrame, cutoff_date: dict) -> dd.DataFrame:
+        """Cutoff data after a given date."""
+        origin_point = load_config(
+            join(self.cfg.paths.features, "data_config.yaml")
+        ).features.origin_point
+        cutoff_abspos = get_abspos_from_origin_point(
+            datetime(**cutoff_date), datetime(**origin_point)
+        )
+        df = df[df[ABSPOS_COL] <= cutoff_abspos]
+        return df

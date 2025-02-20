@@ -28,6 +28,10 @@ data:
     ignore_special_tokens: true
   truncation_len: 20
   min_len: 2
+  cutoff_date:
+    year: 2020
+    month: 1
+    day: 1
 
 trainer_args:
   batch_size: 32
