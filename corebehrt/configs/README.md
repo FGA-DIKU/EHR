@@ -14,7 +14,6 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
   - **Normalization** for feature scaling.  
   - **Handling missing values**.  
 - Splits the dataset into: **pretrain, finetune and test**  
----
 
 ### **Hyperparameters for the `create data` stage**  
 
@@ -22,7 +21,7 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 
 | **Parameter**                     | **Description**                                           | **Value** |
 |-----------------------------------|-----------------------------------------------------------|----------|
-| `loader.concept_types`            | Types of concepts to extract (`diagnoses`, `medications`, `procedures`, `lab tests`) | `["diagnose", "medication", "labtest"]` |
+| `loader.concept_types`            | Types of concepts to extract  | `["diagnose", "medication", "labtest"]` |
 | `loader.include_values`           | Values to include                                       | `["labtest"]` |
 | `features.background_vars`        | Background demographic variables                        | `["GENDER"]` |
 | `features.origin_point`           | Reference timestamp                                     | `2020-01-26` |
