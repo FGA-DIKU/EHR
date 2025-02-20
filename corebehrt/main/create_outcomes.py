@@ -22,7 +22,7 @@ def main_data(config_path):
     logger.info("Starting outcomes creation")
     features_cfg = prepper.get_config("features")
     outcome_tables = process_data(
-        ShardLoader(data_dir=cfg.paths.data, splits=["train", "tuning", "held_out"], patient_info_path=cfg.paths.patient_info),
+        ShardLoader(data_dir=cfg.paths.data, splits=["train", "tuning", "held_out"], patient_info_path=join(cfg.paths.features, "patient_info.parquet")),
         cfg,
         features_cfg,
         logger,

@@ -156,7 +156,6 @@ class ShardLoader:
             patients_info = self.read_file(self.patient_info_path)
         else:
             patients_info = None
-        
         for split in self.splits:
             path_name = os.path.join(self.data_dir, split)
             if not os.path.exists(path_name):
@@ -166,6 +165,7 @@ class ShardLoader:
                 shard_path = os.path.join(path_name, shard)
                 df = self.read_file(shard_path)
                 if patients_info is not None:
+                    
                     yield df, patients_info[patients_info[PID_COL].isin(df[PID_COL].unique())]
                 else:
                     yield df, None

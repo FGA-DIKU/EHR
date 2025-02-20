@@ -4,7 +4,6 @@ logging:
 
 paths:
   data: ./example_data/example_MEDS_data
-  patient_info: ./outputs/features/patient_info.parquet
   outcomes: ./outputs/outcomes/
   features: ./outputs/features/
 
