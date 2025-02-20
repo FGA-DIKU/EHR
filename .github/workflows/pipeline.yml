@@ -50,3 +50,13 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_predefined.yaml
+
+            - name: main.select_cohort_absolute
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.select_cohort --config_path ./corebehrt/configs/select_cohort_absolute.yaml
+
+            - name: main.finetune_oot
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_oot.yaml

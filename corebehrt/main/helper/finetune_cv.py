@@ -1,16 +1,17 @@
 import os
 from os.path import join
+from typing import List
 
 import torch
 
-from corebehrt.constants.train import DEFAULT_VAL_SPLIT
+from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
+from corebehrt.constants.train import DEFAULT_VAL_SPLIT
 from corebehrt.functional.features.split import get_n_splits_cv_pids
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
-from corebehrt.azure import log_metrics, setup_metrics_dir
 
 
 def cv_loop(
@@ -144,3 +145,21 @@ def log_best_metrics(loss: float, metrics: dict, split: str) -> None:
     row = {f"{split}_loss": loss, **metrics}
     prefixed = {f"best.{split}.{k}": v for k, v in row.items()}
     log_metrics(prefixed)
+
+
+def check_for_overlap(folds: List[dict], test_pids: list, logger) -> None:
+    """
+    Check for overlap between test and train/validation patient IDs.
+    """
+    fold = folds[0]  # all folds have same pids in total, we use fold 0 as example
+
+    train_pids = set(fold[TRAIN_KEY])
+    val_pids = set(fold[VAL_KEY])
+    test_pids = set(test_pids)
+    if train_pids & test_pids or val_pids & test_pids:
+        logger.warning(
+            "Found overlap between test and train/validation patient IDs. "
+            "This means some patients appear in both test and training/validation sets, "
+            "which may lead to data leakage and overly optimistic results. "
+            "Please verify this overlap is intentional for your use case."
+        )
