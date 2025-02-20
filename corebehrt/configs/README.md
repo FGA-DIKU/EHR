@@ -40,7 +40,7 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 #### **Key Functions:**  
 - Loads **tokenized patient records** and **structured features** as inputs.  
 - Applies **80% masking** and **10% token replacement** during MLM training.  
-- Uses a **truncation length of 20** and filters out sequences **shorter than 2 tokens**.  
+- Uses a **truncation length* and filters out sequences **shorter than minimum tokens**.  
 - Splits data into:  
   - **training**  
   - **validation**  
@@ -55,10 +55,6 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 
 | **Parameter**        | **Description**                                          | **Value** |
 |----------------------|----------------------------------------------------------|----------|
-| `logging.level`      | Log verbosity level                                      | `INFO`   |
-| `logging.path`       | Path to save logs                                        | `./outputs/logs` |
-| `paths.features`     | Extracted features directory                            | `./outputs/features` |
-| `paths.tokenized`    | Tokenized data directory                                | `./outputs/tokenized` |
 | `data.dataset.select_ratio` | Percentage of dataset to use                     | `1.0` |
 | `data.dataset.masking_ratio` | Percentage of tokens masked                      | `0.8` |
 | `data.dataset.replace_ratio` | Percentage of tokens replaced                    | `0.1` |
