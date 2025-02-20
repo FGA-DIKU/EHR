@@ -109,6 +109,7 @@ def main_write(
 ):
     patients_info = pq.read_table(f"{read_dir}/patients_info.parquet").to_pandas()
     patients_info['subject_id'], unique_values = pd.factorize(patients_info['PID'])
+    patients_info['subject_id'] = patients_info['subject_id'].astype(int)
     hash_to_integer_map = dict(zip(unique_values, range(len(unique_values))))
     patients_info = patients_info.drop(columns=['PID'])
 

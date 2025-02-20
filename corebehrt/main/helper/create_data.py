@@ -40,7 +40,7 @@ def load_tokenize_and_save(
             schema=pa.schema(TOKENIZED_SCHEMA),
         )
         pids.extend(df['subject_id'].unique().tolist())
-    torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt"))
+    torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt")) # save pids as ints
 
 def create_and_save_features(excluder: Excluder, cfg) -> None:
     """
