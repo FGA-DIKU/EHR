@@ -119,25 +119,6 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 - The batch size and chunk size are **optimized for efficiency** without compromising accuracy.  
 - `TEST_OUTCOME` and `TEST_CENSOR` use **different matching rules** to ensure precise classification.  
 - Processed outcomes are **saved to `./outputs/outcomes/`** for further analysis.  
-
----
-### **Select Cohort (`select_cohort`)**  
-This configuration **selects a subset of patients** based on predefined criteria for further analysis.  
-
-#### **Key Functions:**  
-- Loads **patient information** from `patients_info.csv`.  
-- Filters patients based on:  
-  - **Age range**: Includes only patients between **18 - 120 years**.  
-  - **Gender**: Includes only **male (`M`)** patients.  
-  - **Exposure status**: Uses `TEST_CENSOR.csv`, if provided.  
-  - **Outcome history**: Excludes patients who had the outcome **before the index date**.  
-- Defines the **index date** as:  
-  - **Absolute date**: `2015-01-26`.  
-  - **Relative to exposure**: `24 hours before first exposure`.  
-- Splits the selected cohort into:  
-  - **training, validation, and testing**.  
-- Saves the final **cohort data** to `./outputs/cohort/`.  
-
 ---
 
 ### **Hyperparameters for `select_cohort`**  
@@ -191,122 +172,63 @@ This configuration **selects a subset of patients** based on predefined criteria
 | `split_ratios.test`                    | Proportion of data allocated for testing                | `Configured percentage` |
 
 ---
-### **Improvements & Key Changes**
- **Maintains hierarchical structuring** for clarity and readability.  
- **Removes direct numbers** from the main text and keeps them in the table.  
- **Uses placeholders like "Configured limit" and "Predefined category"** for better flexibility.  
- **Markdown-friendly format** for rendering in documentation tools like GitHub, VS Code, and Jupyter.  
----
-
-###  Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)  
-- Fine-tunes the pretrained model for **predicting clinical outcomes**.  
-- Evaluates performance using **accuracy, precision, recall, and AUC scores**.  
-
 ### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
-This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.
 
-#### **🔹 Fine-Tuning (`fine_tune`)**
-- Loads **pretrained model** from `./outputs/pretraining/`.  
+This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.  
+
+### **Key Functions**  
+
+#####  Fine-Tuning (`fine_tune`)  
+- Loads a **pretrained model** from the designated directory.  
 - Uses **tokenized data, extracted features, and cohort selection** for training.  
 - **Trains a classifier (`ClassifierGRU`)** in a **bidirectional** mode.  
 - Converts **outcome labels to binary values** based on their presence in a follow-up window.  
-- Uses a **truncation length of 30** and removes sequences **shorter than 2 tokens**.  
-- Splits the data into:  
-  - **10% validation**  
-  - **10% test set**  
-- Trains for **3 epochs** with:  
-  - **Batch size of 8**  
-  - **Validation batch size of 16**  
-  - **Gradient clipping (1.0)**  
-  - **Early stopping after 20 epochs**  
-- Uses **learning rate `5e-4`** with **warmup steps (10)** and **total training steps (100)**.  
-- Saves the **fine-tuned model** to `./outputs/finetuning/`.  
+- Applies **sequence truncation** and removes extremely short sequences.  
+- Splits data into **training and validation sets**.  
+- Saves the **fine-tuned model** to the designated output directory.  
 
-#### **🔹 Evaluation (`finetune_evaluate`)**
-- Loads the **fine-tuned model** from `../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_5_days_post_TEST_OUTCOME_test`.  
-- Runs evaluation using **a test dataset** located in the same directory.  
-- Computes various **performance metrics**, including:  
-  - **Accuracy** (Threshold: `0.6`)  
-  - **Balanced Accuracy**  
+#####  Evaluation (`finetune_evaluate`)  
+- Loads the **fine-tuned model** from the output directory.  
+- Runs evaluation on a **test dataset** to assess predictive performance.  
+- Computes **multiple evaluation metrics**, including:  
+  - **Accuracy & Balanced Accuracy**  
   - **Precision & Recall**  
   - **ROC-AUC & PR-AUC**  
   - **True/False Positives & Negatives**  
   - **Mean Probability & Percentage of Positives**  
 
-
-
-### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
-This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.
-
-#### **🔹 Fine-Tuning (`fine_tune`)**
-- Loads **pretrained model** from `./outputs/pretraining/`.  
-- Uses **tokenized data, extracted features, and cohort selection** for training.  
-- **Trains a classifier (`ClassifierGRU`)** in a **bidirectional** mode.  
-- Converts **outcome labels to binary values** based on their presence in a follow-up window.  
-- Uses a **truncation length of 30** and removes sequences **shorter than 2 tokens**.  
-- Splits the data into:  
-  - **10% validation**  
-  - **10% test set**  
-- Trains for **3 epochs** with:  
-  - **Batch size of 8**  
-  - **Validation batch size of 16**  
-  - **Gradient clipping (1.0)**  
-  - **Early stopping after 20 epochs**  
-- Uses **learning rate `5e-4`** with **warmup steps (10)** and **total training steps (100)**.  
-- Saves the **fine-tuned model** to `./outputs/finetuning/`.  
-
-#### **🔹 Evaluation (`finetune_evaluate`)**
-- Loads the **fine-tuned model** from `../outputs/pretraining/test/finetune_TEST_OUTCOME_censored_5_days_post_TEST_OUTCOME_test`.  
-- Runs evaluation using **a test dataset** located in the same directory.  
-- Computes various **performance metrics**, including:  
-  - **Accuracy** (Threshold: `0.6`)  
-  - **Balanced Accuracy**  
-  - **Precision & Recall**  
-  - **ROC-AUC & PR-AUC**  
-  - **True/False Positives & Negatives**  
-  - **Mean Probability & Percentage of Positives**  
-
-This step **fine-tunes the model on clinical outcomes** and then **evaluates its predictive performance** before deployment. 
-
 ---
 
-###  **Hyperparameters for `fine_tune` & `finetune_evaluate`**  
+## **Hyperparameters for `fine_tune` & `finetune_evaluate`**  
+
+_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))_  
 
 | **Parameter**                        | **Description**                                          | **Value** |
 |--------------------------------------|----------------------------------------------------------|----------|
-| `logging.level`                      | Log verbosity level                                      | `INFO`   |
-| `logging.path`                       | Path to save logs                                       | `./outputs/logs` |
-| `paths.features`                     | Extracted features directory                            | `./outputs/features` |
-| `paths.tokenized`                    | Tokenized data directory                                | `./outputs/tokenized` |
-| `paths.cohort`                       | Cohort selection directory                             | `./outputs/cohort` |
 | `paths.pretrain_model`               | Path to pretrained model                               | `./outputs/pretraining/` |
 | `paths.outcome`                      | Outcome file location                                  | `./outputs/outcomes/TEST_OUTCOME.csv` |
 | `paths.model`                        | Path to save fine-tuned model                         | `./outputs/finetuning/` |
 | `model.cls._target_`                 | Model architecture (ClassifierGRU)                    | `ehr2vec.model.heads.ClassifierGRU` |
 | `model.cls.bidirectional`            | Whether the GRU model is bidirectional                | `true` |
-| `cv_splits`                          | Number of cross-validation splits                     | `2` |
-| `data.val_split`                     | Validation set percentage                             | `0.1` |
-| `data.test_split`                    | Test set percentage                                   | `0.1` |
-| `data.truncation_len`                | Maximum sequence length                               | `30` |
-| `data.min_len`                       | Minimum sequence length                               | `2` |
-| `outcome.n_hours_censoring`          | Hours to censor after index date                     | `-10` |
-| `outcome.n_hours_start_follow_up`    | Start of follow-up period                            | `1` |
-| `outcome.n_hours_end_follow_up`      | End of follow-up period                              | `null` |
-| `trainer_args.batch_size`            | Training batch size                                  | `8` |
-| `trainer_args.val_batch_size`        | Validation batch size                                | `16` |
-| `trainer_args.effective_batch_size`  | Effective batch size                                 | `16` |
-| `trainer_args.epochs`                | Number of training epochs                           | `3` |
-| `trainer_args.gradient_clip.clip_value` | Gradient clipping value                          | `1.0` |
+| `cv_splits`                          | Number of cross-validation splits                     | `Configured value` |
+| `data.val_split`                     | Validation set percentage                             | `Configured percentage` |
+| `data.truncation_len`                | Maximum sequence length                               | `Configured limit` |
+| `data.min_len`                       | Minimum sequence length                               | `Configured limit` |
+| `outcome.n_hours_censoring`          | Hours to censor after index date                     | `Configured offset` |
+| `outcome.n_hours_start_follow_up`    | Start of follow-up period                            | `Configured time` |
+| `outcome.n_hours_end_follow_up`      | End of follow-up period                              | `Configured time` |
+| `trainer_args.val_batch_size`        | Validation batch size                                | `Configured size` |
+| `trainer_args.effective_batch_size`  | Effective batch size                                 | `Configured size` |
+| `trainer_args.gradient_clip.clip_value` | Gradient clipping value                          | `Configured value` |
 | `trainer_args.shuffle`               | Shuffle training data                               | `true` |
-| `trainer_args.early_stopping`        | Early stopping patience                             | `20` |
+| `trainer_args.early_stopping`        | Early stopping patience                             | `Configured patience` |
 | `trainer_args.stopping_criterion`    | Stopping criterion                                  | `roc_auc` |
-| `optimizer.lr`                       | Learning rate                                       | `5e-4` |
-| `optimizer.eps`                      | Epsilon value for Adam optimizer                    | `1e-6` |
+| `optimizer.eps`                      | Epsilon value for Adam optimizer                    | `Configured value` |
 | `scheduler._target_`                 | Learning rate scheduler                            | `transformers.get_linear_schedule_with_warmup` |
-| `scheduler.num_warmup_steps`         | Number of warmup steps                              | `10` |
-| `scheduler.num_training_steps`       | Total number of training steps                      | `100` |
+| `scheduler.num_warmup_steps`         | Number of warmup steps                              | `Configured steps` |
+| `scheduler.num_training_steps`       | Total number of training steps                      | `Configured steps` |
 | `metrics.accuracy._target_`          | Accuracy metric                                    | `corebehrt.modules.monitoring.metrics.Accuracy` |
-| `metrics.accuracy.threshold`         | Accuracy threshold                                 | `0.6` |
+| `metrics.accuracy.threshold`         | Accuracy threshold                                 | `Configured threshold` |
 | `metrics.roc_auc._target_`           | ROC-AUC metric                                    | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
 | `metrics.pr_auc._target_`            | PR-AUC metric                                     | `corebehrt.modules.monitoring.metrics.PR_AUC` |
 | `metrics.precision._target_`         | Precision metric                                  | `corebehrt.modules.monitoring.metrics.Precision` |
@@ -319,14 +241,6 @@ This step **fine-tunes the model on clinical outcomes** and then **evaluates its
 | `metrics.false_negatives._target_`   | False Negatives metric                            | `corebehrt.modules.monitoring.metrics.False_Negatives` |
 
 ---
-
-
-
-
-## Notes  
-- Modify **hyperparameters, dataset paths, and selection criteria** based on your needs.
-- Ensure all configuration files specially paths are properly set before running the pipeline.  
-- For detailed configurations, check the respective YAML/JSON files.  
 
 # Common Items
 ## **Common Hyperparameters (Shared Across All Stages)**  
