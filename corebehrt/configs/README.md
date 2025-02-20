@@ -21,7 +21,7 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 
 | **Parameter**                     | **Description**                                           | **Value** |
 |-----------------------------------|-----------------------------------------------------------|----------|
-| `loader.concept_types`            | Types of concepts to extract  | `["diagnose", "medication", "labtest"]` |
+| `loader.concept_types`            | Types of concepts to extract  | `["diagnose", "medication","procedure",  "labtest"]` |
 | `loader.include_values`           | Values to include                                       | `["labtest"]` |
 | `features.background_vars`        | Background demographic variables                        | `["GENDER"]` |
 | `features.origin_point`           | Reference timestamp                                     | `2020-01-26` |
