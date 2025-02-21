@@ -161,7 +161,7 @@ class ShardLoader:
             if not os.path.exists(path_name):
                 raise ValueError(f"Path {path_name} does not exist")
             
-            for shard in os.listdir(path_name):
+            for shard in [file for file in os.listdir(path_name) if not file.startswith('.')]:
                 shard_path = os.path.join(path_name, shard)
                 df = self.read_file(shard_path)
                 if patients_info is not None:
