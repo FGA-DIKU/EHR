@@ -1,5 +1,13 @@
+
 logging:
-  level: INFO
+  level: INFO   # Logs general system messages
+  #**Options**: 
+    #`DEBUG`:Detailed logs for debugging purposes
+    #`INFO`: General system messages (current setting)
+    #`WARNING`:Alerts about potential issues
+    #`ERROR`:Logs errors that prevent execution
+    #`CRITICAL`:Logs severe errors that may cause system failure
+
   path: ./outputs/logs
 
 paths:
@@ -7,14 +15,38 @@ paths:
   tokenized: ./outputs/tokenized
   features: ./outputs/features
   
+loader:
+  concept_types: [
+    diagnose, # Diagnosis codes
+    medication, # Prescribed medications
+    labtest, #results of Laboratory test 
+    precedure, #
+
+  ]
+  include_values: [labtest] # Only include lab test values in processing
+
 features:
-  origin_point:
+  #ages: true
+  origin_point:   # Reference date for aligning patient records
     year: 2020
     month: 1
     day: 26
-  values:
-    value_creator_kwargs:
-      num_bins: 100
+  #segment: true   #segment data based on time frames
+  background_vars: ['GENDER']  # gender as a background variable
+
+# Configuration for processing numerical values in the dataset
+values:
+  value_type: binned # Defines how numerical values are processed.
+  #**Options**: 
+    #`binned`: Groups values into predefined bins, useful for categorical representation
+    #`quantile`: Divides values into quantiles, useful for normalization
+  value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
+    # Arguments for binning
+    multiplication_factor: 100   # Scaling factor for binned values
+  normalize: # Dict with the function and kwargs for normalizing the values.
+    func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
+    kwargs: # Example kwargs
+      min_count: 3    # Minimum occurrences required for normalization
 
 tokenizer:
   sep_tokens: true
