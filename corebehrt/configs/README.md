@@ -1,5 +1,4 @@
 # CoreBEHRT Configuration Files Overview
-
 This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT. Below is an overview of the key configuration files used in different stages of data processing and modeling.
 
 ## Configuration Files Summary
@@ -266,8 +265,8 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 
 ---
 
-# Common Items
-## **Common Hyperparameters (Shared Across All Stages)**  
+## Common Items
+## **Common hyperparameters (Shared Across All Stages)**  
 
 | **Parameter**              | **Description**                                      | **Value** |
 |----------------------------|------------------------------------------------------|----------|
@@ -280,15 +279,3 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 | `trainer_args.batch_size`  | Training batch size                                 | `32` |
 | `trainer_args.epochs`      | Number of training epochs                           | `5` |
 | `optimizer.lr`             | Learning rate                                       | `5e-4` |
-
-## Logging Configuration
-
-### Purpose
-This section defines how logging should be handled in the model, ensuring that execution details are recorded for debugging/ monitoring.
-
-### Level
-Defines the logging severity level.
-
-- **Options**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
-- **Current setting**: `INFO` (Logs general system messages)
-
