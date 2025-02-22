@@ -40,13 +40,15 @@ values:
   #**Options**: 
     #`binned`: Groups values into predefined bins, useful for categorical representation
     #`quantile`: Divides values into quantiles, useful for normalization
+  
   value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
-    # Arguments for binning
-    multiplication_factor: 100   # Scaling factor for binned values
-  normalize: # Dict with the function and kwargs for normalizing the values.
-    func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results # Example function
-    kwargs: # Example kwargs
-      min_count: 3    # Minimum occurrences required for normalization
+    multiplication_factor: 100    # Scaling factor used when binning value, 0-100 _ 100-200 ,...
+  
+  normalize:  # Configuration for normalizing numerical values.
+    func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results  #Function used for normalization
+    # It ensures that the values are scaled to a specific range, usually between 0 and 1.
+    kwargs: 
+      min_count: 3    # Minimum number of occurrences required for a value to be considered for normalization
 
 tokenizer:
   sep_tokens: true
