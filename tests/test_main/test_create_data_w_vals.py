@@ -26,25 +26,14 @@ class TestCreateData(TestMainScript):
                     "features": self.features_dir,
                     "tokenized": self.tokenized_dir,
                 },
-                "loader": {
-                    "concept_types": ["diagnose", "medication", "labtest"],
-                    "include_values": ["labtest"],
-                },
                 "features": {
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
-                    "background_vars": ["GENDER"],
                     "values": {
-                        "value_type": "binned",
-                        "value_type_kwargs": {"multiplication_factor": 100},
-                        "normalize_args": {
-                            "func": "corebehrt.modules.features.normalizer.ValuesNormalizer.min_max_normalize_results",
-                            "kwargs": {"min_count": 3},
-                        },
+                        "value_creator_kwargs": {"num_bins": 100},
                     },
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
                 "excluder": {"min_age": -1, "max_age": 120},
-                "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
             }
         )
 
@@ -61,17 +50,19 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features = dd.read_parquet(self.features_dir).compute()
+        features_train = pd.read_parquet(join(self.features_dir, 'train'))
+        features_tuning = pd.read_parquet(join(self.features_dir, 'tuning'))
+        features_held_out = pd.read_parquet(join(self.features_dir, 'held_out'))
+        features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
-            features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
+            features.columns.to_list(), ["subject_id", "age", "abspos", "segment", "code"]
         )
 
         # 3: Check patients
-        expected_pids = pd.read_csv(f"{self.data_path}/patients_info.csv")[
-            "PID"
-        ].tolist()
+        patient_info = pd.read_parquet(f"{self.features_dir}/patient_info.parquet")
+        patient_info['subject_id'] = patient_info['subject_id'].astype(str)        
         self.assertEqual(
-            sorted(features["PID"].unique().tolist()), sorted(expected_pids)
+            sorted(features["subject_id"].unique().tolist()), sorted(patient_info["subject_id"].tolist())
         )
 
         # 4: Check vocabulary
@@ -79,11 +70,11 @@ class TestCreateData(TestMainScript):
         self.assertTrue(exists(vocab_path))
         vocab = torch.load(vocab_path)
         bg_tokens = [v for k, v in vocab.items() if k.startswith("BG")]
-        self.assertEqual(len(bg_tokens), 2)
+        self.assertEqual(len(bg_tokens), 9)
         val_tokens = [v for k, v in vocab.items() if k.startswith("VAL")]
 
         # 5. Check tokenisation
-        for mode in ["pretrain", "finetune", "test"]:
+        for mode in ["train", "tuning", "held_out"]:
             # Load the parquet file and immediately convert to pandas DataFrame
             tokenised_features = dd.read_parquet(
                 join(
@@ -92,12 +83,12 @@ class TestCreateData(TestMainScript):
                 )
             ).compute()
 
-            # Debug print to verify DataFrame structure
-            print(f"Columns in DataFrame: {tokenised_features.columns}")
-            print(f"First few rows:\n{tokenised_features.head()}")
+            # # Debug print to verify DataFrame structure
+            # print(f"Columns in DataFrame: {tokenised_features.columns}")
+            # print(f"First few rows:\n{tokenised_features.head()}")
 
             # Ensure required columns exist
-            required_columns = ["PID", "concept", "abspos", "segment", "age"]
+            required_columns = ["subject_id", "code", "abspos", "segment", "age"]
             for col in required_columns:
                 self.assertIn(
                     col, tokenised_features.columns, f"Missing required column: {col}"
@@ -107,7 +98,8 @@ class TestCreateData(TestMainScript):
             for patient in patient_list:
                 concepts = patient.concepts
                 self.assertTrue(concepts[0] == vocab["[CLS]"])
-                self.assertTrue(concepts[1] in bg_tokens)
+                self.assertTrue(concepts[1] == vocab["DOB"])
+                self.assertTrue(concepts[2] in bg_tokens)
 
                 index_vals = [i for i, x in enumerate(concepts) if x in val_tokens]
                 for i in range(len(index_vals) - 1):

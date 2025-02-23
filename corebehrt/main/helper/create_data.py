@@ -81,5 +81,4 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
                 f'{split_save_path}/{shard_n}.parquet', index=False, schema=pa.schema(FEATURES_SCHEMA)
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
-    print(combined_patient_info.head())
     combined_patient_info.to_parquet(patient_info_path, index=False)

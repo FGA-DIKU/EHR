@@ -93,7 +93,7 @@ def load_concept(path) -> pd.DataFrame:
     elif path.endswith(".csv"):
         df = pd.read_csv(path, index_col=0)
     else:
-        raise ValueError(f"Unknown file type: {file}")
+        raise ValueError(f"Unknown file type: {path}")
 
     df["time"] = df["time"].dt.tz_localize(
         None

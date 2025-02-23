@@ -8,6 +8,7 @@ from corebehrt.functional.features.normalize import normalize_segments_series
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
 from pandas import NaT
 import uuid
+import warnings
 
 def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFrame:
     """
@@ -67,11 +68,13 @@ def create_background(
     })
     patient_info['deathdate'] = patient_info['subject_id'].map(deathdates)
     bg_info = concepts[concepts['code'].str.startswith('BG_')][['subject_id', 'code']]
+    if len(bg_info) == 0:
+        warnings.warn("No background information found in concepts.")
+        return concepts, patient_info
     bg_info[['column_name', 'value']] = bg_info['code'].str.split('//', expand=True)
     bg_info['column_name'] = bg_info['column_name'].str.replace('BG_', '')
     bg_info_pivot = bg_info.pivot_table(index='subject_id', columns='column_name', values='value', aggfunc='first').reset_index()
     merged_info = pd.merge(patient_info, bg_info_pivot, on='subject_id', how='left')
-
     return concepts, merged_info
 
 
@@ -111,7 +114,7 @@ def _sort_partitions(df: pd.DataFrame) -> pd.DataFrame:
         )  # could maybe be done more optimally, is a bit slow
         df = df.drop(columns=["index", "order"])
     else:
-        df = df.sort_values(["PID", "abspos"])
+        df = df.sort_values(["subject_id", "abspos"])
 
     return df
 
@@ -168,7 +171,7 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     outside_segments = outside_segments.sort_values(by=['subject_id', 'time'])
     outside_segments['time_diff'] = outside_segments.groupby('subject_id')['time'].diff().dt.total_seconds()
     outside_segments['new_admission'] = (outside_segments['time_diff'] > 48 * 3600) | (outside_segments['time_diff'].isna())
-    outside_segments['admission_id'] = outside_segments['new_admission'].cumsum().apply(lambda x: _get_adm_id() if x else None)
+    outside_segments['admission_id'] = outside_segments['new_admission'].apply(lambda x: _get_adm_id() if x else None)
     outside_segments['admission_id'] = outside_segments['admission_id'].ffill()
     concepts.loc[outside_segments.index, 'admission_id'] = outside_segments['admission_id']
 

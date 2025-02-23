@@ -165,7 +165,6 @@ class ShardLoader:
                 shard_path = os.path.join(path_name, shard)
                 df = self.read_file(shard_path)
                 if patients_info is not None:
-                    
                     yield df, patients_info[patients_info[PID_COL].isin(df[PID_COL].unique())]
                 else:
                     yield df, None
@@ -234,23 +233,6 @@ class FormattedDataLoader:
         """Loads the concepts and patients_info DataFrames."""
         concepts = self._load_concept(self.path)
         check_concepts_columns(concepts)
-        return concepts
-
-    def _load_patients_info(self) -> dd.DataFrame:
-        """
-        Load patients_info data from formatted_data_dir.
-        Expects BIRTHDATE and DEATHDATE columns to be present.
-        Returns a dask dataframe.
-        """
-        return load_patients_info(self.folder)
-
-    def _remove_values(self, concepts: dd.DataFrame) -> dd.DataFrame:
-        """
-        Removes 'RESULT' column from concepts if column exists.
-        Returns a dask dataframe.
-        """
-        if "RESULT" in concepts.columns:
-            return concepts.drop(columns=["RESULT"])
         return concepts
 
     def _load_concept(self, path: str):

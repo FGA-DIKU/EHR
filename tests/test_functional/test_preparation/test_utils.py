@@ -75,11 +75,11 @@ class TestBackgroundFunctions(unittest.TestCase):
         # This must have at least a "concept" column to match your usage
         pdf = pd.DataFrame(
             {
-                "pid": ["pidA"] * 4,
-                "concept": [0, 2, 3, 5],  # a few tokens
+                "subject_id": ["pidA"] * 4,
+                "code": [0, 2, 3, 5],  # a few tokens
             }
         )
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        ddf = dd.from_pandas(pdf, npartitions=1).set_index("subject_id")
         # Intersection with background tokens = {0, 3}
         # => 2 + 2 => 4
         length = get_background_length_dd(ddf, self.vocab)
@@ -87,8 +87,8 @@ class TestBackgroundFunctions(unittest.TestCase):
 
     def test_get_background_length_dd_empty_df(self):
         # If the DataFrame is empty, function should return 2 (CLS + SEP)
-        pdf = pd.DataFrame(columns=["pid", "concept"])
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        pdf = pd.DataFrame(columns=["subject_id", "code"])
+        ddf = dd.from_pandas(pdf, npartitions=1).set_index("subject_id")
 
         length = get_background_length_dd(ddf, self.vocab)
         self.assertEqual(length, 2)

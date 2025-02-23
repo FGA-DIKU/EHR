@@ -50,7 +50,6 @@ class FeatureCreator:
         self,
         concepts: pd.DataFrame,
     ) -> pd.DataFrame:
-
         check_features_columns(concepts)
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)

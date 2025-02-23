@@ -18,7 +18,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         self.test_data = pd.DataFrame(
             {
                 "abspos": range(10),
-                "concept": [f"token_{i}" for i in range(10)],
+                "code": [f"token_{i}" for i in range(10)],
                 "other_col": [f"value_{i}" for i in range(10)],
             }
         )
@@ -28,7 +28,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         self.test_data_with_sep = pd.DataFrame(
             {
                 "abspos": range(10),
-                "concept": [
+                "code": [
                     "token_0",
                     "token_1",
                     "token_2",
