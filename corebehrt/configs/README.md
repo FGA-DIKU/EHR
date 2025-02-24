@@ -12,15 +12,6 @@ This repository contains configuration files for processing Electronic Health Re
 | `fine_tune.yaml`            | Fine-tunes the pretrained model on clinical outcome prediction | Loads pretrained model, trains a classifier (GRU-based), converts outcome labels into binary classification, and optimizes training with gradient clipping and early stopping. |
 | `finetune_evaluate.yaml`    | Evaluates the fine-tuned model's predictive performance | Computes metrics such as accuracy, precision, recall, ROC-AUC, PR-AUC, and tracks false/true positive and negative predictions. |
 
-### Additional Notes
-- Each configuration file is optimized for efficient handling of large-scale EHR data.
-- Preprocessing steps include:
-    - concept extraction
-    - tokenization
-    - value normalization,
-    - dataset splitting.
-- Training and evaluation steps leverage transformer-based models with fine-tuning and metric tracking.
-
 In the following sections, each configuration file is explained in detail.
 
 ## **Create Data (`create_data.yaml`)**  
@@ -40,19 +31,36 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 ### Hyperparameters for the `create data` stage:
 
 
-| **Parameter**                     | **Description**                                           | **Value** |
-|-----------------------------------|-----------------------------------------------------------|----------|
-| `loader.concept_types`            | Types of concepts to extract  | `["diagnose", "medication","procedure",  "labtest"]` |
-| `loader.include_values`           | Values to include                                       | `["labtest"]` |
-| `features.background_vars`        | Background demographic variables                        | `["GENDER"]` |
-| `features.origin_point`           | Reference timestamp                                     | `2020-01-26` |
-| `values.value_type`               | Type of value binning                                  | `binned` |
-| `values.normalize.func`           | Normalization function                                | `min_max_normalize_results` |
-| `values.normalize.kwargs.min_count` | Minimum count for normalization                     | `3` |
-| `excluder.min_age`                | Minimum age for inclusion                            | `-1` |
-| `excluder.max_age`                | Maximum age for inclusion                            | `120` |
-| `split_ratios.pretrain`           | Percentage of data for pretraining                   | `0.72` |
-| `split_ratios.finetune`           | Percentage of data for finetuning                    | `0.18` |
+## Loader
+| **Parameter**         | **Value** |
+|----------------------|-----------|
+| `concept_types`      | `["diagnose", "medication","procedure", "labtest"]` |
+| `include_values`     | `["labtest"]` |
+
+## Features
+| **Parameter**         | **Value** |
+|----------------------|-----------|
+| `background_vars`    | `["GENDER"]` |
+| `origin_point`       | `2020-01-26` |
+
+## Values
+| **Parameter**                 | **Value** |
+|--------------------------------|-----------|
+| `value_type`                  | `binned` |
+| `normalize.func`               | `min_max_normalize_results` |
+| `normalize.kwargs.min_count`   | `3` |
+
+## Excluder
+| **Parameter**  | **Value** |
+|---------------|-----------|
+| `min_age`     | `-1` |
+| `max_age`     | `120` |
+
+## Split Ratios
+| **Parameter**  | **Value** |
+|---------------|-----------|
+| `pretrain`    | `0.72` |
+| `finetune`    | `0.18` |
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 ---
