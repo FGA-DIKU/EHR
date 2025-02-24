@@ -75,6 +75,7 @@ class DatasetPreparer:
                     "features_tuning",
                 )
             )
+            df = df.repartition(partition_size="100MB")
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
@@ -165,6 +166,7 @@ class DatasetPreparer:
                     "features_train",
                 )
             )
+            df = df.repartition(partition_size="100MB")
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
