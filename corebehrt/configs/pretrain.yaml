@@ -1,11 +1,12 @@
 logging:
-  level: INFO
+  level: INFO  # Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   path: ./outputs/logs
 
+# Paths for input/output files
 paths:
 ## INPUTS
-  features: ./outputs/features
-  tokenized: ./outputs/tokenized
+  features: ./outputs/features # Path to preprocessed feature files
+  tokenized: ./outputs/tokenized   # Path to tokenized dataset
   # tokenized_file: ...
   # tokenized_pids: ...
   
@@ -16,25 +17,26 @@ paths:
   # cohort: ... # path to a file containing pids to use for pretraining
 
 ## OUTPUTS
-  model: ./outputs/pretraining # Save model/outputs to this folder
-  #runs: ./outputs/pretraining # Use for generating a new model folder
+  model: ./outputs/pretraining  # Path to save trained model
+  #runs: ./outputs/pretraining  # Use for generating a new model folder
   
 data:
   dataset:
-    select_ratio: 1.
-    masking_ratio: .8
-    replace_ratio: .1
-    ignore_special_tokens: true
-  truncation_len: 20
-  val_ratio: 0.2
-  min_len: 2
+    select_ratio: 1. # Fraction of dataset to use (1.0 means 100%)
+    masking_ratio: .8  # Ratio of tokens to mask for masked language modeling
+    replace_ratio: .1  # Ratio of masked tokens replaced with random tokens
+    ignore_special_tokens: true   # Ignore special tokens when processing data
+  truncation_len: 20  # Maximum sequence length after truncation
+  val_ratio: 0.2 # Percentage of data reserved for validation
+  min_len: 2 # Minimum sequence length required for a valid sample
 
+# Training arguments
 trainer_args:
-  batch_size: 32
-  effective_batch_size: 64
-  epochs: 5
-  info: true
-  sampler: null
+  batch_size: 32       # Number of samples per batch
+  effective_batch_size: 64  # Total batch size after gradient accumulation
+  epochs: 5  # Number of training epochs
+  info: true  # Whether to print training info
+  sampler: null  # Custom sampler for training (set to null for default)
   gradient_clip: 
     clip_value: 1.0
   shuffle: true

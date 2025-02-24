@@ -1,20 +1,9 @@
 # CoreBEHRT Configuration Files Overview
 This repository contains configuration files for processing Electronic Health Record (EHR) data using CoreBEHRT. Below is an overview of the key configuration files used in different stages of data processing and modeling.
 
-## Configuration Files Summary
-
-| **Configuration File**       | **Purpose**                                              | **Key Functions** |
-|-----------------------------|----------------------------------------------------------|-------------------|
-| `create_data.yaml`          | Prepares structured EHR data for modeling               | Extracts clinical concepts (diagnoses, medications, procedures, lab tests), tokenizes records, normalizes values, and splits datasets into pretrain, finetune, and test sets. |
-| `pretrain.yaml`             | Pretrains a transformer-based model using Masked Language Modeling (MLM) | Applies token masking, sequence truncation, and optimizes model parameters using Adam optimizer. Evaluates performance using MLM loss and precision metrics. |
-| `outcome.yaml`              | Extracts clinical outcome labels for downstream modeling | Efficiently loads diagnosis-related data, applies filtering based on predefined criteria, and saves outcomes for further analysis. |
-| `select_cohort.yaml`        | Selects a subset of patients based on predefined criteria | Filters patients based on age, gender, and exposure history, defines an index date, and splits data into training, validation, and test sets. |
-| `fine_tune.yaml`            | Fine-tunes the pretrained model on clinical outcome prediction | Loads pretrained model, trains a classifier (GRU-based), converts outcome labels into binary classification, and optimizes training with gradient clipping and early stopping. |
-| `finetune_evaluate.yaml`    | Evaluates the fine-tuned model's predictive performance | Computes metrics such as accuracy, precision, recall, ROC-AUC, PR-AUC, and tracks false/true positive and negative predictions. |
-
 In the following sections, each configuration file is explained in detail.
 
-## **Create Data (`create_data.yaml`)**  
+## **Create Data**  
 This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
 
 ### **Key Functions:**  
@@ -49,7 +38,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 
 ---
 
-### Pretrain (`pretrain.yaml`)    
+### **Pretrain**
 This step **trains a transformer-based model** on **EHR sequences** using **masked language modeling (MLM)** to learn meaningful patient data representations.  
 
 #### **Key Functions:**  
@@ -94,7 +83,7 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 
 
 ---
-### Define Outcomes (`outcome.yaml`)
+### **Define Outcomes**
 This step **extracts and processes clinical outcome labels** from EHR records to support downstream modeling. The process is designed for efficiency, handling large volumes of diagnosis-related concepts while ensuring accurate filtering and classification.
 
 #### Key Functions
@@ -140,7 +129,7 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 
 ---
 
-### **Hyperparameters for `select_cohort`**  
+### **select cohort**  
 
 This configuration **selects a subset of patients** based on predefined criteria for further analysis.  
 
@@ -192,7 +181,7 @@ This configuration **selects a subset of patients** based on predefined criteria
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 
 ---
-### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
+### **Fine-Tune & Evaluate**  
 
 This phase **fine-tunes** the pretrained model on specific clinical outcomes and **evaluates** its performance using various metrics.  
 
