@@ -19,4 +19,3 @@ outcomes:
     match: [['M112']]
     match_how: startswith
     case_sensitive: false
-    

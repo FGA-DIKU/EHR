@@ -18,6 +18,7 @@ DEFAULT_N = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
 DEFAULT_WRITE_DIR = "tmp/example_data"
 DEFAULT_BATCH_SIZE = 200_000
+DEFAULT_INCLUDE_LABS = True
 
 
 def main_write(
@@ -297,14 +298,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include-labs",
         action="store_true",
-        default=True,
+        default=DEFAULT_INCLUDE_LABS,
         help="Include lab test data generation (default: True)",
-    )
-    parser.add_argument(
-        "--no-labs",
-        action="store_false",
-        dest="include_labs",
-        help="Exclude lab test data generation",
     )
 
     args = parser.parse_args()

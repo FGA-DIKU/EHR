@@ -72,6 +72,8 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
                 concepts = ValueCreator.bin_results(
                     concepts, num_bins=cfg.features.values.value_creator_kwargs.get("num_bins", 100)
                 )
+            else:
+                concepts = concepts.drop(columns=["numeric_value"])
             features_args = {k: v for k, v in cfg.features.items() if k != "values"}
             feature_creator = FeatureCreator(**features_args)
             features, patient_info = feature_creator(concepts)
