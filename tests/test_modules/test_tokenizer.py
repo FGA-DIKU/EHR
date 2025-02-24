@@ -1,6 +1,5 @@
 import unittest
 import pandas as pd
-import dask.dataframe as dd
 
 # Import the EHRTokenizer class and constants
 from corebehrt.modules.features.tokenizer import EHRTokenizer

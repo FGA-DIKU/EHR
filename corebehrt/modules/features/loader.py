@@ -1,11 +1,9 @@
 import glob
 import os
 import random
-from datetime import datetime
 from typing import Iterator, List, Tuple
 
 import dask.dataframe as dd
-import dateutil
 import pandas as pd
 import pyarrow.parquet as pq
 
@@ -16,7 +14,7 @@ from corebehrt.constants.paths import (
     PARQUET_EXT,
     PATIENTS_INFO_FORMAT,
 )
-from corebehrt.functional.io_operations.load import load_concept, load_patients_info
+from corebehrt.functional.io_operations.load import load_concept
 from corebehrt.functional.setup.checks import (
     check_concepts_columns,
 )

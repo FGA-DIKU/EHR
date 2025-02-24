@@ -1,8 +1,6 @@
 import unittest
 import pandas as pd
-import dask.dataframe as dd
 from datetime import datetime
-import numpy as np
 from pandas import NaT
 
 from corebehrt.functional.features.creators import (

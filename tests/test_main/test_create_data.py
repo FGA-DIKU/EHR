@@ -1,6 +1,5 @@
 from os.path import exists, join
 
-import dask.dataframe as dd
 import pandas as pd
 import torch
 

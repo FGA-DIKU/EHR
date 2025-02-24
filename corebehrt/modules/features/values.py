@@ -1,6 +1,4 @@
 import pandas as pd
-from corebehrt.modules.setup.config import instantiate_function
-
 
 class ValueCreator:
     """

@@ -3,14 +3,11 @@ Simulate large data for performance testing and profiling.
 """
 
 import os
-import uuid
 
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import argparse
 
-import pyarrow as pa
 import pyarrow.parquet as pq
 from pandas import NaT
 
@@ -44,7 +41,6 @@ def get_bg_for_shard(shard_pids, patients_info, DOB, DOD, BG_cols):
     # BG
     for col in BG_cols:
         code = [f"{col}//{val}" for val in shard_patients_info[col]]
-        numeric_value = [np.nan] * len(pids)
 
         subject_ids.extend(pids)
         time_list.extend([NaT] * len(pids))
