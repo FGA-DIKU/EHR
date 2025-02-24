@@ -11,3 +11,4 @@ corebehrt/sandbox
 /tmp
 corebehrt/main/create_data_profiling.py
 **tmp**
+env/
