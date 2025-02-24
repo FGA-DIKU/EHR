@@ -257,6 +257,7 @@ This phase **fine-tunes** the pretrained model on specific clinical outcomes and
 |                   | `false_negatives._target_`        | `corebehrt.modules.monitoring.metrics.False_Negatives` |
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+
 ---
 ## Common Items
 ### **Common hyperparameters (Shared Across All Stages)**  
