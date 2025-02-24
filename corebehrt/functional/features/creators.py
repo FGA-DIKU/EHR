@@ -6,7 +6,6 @@ import pandas as pd
 
 from corebehrt.functional.features.normalize import normalize_segments_series
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
-from pandas import NaT
 import uuid
 import warnings
 
