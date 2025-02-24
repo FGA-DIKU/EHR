@@ -7,7 +7,7 @@ OUTPUTS = {
 }
 
 
-def job(config, compute=None, register_output=dict()):
+def job(config, compute=None, register_output=dict(), log_system_metrics=False):
     return util.setup_job(
         "create_data",
         inputs=INPUTS,
@@ -15,6 +15,7 @@ def job(config, compute=None, register_output=dict()):
         config=config,
         compute=compute,
         register_output=register_output,
+        log_system_metrics=log_system_metrics,
     )
 
 

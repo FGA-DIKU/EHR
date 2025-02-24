@@ -60,7 +60,12 @@ def create_and_run_job(args) -> None:
     register_output = parse_register_output(args.register_output)
     job_initializer = get_job_initializer(args.JOB)
 
-    job = job_initializer(cfg, compute=args.COMPUTE, register_output=register_output)
+    job = job_initializer(
+        cfg,
+        compute=args.COMPUTE,
+        register_output=register_output,
+        log_system_metrics=args.log_system_metrics,
+    )
 
     # Start job
     util.run_job(job, args.experiment)
@@ -110,6 +115,13 @@ if __name__ == "__main__":
         action="append",
         default=[],
         help="If an output should be registered, provide a name for the Azure asset using the format '--register_output <input>=<name>'.",
+    )
+    job_parser.add_argument(
+        "-lsm",
+        "--log_system_metrics",
+        action="store_true",
+        default=False,
+        help="If set, system metrics such as CPU, GPU and memory usage are logged in Azure.",
     )
 
     # Parse args
