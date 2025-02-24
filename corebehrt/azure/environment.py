@@ -5,6 +5,7 @@ from .util import check_azure, ml_client
 
 TMP_CONDA_FILE = ".cb_conda.yaml"
 REQUIREMENTS_FILE = "requirements.txt"
+ADDITIONAL_DEPENDENCIES = ["mlflow", "azureml-mlflow", "pynvml"]
 
 
 def build():
@@ -50,7 +51,7 @@ def create_conda_cfg() -> None:
         lines = f.readlines()
 
     # Add lines
-    lines += ["mlflow", "azureml-mlflow"]
+    lines += ADDITIONAL_DEPENDENCIES
 
     # Create and save conda config
     cfg = {
