@@ -8,19 +8,25 @@ logging:
     #`ERROR`:Logs errors that prevent execution
     #`CRITICAL`:Logs severe errors that may cause system failure
 
-  path: ./outputs/logs
+  path: ./outputs/logs # Directory where log files are stored
 
 paths:
+<<<<<<< HEAD
   data: ./example_data/example_MEDS_data_w_labs
   tokenized: ./outputs/tokenized
   features: ./outputs/features
+=======
+  data: ./example_data/example_data_w_labs # Path to raw EHR data
+  tokenized: ./outputs/tokenized           # Path to store tokenized patient records
+  features: ./outputs/features             # Path to save extracted features for modeling
+>>>>>>> 3c4d8db (create data)
   
 loader:
   concept_types: [
-    diagnose, # Diagnosis codes
-    medication, # Prescribed medications
-    labtest, #results of Laboratory test 
-    precedure, #
+    diagnose, # Diagnosis codes  (e.g., ICD-10 codes for diseases)
+    medication, # Medications prescribed to the patient
+    labtest, #results of Laboratory test (e.g., blood test values)
+    procedure,  # Medical procedures performed (e.g., surgeries, imaging)
 
   ]
   include_values: [labtest] # Only include lab test values in processing
@@ -41,22 +47,28 @@ values:
     #`binned`: Groups values into predefined bins, useful for categorical representation
     #`quantile`: Divides values into quantiles, useful for normalization
   
-  value_type_kwargs: # Arguments for the value type. Ex. multiplication_factor for binned.
+  value_type_kwargs: # Arguments for the value type
     multiplication_factor: 100    # Scaling factor used when binning value, 0-100 _ 100-200 ,...
   
   normalize:  # Configuration for normalizing numerical values.
     func: corebehrt.modules.normalizer.ValuesNormalizer.min_max_normalize_results  #Function used for normalization
-    # It ensures that the values are scaled to a specific range, usually between 0 and 1.
+    # This function applies Min-Max normalization to the 'RESULT' column.
+    # Instead of strictly scaling values between 0 and 1, it normalizes them within their respective concept groups.
     kwargs: 
       min_count: 3    # Minimum number of occurrences required for a value to be considered for normalization
-
+      # If a concept appears fewer than `min_count` times, its value is set to -1.
 tokenizer:
-  sep_tokens: true
-  cls_token: true
+  sep_tokens: true  # Whether to include separator tokens
+  cls_token: true   # Whether to include a classification token
   #cutoffs:
-   # D: 3 # diagnosis
-   # M: 4 # medication
+   # D: 3 # diagnosis    # Minimum count for diagnoses
+   # M: 4 # medication   # Minimum count for medications
 # This is for the excluding incorrect ages
 excluder:
   min_age: -1
   max_age: 120
+
+split_ratios: 
+  pretrain: 0.72 # 80% of 90%  #72% of the dataset used for pretraining
+  finetune: 0.18 # 20% of 90%  #used for fine-tuning
+  test: 0.1    # 10% reserved for final testing
