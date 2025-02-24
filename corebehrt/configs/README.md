@@ -163,25 +163,44 @@ This configuration **selects a subset of patients** based on predefined criteria
 
 #### **Hyperparameters for `select_cohort.yaml`**  
 | **Category**       | **Parameter**                     | **Value** |
-|-------------------|---------------------------------|----------------------------------------------|
-| **Paths**        | `patients_info`                | `./example_data/example_data_w_labs/patients_info.csv` |
-|                 | `initial_pids`                 | `./outputs/tokenized/pids_finetune.pt` |
-|                 | `exposure`                     | `./outputs/outcomes/TEST_CENSOR.csv` |
-|                 | `outcome`                      | `./outputs/outcomes/TEST_OUTCOME.csv` |
-|                 | `cohort`                       | `./outputs/cohort/` |
-| **Selection**    | `exclude_prior_outcomes`      | `true` |
-|                 | `exposed_only`                 | `false` |
-|                 | `age.min_years`                | `Configured limit` |
-|                 | `age.max_years`                | `Configured limit` |
-|                 | `categories.GENDER.include`    | `Predefined category` |
-| **Index Date**   | `mode`                         | `relative` |
-|                 | `absolute.year`                | `Configured date` |
-|                 | `absolute.month`               | `Configured date` |
-|                 | `absolute.day`                 | `Configured date` |
-|                 | `relative.n_hours_from_exposure` | `Configured offset` |
-| **Split Ratios** | `train`                        | `Configured percentage` |
-|                 | `val`                          | `Configured percentage` |
-|                 | `test`                         | `Configured percentage` |
+|-------------------|---------------------------------|_(For shared parameters, refer to Common Hyperparameters)_
+
+| **Category**         | **Parameter**                        | **Value** |
+|---------------------|------------------------------------|----------------------------------------------|
+| **Paths**          | `pretrain_model`                   | `./outputs/pretraining/` |
+|                   | `outcome`                          | `./outputs/outcomes/TEST_OUTCOME.csv` |
+|                   | `model`                            | `./outputs/finetuning/` |
+| **Model**         | `cls._target_`                     | `ehr2vec.model.heads.ClassifierGRU` |
+|                   | `cls.bidirectional`                | `true` |
+| **Cross-Validation** | `cv_splits`                     | `Configured value` |
+| **Data**          | `val_split`                        | `Configured percentage` |
+|                   | `truncation_len`                   | `Configured limit` |
+|                   | `min_len`                          | `Configured limit` |
+| **Outcome**       | `n_hours_censoring`                | `Configured offset` |
+|                   | `n_hours_start_follow_up`          | `Configured time` |
+|                   | `n_hours_end_follow_up`            | `Configured time` |
+| **Training Arguments** | `val_batch_size`              | `Configured size` |
+|                   | `effective_batch_size`             | `Configured size` |
+|                   | `gradient_clip.clip_value`         | `Configured value` |
+|                   | `shuffle`                          | `true` |
+|                   | `early_stopping`                   | `Configured patience` |
+|                   | `stopping_criterion`               | `roc_auc` |
+| **Optimizer**     | `eps`                              | `Configured value` |
+| **Scheduler**     | `_target_`                         | `transformers.get_linear_schedule_with_warmup` |
+|                   | `num_warmup_steps`                 | `Configured steps` |
+|                   | `num_training_steps`               | `Configured steps` |
+| **Metrics**       | `accuracy._target_`                | `corebehrt.modules.monitoring.metrics.Accuracy` |
+|                   | `accuracy.threshold`              | `Configured threshold` |
+|                   | `roc_auc._target_`                | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
+|                   | `pr_auc._target_`                 | `corebehrt.modules.monitoring.metrics.PR_AUC` |
+|                   | `precision._target_`              | `corebehrt.modules.monitoring.metrics.Precision` |
+|                   | `recall._target_`                 | `corebehrt.modules.monitoring.metrics.Recall` |
+|                   | `mean_probability._target_`       | `corebehrt.modules.monitoring.metrics.Mean_Probability` |
+|                   | `percentage_positives._target_`   | `corebehrt.modules.monitoring.metrics.Percentage_Positives` |
+|                   | `true_positives._target_`         | `corebehrt.modules.monitoring.metrics.True_Positives` |
+|                   | `true_negatives._target_`         | `corebehrt.modules.monitoring.metrics.True_Negatives` |
+|                   | `false_positives._target_`        | `corebehrt.modules.monitoring.metrics.False_Positives` |
+|                   | `false_negatives._target_`        | `corebehrt.modules.monitoring.metrics.False_Negatives` |
 
 ---
 ### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
