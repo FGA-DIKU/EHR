@@ -31,36 +31,19 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 ### Hyperparameters for the `create data` stage:
 
 
-## Loader
-| **Parameter**         | **Value** |
-|----------------------|-----------|
-| `concept_types`      | `["diagnose", "medication","procedure", "labtest"]` |
-| `include_values`     | `["labtest"]` |
-
-## Features
-| **Parameter**         | **Value** |
-|----------------------|-----------|
-| `background_vars`    | `["GENDER"]` |
-| `origin_point`       | `2020-01-26` |
-
-## Values
-| **Parameter**                 | **Value** |
-|--------------------------------|-----------|
-| `value_type`                  | `binned` |
-| `normalize.func`               | `min_max_normalize_results` |
-| `normalize.kwargs.min_count`   | `3` |
-
-## Excluder
-| **Parameter**  | **Value** |
-|---------------|-----------|
-| `min_age`     | `-1` |
-| `max_age`     | `120` |
-
-## Split Ratios
-| **Parameter**  | **Value** |
-|---------------|-----------|
-| `pretrain`    | `0.72` |
-| `finetune`    | `0.18` |
+| **Category**   | **Parameter**                   | **Value** |
+|--------------|--------------------------------|----------|
+| **Loader**   | `concept_types`               | `["diagnose", "medication", "procedure", "labtest"]` |
+|              | `include_values`              | `["labtest"]` |
+| **Features** | `background_vars`             | `["GENDER"]` |
+|              | `origin_point`                | `2020-01-26` |
+| **Values**   | `value_type`                  | `binned` |
+|              | `normalize.func`              | `min_max_normalize_results` |
+|              | `normalize.kwargs.min_count`  | `3` |
+| **Excluder** | `min_age`                     | `-1` |
+|              | `max_age`                     | `120` |
+| **Split Ratios** | `pretrain`                 | `0.72` |
+|              | `finetune`                    | `0.18` |
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 ---
