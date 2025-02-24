@@ -162,26 +162,26 @@ This configuration **selects a subset of patients** based on predefined criteria
 ---
 
 #### **Hyperparameters for `select_cohort.yaml`**  
-| **Category**       | **Parameter**                        | **Value** |
-|-------------------|------------------------------------|----------|
-| **Paths**        | `patients_info`                    | `./example_data/example_data_w_labs/patients_info.csv` |
-|                 | `initial_pids`                     | `./outputs/tokenized/pids_finetune.pt` |
-|                 | `exposure`                         | `./outputs/outcomes/TEST_CENSOR.csv` |
-|                 | `outcome`                          | `./outputs/outcomes/TEST_OUTCOME.csv` |
-|                 | `cohort`                           | `./outputs/cohort/` |
-| **Selection**    | `exclude_prior_outcomes`          | `true` |
-|                 | `exposed_only`                     | `false` |
-|                 | `age.min_years`                    | `Configured limit` |
-|                 | `age.max_years`                    | `Configured limit` |
-|                 | `categories.GENDER.include`        | `Predefined category` |
-| **Index Date**   | `mode`                             | `relative` |
-|                 | `absolute.year`                    | `Configured date` |
-|                 | `absolute.month`                   | `Configured date` |
-|                 | `absolute.day`                     | `Configured date` |
-|                 | `relative.n_hours_from_exposure`   | `Configured offset` |
-| **Split Ratios** | `train`                            | `Configured percentage` |
-|                 | `val`                              | `Configured percentage` |
-|                 | `test`                             | `Configured percentage` |
+| **Category**       | **Parameter**                     | **Value** |
+|-------------------|---------------------------------|----------------------------------------------|
+| **Paths**        | `patients_info`                | `./example_data/example_data_w_labs/patients_info.csv` |
+|                 | `initial_pids`                 | `./outputs/tokenized/pids_finetune.pt` |
+|                 | `exposure`                     | `./outputs/outcomes/TEST_CENSOR.csv` |
+|                 | `outcome`                      | `./outputs/outcomes/TEST_OUTCOME.csv` |
+|                 | `cohort`                       | `./outputs/cohort/` |
+| **Selection**    | `exclude_prior_outcomes`      | `true` |
+|                 | `exposed_only`                 | `false` |
+|                 | `age.min_years`                | `Configured limit` |
+|                 | `age.max_years`                | `Configured limit` |
+|                 | `categories.GENDER.include`    | `Predefined category` |
+| **Index Date**   | `mode`                         | `relative` |
+|                 | `absolute.year`                | `Configured date` |
+|                 | `absolute.month`               | `Configured date` |
+|                 | `absolute.day`                 | `Configured date` |
+|                 | `relative.n_hours_from_exposure` | `Configured offset` |
+| **Split Ratios** | `train`                        | `Configured percentage` |
+|                 | `val`                          | `Configured percentage` |
+|                 | `test`                         | `Configured percentage` |
 
 ---
 ### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
