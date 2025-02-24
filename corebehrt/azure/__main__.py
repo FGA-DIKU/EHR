@@ -6,24 +6,8 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 import sys
 import argparse
 import yaml
-
-from corebehrt.azure.components import (
-    create_data,
-    create_outcomes,
-    pretrain,
-    finetune,
-    select_cohort,
-)
-
+import importlib
 from . import environment, util
-
-COMPONENTS = {
-    "create_data": create_data,
-    "create_outcomes": create_outcomes,
-    "pretrain": pretrain,
-    "finetune_cv": finetune,
-    "select_cohort": select_cohort,
-}
 
 
 def parse_register_output(register_output_args: list) -> dict:
@@ -40,12 +24,29 @@ def parse_register_output(register_output_args: list) -> dict:
     return dict(register_output)
 
 
-def get_job_initializer(name: str) -> callable:
+def create_job(
+    name: str,
+    config: dict,
+    register_output: dict = dict(),
+    log_system_metrics: bool = False,
+) -> "command":
     """
-    Returns the initializer for the Azure job for the given
-    component name.
+    Creates the Azure command/job object. Job input/output
+    configuration is loaded from the components module.
     """
-    return COMPONENTS[name].job
+
+    # Load component
+    component = importlib.import_module(f"corebehrt.azure.components.{name}")
+
+    return util.setup_job(
+        name,
+        inputs=component.INPUTS,
+        outputs=component.OUTPUTS,
+        config=config,
+        compute=compute,
+        register_output=register_output,
+        log_system_metrics=log_system_metrics,
+    )
 
 
 def create_and_run_job(args) -> None:
@@ -58,9 +59,9 @@ def create_and_run_job(args) -> None:
         cfg = yaml.safe_load(cfg_file)
 
     register_output = parse_register_output(args.register_output)
-    job_initializer = get_job_initializer(args.JOB)
 
-    job = job_initializer(
+    job = create_job(
+        args.JOB,
         cfg,
         compute=args.COMPUTE,
         register_output=register_output,
