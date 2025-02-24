@@ -72,7 +72,7 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 |                 | `truncation_len`                   | `20` |
 |                 | `val_ratio`                        | `0.2` |
 |                 | `min_len`                          | `2` |
-| **trainer_args**| `batch_size`                       | `32` |
+| **training arguments**| `batch_size`                       | `32` |
 |                 | `effective_batch_size`             | `64` |
 |                 | `epochs`                           | `5` |
 |                 | `gradient_clip.clip_value`        | `1.0` |
@@ -110,21 +110,22 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 - Saves processed **outcome labels** to `./outputs/outcomes/`.  
 
 ### Hyperparameters for `outcome.yaml`
-| **Category**   | **Parameter**              | **Value** |
-|--------------|---------------------------|----------|
-| **Paths**   | `outcomes`                 | `./outputs/outcomes` |
-| **Loader**  | `concepts`                 | `["diagnose"]` |
-|             | `batchsize`                | `Optimized batch size` |
-|             | `chunksize`                | `Optimized chunk size` |
-| **Outcomes** | `TEST_OUTCOME.type`       | `["CONCEPT"]` |
-|             | `TEST_OUTCOME.match`       | `Predefined set` |
-|             | `TEST_OUTCOME.exclude`     | `Predefined exclusions` |
-|             | `TEST_OUTCOME.match_how`   | `contains` |
-|             | `TEST_OUTCOME.case_sensitive` | `true` |
-|             | `TEST_CENSOR.type`        | `["CONCEPT"]` |
-|             | `TEST_CENSOR.match`       | `Predefined set` |
-|             | `TEST_CENSOR.match_how`   | `startswith` |
-|             | `TEST_CENSOR.case_sensitive` | `false` |
+| **Category**    | **Parameter**         | **Value** |
+|---------------|---------------------|----------|
+| **Paths**    | outcomes            | `./outputs/outcomes` |
+| **Loader**   | concepts            | `["diagnose"]` |
+|             | batchsize           | `Optimized batch size` |
+|             | chunksize           | `Optimized chunk size` |
+| **TEST_OUTCOME** | type             | `["CONCEPT"]` |
+|             | match              | `Predefined set` |
+|             | exclude            | `Predefined exclusions` |
+|             | match_how          | `contains` |
+|             | case_sensitive     | `true` |
+| **TEST_CENSOR**  | type             | `["CONCEPT"]` |
+|             | match              | `Predefined set` |
+|             | match_how          | `startswith` |
+|             | case_sensitive     | `false` |
+
 
 
 ## Notes  
@@ -226,7 +227,7 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 | **Outcome**     | `n_hours_censoring`              | `Configured offset` |
 |                 | `n_hours_start_follow_up`        | `Configured time` |
 |                 | `n_hours_end_follow_up`          | `Configured time` |
-| **trainer_args**| `val_batch_size`    | `Configured size` |
+| **training arguments**| `val_batch_size`    | `Configured size` |
 |                 | `effective_batch_size` | `Configured size` |
 |                 | `gradient_clip.clip_value` | `Configured value` |
 |                 | `shuffle`           | `true` |
