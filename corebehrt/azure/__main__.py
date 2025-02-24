@@ -94,7 +94,7 @@ if __name__ == "__main__":
             "pretrain",
             "create_outcomes",
             "select_cohort",
-            "finetune",
+            "finetune_cv",
         },
         help="Job to run.",
     )
