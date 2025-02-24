@@ -2,7 +2,7 @@ import argparse
 from os.path import join
 from datetime import datetime
 from typing import Tuple
-from corebehrt.modules.setup.config import Config, load_config
+import yaml
 from corebehrt.azure import log
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
@@ -50,7 +50,7 @@ def setup_job(
     job: str,
     inputs: dict,
     outputs: dict,
-    config: Config,
+    config: dict,
     compute: str,
     register_output: dict = dict(),
 ):
@@ -135,6 +135,8 @@ def prepare_config(inputs: dict, outputs: dict) -> None:
     :param inputs: input argument configuration/mapping.
     :param outputs: output argument configuration/mapping.
     """
+    from corebehrt.modules.setup.config import load_config
+
     # Read the config file
     cfg = load_config(AZURE_CONFIG_FILE)
 
@@ -174,13 +176,13 @@ def parse_args(args: set) -> dict:
 
 
 def prepare_job_command_args(
-    config: Config, args: dict, _type: str, register_output: dict = dict()
+    config: dict, args: dict, _type: str, register_output: dict = dict()
 ) -> Tuple[dict, str]:
     """
     Prepare the input/output dictionary and construct the input/output
     part of the job command string.
 
-    :param config: Configuration object.
+    :param config: Configuration dictionary.
     :param args: Job args configuration.
     :param _type: "inputs" or "outputs"
     :param register_output: Register output mapping for _type="outputs"
@@ -206,7 +208,7 @@ def prepare_job_command_args(
     return job_args, cmd
 
 
-def get_path_from_cfg(cfg: Config, arg: str, arg_cfg: dict):
+def get_path_from_cfg(cfg: dict, arg: str, arg_cfg: dict):
     """
     Helper for reading a config value from config (cfg), given
     the argument name (arg) and configuration (arg_cfg)

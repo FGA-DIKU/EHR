@@ -1,5 +1,4 @@
 from corebehrt.azure import util
-from corebehrt.main import select_cohort
 
 INPUTS = {
     "patients_info": {"type": "uri_file"},
@@ -23,4 +22,6 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
+    from corebehrt.main import select_cohort
+
     util.run_main(select_cohort.main_select_cohort, INPUTS, OUTPUTS)

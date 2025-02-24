@@ -1,5 +1,4 @@
 from corebehrt.azure import util
-from corebehrt.main import create_data
 
 INPUTS = {"data": {"type": "uri_folder"}}
 OUTPUTS = {
@@ -20,4 +19,6 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
+    from corebehrt.main import create_data
+
     util.run_main(create_data.main_data, INPUTS, OUTPUTS)

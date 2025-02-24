@@ -1,5 +1,4 @@
 from corebehrt.azure import util
-from corebehrt.main import finetune_cv
 
 INPUTS = {
     "features": {"type": "uri_folder"},
@@ -31,4 +30,6 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
+    from corebehrt.main import finetune_cv
+
     util.run_main(finetune_cv.main_finetune, INPUTS, OUTPUTS)

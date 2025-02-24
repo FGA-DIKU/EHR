@@ -5,8 +5,7 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 
 import sys
 import argparse
-
-from corebehrt.modules.setup.config import load_config
+import yaml
 
 from corebehrt.azure.components import (
     create_data,
@@ -53,7 +52,7 @@ def create_and_run_job(args) -> None:
     """
     Run the job from the given arguments.
     """
-    cfg = load_config(args.config or f"./corebehrt/configs/{args.JOB}.yaml")
+    cfg = yaml.load(args.config or f"./corebehrt/configs/{args.JOB}.yaml")
     register_output = parse_register_output(args.register_output)
     job_initializer = get_job_initializer(args.JOB)
 
