@@ -30,7 +30,7 @@ def create_job(
     compute: str,
     register_output: dict = dict(),
     log_system_metrics: bool = False,
-) -> "command":
+) -> "command":  # noqa: F821
     """
     Creates the Azure command/job object. Job input/output
     configuration is loaded from the components module.
