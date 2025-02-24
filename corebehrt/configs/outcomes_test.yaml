@@ -3,7 +3,7 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_MEDS_data
+  data: ./example_data/example_MEDS_data_w_labs
   outcomes: ./outputs/outcomes/
   features: ./outputs/features/
 

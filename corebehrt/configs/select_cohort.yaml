@@ -16,7 +16,7 @@ paths:
 
 
 selection:
-  exclude_prior_outcomes: false # Exclude patients who had the outcome before index date
+  exclude_prior_outcomes: true # Exclude patients who had the outcome before index date
   exposed_only: false # Exclude patients who are not exposed
   age:
     min_years: 18 # Minimum age to include (inclusive)
@@ -28,11 +28,11 @@ selection:
 index_date: # if not provided we can use exposures to get the index dates
   mode: relative # absolute or relative (to exposure)
   absolute: 
-    year: 2018
+    year: 2015
     month: 1
     day: 26
   relative: # takes first exposure as index date
     n_hours_from_exposure: -24 # negative means before exposure, 0 by default
 
-cv_folds: 2 # can be set to 1 if only a simple train/val split is needed
+cv_folds: 5 # can be set to 1 if only a simple train/val split is needed
 test_ratio: 0.1 # can be set to 1 for test set creation only
