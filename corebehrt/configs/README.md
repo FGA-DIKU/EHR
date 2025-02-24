@@ -89,6 +89,8 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 |                 | `mlm_loss._target_`                | `corebehrt.modules.monitoring.metrics.LossAccessor` |
 |                 | `mlm_loss.loss_name`               | `loss` |
 
+(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+---
 ---
 ### Define Outcomes (`outcome.yaml`)
 This step **extracts and processes clinical outcome labels** from EHR records to support downstream modeling. The process is designed for efficiency, handling large volumes of diagnosis-related concepts while ensuring accurate filtering and classification.
@@ -126,12 +128,13 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 |             | match_how          | `startswith` |
 |             | case_sensitive     | `false` |
 
-
-
 ## Notes  
 - The batch size and chunk size are **optimized for efficiency** without compromising accuracy.  
 - `TEST_OUTCOME` and `TEST_CENSOR` use **different matching rules** to ensure precise classification.  
 - Processed outcomes are **saved to `./outputs/outcomes/`** for further analysis.  
+
+(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+---
 ---
 
 ### **Hyperparameters for `select_cohort`**  
@@ -161,7 +164,7 @@ This configuration **selects a subset of patients** based on predefined criteria
 
 ---
 
-#### **Hyperparameters for `select_cohort.yaml`**  
+### **Hyperparameters for `select_cohort.yaml`**  
 | **Category**       | **Parameter**                     | **Value** |
 |-------------------|---------------------------------|----------------------------------------------|
 | **Paths**        | `patients_info`                | `./example_data/example_data_w_labs/patients_info.csv` |
@@ -182,6 +185,8 @@ This configuration **selects a subset of patients** based on predefined criteria
 | **Split Ratios** | `train`                        | `Configured percentage` |
 |                 | `val`                          | `Configured percentage` |
 |                 | `test`                         | `Configured percentage` |
+
+(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 
 ---
 ### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
@@ -213,7 +218,6 @@ This phase **fine-tunes** the pretrained model on specific clinical outcomes and
 
 ## **Hyperparameters for `fine_tune.yaml` & `finetune_evaluate.yaml`**  
 
-_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))| _(For shared parameters, refer to Common Hyperparameters)_
 
 | **Category**         | **Parameter**                        | **Value** |
 |---------------------|------------------------------------|----------------------------------------------|
@@ -252,8 +256,10 @@ _(For shared parameters, refer to [Common Hyperparameters](#common-hyperparamete
 |                   | `false_positives._target_`        | `corebehrt.modules.monitoring.metrics.False_Positives` |
 |                   | `false_negatives._target_`        | `corebehrt.modules.monitoring.metrics.False_Negatives` |
 
+(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+---
 ## Common Items
-## **Common hyperparameters (Shared Across All Stages)**  
+### **Common hyperparameters (Shared Across All Stages)**  
 
 | **Parameter**              | **Description**                                      | **Value** |
 |----------------------------|------------------------------------------------------|----------|
