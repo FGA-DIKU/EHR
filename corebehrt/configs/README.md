@@ -63,33 +63,31 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
 
-### **Hyperparameters for `Pretrain`**  stage
-
-| **Parameter**        | **Description**                                          | **Value** |
-|----------------------|----------------------------------------------------------|----------|
-| `data.dataset.select_ratio` | Percentage of dataset to use                     | `1.0` |
-| `data.dataset.masking_ratio` | Percentage of tokens masked                      | `0.8` |
-| `data.dataset.replace_ratio` | Percentage of tokens replaced                    | `0.1` |
-| `data.dataset.ignore_special_tokens` | Ignore special tokens in masking         | `true` |
-| `data.truncation_len` | Maximum sequence length                                | `20` |
-| `data.val_ratio`     | Validation set percentage                               | `0.2` |
-| `data.min_len`      | Minimum sequence length                                 | `2` |
-| `trainer_args.batch_size` | Training batch size                                 | `32` |
-| `trainer_args.effective_batch_size` | Effective batch size                     | `64` |
-| `trainer_args.epochs` | Number of training epochs                              | `5` |
-| `trainer_args.gradient_clip.clip_value` | Gradient clipping value               | `1.0` |
-| `trainer_args.shuffle` | Shuffle training data                                 | `true` |
-| `optimizer.lr`       | Learning rate                                           | `5e-4` |
-| `optimizer.eps`      | Epsilon value for Adam optimizer                        | `1e-6` |
-| `scheduler._target_` | Learning rate scheduler                                | `transformers.get_linear_schedule_with_warmup` |
-| `scheduler.num_warmup_epochs` | Number of warmup epochs                        | `2` |
-| `scheduler.num_training_epochs` | Total training epochs                        | `3` |
-| `metrics.top1._target_` | Top-1 precision metric                               | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
-| `metrics.top1.topk` | Top-k value for top-1 precision                         | `1` |
-| `metrics.top10._target_` | Top-10 precision metric                             | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
-| `metrics.top10.topk` | Top-k value for top-10 precision                        | `10` |
-| `metrics.mlm_loss._target_` | MLM loss function                                | `corebehrt.modules.monitoring.metrics.LossAccessor` |
-| `metrics.mlm_loss.loss_name` | Name of the loss function                       | `loss` |
+| **Category**     | **Parameter**                        | **Value** |
+|-----------------|-------------------------------------|----------|
+| **Data**        | `dataset.select_ratio`                     | `1.0` |
+|                 | `dataset.masking_ratio`                    | `0.8` |
+|                 | `dataset.replace_ratio`                    | `0.1` |
+|                 | `dataset.ignore_special_tokens`            | `true` |
+|                 | `truncation_len`                   | `20` |
+|                 | `val_ratio`                        | `0.2` |
+|                 | `min_len`                          | `2` |
+| **trainer_args**| `batch_size`                       | `32` |
+|                 | `effective_batch_size`             | `64` |
+|                 | `epochs`                           | `5` |
+|                 | `gradient_clip.clip_value`        | `1.0` |
+|                 | `shuffle`                          | `true` |
+| **Optimizer**   | `lr`                               | `5e-4` |
+|                 | `eps`                              | `1e-6` |
+| **Scheduler**   | `_target_`                         | `transformers.get_linear_schedule_with_warmup` |
+|                 | `num_warmup_epochs`               | `2` |
+|                 | `num_training_epochs`             | `3` |
+| **Metrics**     | `top1._target_`                    | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
+|                 | `top1.topk`                        | `1` |
+|                 | `top10._target_`                   | `corebehrt.modules.monitoring.metrics.PrecisionAtK` |
+|                 | `top10.topk`                       | `10` |
+|                 | `mlm_loss._target_`                | `corebehrt.modules.monitoring.metrics.LossAccessor` |
+|                 | `mlm_loss.loss_name`               | `loss` |
 
 ---
 ### Define Outcomes (`outcome.yaml`)
