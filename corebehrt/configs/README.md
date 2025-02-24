@@ -109,23 +109,23 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 ##### Output Storage  
 - Saves processed **outcome labels** to `./outputs/outcomes/`.  
 
-### Hyperparameters for `outcome`
+### Hyperparameters for `outcome.yaml`
+| **Category**   | **Parameter**              | **Value** |
+|--------------|---------------------------|----------|
+| **Paths**   | `outcomes`                 | `./outputs/outcomes` |
+| **Loader**  | `concepts`                 | `["diagnose"]` |
+|             | `batchsize`                | `Optimized batch size` |
+|             | `chunksize`                | `Optimized chunk size` |
+| **Outcomes** | `TEST_OUTCOME.type`       | `["CONCEPT"]` |
+|             | `TEST_OUTCOME.match`       | `Predefined set` |
+|             | `TEST_OUTCOME.exclude`     | `Predefined exclusions` |
+|             | `TEST_OUTCOME.match_how`   | `contains` |
+|             | `TEST_OUTCOME.case_sensitive` | `true` |
+|             | `TEST_CENSOR.type`        | `["CONCEPT"]` |
+|             | `TEST_CENSOR.match`       | `Predefined set` |
+|             | `TEST_CENSOR.match_how`   | `startswith` |
+|             | `TEST_CENSOR.case_sensitive` | `false` |
 
-| **Parameter**                   | **Description**                                        | **Value** |
-|----------------------------------|--------------------------------------------------------|----------|
-| `paths.outcomes`                 | Directory to store processed outcomes                 | `./outputs/outcomes` |
-| `loader.concepts`                | Concepts to extract                                  | `["diagnose"]` |
-| `loader.batchsize`               | Number of records processed per batch               | `Optimized batch size` |
-| `loader.chunksize`               | Number of records read at once                      | `Optimized chunk size` |
-| `outcomes.TEST_OUTCOME.type`     | Outcome type                                        | `["CONCEPT"]` |
-| `outcomes.TEST_OUTCOME.match`    | Concepts to include                                | `Predefined set` |
-| `outcomes.TEST_OUTCOME.exclude`  | Concepts to exclude                                | `Predefined exclusions` |
-| `outcomes.TEST_OUTCOME.match_how` | Matching method                                    | `contains` |
-| `outcomes.TEST_OUTCOME.case_sensitive` | Case-sensitive matching                      | `true` |
-| `outcomes.TEST_CENSOR.type`      | Censoring outcome type                             | `["CONCEPT"]` |
-| `outcomes.TEST_CENSOR.match`     | Concepts included for censoring                   | `Predefined set` |
-| `outcomes.TEST_CENSOR.match_how` | Censoring match method                            | `startswith` |
-| `outcomes.TEST_CENSOR.case_sensitive` | Case-sensitive censoring matching              | `false` |
 
 ## Notes  
 - The batch size and chunk size are **optimized for efficiency** without compromising accuracy.  
@@ -160,28 +160,27 @@ This configuration **selects a subset of patients** based on predefined criteria
 
 ---
 
-#### **Hyperparameters for `select_cohort`**  
-
-| **Parameter**                         | **Description**                                           | **Value** |
-|---------------------------------------|-----------------------------------------------------------|----------|
-| `paths.patients_info`                 | Path to patient information file                        | `./example_data/example_data_w_labs/patients_info.csv` |
-| `paths.initial_pids`                  | Initial patient IDs (optional)                          | `./outputs/tokenized/pids_finetune.pt` |
-| `paths.exposure`                       | Path to exposure file (optional)                        | `./outputs/outcomes/TEST_CENSOR.csv` |
-| `paths.outcome`                        | Path to outcome file                                    | `./outputs/outcomes/TEST_OUTCOME.csv` |
-| `paths.cohort`                         | Output directory for cohort data                        | `./outputs/cohort/` |
-| `selection.exclude_prior_outcomes`     | Exclude patients with prior outcomes                    | `true` |
-| `selection.exposed_only`               | Include only exposed patients                           | `false` |
-| `selection.age.min_years`              | Minimum age for inclusion                               | `Configured limit` |
-| `selection.age.max_years`              | Maximum age for inclusion                               | `Configured limit` |
-| `selection.categories.GENDER.include`  | Gender selection criteria                               | `Predefined category` |
-| `index_date.mode`                      | Index date mode (absolute/relative)                     | `relative` |
-| `index_date.absolute.year`             | Absolute reference year                                 | `Configured date` |
-| `index_date.absolute.month`            | Absolute reference month                                | `Configured date` |
-| `index_date.absolute.day`              | Absolute reference day                                  | `Configured date` |
-| `index_date.relative.n_hours_from_exposure` | Time offset from first exposure                  | `Configured offset` |
-| `split_ratios.train`                   | Proportion of data allocated for training               | `Configured percentage` |
-| `split_ratios.val`                     | Proportion of data allocated for validation             | `Configured percentage` |
-| `split_ratios.test`                    | Proportion of data allocated for testing                | `Configured percentage` |
+#### **Hyperparameters for `select_cohort.yaml`**  
+| **Category**       | **Parameter**                        | **Value** |
+|-------------------|------------------------------------|----------|
+| **Paths**        | `patients_info`                    | `./example_data/example_data_w_labs/patients_info.csv` |
+|                 | `initial_pids`                     | `./outputs/tokenized/pids_finetune.pt` |
+|                 | `exposure`                         | `./outputs/outcomes/TEST_CENSOR.csv` |
+|                 | `outcome`                          | `./outputs/outcomes/TEST_OUTCOME.csv` |
+|                 | `cohort`                           | `./outputs/cohort/` |
+| **Selection**    | `exclude_prior_outcomes`          | `true` |
+|                 | `exposed_only`                     | `false` |
+|                 | `age.min_years`                    | `Configured limit` |
+|                 | `age.max_years`                    | `Configured limit` |
+|                 | `categories.GENDER.include`        | `Predefined category` |
+| **Index Date**   | `mode`                             | `relative` |
+|                 | `absolute.year`                    | `Configured date` |
+|                 | `absolute.month`                   | `Configured date` |
+|                 | `absolute.day`                     | `Configured date` |
+|                 | `relative.n_hours_from_exposure`   | `Configured offset` |
+| **Split Ratios** | `train`                            | `Configured percentage` |
+|                 | `val`                              | `Configured percentage` |
+|                 | `test`                             | `Configured percentage` |
 
 ---
 ### **Fine-Tune & Evaluate (`fine_tune` & `finetune_evaluate`)**  
@@ -211,48 +210,45 @@ This phase **fine-tunes** the pretrained model on specific clinical outcomes and
 
 ---
 
-## **Hyperparameters for `fine_tune` & `finetune_evaluate`**  
+## **Hyperparameters for `fine_tune.yaml` & `finetune_evaluate.yaml`**  
 
-_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))_  
+_(For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters))| **Category**       | **Parameter**                     | **Value** |
+|-------------------|---------------------------------|----------|
+| **Paths**        | `pretrain_model`                | `./outputs/pretraining/` |
+|                 | `outcome`                        | `./outputs/outcomes/TEST_OUTCOME.csv` |
+|                 | `model`                          | `./outputs/finetuning/` |
+| **Model**       | `cls._target_`                   | `ehr2vec.model.heads.ClassifierGRU` |
+|                 | `cls.bidirectional`              | `true` |
+| **Cross-Validation** | `cv_splits`                | `Configured value` |
+| **Data**        | `val_split`                      | `Configured percentage` |
+|                 | `truncation_len`                 | `Configured limit` |
+|                 | `min_len`                        | `Configured limit` |
+| **Outcome**     | `n_hours_censoring`              | `Configured offset` |
+|                 | `n_hours_start_follow_up`        | `Configured time` |
+|                 | `n_hours_end_follow_up`          | `Configured time` |
+| **trainer_args**| `val_batch_size`    | `Configured size` |
+|                 | `effective_batch_size` | `Configured size` |
+|                 | `gradient_clip.clip_value` | `Configured value` |
+|                 | `shuffle`           | `true` |
+|                 | `early_stopping`    | `Configured patience` |
+|                 | `stopping_criterion` | `roc_auc` |
+| **Optimizer**   | `eps`                            | `Configured value` |
+| **Scheduler**   | `_target_`                       | `transformers.get_linear_schedule_with_warmup` |
+|                 | `num_warmup_steps`              | `Configured steps` |
+|                 | `num_training_steps`            | `Configured steps` |
+| **Metrics**     | `accuracy._target_`              | `corebehrt.modules.monitoring.metrics.Accuracy` |
+|                 | `accuracy.threshold`            | `Configured threshold` |
+|                 | `roc_auc._target_`              | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
+|                 | `pr_auc._target_`               | `corebehrt.modules.monitoring.metrics.PR_AUC` |
+|                 | `precision._target_`            | `corebehrt.modules.monitoring.metrics.Precision` |
+|                 | `recall._target_`               | `corebehrt.modules.monitoring.metrics.Recall` |
+|                 | `mean_probability._target_`     | `corebehrt.modules.monitoring.metrics.Mean_Probability` |
+|                 | `percentage_positives._target_` | `corebehrt.modules.monitoring.metrics.Percentage_Positives` |
+|                 | `true_positives._target_`       | `corebehrt.modules.monitoring.metrics.True_Positives` |
+|                 | `true_negatives._target_`       | `corebehrt.modules.monitoring.metrics.True_Negatives` |
+|                 | `false_positives._target_`      | `corebehrt.modules.monitoring.metrics.False_Positives` |
+|                 | `false_negatives._target_`      | `corebehrt.modules.monitoring.metrics.False_Negatives` |
 
-| **Parameter**                        | **Description**                                          | **Value** |
-|--------------------------------------|----------------------------------------------------------|----------|
-| `paths.pretrain_model`               | Path to pretrained model                               | `./outputs/pretraining/` |
-| `paths.outcome`                      | Outcome file location                                  | `./outputs/outcomes/TEST_OUTCOME.csv` |
-| `paths.model`                        | Path to save fine-tuned model                         | `./outputs/finetuning/` |
-| `model.cls._target_`                 | Model architecture (ClassifierGRU)                    | `ehr2vec.model.heads.ClassifierGRU` |
-| `model.cls.bidirectional`            | Whether the GRU model is bidirectional                | `true` |
-| `cv_splits`                          | Number of cross-validation splits                     | `Configured value` |
-| `data.val_split`                     | Validation set percentage                             | `Configured percentage` |
-| `data.truncation_len`                | Maximum sequence length                               | `Configured limit` |
-| `data.min_len`                       | Minimum sequence length                               | `Configured limit` |
-| `outcome.n_hours_censoring`          | Hours to censor after index date                     | `Configured offset` |
-| `outcome.n_hours_start_follow_up`    | Start of follow-up period                            | `Configured time` |
-| `outcome.n_hours_end_follow_up`      | End of follow-up period                              | `Configured time` |
-| `trainer_args.val_batch_size`        | Validation batch size                                | `Configured size` |
-| `trainer_args.effective_batch_size`  | Effective batch size                                 | `Configured size` |
-| `trainer_args.gradient_clip.clip_value` | Gradient clipping value                          | `Configured value` |
-| `trainer_args.shuffle`               | Shuffle training data                               | `true` |
-| `trainer_args.early_stopping`        | Early stopping patience                             | `Configured patience` |
-| `trainer_args.stopping_criterion`    | Stopping criterion                                  | `roc_auc` |
-| `optimizer.eps`                      | Epsilon value for Adam optimizer                    | `Configured value` |
-| `scheduler._target_`                 | Learning rate scheduler                            | `transformers.get_linear_schedule_with_warmup` |
-| `scheduler.num_warmup_steps`         | Number of warmup steps                              | `Configured steps` |
-| `scheduler.num_training_steps`       | Total number of training steps                      | `Configured steps` |
-| `metrics.accuracy._target_`          | Accuracy metric                                    | `corebehrt.modules.monitoring.metrics.Accuracy` |
-| `metrics.accuracy.threshold`         | Accuracy threshold                                 | `Configured threshold` |
-| `metrics.roc_auc._target_`           | ROC-AUC metric                                    | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
-| `metrics.pr_auc._target_`            | PR-AUC metric                                     | `corebehrt.modules.monitoring.metrics.PR_AUC` |
-| `metrics.precision._target_`         | Precision metric                                  | `corebehrt.modules.monitoring.metrics.Precision` |
-| `metrics.recall._target_`            | Recall metric                                     | `corebehrt.modules.monitoring.metrics.Recall` |
-| `metrics.mean_probability._target_`  | Mean probability metric                           | `corebehrt.modules.monitoring.metrics.Mean_Probability` |
-| `metrics.percentage_positives._target_` | Percentage of positive predictions              | `corebehrt.modules.monitoring.metrics.Percentage_Positives` |
-| `metrics.true_positives._target_`    | True Positives metric                             | `corebehrt.modules.monitoring.metrics.True_Positives` |
-| `metrics.true_negatives._target_`    | True Negatives metric                             | `corebehrt.modules.monitoring.metrics.True_Negatives` |
-| `metrics.false_positives._target_`   | False Positives metric                            | `corebehrt.modules.monitoring.metrics.False_Positives` |
-| `metrics.false_negatives._target_`   | False Negatives metric                            | `corebehrt.modules.monitoring.metrics.False_Negatives` |
-
----
 
 ## Common Items
 ## **Common hyperparameters (Shared Across All Stages)**  
