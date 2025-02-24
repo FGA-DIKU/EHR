@@ -8,6 +8,7 @@ import pandas as pd
 
 from corebehrt.modules.features.values import ValueCreator
 
+
 class TestCreators(unittest.TestCase):
     def _generate_random_pids(self):
         while True:
@@ -46,9 +47,7 @@ class TestCreators(unittest.TestCase):
         self.concepts_pd_normed = self._create_concepts(self.lab_dict_normed)
 
     def test_create_binned_value(self):
-        binned_values = ValueCreator.bin_results(
-            self.concepts_pd_normed, num_bins=100
-        )
+        binned_values = ValueCreator.bin_results(self.concepts_pd_normed, num_bins=100)
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["code"]
         )
@@ -67,6 +66,7 @@ class TestCreators(unittest.TestCase):
             if item is not None
         ]
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
+
 
 if __name__ == "__main__":
     unittest.main()

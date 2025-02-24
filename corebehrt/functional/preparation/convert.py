@@ -4,7 +4,14 @@ import pandas as pd
 from tqdm import tqdm
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import ABSPOS_COL, CONCEPT_COL, PID_COL, SEGMENT_COL, AGE_COL
+from corebehrt.constants.data import (
+    ABSPOS_COL,
+    CONCEPT_COL,
+    PID_COL,
+    SEGMENT_COL,
+    AGE_COL,
+)
+
 
 def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
     """Convert a DataFrame containing patient data into a list of PatientData objects.

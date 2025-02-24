@@ -22,10 +22,29 @@ class TestCreators(unittest.TestCase):
         self.concepts = pd.DataFrame(
             {
                 "subject_id": [
-                    "1", "1", "1", "1", "1", "1",
-                    "2", "2", "2", "2", 
-                    "3", "3", "3", "3", 
-                    "4", "4", "4", "4", "4", "4", "4", "4", "4"
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "2",
+                    "2",
+                    "2",
+                    "2",
+                    "3",
+                    "3",
+                    "3",
+                    "3",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
                 ],
                 "time": [
                     datetime(2000, 5, 1),
@@ -34,17 +53,14 @@ class TestCreators(unittest.TestCase):
                     datetime(2015, 7, 2),
                     datetime(2016, 8, 2),
                     datetime(2022, 9, 3),
-
                     datetime(1995, 9, 3),
                     NaT,
                     datetime(2015, 9, 10),
                     datetime(2018, 4, 5),
-
                     datetime(1962, 11, 5),
                     NaT,
                     datetime(2020, 11, 6),
                     datetime(2022, 6, 6),
-                    
                     datetime(1975, 1, 6),
                     NaT,
                     datetime(2015, 12, 7),
@@ -53,44 +69,55 @@ class TestCreators(unittest.TestCase):
                     datetime(2015, 12, 11),
                     datetime(2015, 12, 11),
                     datetime(2022, 10, 11),
-                    datetime(2022, 10, 12)
+                    datetime(2022, 10, 12),
                 ],
                 "code": [
-                    "DOB", "GENDER//F", "A", "B", "C", "DOD",
-                    "DOB", "GENDER//M", "A", "D", 
-                    "DOB", "GENDER//M", "D", "D", 
-                    "DOB", "GENDER//F", "ADMISSION", "E", "A", "B", "DISCHARGE", "X", "Y"
+                    "DOB",
+                    "GENDER//F",
+                    "A",
+                    "B",
+                    "C",
+                    "DOD",
+                    "DOB",
+                    "GENDER//M",
+                    "A",
+                    "D",
+                    "DOB",
+                    "GENDER//M",
+                    "D",
+                    "D",
+                    "DOB",
+                    "GENDER//F",
+                    "ADMISSION",
+                    "E",
+                    "A",
+                    "B",
+                    "DISCHARGE",
+                    "X",
+                    "Y",
                 ],
             }
         )
 
         self.expected_segments = pd.Series(
-            [
-                0, 0, 1, 1, 2, 3,
-                0, 0, 1, 2,
-                0, 0, 1, 2,
-                0, 0, 1, 1, 1, 1, 1, 2, 2
-            ], name="segment"
+            [0, 0, 1, 1, 2, 3, 0, 0, 1, 2, 0, 0, 1, 2, 0, 0, 1, 1, 1, 1, 1, 2, 2],
+            name="segment",
         )
 
         self.expected_patient_info = pd.DataFrame(
             {
-                "subject_id": [
-                    "1", "2", "3", "4"
-                ],
+                "subject_id": ["1", "2", "3", "4"],
                 "birthdate": [
                     datetime(2000, 5, 1),
                     datetime(1995, 9, 3),
                     datetime(1962, 11, 5),
                     datetime(1975, 1, 6),
                 ],
-                "deathdate": [
-                    datetime(2022, 9, 3), NaT, NaT, NaT
-                ],
-                "GENDER": ["F", "M", "M", "F"]
+                "deathdate": [datetime(2022, 9, 3), NaT, NaT, NaT],
+                "GENDER": ["F", "M", "M", "F"],
             }
         )
-            
+
     def test_create_background(self):
         """
         Test the create_background function.
@@ -99,7 +126,7 @@ class TestCreators(unittest.TestCase):
         result, patient_info = create_background(self.concepts)
 
         # Expected number of rows: number of patients * number of background_vars
-        expected_rows = len(self.concepts['code'])
+        expected_rows = len(self.concepts["code"])
         self.assertEqual(len(result), expected_rows)
 
         # Check that all background concepts are prefixed by 'BG_' and have birthdate as time
@@ -108,9 +135,16 @@ class TestCreators(unittest.TestCase):
         dob_rows = result[result["code"] == "DOB"]
         self.assertTrue((bg_rows["time"] == dob_rows["time"].values).all())
 
-        # Check patient_info 
-        self.assertTrue((len(patient_info) == len(self.concepts["subject_id"].unique())))
-        self.assertTrue(all(patient_info.columns == ["subject_id", "birthdate", "deathdate", "GENDER"]))
+        # Check patient_info
+        self.assertTrue(
+            (len(patient_info) == len(self.concepts["subject_id"].unique()))
+        )
+        self.assertTrue(
+            all(
+                patient_info.columns
+                == ["subject_id", "birthdate", "deathdate", "GENDER"]
+            )
+        )
         pd.testing.assert_frame_equal(patient_info, self.expected_patient_info)
 
     def test_create_age_in_years(self):
@@ -120,9 +154,9 @@ class TestCreators(unittest.TestCase):
         concepts_with_birthdate = self.concepts.merge(
             self.expected_patient_info[["subject_id", "birthdate"]],
             on="subject_id",
-            how="left"
+            how="left",
         )
-                
+
         # Merge concepts with patients_info to get 'BIRTHDATE'
         result = create_age_in_years(concepts_with_birthdate)
 
@@ -142,7 +176,9 @@ class TestCreators(unittest.TestCase):
         Test the create_abspos function.
         """
         # Apply the function
-        concepts_no_nan = self.concepts.dropna(subset=["time"]) # Remove rows with NaT time (BG)
+        concepts_no_nan = self.concepts.dropna(
+            subset=["time"]
+        )  # Remove rows with NaT time (BG)
         result = create_abspos(concepts_no_nan, self.origin_point)
 
         # Expected abspos
@@ -168,6 +204,7 @@ class TestCreators(unittest.TestCase):
 
         # Assert the segments are as expected
         self.assertTrue((result["segment"] == self.expected_segments).all())
+
 
 if __name__ == "__main__":
     unittest.main()

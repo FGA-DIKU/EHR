@@ -76,21 +76,21 @@ def main_data(config_path):
 
     logger.info("Tokenizing train")
     load_tokenize_and_save(
-        features_path, tokenizer, tokenized_path, "train",
+        features_path,
+        tokenizer,
+        tokenized_path,
+        "train",
     )
     tokenizer.freeze_vocabulary()
 
     logger.info("Tokenizing tuning")
-    load_tokenize_and_save(
-        features_path, tokenizer, tokenized_path, "tuning"
-    )
+    load_tokenize_and_save(features_path, tokenizer, tokenized_path, "tuning")
 
     logger.info("Tokenizing held_out")
-    load_tokenize_and_save(
-        features_path, tokenizer, tokenized_path, "held_out"
-    )
+    load_tokenize_and_save(features_path, tokenizer, tokenized_path, "held_out")
     torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
     logger.info("Finished tokenizing")
+
 
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)

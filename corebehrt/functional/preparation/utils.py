@@ -6,6 +6,7 @@ import dask.dataframe as dd
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import CONCEPT_COL
 
+
 def get_background_length(patients: List[PatientData], vocabulary) -> int:
     """Get the length of the background sentence, first SEP token included."""
     background_tokens = get_background_tokens(vocabulary)

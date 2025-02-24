@@ -7,6 +7,7 @@ from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
 from corebehrt.modules.monitoring.logger import TqdmToLogger
 from corebehrt.constants.data import PID_COL
 
+
 def process_data(loader, cfg, features_cfg, logger) -> dict:
     """Process batches of concept and patient data to create outcome tables.
 

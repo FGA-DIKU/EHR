@@ -50,19 +50,21 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features_train = pd.read_parquet(join(self.features_dir, 'train'))
-        features_tuning = pd.read_parquet(join(self.features_dir, 'tuning'))
-        features_held_out = pd.read_parquet(join(self.features_dir, 'held_out'))
+        features_train = pd.read_parquet(join(self.features_dir, "train"))
+        features_tuning = pd.read_parquet(join(self.features_dir, "tuning"))
+        features_held_out = pd.read_parquet(join(self.features_dir, "held_out"))
         features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
-            features.columns.to_list(), ["subject_id", "age", "abspos", "segment", "code"]
+            features.columns.to_list(),
+            ["subject_id", "age", "abspos", "segment", "code"],
         )
 
         # 3: Check patients
         patient_info = pd.read_parquet(f"{self.features_dir}/patient_info.parquet")
-        patient_info['subject_id'] = patient_info['subject_id'].astype(str)        
+        patient_info["subject_id"] = patient_info["subject_id"].astype(str)
         self.assertEqual(
-            sorted(features["subject_id"].unique().tolist()), sorted(patient_info["subject_id"].tolist())
+            sorted(features["subject_id"].unique().tolist()),
+            sorted(patient_info["subject_id"].tolist()),
         )
 
         # 4: Check vocabulary

@@ -6,16 +6,31 @@ from corebehrt.modules.features.features import FeatureCreator
 import numpy as np
 from pandas import NaT
 
+
 class TestFeatureCreator(unittest.TestCase):
     def setUp(self):
         # Create larger sample data as pandas DataFrames
         self.concepts = pd.DataFrame(
             {
                 "subject_id": [
-                    "1" ,"1", "1", "1", "1", 
-                    "2", "2", "2", "2", 
-                    "3", "3", "3", "3", 
-                    "4", "4", "4", "4"],
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "2",
+                    "2",
+                    "2",
+                    "2",
+                    "3",
+                    "3",
+                    "3",
+                    "3",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                ],
                 "time": [
                     datetime(1998, 1, 1),
                     NaT,
@@ -36,10 +51,24 @@ class TestFeatureCreator(unittest.TestCase):
                     datetime(2020, 2, 8),
                 ],
                 "code": [
-                    "DOB", "GENDER//M", "A", "B", "DOD", 
-                    "DOB", "GENDER//F", "C", "D", 
-                    "DOB", "GENDER//F", "E", "F", 
-                    "DOB", "GENDER//M", "G", "H"],
+                    "DOB",
+                    "GENDER//M",
+                    "A",
+                    "B",
+                    "DOD",
+                    "DOB",
+                    "GENDER//F",
+                    "C",
+                    "D",
+                    "DOB",
+                    "GENDER//F",
+                    "E",
+                    "F",
+                    "DOB",
+                    "GENDER//M",
+                    "G",
+                    "H",
+                ],
             }
         )
 
@@ -47,12 +76,8 @@ class TestFeatureCreator(unittest.TestCase):
             origin_point=datetime(2020, 1, 1),
         )
         self.expected_segments = pd.Series(
-            [
-                0, 0, 1, 1, 2, 
-                0, 0, 1, 2, 
-                0, 0, 1, 1,
-                0, 0, 1, 2
-            ], name="segment"  # bg + death
+            [0, 0, 1, 1, 2, 0, 0, 1, 2, 0, 0, 1, 1, 0, 0, 1, 2],
+            name="segment",  # bg + death
         )
 
     def test_create_ages(self):
@@ -82,7 +107,6 @@ class TestFeatureCreator(unittest.TestCase):
         result, _ = self.feature_creator(self.concepts)
         self.assertIn("abspos", result.columns)
         # Additional testing can be done here, e.g., checking specific values
-
 
     def test_death(self):
         result, _ = self.feature_creator(self.concepts)

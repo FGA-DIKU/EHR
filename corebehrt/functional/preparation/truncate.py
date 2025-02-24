@@ -8,6 +8,7 @@ from corebehrt.functional.preparation.utils import subset_patient_data
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import CONCEPT_COL
 
+
 def truncate_patient(
     patient: PatientData,
     background_length: int,

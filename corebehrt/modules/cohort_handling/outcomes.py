@@ -5,7 +5,13 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, ABSPOS_COL, CONCEPT_COL, VALUE_COL
+from corebehrt.constants.data import (
+    PID_COL,
+    TIMESTAMP_COL,
+    ABSPOS_COL,
+    CONCEPT_COL,
+    VALUE_COL,
+)
 from corebehrt.functional.cohort_handling.matching import get_col_booleans
 from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,

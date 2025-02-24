@@ -42,9 +42,7 @@ class TestFormattedDataLoader(unittest.TestCase):
             {
                 "subject_id": [1, 2],
                 "time": pd.to_datetime(["2020-01-01", "2010-01-01"]),
-                "code": pd.Series(
-                    ["A", "B"], dtype="object"
-                ),
+                "code": pd.Series(["A", "B"], dtype="object"),
                 "numeric_value": ["1", "2"],
             }
         )

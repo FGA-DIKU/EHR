@@ -41,7 +41,7 @@ class FeatureCreator:
         origin_point: Union[datetime, dict] = datetime(
             2020, 1, 26
         ),  # If given, compute ABSPOS
-    ): 
+    ):
         self.origin_point = (
             datetime(**origin_point) if isinstance(origin_point, dict) else origin_point
         )

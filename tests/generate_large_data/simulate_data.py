@@ -138,6 +138,7 @@ def generate_patients_info_batch(n_patients):
         }
     )
 
+
 def generate_admissions_batch(patients_info, mean_records_per_pid):
     # Generate random number of records for each patient using exponential distribution
     n_records_per_patient = np.random.exponential(
@@ -205,6 +206,7 @@ def generate_admissions_batch(patients_info, mean_records_per_pid):
 
     comb_admissions_data = pd.concat([admissions_data, discharge_data])
     return comb_admissions_data
+
 
 def generate_concepts_batch(
     patients_info,

@@ -47,19 +47,32 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features_train = pd.read_parquet(join(self.features_dir, 'train'))
-        features_tuning = pd.read_parquet(join(self.features_dir, 'tuning'))
-        features_held_out = pd.read_parquet(join(self.features_dir, 'held_out'))
+        features_train = pd.read_parquet(join(self.features_dir, "train"))
+        features_tuning = pd.read_parquet(join(self.features_dir, "tuning"))
+        features_held_out = pd.read_parquet(join(self.features_dir, "held_out"))
         features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
-            features.columns.to_list(), ["subject_id", "age", "abspos", "segment", "code"]
+            features.columns.to_list(),
+            ["subject_id", "age", "abspos", "segment", "code"],
         )
 
-        expected_features_train = pd.read_parquet(join("./tests/data/features", 'train'))
-        expected_features_tuning = pd.read_parquet(join("./tests/data/features", 'tuning'))
-        expected_features_held_out = pd.read_parquet(join("./tests/data/features", 'held_out'))
-        expected_features = pd.concat([expected_features_train, expected_features_tuning, expected_features_held_out])
-        expected_features['subject_id'] = expected_features['subject_id'].astype(str)
+        expected_features_train = pd.read_parquet(
+            join("./tests/data/features", "train")
+        )
+        expected_features_tuning = pd.read_parquet(
+            join("./tests/data/features", "tuning")
+        )
+        expected_features_held_out = pd.read_parquet(
+            join("./tests/data/features", "held_out")
+        )
+        expected_features = pd.concat(
+            [
+                expected_features_train,
+                expected_features_tuning,
+                expected_features_held_out,
+            ]
+        )
+        expected_features["subject_id"] = expected_features["subject_id"].astype(str)
 
         # 2.1: check patients
         self.assertListEqual(
@@ -88,11 +101,13 @@ class TestCreateData(TestMainScript):
                 )
             else:  # compare sets for every patient
                 for subject_id in features["subject_id"].unique():
-                    segment = set(features[features["subject_id"] == subject_id]["segment"].values)
+                    segment = set(
+                        features[features["subject_id"] == subject_id]["segment"].values
+                    )
                     expected_segment = set(
-                        expected_features[expected_features["subject_id"] == subject_id][
-                            "segment"
-                        ].values
+                        expected_features[
+                            expected_features["subject_id"] == subject_id
+                        ]["segment"].values
                     )
                     self.assertEqual(
                         segment,

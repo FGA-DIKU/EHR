@@ -95,9 +95,7 @@ def load_concept(path) -> pd.DataFrame:
     else:
         raise ValueError(f"Unknown file type: {path}")
 
-    df["time"] = df["time"].dt.tz_localize(
-        None
-    )  # to prevent tz-naive/tz-aware issues
+    df["time"] = df["time"].dt.tz_localize(None)  # to prevent tz-naive/tz-aware issues
     return df
 
 

@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def exclude_incorrect_event_ages(
     df: pd.DataFrame, min_age: int = -1, max_age: int = 120
 ) -> pd.DataFrame:

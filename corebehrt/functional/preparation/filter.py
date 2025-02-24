@@ -6,6 +6,7 @@ import pandas as pd
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
 
+
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     """
     Assumes that the table has a column named PID.

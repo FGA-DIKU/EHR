@@ -54,7 +54,9 @@ class EHRTokenizer:
         """
         # Apply cutoffs if needed before updating vocabulary
         if self.cutoffs:
-            features["code"] = limit_concept_length_partition(features["code"], self.cutoffs)
+            features["code"] = limit_concept_length_partition(
+                features["code"], self.cutoffs
+            )
         else:
             # Ensure concepts are strings
             features["code"] = features["code"].astype(str)

@@ -73,11 +73,14 @@ class ConceptLoader:
     @staticmethod
     def _handle_types_columns(df: pd.DataFrame) -> pd.DataFrame:
         """Try to convert all potential types columns to the correct type"""
-        filtered_schema = {col: dtype for col, dtype in SCHEMA.items() if col in df.columns}
+        filtered_schema = {
+            col: dtype for col, dtype in SCHEMA.items() if col in df.columns
+        }
         df = df.astype(filtered_schema)
         if TIMESTAMP_COL in df.columns:
-            df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")        
+            df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")
         return df
+
 
 class ConceptLoaderLarge(ConceptLoader):
     """Load concepts and patient data in chunks"""
@@ -146,7 +149,11 @@ class ShardLoader:
     ):
         self.data_dir = data_dir
         self.splits = splits
-        self.patient_info_path = patient_info_path if patient_info_path else os.path.join(data_dir, "patients_info.parquet")
+        self.patient_info_path = (
+            patient_info_path
+            if patient_info_path
+            else os.path.join(data_dir, "patients_info.parquet")
+        )
 
     def __call__(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
         return self.process()
@@ -160,12 +167,16 @@ class ShardLoader:
             path_name = os.path.join(self.data_dir, split)
             if not os.path.exists(path_name):
                 raise ValueError(f"Path {path_name} does not exist")
-            
-            for shard in [file for file in os.listdir(path_name) if not file.startswith('.')]:
+
+            for shard in [
+                file for file in os.listdir(path_name) if not file.startswith(".")
+            ]:
                 shard_path = os.path.join(path_name, shard)
                 df = self.read_file(shard_path)
                 if patients_info is not None:
-                    yield df, patients_info[patients_info[PID_COL].isin(df[PID_COL].unique())]
+                    yield df, patients_info[
+                        patients_info[PID_COL].isin(df[PID_COL].unique())
+                    ]
                 else:
                     yield df, None
 
@@ -180,7 +191,9 @@ class ShardLoader:
         else:
             raise ValueError(f"Unsupported file type: {file_ext}")
 
-        filtered_schema = {col: dtype for col, dtype in SCHEMA.items() if col in df.columns}
+        filtered_schema = {
+            col: dtype for col, dtype in SCHEMA.items() if col in df.columns
+        }
         df = df.astype(filtered_schema)
         if TIMESTAMP_COL in df.columns:
             df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")

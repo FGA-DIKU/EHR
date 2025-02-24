@@ -23,10 +23,12 @@ def check_concepts_columns(df: dd.DataFrame) -> None:
     required_columns = {"subject_id", "time", "code", "numeric_value"}
     check_required_columns(df, required_columns, "concepts")
 
+
 def check_features_columns(df: dd.DataFrame) -> None:
     """Check if required columns are present in features."""
     required_columns = {"subject_id", "time", "code"}
     check_required_columns(df, required_columns, "features")
+
 
 def check_required_columns(
     df: dd.DataFrame, required_columns: Set[str], type_: str

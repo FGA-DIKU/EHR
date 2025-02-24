@@ -1,6 +1,7 @@
 import pandas as pd
 from corebehrt.modules.setup.config import instantiate_function
 
+
 class ValueCreator:
     """
     A class to load normalise values in data frames.
@@ -9,7 +10,9 @@ class ValueCreator:
 
     @staticmethod
     def bin_results(concepts: pd.DataFrame, num_bins=100) -> pd.DataFrame:
-        concepts["numeric_value"] = ValueCreator.bin(concepts["numeric_value"], num_bins=num_bins)
+        concepts["numeric_value"] = ValueCreator.bin(
+            concepts["numeric_value"], num_bins=num_bins
+        )
 
         # Add index + order
         concepts["index"] = concepts.index
@@ -25,10 +28,12 @@ class ValueCreator:
         """
         Bins the values in a series into num_bins bins. Expects the values to be normalised.
         """
-        normalized_values = pd.to_numeric(normalized_values, errors='coerce')
+        normalized_values = pd.to_numeric(normalized_values, errors="coerce")
         val_mask = normalized_values.notna()
         normalized_values[val_mask] = normalized_values[val_mask].mul(num_bins)
         normalized_values = normalized_values.astype(object)
-        normalized_values[val_mask] = normalized_values[val_mask].astype(int).astype(str)
+        normalized_values[val_mask] = (
+            normalized_values[val_mask].astype(int).astype(str)
+        )
         normalized_values[val_mask] = "VAL_" + normalized_values[val_mask]
         return normalized_values
