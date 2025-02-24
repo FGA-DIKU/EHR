@@ -46,6 +46,7 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 |              | `finetune`                    | `0.18` |
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
+
 ---
 
 ### Pretrain (`pretrain.yaml`)    
@@ -90,7 +91,8 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 |                 | `mlm_loss.loss_name`               | `loss` |
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
----
+
+
 ---
 ### Define Outcomes (`outcome.yaml`)
 This step **extracts and processes clinical outcome labels** from EHR records to support downstream modeling. The process is designed for efficiency, handling large volumes of diagnosis-related concepts while ensuring accurate filtering and classification.
@@ -134,7 +136,8 @@ This step **extracts and processes clinical outcome labels** from EHR records to
 - Processed outcomes are **saved to `./outputs/outcomes/`** for further analysis.  
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
----
+
+
 ---
 
 ### **Hyperparameters for `select_cohort`**  
