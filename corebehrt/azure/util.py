@@ -72,7 +72,8 @@ def setup_job(
     cmd = f"python -m corebehrt.azure.components.{job}"
 
     # Make sure config is read-able -> save it in the root folder.
-    config.save_to_yaml(AZURE_CONFIG_FILE)
+    with open(AZURE_CONFIG_FILE, "w") as cfg_file:
+        yaml.dump(config, cfg_file)
 
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")

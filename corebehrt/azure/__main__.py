@@ -52,7 +52,11 @@ def create_and_run_job(args) -> None:
     """
     Run the job from the given arguments.
     """
-    cfg = yaml.load(args.config or f"./corebehrt/configs/{args.JOB}.yaml")
+
+    cfg_path = args.config or f"./corebehrt/configs/{args.JOB}.yaml"
+    with open(cfg_path, "r") as cfg_file:
+        cfg = yaml.safe_load(cfg_file)
+
     register_output = parse_register_output(args.register_output)
     job_initializer = get_job_initializer(args.JOB)
 
