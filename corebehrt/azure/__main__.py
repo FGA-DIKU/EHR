@@ -27,6 +27,7 @@ def parse_register_output(register_output_args: list) -> dict:
 def create_job(
     name: str,
     config: dict,
+    compute: str,
     register_output: dict = dict(),
     log_system_metrics: bool = False,
 ) -> "command":
@@ -88,7 +89,13 @@ if __name__ == "__main__":
     job_parser.add_argument(
         "JOB",
         type=str,
-        choices=COMPONENTS.keys(),
+        choices={
+            "create_data",
+            "pretrain",
+            "create_outcomes",
+            "create_cohort",
+            "finetune",
+        },
         help="Job to run.",
     )
     job_parser.add_argument(
