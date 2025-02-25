@@ -71,9 +71,11 @@ The pipeline can be run from the root directory by executing the following comma
 
 ```bash
 (.venv) python -m corebehrt.main.create_data
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_pretrain.yaml
 (.venv) python -m corebehrt.main.pretrain
 (.venv) python -m corebehrt.main.create_outcomes
 (.venv) python -m corebehrt.main.select_cohort
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_finetune.yaml
 (.venv) python -m corebehrt.main.finetune_cv
 (.venv) python -m corebehrt.main.evaluate_cv # not implemented yet
 ```

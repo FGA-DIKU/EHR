@@ -46,12 +46,12 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 class DatasetPreparer:
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self.save_dir = cfg.paths.model
-        self.processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
+        self.processed_dir = cfg.paths.prepared_data
 
     def prepare_finetune_data(self) -> PatientDataset:
-        data_cfg = self.cfg.data
+        outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
+        data_cfg = self.cfg.data
 
         pids = self.load_cohort(paths_cfg)
 
@@ -95,8 +95,8 @@ class DatasetPreparer:
         binary_outcomes = get_binary_outcomes(
             index_dates,
             outcomes,
-            data_cfg.get("n_hours_start_follow_up", 0),
-            data_cfg.get("n_hours_end_follow_up", None),
+            outcome_cfg.get("n_hours_start_follow_up", 0),
+            outcome_cfg.get("n_hours_end_follow_up", None),
         )
 
         logger.info("Assigning outcomes")
@@ -144,10 +144,9 @@ class DatasetPreparer:
         # save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
-            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
-            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
+        data.save(self.processed_dir)
+        outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
+        index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
 
         return data
 
@@ -196,8 +195,7 @@ class DatasetPreparer:
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
+        data.save(self.processed_dir)
         return data
 
     @staticmethod

@@ -32,7 +32,8 @@ def main_finetune(config_path):
     # Logger
     logger = logging.getLogger("finetune_cv")
 
-    data: PatientDataset = DatasetPreparer(cfg).prepare_finetune_data()
+    loaded_data = torch.load(join(cfg.paths.prepared_data, "patients.pt"))
+    data = PatientDataset(loaded_data)
 
     test_data = PatientDataset([])
 

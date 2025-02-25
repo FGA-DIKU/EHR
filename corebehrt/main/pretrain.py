@@ -1,7 +1,8 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
 import logging
-
+import torch
+from os.path import join
 from corebehrt.functional.features.split import split_pids_into_train_val
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.io_operations.save import save_pids_splits
@@ -13,7 +14,7 @@ from corebehrt.main.helper.pretrain import (
     load_train_val_split,
     get_splits_path,
 )
-from corebehrt.modules.preparation.dataset import MLMDataset
+from corebehrt.modules.preparation.dataset import MLMDataset, PatientDataset
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
@@ -44,8 +45,9 @@ def main_train(config_path):
     if restart_path:
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
-    # Prepare data
-    data = DatasetPreparer(cfg).prepare_pretrain_data()
+    # Get data
+    loaded_data = torch.load(join(cfg.paths.prepared_data, "patients.pt"))
+    data = PatientDataset(loaded_data)
 
     # Splitting data
     if cfg.data.get("predefined_splits", False):
@@ -56,7 +58,7 @@ def main_train(config_path):
             data, cfg.data.get("val_ratio", 0.2)
         )
 
-    vocab = load_vocabulary(cfg.paths.tokenized)
+    vocab = load_vocabulary(cfg.paths.prepared_data)
     # Initialize datasets
     train_dataset = MLMDataset(train_data.patients, vocab, **cfg.data.dataset)
     val_dataset = MLMDataset(val_data.patients, vocab, **cfg.data.dataset)

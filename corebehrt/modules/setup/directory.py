@@ -11,6 +11,8 @@ from corebehrt.constants.paths import (
     FINETUNE_CFG,
     OUTCOMES_CFG,
     PRETRAIN_CFG,
+    PREPARE_PRETRAIN_CFG,
+    PREPARE_FINETUNE_CFG
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
@@ -67,6 +69,8 @@ class DirectoryPreparer:
             name = {
                 "features": DATA_CFG,
                 "tokenized": DATA_CFG,
+                "prepare_pretrain": PREPARE_PRETRAIN_CFG,
+                "prepare_finetune": PREPARE_FINETUNE_CFG,
                 "outcomes": OUTCOMES_CFG,
                 "model": PRETRAIN_CFG,
                 "cohort": COHORT_CFG,
@@ -271,6 +275,17 @@ class DirectoryPreparer:
         self.write_config("outcomes", source="features", name=DATA_CFG)
         self.write_config("outcomes", name=OUTCOMES_CFG)
 
+    def setup_prepare_pretrain(self) -> None:
+        """
+        Validates path config and sets up directories for preparing pretrain data.
+        """
+        self.setup_logging("prepare pretrain data")
+        self.check_directory("features")
+        self.check_directory("tokenized")
+        self.create_run_directory("prepared_data", base="runs")
+        self.write_config("prepared_data", name=PREPARE_PRETRAIN_CFG)
+        self.write_config("prepared_data", source="features", name=DATA_CFG)
+
     def setup_pretrain(self) -> None:
         """
         Validates path config and sets up directories for pretrain.
@@ -279,12 +294,12 @@ class DirectoryPreparer:
         self.setup_logging("pretrain")
 
         # Validate and create directories
-        self.check_directory("features")
-        self.check_directory("tokenized")
+        self.check_directory("prepared_data")
         self.create_run_directory("model", base="runs")
 
         # Write config in output directory.
-        self.write_config("model", source="features", name=DATA_CFG)
+        self.write_config("model", source="prepared_data", name=DATA_CFG)
+        self.write_config("model", source="prepared_data", name=PREPARE_PRETRAIN_CFG)
         self.write_config("model", name=PRETRAIN_CFG)
 
     def setup_select_cohort(self) -> None:
@@ -319,6 +334,18 @@ class DirectoryPreparer:
                     "index_date must specify either 'absolute' or 'relative' configuration"
                 )
 
+    def setup_prepare_finetune(self) -> None:
+        """
+        Validates path config and sets up directories for preparing pretrain data.
+        """
+        self.setup_logging("prepare pretrain data")
+        self.check_directory("features")
+        self.check_directory("tokenized")
+        self.check_directory("cohort")
+        self.create_run_directory("prepared_data", base="runs")
+        self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)
+        self.write_config("prepared_data", source="features", name=DATA_CFG)
+
     def setup_finetune(self) -> None:
         """
         Validates path config and sets up directories for finetune.
@@ -327,17 +354,12 @@ class DirectoryPreparer:
         self.setup_logging("finetune")
 
         # Validate and create directories
-        self.check_directory("features")
-        self.check_directory("tokenized")
+        self.check_directory("prepared_data")
         self.check_directory("pretrain_model")
-        self.check_file("outcome")
-        self.check_directory("cohort")
-        self.create_run_directory(
-            "model", base="runs", run_name=self.generate_finetune_model_dir_name()
-        )
+        self.create_run_directory("model", base="runs")
 
         # Write config in output directory.
-        self.write_config("model", source="features", name=DATA_CFG)
+        self.write_config("model", source="prepared_data", name=DATA_CFG)
         self.write_config("model", source="pretrain_model", name=PRETRAIN_CFG)
         self.write_config("model", name=FINETUNE_CFG)
 

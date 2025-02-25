@@ -4,15 +4,9 @@ logging:
 
 paths:
 ## INPUTS
-  features: ./outputs/features
-  tokenized: ./outputs/tokenized
-  # tokenized_file: ...
-  # tokenized_pids: ...
-  
+  prepared_data: ./outputs/pretraining/processed_data/
+  tokenized: ./outputs/tokenized  
   # restart_model: ... # Use for restarting from checkpoint
-
-  ## optional
-  # cohort: ... # path to cohort directory
 
 ## OUTPUTS
   model: ./outputs/pretraining # Save model/outputs to this folder
@@ -26,12 +20,7 @@ data:
     masking_ratio: .8
     replace_ratio: .1
     ignore_special_tokens: true
-  truncation_len: 20
-  min_len: 2
-  cutoff_date:
-    year: 2020
-    month: 1
-    day: 1
+
 
 trainer_args:
   batch_size: 32
