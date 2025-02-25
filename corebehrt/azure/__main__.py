@@ -6,7 +6,6 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 import sys
 import argparse
 import yaml
-import importlib
 from . import environment, util
 
 
@@ -24,32 +23,6 @@ def parse_register_output(register_output_args: list) -> dict:
     return dict(register_output)
 
 
-def create_job(
-    name: str,
-    config: dict,
-    compute: str,
-    register_output: dict = dict(),
-    log_system_metrics: bool = False,
-) -> "command":  # noqa: F821
-    """
-    Creates the Azure command/job object. Job input/output
-    configuration is loaded from the components module.
-    """
-
-    # Load component
-    component = importlib.import_module(f"corebehrt.azure.components.{name}")
-
-    return util.setup_job(
-        name,
-        inputs=component.INPUTS,
-        outputs=component.OUTPUTS,
-        config=config,
-        compute=compute,
-        register_output=register_output,
-        log_system_metrics=log_system_metrics,
-    )
-
-
 def create_and_run_job(args) -> None:
     """
     Run the job from the given arguments.
@@ -61,7 +34,7 @@ def create_and_run_job(args) -> None:
 
     register_output = parse_register_output(args.register_output)
 
-    job = create_job(
+    job = util.create_job(
         args.JOB,
         cfg,
         compute=args.COMPUTE,

@@ -9,6 +9,7 @@ from .log import (
     log_figure,
     autolog,
 )
+from .util import create_job, run_job
 
 __all__ = [
     is_mlflow_available,
@@ -20,4 +21,6 @@ __all__ = [
     log_image,
     log_figure,
     autolog,
+    create_job,
+    run_job,
 ]

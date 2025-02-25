@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Tuple
 import yaml
 from corebehrt.azure import log
+import importlib
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
@@ -44,6 +45,32 @@ def ml_client() -> "MLClient":
     """
     check_azure()
     return MLClient.from_config(DefaultAzureCredential())
+
+
+def create_job(
+    name: str,
+    config: dict,
+    compute: str,
+    register_output: dict = dict(),
+    log_system_metrics: bool = False,
+) -> "command":  # noqa: F821
+    """
+    Creates the Azure command/job object. Job input/output
+    configuration is loaded from the components module.
+    """
+
+    # Load component
+    component = importlib.import_module(f"corebehrt.azure.components.{name}")
+
+    return setup_job(
+        name,
+        inputs=component.INPUTS,
+        outputs=component.OUTPUTS,
+        config=config,
+        compute=compute,
+        register_output=register_output,
+        log_system_metrics=log_system_metrics,
+    )
 
 
 def setup_job(
