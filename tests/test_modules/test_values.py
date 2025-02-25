@@ -12,7 +12,6 @@ class TestCreators(unittest.TestCase):
             yield str(random.randint(1, 4))
 
     def _create_concepts(self, lab_dict):
-        admission_ids = (chr(i) for i in iter(range(65, 91)))
         pids = self._generate_random_pids()
         lab_df_list = []
         for concept, values in lab_dict.items():

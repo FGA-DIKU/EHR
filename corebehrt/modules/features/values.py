@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 class ValueCreator:
     """
     A class to load normalise values in data frames.

@@ -14,7 +14,6 @@ from os.path import join
 
 import torch
 
-from corebehrt.functional.features.split import split_pids_into_pt_ft_test
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.features.excluder import Excluder
