@@ -53,6 +53,38 @@ This step **trains a transformer-based model** on **EHR sequences** using **mask
 - Saves pretrained models to `./outputs/pretraining/`.  
 - Monitors performance using **top-1/top-10 precision** and **MLM loss**.  
 
+
+trainer_args:
+  sampler: null
+WeightedRandomSampler
+RandomSampler
+SequentialSampler
+SubsetRandomSampler
+BatchSampler
+
+
+
+
+# Gradient Clipping: Key Values & Effects
+
+`gradient_clip.clip_value` controls how much gradients are limited to prevent exploding gradients.
+
+## 🔹 Recommended Values
+
+| **Value**   | **Effect** |
+|------------|-----------|
+| **`None` / `False`** | No clipping, risk of exploding gradients. |
+| **`0.1 - 0.5`** | Strong clipping, slows learning. |
+| **`1.0` (default)** | Balanced, prevents instability. |
+| **`5.0`** | More flexibility, still prevents explosion. |
+| **`10.0+`** | Almost no clipping, useful if explosion isn’t an issue. |
+
+## 🔹 Best Practices
+✅ Use **`1.0 - 5.0`** for stability.  
+✅ Use **`0.5`** if gradients are noisy.  
+✅ Set to **`None`** if no explosion issues.  
+
+
 | **Category**     | **Parameter**                        | **Value** |
 |-----------------|-------------------------------------|----------|
 | **Data**        | `dataset.select_ratio`                     | `1.0` |

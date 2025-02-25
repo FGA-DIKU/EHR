@@ -31,39 +31,57 @@ trainer_args:
   effective_batch_size: 64  # Total batch size after gradient accumulation
   epochs: 5  # Number of training epochs
   info: true  # Whether to print training info
-  sampler: null  # Custom sampler for training (set to null for default)
-  gradient_clip: 
-    clip_value: 1.0
-  shuffle: true
-  early_stopping: null # num_epochs or null/false
+  sampler: null  # Default sampler (no custom sampling applied). Options: "null" (default), "weighted" 
+  gradient_clip:      # prevent exploding gradients by limiting their magnitude during backpropagation
+    clip_value: 1.0   # Caps the maximum gradient value at 1.0 during training to prevent exploding gradients and stabilize learning.
+  shuffle: true       # Enables shuffling of training data before each epoch to improve model generalization.
+  early_stopping: null # false/null: disable early stopping - Set a number (e.g., 15) to stop training after that many epochs without improvement.
 
-model:
-  hidden_size: 96
-  num_hidden_layers: 3
-  num_attention_heads: 3
-  intermediate_size: 64
-  
-  type_vocab_size: 1024 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
-  embedding_dropout: 0.1 
-  max_position_embeddings: 512 # the longest sequence length we will use this model with
-  
+
+model:  
+  hidden_size: 96  # Dimensionality of hidden layers. Must be divisible by num_attention_heads.  
+  num_hidden_layers: 3  # Number of transformer encoder layers. More layers improve learning depth but increase computation time.  
+  num_attention_heads: 3  # Number of attention heads per layer. Must evenly divide hidden_size.  
+  intermediate_size: 64  # Size of the feedforward layer in each transformer block.Typically 4×hidden_size, but smaller here for efficiency.  
+  type_vocab_size: 1024  # Number of token type embeddings (e.g., for distinguishing input segments). Default is 2 for models like BERT; larger values support more segment types.  
+  embedding_dropout: 0.1  # Dropout rate for embeddings to prevent overfitting / Common values: 0.1 (BERT, GPT-2).  
+  max_position_embeddings: 512  # Maximum sequence length the model can process.
+
+
+# Optimizer settings  
 optimizer:
-  lr: 5e-4
-  eps: 1e-6
+  lr: 5e-4   # Learning rate for training
+  eps: 1e-6  # Small value added for numerical stability
 
+# Learning rate scheduler settings, 
 scheduler:
-  _target_: transformers.get_linear_schedule_with_warmup
-  num_warmup_epochs: 2
-  num_training_epochs: 3
+  _target_: transformers.get_linear_schedule_with_warmup    #  Linear warmup and decay schedule
+  num_warmup_epochs: 2   #  Number of warmup epochs (LR gradually increases)
+  num_training_epochs: 3  # LR will decay over 3 epochs after warmup
+  # The scheduler adjusts the learning rate for 5 epochs (2 warmup + 3 decay).  
+  # If `trainer_args.epochs` > 5, training continues, but LR remains fixed after decay.  
 
+
+# Metrics for evaluating model performance:
 metrics:
   top1:
     _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
+    # Precision@K checks if the correct label is among the top-k predictions.  
     topk: 1
+    # Precision@1 (Top-1) verifies if the highest-ranked prediction is correct, crucial for classification tasks. 
   top10:
+  # Useful in medical applications where multiple potential diagnoses are considered before finalizing a decision.  
     _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
-
     topk: 10
+    # Precision@10 checks if the correct label appears in the top 10 predictions.  
+
+# To add a new metric, first implement it in the corresponding file under `corebehrt.modules.monitoring.metrics`.  
+# Then, update `_target_` with the new metric’s module path.  
+
   mlm_loss:
+  # Measures the model's loss in predicting masked clinical terms
     _target_: corebehrt.modules.monitoring.metrics.LossAccessor
     loss_name: loss
+
+# To use a different loss function, add it to the corresponding file in `corebehrt.modules.monitoring.metrics`.  
+# Then, update `_target_` with the new loss function’s path.  
