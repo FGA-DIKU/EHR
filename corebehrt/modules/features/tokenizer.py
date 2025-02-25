@@ -1,4 +1,4 @@
-import dask.dataframe as dd
+import pandas as pd
 
 from corebehrt.constants.data import (
     CLS_TOKEN,
@@ -47,22 +47,22 @@ class EHRTokenizer:
         if not all(isinstance(value, int) for value in cutoffs.values()):
             raise ValueError("All values in cutoffs must be integers")
 
-    def __call__(self, features: dd.DataFrame) -> dd.DataFrame:
+    def __call__(self, features: pd.DataFrame) -> pd.DataFrame:
         """
         !We assume that features are sorted by PID and abspos and PID is the index.
         """
         # Apply cutoffs if needed before updating vocabulary
         if self.cutoffs:
-            features["concept"] = features["concept"].map_partitions(
-                limit_concept_length_partition, self.cutoffs
+            features["code"] = limit_concept_length_partition(
+                features["code"], self.cutoffs
             )
         else:
             # Ensure concepts are strings
-            features["concept"] = features["concept"].astype(str)
+            features["code"] = features["code"].astype(str)
 
         # Update vocabulary with concepts after cutoffs
         if self.new_vocab:
-            self.update_vocabulary(features["concept"])
+            self.update_vocabulary(features["code"])
 
         # Combine all operations into a single partition pass
         def _process_partition(df):
@@ -72,15 +72,16 @@ class EHRTokenizer:
                     df, add_sep=self.sep_tokens, add_cls=self.cls_token
                 )
             # Tokenize within the same partition
-            df["concept"] = tokenize_partition(df["concept"], self.vocabulary)
+            df["code"] = tokenize_partition(df["code"], self.vocabulary)
             return df
 
-        return features.map_partitions(_process_partition)
+        # return features.map_partitions(_process_partition)
+        return _process_partition(features)
 
-    def update_vocabulary(self, concepts: dd.Series) -> None:
+    def update_vocabulary(self, concepts: pd.Series) -> None:
         """Create or update vocabulary from unique concepts"""
         # Get unique concepts across all partitions
-        unique_concepts = concepts.drop_duplicates().compute()
+        unique_concepts = concepts.drop_duplicates()
 
         # Start with base vocabulary
         vocabulary = self.vocabulary.copy()

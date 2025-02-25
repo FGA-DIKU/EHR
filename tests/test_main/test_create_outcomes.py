@@ -22,22 +22,17 @@ class TestCreateOutcomes(TestMainScript):
                     "features": "./tests/data/features",
                     "outcomes": self.outcomes_dir,
                 },
-                "loader": {
-                    "concepts": ["diagnose"],
-                    "batchsize": 50,
-                    "chunksize": 300,
-                },
                 "outcomes": {
                     "TEST_OUTCOME": {
-                        "type": ["CONCEPT"],
-                        "match": [["157"]],
-                        "exclude": ["157141000119108"],
-                        "match_how": "contains",
+                        "type": ["code"],
+                        "match": [["D10", "D02"]],
+                        "exclude": ["D30"],
+                        "match_how": "startswith",
                         "case_sensitive": True,
                     },
                     "TEST_CENSOR": {
-                        "type": ["CONCEPT"],
-                        "match": [["10509"]],
+                        "type": ["code"],
+                        "match": [["M112"]],
                         "match_how": "startswith",
                         "case_sensitive": False,
                     },
@@ -68,7 +63,7 @@ class TestCreateOutcomes(TestMainScript):
             output = pd.read_csv(path)
 
             # Columns?
-            self.assertEqual(output.columns.to_list(), ["TIMESTAMP", "PID", "abspos"])
+            self.assertEqual(output.columns.to_list(), ["subject_id", "time", "abspos"])
 
             # Compare to expected
             expected_output = pd.read_csv(

@@ -7,7 +7,9 @@ COHORT_CFG = "cohort_config.yaml"
 OUTCOMES_CFG = "outcomes_config.yaml"
 
 PRETRAIN_CFG = "pretrain_config.yaml"
+PREPARE_PRETRAIN_CFG = "prepare_pretrain.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
+PREPARE_FINETUNE_CFG = "prepare_finetune.yaml"
 
 ### Files ###
 VOCABULARY_FILE = "vocabulary.pt"

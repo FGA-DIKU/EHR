@@ -5,6 +5,7 @@ from tqdm import tqdm
 
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
 from corebehrt.modules.monitoring.logger import TqdmToLogger
+from corebehrt.constants.data import PID_COL
 
 
 def process_data(loader, cfg, features_cfg, logger) -> dict:
@@ -29,7 +30,7 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
     for concept_batch, patient_batch in tqdm(
         loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
     ):
-        pids = concept_batch.PID.unique()
+        pids = concept_batch[PID_COL].unique()
         outcome_tables = OutcomeMaker(cfg.outcomes, features_cfg.features.origin_point)(
             concept_batch, patient_batch, pids
         )

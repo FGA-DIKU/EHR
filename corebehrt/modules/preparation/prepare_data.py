@@ -46,12 +46,12 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 class DatasetPreparer:
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self.save_dir = cfg.paths.model
-        self.processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
+        self.processed_dir = cfg.paths.prepared_data
 
     def prepare_finetune_data(self) -> PatientDataset:
-        data_cfg = self.cfg.data
+        outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
+        data_cfg = self.cfg.data
 
         pids = self.load_cohort(paths_cfg)
 
@@ -59,6 +59,7 @@ class DatasetPreparer:
         index_dates = pd.read_csv(
             join(paths_cfg.cohort, INDEX_DATES_FILE), parse_dates=[TIMESTAMP_COL]
         )
+        index_dates[PID_COL] = index_dates[PID_COL].astype(str)
         origin_point = load_config(
             join(paths_cfg.features, "data_config.yaml")
         ).features.origin_point
@@ -71,9 +72,10 @@ class DatasetPreparer:
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
-                    "features_finetune",
+                    "features_tuning",
                 )
             )
+            df = df.repartition(partition_size="100MB")
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
@@ -86,14 +88,15 @@ class DatasetPreparer:
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
+        outcomes[PID_COL] = outcomes[PID_COL].astype(str)
         outcomes = filter_df_by_pids(outcomes, data.get_pids())
         logger.info("Handling outcomes")
         # Outcome Handler now only needs to do 1 thing: if outcome is in follow up window 1 else 0
         binary_outcomes = get_binary_outcomes(
             index_dates,
             outcomes,
-            data_cfg.get("n_hours_start_follow_up", 0),
-            data_cfg.get("n_hours_end_follow_up", None),
+            outcome_cfg.get("n_hours_start_follow_up", 0),
+            outcome_cfg.get("n_hours_end_follow_up", None),
         )
 
         logger.info("Assigning outcomes")
@@ -141,10 +144,9 @@ class DatasetPreparer:
         # save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
-            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
-            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
+        data.save(self.processed_dir)
+        outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
+        index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
 
         return data
 
@@ -160,9 +162,10 @@ class DatasetPreparer:
             df = dd.read_parquet(
                 join(
                     paths_cfg.tokenized,
-                    "features_pretrain",
+                    "features_train",
                 )
             )
+            df = df.repartition(partition_size="100MB")
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
@@ -192,8 +195,7 @@ class DatasetPreparer:
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
+        data.save(self.processed_dir)
         return data
 
     @staticmethod

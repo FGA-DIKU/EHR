@@ -4,6 +4,13 @@ import pandas as pd
 from tqdm import tqdm
 
 from corebehrt.modules.preparation.dataset import PatientData
+from corebehrt.constants.data import (
+    ABSPOS_COL,
+    CONCEPT_COL,
+    PID_COL,
+    SEGMENT_COL,
+    AGE_COL,
+)
 
 
 def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
@@ -27,16 +34,16 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
     """
     patients_data = []
 
-    grouped = df.groupby("PID", sort=False)
+    grouped = df.groupby(PID_COL, sort=False)
     loop = tqdm(
         grouped, total=len(grouped), desc="Converting to patient list", mininterval=1
     )
     for pid, group in loop:
         # Convert each column to a Python list
-        concepts_list = group["concept"].tolist()
-        abspos_list = group["abspos"].tolist()
-        segments_list = group["segment"].tolist()
-        ages_list = group["age"].tolist()
+        concepts_list = group[CONCEPT_COL].tolist()
+        abspos_list = group[ABSPOS_COL].tolist()
+        segments_list = group[SEGMENT_COL].tolist()
+        ages_list = group[AGE_COL].tolist()
 
         # Create a PatientData instance
         patient = PatientData(

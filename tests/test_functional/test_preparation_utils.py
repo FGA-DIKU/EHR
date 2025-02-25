@@ -9,7 +9,7 @@ class TestGetBackgroundLengthDD(unittest.TestCase):
     def setUp(self):
         # Test data setup that will be used by multiple tests
         self.data = {
-            "PID": [
+            "subject_id": [
                 "patient1",
                 "patient1",
                 "patient1",
@@ -17,7 +17,7 @@ class TestGetBackgroundLengthDD(unittest.TestCase):
                 "patient2",
                 "patient2",
             ],
-            "concept": [1, 2, 3, 1, 2, 3],
+            "code": [1, 2, 3, 1, 2, 3],
         }
 
         self.vocabulary = {
@@ -30,7 +30,7 @@ class TestGetBackgroundLengthDD(unittest.TestCase):
 
     def test_normal_case(self):
         # Create Dask DataFrame from test data
-        df = pd.DataFrame(self.data).set_index("PID")
+        df = pd.DataFrame(self.data).set_index("subject_id")
         ddf = dd.from_pandas(df, npartitions=2)
         # Test the function
         result = get_background_length_dd(ddf, self.vocabulary)
@@ -40,7 +40,7 @@ class TestGetBackgroundLengthDD(unittest.TestCase):
 
     def test_empty_dataframe(self):
         # Test with empty DataFrame
-        empty_df = pd.DataFrame(columns=["PID", "concept"]).set_index("PID")
+        empty_df = pd.DataFrame(columns=["subject_id", "code"]).set_index("subject_id")
         empty_ddf = dd.from_pandas(empty_df, npartitions=1)
 
         result = get_background_length_dd(empty_ddf, self.vocabulary)
