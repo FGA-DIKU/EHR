@@ -64,10 +64,10 @@ The environment must be build, before jobs can be run.
 CoreBEHRT jobs are run using the `job` sub-command:
 
 ```bash
-python -m corebehrt.azure job {create_data,create_outcomes,pretrain,select_cohort,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>]
+python -m corebehrt.azure job {create_data,create_outcomes,pretrain,select_cohort,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>] [--log_system_metrics]
 ```
 
-The command starts the specified job using the specified `experiment` and `compute`. Passing pairs `<ouput_id>=<output_name>` using `-o` allows for registering outputs as data assets. The default configuration path (`corebehrt/configs/<job_name>.yaml`) can be overridden with the `-c`/`--config` option.
+The command starts the specified job using the specified `<experiment>` and `<compute>`. Passing pairs `<ouput_id>=<output_name>` using `-o` allows for registering outputs as data assets. The default configuration path (`corebehrt/configs/<job_name>.yaml`) can be overridden with the `-c`/`--config` option. If set, the `--log_system_metrics` (alt. `-lsm`) enables logging of CPU, GPU and memory utilization.
 
 Examples of running different job types:
 
