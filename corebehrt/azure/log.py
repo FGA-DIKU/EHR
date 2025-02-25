@@ -19,16 +19,19 @@ def is_mlflow_available() -> bool:
     return MLFLOW_AVAILABLE
 
 
-def start_run(name: str = None, nested: bool = False):
+def start_run(name: str = None, nested: bool = False, log_system_metrics: bool = False):
     """
     Starts an mlflow run. Used in the Azure wrapper and should
     not in general be used elsewhere.
 
     :param name: Name of run
     :param nested: If the run should be nested.
+    :param log_system_metrics: If enabled, log system metrics (CPU/GPU/mem).
     """
     if is_mlflow_available():
-        return mlflow.start_run(run_name=name, nested=nested)
+        return mlflow.start_run(
+            run_name=name, nested=nested, log_system_metrics=log_system_metrics
+        )
     else:
         # Return a dummpy context manager so as to not raise an
         # error if mlflow is not available

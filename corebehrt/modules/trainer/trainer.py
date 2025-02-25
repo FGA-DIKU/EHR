@@ -154,9 +154,6 @@ class EHRTrainer:
                 self._update_and_log(step_loss, train_loop, epoch_loss)
                 step_loss = 0
 
-            if (i % 100 == 0) and self.device == "cuda":
-                self.run_log_gpu(step=i)
-
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -410,27 +407,6 @@ class EHRTrainer:
             self.logger.info(message)
         else:
             print(message)
-
-    def run_log_gpu(self, step=None):
-        """Logs the GPU memory usage to the run"""
-        memory_allocated = torch.cuda.memory_allocated(device=self.device) / 1e9
-        max_memory_reserved = torch.cuda.max_memory_reserved(device=self.device) / 1e9
-        memory_cached = torch.cuda.memory_reserved(device=self.device) / 1e9
-        self.run_log(
-            name="GPU Memory",
-            value=memory_allocated,
-            step=step,
-        )
-        self.run_log(
-            name="GPU Max Memory",
-            value=max_memory_reserved,
-            step=step,
-        )
-        self.run_log(
-            name="GPU Cached Memory",
-            value=memory_cached,
-            step=step,
-        )
 
     def run_log(self, name, value, step=None):
         if azure.is_mlflow_available():

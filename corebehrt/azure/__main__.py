@@ -5,26 +5,8 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 
 import sys
 import argparse
-
-from corebehrt.modules.setup.config import load_config
-
-from corebehrt.azure.components import (
-    create_data,
-    create_outcomes,
-    pretrain,
-    finetune,
-    select_cohort,
-)
-
+import yaml
 from . import environment, util
-
-COMPONENTS = {
-    "create_data": create_data,
-    "create_outcomes": create_outcomes,
-    "pretrain": pretrain,
-    "finetune_cv": finetune,
-    "select_cohort": select_cohort,
-}
 
 
 def parse_register_output(register_output_args: list) -> dict:
@@ -41,23 +23,24 @@ def parse_register_output(register_output_args: list) -> dict:
     return dict(register_output)
 
 
-def get_job_initializer(name: str) -> callable:
-    """
-    Returns the initializer for the Azure job for the given
-    component name.
-    """
-    return COMPONENTS[name].job
-
-
 def create_and_run_job(args) -> None:
     """
     Run the job from the given arguments.
     """
-    cfg = load_config(args.config or f"./corebehrt/configs/{args.JOB}.yaml")
-    register_output = parse_register_output(args.register_output)
-    job_initializer = get_job_initializer(args.JOB)
 
-    job = job_initializer(cfg, compute=args.COMPUTE, register_output=register_output)
+    cfg_path = args.config or f"./corebehrt/configs/{args.JOB}.yaml"
+    with open(cfg_path, "r") as cfg_file:
+        cfg = yaml.safe_load(cfg_file)
+
+    register_output = parse_register_output(args.register_output)
+
+    job = util.create_job(
+        args.JOB,
+        cfg,
+        compute=args.COMPUTE,
+        register_output=register_output,
+        log_system_metrics=args.log_system_metrics,
+    )
 
     # Start job
     util.run_job(job, args.experiment)
@@ -79,7 +62,13 @@ if __name__ == "__main__":
     job_parser.add_argument(
         "JOB",
         type=str,
-        choices=COMPONENTS.keys(),
+        choices={
+            "create_data",
+            "pretrain",
+            "create_outcomes",
+            "select_cohort",
+            "finetune_cv",
+        },
         help="Job to run.",
     )
     job_parser.add_argument(
@@ -107,6 +96,13 @@ if __name__ == "__main__":
         action="append",
         default=[],
         help="If an output should be registered, provide a name for the Azure asset using the format '--register_output <input>=<name>'.",
+    )
+    job_parser.add_argument(
+        "-lsm",
+        "--log_system_metrics",
+        action="store_true",
+        default=False,
+        help="If set, system metrics such as CPU, GPU and memory usage are logged in Azure.",
     )
 
     # Parse args
