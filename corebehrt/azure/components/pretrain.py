@@ -13,9 +13,4 @@ OUTPUTS = {"model": {"type": "uri_folder"}}
 
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    from corebehrt.main import pretrain
-
-=======
->>>>>>> 3dcaa31 (Azure logging (#137))
     util.run_main(pretrain.main_train, INPUTS, OUTPUTS)
