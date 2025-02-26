@@ -26,17 +26,12 @@ class ModelManager:
         # -> restart_model_path if it is set and has checkpoints.
         # -> pretrain_model_path if no current model exist at the other paths.
 
-        self.model_path = self.check_model("model", fold=fold, checkpoints=False)
+        self.model_path = self.check_model("model", fold=fold, checkpoints=False) # TODO: Not needed?
         self.pretrain_model_path = self.check_model("pretrain_model")
 
-        if self.check_checkpoints(self.model_path):
-            # Given model has checkpoints -> restart
-            self.restart_model_path = self.model_path
-            cfg_path = self.cfg.paths.model
-        else:
-            # Restart model from other directory (if given)
-            self.restart_model_path = self.check_model("restart_model", fold=fold)
-            cfg_path = self.cfg.paths.get("restart_model")
+        # Restart model from other directory (if given)
+        self.restart_model_path = self.check_model("restart_model", fold=fold)
+        cfg_path = self.cfg.paths.get("restart_model")
 
         # Update config from old model, if relevant
         if self.restart_model_path is not None:
@@ -56,7 +51,6 @@ class ModelManager:
         if (
             self.pretrain_model_path is None
             and self.restart_model_path is None
-            and not self.check_checkpoints(self.model_path)
         ):
             raise ValueError(
                 "Either paths.pretrain_model or paths.restart_model must be set, if no existing model is provided."
@@ -76,15 +70,7 @@ class ModelManager:
             logger.warning(f"Could not find model at path '{path}'.")
             return None
 
-        if checkpoints and not self.check_checkpoints(path):
-            logger.warning(f"No checkpoints found at path '{path}'.")
-            return None
-
         return path
-
-    @staticmethod
-    def check_checkpoints(path: str) -> bool:
-        return path is not None and len(os.listdir(join(path, CHECKPOINTS_DIR))) > 0
 
     def load_checkpoint(self):
         return ModelLoader(self.checkpoint_model_path).load_checkpoint()
