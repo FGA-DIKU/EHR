@@ -1,22 +1,33 @@
 logging:
-  level: INFO
-  path: ./outputs/logs
+  level: INFO           # Defines the logging level (INFO, DEBUG, ERROR, etc.)
+  path: ./outputs/logs  # Specifies the directory where log files will be stored.
 
 paths:
-  data: ./example_data/example_MEDS_data_w_labs
-  outcomes: ./outputs/outcomes/
-  features: ./outputs/features/
+  data: ./example_data/example_MEDS_data_w_labst dataset
+  features: ./outputs/features             # Path to store extracted features
+  outcomes: ./outputs/outcomes      #Path to store outcome-related files
+
+loader:
+  concepts: [
+    diagnose
+  ]
+  batchsize: 10_000
+  chunksize: 10_000
 
 outcomes:
+
   TEST_OUTCOME: 
+ # Defines the final labels used for fine-tuning the model
     type: [code]
     match: [['D10', 'D02']]
     exclude: ['157141000119108']
     match_how: startswith
     case_sensitive: true
   TEST_CENSOR:
+  # Marks or filters specific data points that need to be censored or processed differently.  
     type: [code]
     match: [['M112']]
+
     match_how: startswith
     case_sensitive: false
 

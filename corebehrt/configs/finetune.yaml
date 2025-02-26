@@ -1,5 +1,5 @@
 logging:
-  level: INFO
+  level: INFO   # Defines the logging level (INFO, DEBUG, ERROR, etc.)
   path: ./outputs/logs
 
 paths:
@@ -31,7 +31,7 @@ outcome: # we will convert outcomes to binary based on whether at least one outc
   n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)
 
 trainer_args:
-  sampler: true
+  sampler: true  
   sample_weight_function:
     _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
   batch_size: 128

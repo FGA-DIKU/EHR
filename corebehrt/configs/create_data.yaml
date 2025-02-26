@@ -1,14 +1,7 @@
 
 logging:
-  level: INFO   # Logs general system messages
-  #**Options**: 
-    #`DEBUG`:Detailed logs for debugging purposes
-    #`INFO`: General system messages (current setting)
-    #`WARNING`:Alerts about potential issues
-    #`ERROR`:Logs errors that prevent execution
-    #`CRITICAL`:Logs severe errors that may cause system failure
-
-  path: ./outputs/logs # Directory where log files are stored
+  level: INFO   # Defines the logging level (INFO, DEBUG, ERROR, etc.)
+  path: ./outputs/logs # Specifies the directory where log files will be stored
 
 paths:
 <<<<<<< HEAD
@@ -63,6 +56,8 @@ tokenizer:
   #cutoffs:
    # D: 3 # diagnosis    # Minimum count for diagnoses
    # M: 4 # medication   # Minimum count for medications
+
+
 # This is for the excluding incorrect ages
 excluder:
   min_age: -1
