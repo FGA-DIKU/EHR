@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 from os.path import join
 from typing import Tuple
+from tqdm import tqdm
+from corebehrt.modules.monitoring.logger import TqdmToLogger
 
 import dask.dataframe as dd
 import pandas as pd
@@ -25,13 +27,14 @@ from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
 )
+from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.functional.preparation.truncate import (
     truncate_patient,
     truncate_patient_df,
 )
 from corebehrt.functional.preparation.utils import (
     get_background_length,
-    get_background_length_dd,
+    get_background_length_pd,
     get_non_priority_tokens,
 )
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
@@ -157,15 +160,11 @@ class DatasetPreparer:
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
         vocab = load_vocabulary(paths_cfg.tokenized)
-
-        with ProgressBar(dt=1):
-            df = dd.read_parquet(
-                join(
-                    paths_cfg.tokenized,
-                    "features_train",
-                )
-            )
-            df = df.repartition(partition_size="100MB")
+        loader = ShardLoader( data_dir=paths_cfg.tokenized, splits=["features_train"], patient_info_path=None)
+        patient_list = []
+        for df, _ in tqdm(
+            loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
+        ):
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
@@ -173,9 +172,10 @@ class DatasetPreparer:
             if data_cfg.get("cutoff_date"):
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
             df = df.reset_index(drop=False)
-            df = df.compute()
-        self._check_sorted(df)
-        patient_list = dataframe_to_patient_list(df)
+            self._check_sorted(df)
+            batch_patient_list = dataframe_to_patient_list(df)
+            patient_list.extend(batch_patient_list)
+
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
 
@@ -200,19 +200,18 @@ class DatasetPreparer:
 
     @staticmethod
     def _truncate(
-        df: dd.DataFrame, vocab: dict, truncation_length: int
-    ) -> dd.DataFrame:
+        df: pd.DataFrame, vocab: dict, truncation_length: int
+    ) -> pd.DataFrame:
         """
         Truncate the dataframe to the truncation length.
         """
-        background_length = get_background_length_dd(df, vocab)
+        background_length = get_background_length_pd(df, vocab)
 
         df = df.groupby(PID_COL, group_keys=False).apply(
             truncate_patient_df,
             max_len=truncation_length,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
-            meta=df._meta,
         )
         return df
 
@@ -233,7 +232,7 @@ class DatasetPreparer:
             if not patient_df[ABSPOS_COL].is_monotonic_increasing:
                 raise ValueError(f"Patient {pid} has unsorted abspos values")
 
-    def _cutoff_data(self, df: dd.DataFrame, cutoff_date: dict) -> dd.DataFrame:
+    def _cutoff_data(self, df: pd.DataFrame, cutoff_date: dict) -> pd.DataFrame:
         """Cutoff data after a given date."""
         origin_point = load_config(
             join(self.cfg.paths.features, "data_config.yaml")

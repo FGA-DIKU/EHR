@@ -1,5 +1,5 @@
 from corebehrt.azure import util
-from corebehrt.main import pretrain
+from corebehrt.main import prepare_training_data
 
 INPUTS = {
     "features": {"type": "uri_folder"},
@@ -26,4 +26,4 @@ def job(config, compute=None, register_output=dict()):
 
 
 if __name__ == "__main__":
-    util.run_main(pretrain.main_train, INPUTS, OUTPUTS)
+    util.run_main(prepare_training_data.main_prepare_data, INPUTS, OUTPUTS)

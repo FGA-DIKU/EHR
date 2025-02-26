@@ -1,7 +1,7 @@
 from dataclasses import asdict, fields
 from typing import List
 
-import dask.dataframe as dd
+import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import CONCEPT_COL
@@ -15,12 +15,12 @@ def get_background_length(patients: List[PatientData], vocabulary) -> int:
     return background_length + 2  # +2 for [CLS] and [SEP] tokens
 
 
-def get_background_length_dd(df: dd.DataFrame, vocabulary: dict) -> int:
+def get_background_length_pd(df: pd.DataFrame, vocabulary: dict) -> int:
     """
-    Get the length of the background sentence for a dask DataFrame, including first SEP token.
+    Get the length of the background sentence for a pandas DataFrame, including first SEP token.
 
     Args:
-        df: Dask DataFrame containing patient data. Assumes PID to be index
+        df: pandas DataFrame containing patient data. Assumes PID to be index
         vocabulary: Dictionary mapping tokens to IDs
 
     Returns:
@@ -28,11 +28,11 @@ def get_background_length_dd(df: dd.DataFrame, vocabulary: dict) -> int:
     """
     background_tokens = get_background_tokens(vocabulary)
     # Get first index value
-    first_idx = df.index.head(1, compute=True)
+    first_idx = df.index[0]
     if len(first_idx) == 0:
         return 2  # Return default length for empty DataFrame
     # Get data for first patient using index
-    sub = df.loc[first_idx[0]].compute()
+    sub = df.loc[first_idx]
     example_concepts = set(sub[CONCEPT_COL].unique())
     background_length = len(example_concepts & background_tokens)
     return background_length + 2
