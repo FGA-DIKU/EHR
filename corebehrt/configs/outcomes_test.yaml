@@ -1,3 +1,5 @@
+# Configuration file for processing labeled data used in fine-tuning stage.  
+
 logging:
   level: INFO           # Defines the logging level (INFO, DEBUG, ERROR, etc.)
   path: ./outputs/logs  # Specifies the directory where log files will be stored.
@@ -8,26 +10,27 @@ paths:
   outcomes: ./outputs/outcomes      #Path to store outcome-related files
 
 loader:
+# Specifies which concept(s) should be loaded from the dataset.  
   concepts: [
-    diagnose
+    diagnose    # List of concepts to be loaded, such as diagnosis codes, medications, procedures, etc.  
   ]
-  batchsize: 10_000
-  chunksize: 10_000
+  batchsize: 10_000   # Number of samples per batch
+  chunksize: 10_000   # Defines how data is split into chunks for processing.  
 
 outcomes:
-
   TEST_OUTCOME: 
  # Defines the final labels used for fine-tuning the model
-    type: [code]
-    match: [['D10', 'D02']]
-    exclude: ['157141000119108']
-    match_how: startswith
-    case_sensitive: true
+    type: [code] # Specifies that the output is determined based on a predefined concept, representing a structured classification for labeling data in model training.  
+    match: [['D10', 'D02']]  # Selects data entries that contain these concept IDs. 
+    exclude: ['157141000119108']   # Excludes entries with this specific concept ID from the output that might be unintentionally included due to partial matches in `match`.  
+    match_how: contains  # Defines the matching rule (options: contains, startswith).  
+    case_sensitive: true # Enables case-sensitive matching to differentiate uppercase and lowercase characters. 
   TEST_CENSOR:
   # Marks or filters specific data points that need to be censored or processed differently.  
-    type: [code]
-    match: [['M112']]
+    type: [code]  # Specifies that censorship is applied based on predefined concepts.  
+    match: [['M112']] # Selects records where the concept ID starts with '169' for special handling.  
+    match_how: startswith  # Defines the matching rule (options: contains, startswith).  
+    case_sensitive: false   # Case-sensitive matching
 
-    match_how: startswith
-    case_sensitive: false
-
+# Final Output = (TEST_OUTCOME) - (TEST_CENSOR)  
+# Ensures that the dataset includes only relevant labeled data while removing or flagging specific entries based on predefined rules.  
