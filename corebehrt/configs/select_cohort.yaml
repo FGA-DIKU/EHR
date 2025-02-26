@@ -1,6 +1,6 @@
-logging:
-  level: INFO
-  path: ./outputs/logs
+logging: 
+  level: INFO      # Defines the logging level (INFO, DEBUG, ERROR, etc.)
+  path: ./outputs/logs   # Specifies the directory where log files will be stored
 
 paths:
   ### Inputs
