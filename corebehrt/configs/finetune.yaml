@@ -5,7 +5,6 @@ logging:
 paths:
 ## INPUTS
   prepared_data: ./outputs/finetuning/processed_data/
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv
   pretrain_model: ./outputs/pretraining
   # restart_model: ... # Use for restarting from checkpoint
       

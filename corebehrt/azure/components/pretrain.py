@@ -2,8 +2,8 @@ from corebehrt.azure import util
 from corebehrt.main import pretrain
 
 INPUTS = {
-    "features": {"type": "uri_folder"},
     "tokenized": {"type": "uri_folder"},
+    "prepared_data": {"type": "uri_folder"},
     "cohort": {"type": "uri_folder", "optional": True},
     "restart_model": {
         "type": "uri_folder",

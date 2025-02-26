@@ -2,10 +2,7 @@ from corebehrt.azure import util
 from corebehrt.main import finetune_cv
 
 INPUTS = {
-    "features": {"type": "uri_folder"},
-    "tokenized": {"type": "uri_folder"},
-    "cohort": {"type": "uri_folder"},
-    "test_pids": {"type": "uri_file", "optional": True},
+    "prepared_data": {"type": "uri_folder"},
     "pretrain_model": {
         "type": "uri_folder",
         "optional": True,

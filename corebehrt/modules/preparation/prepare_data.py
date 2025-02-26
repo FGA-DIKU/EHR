@@ -71,23 +71,20 @@ class DatasetPreparer:
         )
 
         # Load tokenized data
-        with ProgressBar(dt=1):
-            df = dd.read_parquet(
-                join(
-                    paths_cfg.tokenized,
-                    "features_tuning",
-                )
-            )
-            df = df.repartition(partition_size="100MB")
+        loader = ShardLoader( data_dir=paths_cfg.tokenized, splits=["features_tuning"], patient_info_path=None)
+        patient_list = []
+        for df, _ in tqdm(
+            loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
+        ):
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
-            df = df.compute()
-        self._check_sorted(df)
-        patient_list = dataframe_to_patient_list(df)
+            self._check_sorted(df)
+            batch_patient_list = dataframe_to_patient_list(df)
+            patient_list.extend(batch_patient_list)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
+        vocab = load_vocabulary(paths_cfg.tokenized)
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
