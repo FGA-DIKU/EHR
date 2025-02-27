@@ -51,7 +51,6 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data -config_path ./corebehrt/configs/prepare_finetune.yaml
 
-
             - name: main.finetune_cv
               run: |
                 source .venv/bin/activate
