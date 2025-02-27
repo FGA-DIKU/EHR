@@ -2,14 +2,8 @@ import argparse
 from os.path import join
 from datetime import datetime
 from typing import Tuple
-<<<<<<< HEAD
-import yaml
-from corebehrt.azure import log
-import importlib
-=======
 from corebehrt.modules.setup.config import Config, load_config
 from corebehrt.azure import log
->>>>>>> 3dcaa31 (Azure logging (#137))
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
@@ -143,13 +137,7 @@ def run_job(job, experiment: str):
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-<<<<<<< HEAD
-def run_main(
-    main: callable, inputs: dict, outputs: dict, log_system_metrics: bool = False
-) -> None:
-=======
 def run_main(main: callable, inputs: dict, outputs: dict) -> None:
->>>>>>> 3dcaa31 (Azure logging (#137))
     """
     Implements a wrapper for running CoreBEHRT scrips on the cluster.
     Prepares input and outputs, sets up logging on Azure using MLFlow
@@ -158,32 +146,17 @@ def run_main(main: callable, inputs: dict, outputs: dict) -> None:
     :param main: The main callable.
     :param inputs: inputs configuration.
     :param outputs: outputs configuration.
-<<<<<<< HEAD
-    :param log_system_metrics: If true, logs GPU/CPU/mem usage
-    """
-    # Parse command line args
-    args = parse_args(inputs | outputs)
-
-    log.start_run(log_system_metrics=args.pop("log_system_metrics", False))
-
-    prepare_config(args, inputs, outputs)
-=======
     """
     log.start_run()
 
     prepare_config(inputs, outputs)
->>>>>>> 3dcaa31 (Azure logging (#137))
 
     main(AZURE_CONFIG_FILE)
 
     log.end_run()
 
 
-<<<<<<< HEAD
-def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:
-=======
 def prepare_config(inputs: dict, outputs: dict) -> None:
->>>>>>> 3dcaa31 (Azure logging (#137))
     """
     Prepares the config on the cluster by substituing any input/output directories
     passed as arguments in the job setup configuration file:

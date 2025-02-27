@@ -5,35 +5,9 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 
 import sys
 import argparse
-<<<<<<< HEAD
 import yaml
 from . import environment, util
 
-=======
-
-from corebehrt.modules.setup.config import load_config
-
-from corebehrt.azure.components import (
-    create_data,
-    create_outcomes,
-    pretrain,
-    finetune,
-    select_cohort,
-    prepare_training_data,
-)
-
-from . import environment, util
-
-COMPONENTS = {
-    "create_data": create_data,
-    "create_outcomes": create_outcomes,
-    "pretrain": pretrain,
-    "finetune_cv": finetune,
-    "select_cohort": select_cohort,
-    "prepare_training_data": prepare_training_data,
-}
-
->>>>>>> ee4ffbc (prepare pretrain to pandas)
 
 def parse_register_output(register_output_args: list) -> dict:
     """
@@ -94,6 +68,7 @@ if __name__ == "__main__":
             "create_outcomes",
             "select_cohort",
             "finetune_cv",
+            "prepare_training_data",
         },
         help="Job to run.",
     )

@@ -154,12 +154,9 @@ class EHRTrainer:
                 self._update_and_log(step_loss, train_loop, epoch_loss)
                 step_loss = 0
 
-<<<<<<< HEAD
-=======
             if (i % 100 == 0) and self.device == "cuda":
                 self.run_log_gpu(step=i)
 
->>>>>>> 3dcaa31 (Azure logging (#137))
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -414,8 +411,6 @@ class EHRTrainer:
         else:
             print(message)
 
-<<<<<<< HEAD
-=======
     def run_log_gpu(self, step=None):
         """Logs the GPU memory usage to the run"""
         memory_allocated = torch.cuda.memory_allocated(device=self.device) / 1e9
@@ -437,7 +432,6 @@ class EHRTrainer:
             step=step,
         )
 
->>>>>>> 3dcaa31 (Azure logging (#137))
     def run_log(self, name, value, step=None):
         if azure.is_mlflow_available():
             azure.log_metric(name, value, step=step)

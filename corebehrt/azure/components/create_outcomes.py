@@ -7,9 +7,4 @@ INPUTS = {
 OUTPUTS = {"outcomes": {"type": "uri_folder"}}
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    from corebehrt.main import create_outcomes
-
-=======
->>>>>>> 3dcaa31 (Azure logging (#137))
     util.run_main(create_outcomes.main_data, INPUTS, OUTPUTS)
