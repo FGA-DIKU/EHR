@@ -14,7 +14,6 @@ from corebehrt.constants.paths import (
     INDEX_DATES_FILE,
     OUTCOMES_FILE,
     PID_FILE,
-    PROCESSED_DATA_DIR,
 )
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
