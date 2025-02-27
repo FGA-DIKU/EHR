@@ -78,6 +78,7 @@ class ConceptLoader:
             df[TIMESTAMP_COL] = pd.to_datetime(df[TIMESTAMP_COL], errors="coerce")
         return df
 
+
 class ShardLoader:
     def __init__(
         self,

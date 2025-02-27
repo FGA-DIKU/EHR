@@ -14,7 +14,7 @@ from corebehrt.azure.components import (
     pretrain,
     finetune,
     select_cohort,
-    prepare_training_data
+    prepare_training_data,
 )
 
 from . import environment, util

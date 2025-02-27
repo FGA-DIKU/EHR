@@ -71,7 +71,11 @@ class DatasetPreparer:
         )
 
         # Load tokenized data
-        loader = ShardLoader( data_dir=paths_cfg.tokenized, splits=["features_tuning"], patient_info_path=None)
+        loader = ShardLoader(
+            data_dir=paths_cfg.tokenized,
+            splits=["features_tuning"],
+            patient_info_path=None,
+        )
         patient_list = []
         for df, _ in tqdm(
             loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
@@ -157,7 +161,11 @@ class DatasetPreparer:
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
         vocab = load_vocabulary(paths_cfg.tokenized)
-        loader = ShardLoader( data_dir=paths_cfg.tokenized, splits=["features_train"], patient_info_path=None)
+        loader = ShardLoader(
+            data_dir=paths_cfg.tokenized,
+            splits=["features_train"],
+            patient_info_path=None,
+        )
         patient_list = []
         for df, _ in tqdm(
             loader(), desc="Batch Process Data", file=TqdmToLogger(logger)

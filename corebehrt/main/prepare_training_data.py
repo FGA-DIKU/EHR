@@ -27,14 +27,14 @@ CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
 def main_prepare_data(config_path):
     cfg = load_config(config_path)
 
-    if cfg.data.type == 'pretrain':
+    if cfg.data.type == "pretrain":
         # Setup directories
         DirectoryPreparer(cfg).setup_prepare_pretrain()
         logger = logging.getLogger("prepare pretrain data")
         # Prepare data
         data = DatasetPreparer(cfg).prepare_pretrain_data()
 
-    elif cfg.data.type == 'finetune':
+    elif cfg.data.type == "finetune":
         # Setup directories
         DirectoryPreparer(cfg).setup_prepare_finetune()
         logger = logging.getLogger("prepare finetune data")
@@ -43,6 +43,7 @@ def main_prepare_data(config_path):
 
     else:
         raise ValueError(f"Unsupported data type: {cfg.data.type}")
+
 
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)
