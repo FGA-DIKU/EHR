@@ -10,7 +10,6 @@ INPUTS = {
         "type": "uri_folder",
         "optional": True,
     },
-}
 OUTPUTS = {"model": {"type": "uri_folder"}}
 
 

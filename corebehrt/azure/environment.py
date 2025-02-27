@@ -51,7 +51,7 @@ def create_conda_cfg() -> None:
         lines = f.readlines()
 
     # Add lines
-    lines += ["mlflow", "azureml-mlflow"]
+    lines += ADDITIONAL_DEPENDENCIES
 
     # Create and save conda config
     cfg = {

@@ -13,4 +13,6 @@ OUTPUTS = {"model": {"type": "uri_folder"}}
 
 
 if __name__ == "__main__":
+    from corebehrt.main import pretrain
+
     util.run_main(pretrain.main_train, INPUTS, OUTPUTS)
