@@ -1,5 +1,6 @@
+import os
 from os.path import join
-
+import shutil
 import dask.dataframe as dd
 import torch
 from dask.diagnostics import ProgressBar
@@ -53,10 +54,13 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             cfg.features.pop("values")
 
         feature_creator = FeatureCreator(**cfg.features)
-        features = feature_creator(patients_info, concepts)
+        tmp_dir = join(cfg.paths.features, "temp")
+        os.makedirs(tmp_dir, exist_ok=True)
+        features = feature_creator(patients_info, concepts, tmp_folder=tmp_dir)
 
         features = excluder.exclude_incorrect_events(features)
 
         features.to_parquet(
             cfg.paths.features, write_index=False, schema=FEATURES_SCHEMA
         )
+        shutil.rmtree(join(cfg.paths.features, "temp"))

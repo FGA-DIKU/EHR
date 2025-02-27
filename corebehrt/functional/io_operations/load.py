@@ -89,12 +89,15 @@ def load_concept(folder: str, concept_type: str) -> dd.DataFrame:
     file = get_file_with_pattern(folder, f"concept.{concept_type}.*")
 
     if file.endswith(".parquet"):
-        df = dd.read_parquet(file, parse_dates=["TIMESTAMP"])
+        df = dd.read_parquet(file)
     elif file.endswith(".csv"):
-        df = dd.read_csv(file, parse_dates=["TIMESTAMP"])
+        df = dd.read_csv(file)
     else:
         raise ValueError(f"Unknown file type: {file}")
 
+    df["TIMESTAMP"] = dd.to_datetime(
+        df["TIMESTAMP"], format="mixed"
+    )  # if different concept files have different timestamp formats
     df["TIMESTAMP"] = df["TIMESTAMP"].dt.tz_localize(
         None
     )  # to prevent tz-naive/tz-aware issues

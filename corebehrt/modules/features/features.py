@@ -49,11 +49,11 @@ class FeatureCreator:
         self.background_vars = background_vars
 
     def __call__(
-        self,
-        patients_info: dd.DataFrame,
-        concepts: dd.DataFrame,
+        self, patients_info: dd.DataFrame, concepts: dd.DataFrame, tmp_folder: str
     ) -> dd.DataFrame:
-
+        """
+        We will write the features to a temporary folder to execute the graph.
+        """
         check_concepts_columns(concepts)
         check_patients_info_columns(patients_info, self.background_vars)
 
@@ -62,6 +62,9 @@ class FeatureCreator:
         background = create_background(patients_info, self.background_vars)
         death = create_death(patients_info)
         features = dd.concat([concepts, background, death])
+
+        features = self._execute_graph(features, tmp_folder)
+
         features = create_age_in_years(features)
         features = create_abspos(features, self.origin_point)
 
@@ -71,7 +74,6 @@ class FeatureCreator:
 
         features = create_segments(features)
         features = features.drop(columns=["ADMISSION_ID", "TIMESTAMP", "BIRTHDATE"])
-
         return features
 
     def prepare_concepts(
@@ -94,3 +96,13 @@ class FeatureCreator:
             columns={"CONCEPT": "concept"}
         )  # use lowercase for feature names
         return concepts
+
+    @staticmethod
+    def _execute_graph(features: dd.DataFrame, tmp_folder: str) -> dd.DataFrame:
+        """Execute the graph by saving intermediate results to disk and loading them back."""
+        features.to_parquet(
+            tmp_folder
+        )  # save intermediate results to execute the graph
+        features = dd.read_parquet(tmp_folder, parse_dates=["TIMESTAMP", "BIRTHDATE"])
+        features = features.set_index("PID")  # for groupbys
+        return features
