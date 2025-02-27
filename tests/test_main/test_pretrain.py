@@ -21,8 +21,7 @@ class TestCreateOutcomes(TestMainScript):
 
         # Update paths in the loaded config
         config["paths"] = {
-            "data": "./tests/data/raw",
-            "features": "./tests/data/features",
+            "prepared_data": "./tests/data/pretrain/processed_data",
             "tokenized": "./tests/data/tokenized",
             "model": self.pretrain_dir,
         }
@@ -31,6 +30,8 @@ class TestCreateOutcomes(TestMainScript):
 
     def test_pretrain(self):
         ### Call pretrain script
+
+
 
         main_train(self.config_path)
 
@@ -51,9 +52,6 @@ class TestCreateOutcomes(TestMainScript):
             "pids_val",
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
-        self.assertTrue(
-            exists(join(self.pretrain_dir, PROCESSED_DATA_DIR, "vocabulary.pt"))
-        )
 
     def test_pretrain_with_existing_model(self):
         ### Call pretrain script to train initial model

@@ -3,25 +3,25 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_MEDS_data_w_labs
+  data: ./example_data/example_MEDS_data
   tokenized: ./outputs/tokenized
   features: ./outputs/features
   
 features:
   origin_point:
-    year: 2018
+    year: 2020
     month: 1
     day: 26
-  values:
-    value_creator_kwargs:
-      num_bins: 100
+  # values:
+  #   value_creator_kwargs:
+  #     num_bins: 100
 
 tokenizer:
   sep_tokens: true
   cls_token: true
-  cutoffs:
-   D: 3 # diagnosis
-   M: 4 # medication
+  # cutoffs:
+  #  D: 3 # diagnosis
+  #  M: 4 # medication
 
 excluder:
   min_age: -1

@@ -28,9 +28,9 @@ def get_background_length_pd(df: pd.DataFrame, vocabulary: dict) -> int:
     """
     background_tokens = get_background_tokens(vocabulary)
     # Get first index value
+    if len(df) == 0:
+        return 2    
     first_idx = df.index[0]
-    if len(first_idx) == 0:
-        return 2  # Return default length for empty DataFrame
     # Get data for first patient using index
     sub = df.loc[first_idx]
     example_concepts = set(sub[CONCEPT_COL].unique())

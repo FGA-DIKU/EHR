@@ -1,0 +1,13 @@
+data:
+  min_len: 2
+  predefined_splits: false
+  truncation_len: 20
+  type: pretrain
+  val_ratio: 0.2
+logging:
+  level: INFO
+  path: ./outputs/logs
+paths:
+  features: ./outputs/features
+  prepared_data: ./outputs/pretraining/processed_data/
+  tokenized: ./outputs/tokenized
