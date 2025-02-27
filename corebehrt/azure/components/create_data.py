@@ -9,4 +9,5 @@ OUTPUTS = {
 
 if __name__ == "__main__":
     from corebehrt.main import create_data
+
     util.run_main(create_data.main_data, INPUTS, OUTPUTS)

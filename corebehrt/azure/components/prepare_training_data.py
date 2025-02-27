@@ -15,4 +15,5 @@ OUTPUTS = {"prepared_data": {"type": "uri_folder"}}
 
 if __name__ == "__main__":
     from corebehrt.main import prepare_training_data
+
     util.run_main(prepare_training_data.main_prepare_data, INPUTS, OUTPUTS)
