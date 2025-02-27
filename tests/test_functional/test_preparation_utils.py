@@ -1,5 +1,4 @@
 import unittest
-import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.functional.preparation.utils import get_background_length_pd

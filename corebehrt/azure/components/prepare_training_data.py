@@ -1,4 +1,5 @@
 from corebehrt.azure import util
+from corebehrt.main import prepare_training_data
 
 INPUTS = {
     "features": {"type": "uri_folder"},
@@ -11,7 +12,6 @@ INPUTS = {
     },
 }
 OUTPUTS = {"prepared_data": {"type": "uri_folder"}}
-
 
 
 if __name__ == "__main__":

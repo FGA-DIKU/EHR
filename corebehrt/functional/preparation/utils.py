@@ -29,7 +29,7 @@ def get_background_length_pd(df: pd.DataFrame, vocabulary: dict) -> int:
     background_tokens = get_background_tokens(vocabulary)
     # Get first index value
     if len(df) == 0:
-        return 2    
+        return 2
     first_idx = df.index[0]
     # Get data for first patient using index
     sub = df.loc[first_idx]

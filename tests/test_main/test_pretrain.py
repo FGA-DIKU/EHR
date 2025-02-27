@@ -2,7 +2,7 @@ from os.path import exists, getmtime, join
 
 import yaml
 
-from corebehrt.constants.paths import DATA_CFG, PRETRAIN_CFG, PROCESSED_DATA_DIR
+from corebehrt.constants.paths import DATA_CFG, PRETRAIN_CFG
 from corebehrt.main.pretrain import main_train
 
 from .base import TestMainScript
@@ -30,8 +30,6 @@ class TestCreateOutcomes(TestMainScript):
 
     def test_pretrain(self):
         ### Call pretrain script
-
-
 
         main_train(self.config_path)
 

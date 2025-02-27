@@ -1,12 +1,9 @@
 import os
 from os.path import join
 from typing import List
-from typing import List
 
 import torch
 
-from corebehrt.azure import log_metrics, setup_metrics_dir
-from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
@@ -134,7 +131,6 @@ def finetune_fold(
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
     trainer.model = model
     trainer.test_dataset = test_dataset
-
 
     if len(test_data) > 0:
         test_loss, test_metrics = trainer._evaluate(epoch, mode="test")

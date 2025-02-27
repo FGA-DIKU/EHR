@@ -31,8 +31,8 @@ optimizer:
   eps: 1.0e-06
   lr: 0.0005
 paths:
-  model: ./outputs/pretraining
-  prepared_data: ./outputs/pretraining/processed_data/
+  model: ./outputs/pretrai
+  prepared_data: ./outputs/pretrain/processed_data/
   tokenized: ./outputs/tokenized
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup

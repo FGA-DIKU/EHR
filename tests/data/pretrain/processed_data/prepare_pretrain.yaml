@@ -9,5 +9,5 @@ logging:
   path: ./outputs/logs
 paths:
   features: ./outputs/features
-  prepared_data: ./outputs/pretraining/processed_data/
+  prepared_data: ./outputs/pretrain/processed_data/
   tokenized: ./outputs/tokenized

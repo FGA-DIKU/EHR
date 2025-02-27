@@ -15,7 +15,6 @@ from corebehrt.main.helper.pretrain import (
     get_splits_path,
 )
 from corebehrt.modules.preparation.dataset import MLMDataset, PatientDataset
-from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.initializer import Initializer

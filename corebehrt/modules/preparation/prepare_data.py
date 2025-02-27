@@ -6,10 +6,8 @@ from typing import Tuple
 from tqdm import tqdm
 from corebehrt.modules.monitoring.logger import TqdmToLogger
 
-import dask.dataframe as dd
 import pandas as pd
 import torch
-from dask.diagnostics import ProgressBar
 
 from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
 from corebehrt.constants.paths import (

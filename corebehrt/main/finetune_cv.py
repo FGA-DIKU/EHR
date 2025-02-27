@@ -16,7 +16,6 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
 )
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 

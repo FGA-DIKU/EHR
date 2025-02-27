@@ -45,7 +45,6 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
-    max_shard = 5
     combined_patient_info = pd.DataFrame()
     for split_name in ["train", "tuning", "held_out"]:
         counter = 0
@@ -61,8 +60,6 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
         for shard in shards:
             shard_path = f"{path_name}/{shard}"
             shard_n = shard.split(".")[0]
-            if counter >= max_shard:
-                break
 
             concepts = FormattedDataLoader(
                 shard_path,
