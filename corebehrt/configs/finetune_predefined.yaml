@@ -5,6 +5,7 @@ logging:
 paths:
 ## INPUTS
   prepared_data: ./outputs/finetuning/processed_data/
+  cohort: ./outputs/cohort
   pretrain_model: ./outputs/pretraining
  
   # restart_model: ... # Use for restarting from checkpoint  

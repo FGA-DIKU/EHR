@@ -7,7 +7,7 @@ paths:
   prepared_data: ./outputs/finetuning/processed_data/
   test_pids: ./outputs/cohort_absolute/test_pids.pt # path to file with pids to use for test set
   pretrain_model: ./outputs/pretraining
- 
+  cohort: ./outputs/cohort
   # restart_model: ... # Use for restarting from checkpoint
   
 
