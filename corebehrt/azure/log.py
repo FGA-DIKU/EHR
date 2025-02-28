@@ -5,6 +5,9 @@ MLFLOW_AVAILABLE = False
 try:
     # Try to import mlflow and set availability flag
     import mlflow
+    import os
+
+    os.environ["MLFLOW_ENABLE_ASYNC_LOGGING"] = True
 
     MLFLOW_AVAILABLE = True
 except:
