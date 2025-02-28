@@ -16,7 +16,6 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
 )
 from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 
@@ -32,7 +31,8 @@ def main_finetune(config_path):
     # Logger
     logger = logging.getLogger("finetune_cv")
 
-    data: PatientDataset = DatasetPreparer(cfg).prepare_finetune_data()
+    loaded_data = torch.load(join(cfg.paths.prepared_data, "patients.pt"))
+    data = PatientDataset(loaded_data)
 
     test_data = PatientDataset([])
 

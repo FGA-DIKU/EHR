@@ -13,9 +13,9 @@ class TestExcluder(unittest.TestCase):
         # Sample data for testing
         self.sample_df = pd.DataFrame(
             {
-                "PID": [1, 1, 1, 2, 2, 3],
+                "subject_id": [1, 1, 1, 2, 2, 3],
                 "age": [-1, 50, 120, 30, 80, np.nan],
-                "concept": ["A", "B", "C", "D", "E", "F"],
+                "code": ["A", "B", "C", "D", "E", "F"],
                 "segment": [0, 1, 2, 0, 1, 0],
             }
         )
@@ -23,7 +23,7 @@ class TestExcluder(unittest.TestCase):
         self.sample_list = [["A", "B", "C", "D"], ["E"], ["F", "G", "H", "I", "J"]]
 
         self.sample_dict = {
-            "concept": [["A", "B", "C", "D"], ["E"], ["F", "G", "H", "I", "J"]],
+            "code": [["A", "B", "C", "D"], ["E"], ["F", "G", "H", "I", "J"]],
             "value": [[1, 2, 3, 4], [5], [6, 7, 8, 9, 10]],
         }
 

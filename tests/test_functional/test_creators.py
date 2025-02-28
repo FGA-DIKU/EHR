@@ -1,14 +1,13 @@
 import unittest
 import pandas as pd
-import dask.dataframe as dd
 from datetime import datetime
+from pandas import NaT
 
 from corebehrt.functional.features.creators import (
     create_age_in_years,
     create_abspos,
     create_segments,
     create_background,
-    create_death,
     sort_features,
 )
 
@@ -18,157 +17,191 @@ class TestCreators(unittest.TestCase):
         self.origin_point = datetime(2020, 1, 26)
         self.background_vars = ["GENDER"]
 
-        # Create sample data as pandas DataFrames
-        self.concepts_pd = pd.DataFrame(
+        self.concepts = pd.DataFrame(
             {
-                "PID": ["1", "2", "3", "1"],
-                "CONCEPT": ["DA1", "DA2", "MA1", "DA2"],
-                "TIMESTAMP": pd.to_datetime(
-                    ["2020-01-02", "2021-03-20", "2022-05-08", "2023-01-02"]
-                ),
-                "ADMISSION_ID": ["A", "B", "C", "D"],
+                "subject_id": [
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "2",
+                    "2",
+                    "2",
+                    "2",
+                    "3",
+                    "3",
+                    "3",
+                    "3",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                ],
+                "time": [
+                    datetime(2000, 5, 1),
+                    NaT,
+                    datetime(2015, 7, 1),
+                    datetime(2015, 7, 2),
+                    datetime(2016, 8, 2),
+                    datetime(2022, 9, 3),
+                    datetime(1995, 9, 3),
+                    NaT,
+                    datetime(2015, 9, 10),
+                    datetime(2018, 4, 5),
+                    datetime(1962, 11, 5),
+                    NaT,
+                    datetime(2020, 11, 6),
+                    datetime(2022, 6, 6),
+                    datetime(1975, 1, 6),
+                    NaT,
+                    datetime(2015, 12, 7),
+                    datetime(2015, 12, 7),
+                    datetime(2015, 12, 9),
+                    datetime(2015, 12, 11),
+                    datetime(2015, 12, 11),
+                    datetime(2022, 10, 11),
+                    datetime(2022, 10, 12),
+                ],
+                "code": [
+                    "DOB",
+                    "GENDER//F",
+                    "A",
+                    "B",
+                    "C",
+                    "DOD",
+                    "DOB",
+                    "GENDER//M",
+                    "A",
+                    "D",
+                    "DOB",
+                    "GENDER//M",
+                    "D",
+                    "D",
+                    "DOB",
+                    "GENDER//F",
+                    "ADMISSION",
+                    "E",
+                    "A",
+                    "B",
+                    "DISCHARGE",
+                    "X",
+                    "Y",
+                ],
             }
         )
-        self.patients_info_pd = pd.DataFrame(
+
+        self.expected_segments = pd.Series(
+            [0, 0, 1, 1, 2, 3, 0, 0, 1, 2, 0, 0, 1, 2, 0, 0, 1, 1, 1, 1, 1, 2, 2],
+            name="segment",
+        )
+
+        self.expected_patient_info = pd.DataFrame(
             {
-                "PID": ["1", "2", "3"],
-                "BIRTHDATE": pd.to_datetime(["2000-01-02", "2000-03-20", "2000-05-08"]),
-                "GENDER": ["Male", "Female", "Male"],
+                "subject_id": ["1", "2", "3", "4"],
+                "birthdate": [
+                    datetime(2000, 5, 1),
+                    datetime(1995, 9, 3),
+                    datetime(1962, 11, 5),
+                    datetime(1975, 1, 6),
+                ],
+                "deathdate": [datetime(2022, 9, 3), NaT, NaT, NaT],
+                "GENDER": ["F", "M", "M", "F"],
             }
         )
-
-        # Convert pandas DataFrames to Dask DataFrames
-        self.concepts = dd.from_pandas(self.concepts_pd, npartitions=1)
-        self.patients_info = dd.from_pandas(self.patients_info_pd, npartitions=1)
-        self.expected_segments = pd.Series([0, 1, 0, 0], name="segment")
-
-    def test_create_age_in_years(self):
-        """
-        Test the create_age_in_years function.
-        """
-        # Merge concepts with patients_info to get 'BIRTHDATE'
-        concepts_with_birthdate = self.concepts.merge(
-            self.patients_info[["PID", "BIRTHDATE"]], on="PID", how="left"
-        )
-
-        # Apply the function
-        result = create_age_in_years(concepts_with_birthdate)
-
-        # Compute the result
-        result_df = result.compute()
-
-        # Expected ages
-        expected_ages = (
-            self.concepts_pd["TIMESTAMP"]
-            - self.patients_info_pd.set_index("PID")
-            .loc[self.concepts_pd["PID"]]["BIRTHDATE"]
-            .values
-        ).dt.days // 365.25
-
-        # Assert the ages are as expected
-        self.assertTrue((result_df["age"] == expected_ages).all())
-
-    def test_create_abspos(self):
-        """
-        Test the create_abspos function.
-        """
-        # Apply the function
-        result = create_abspos(self.concepts, self.origin_point)
-
-        # Compute the result
-        result_df = result.compute()
-
-        # Expected abspos
-        expected_abspos = (
-            self.concepts_pd["TIMESTAMP"] - self.origin_point
-        ).dt.total_seconds() / 3600
-
-        # Assert the abspos values are as expected
-        self.assertTrue((result_df["abspos"] == expected_abspos).all())
-
-    def test_create_segments(self):
-        """
-        Test the create_segments function.
-        """
-        # Prepare concepts DataFrame by adding 'abspos' (required for sorting)
-        concepts = self.concepts.rename(columns={"CONCEPT": "concept"})
-        concepts_with_abspos = create_abspos(concepts, self.origin_point)
-
-        # Apply the function
-        sorted_concepts = sort_features(concepts_with_abspos)
-        result = create_segments(sorted_concepts)
-
-        # Compute the result
-        result_df = result.compute()
-
-        # Assert the segments are as expected
-        self.assertTrue((result_df["segment"] == self.expected_segments).all())
 
     def test_create_background(self):
         """
         Test the create_background function.
         """
         # Apply the function
-        result = create_background(self.patients_info, self.background_vars)
-
-        # Compute the result
-        result_df = result.compute()
+        result, patient_info = create_background(self.concepts)
 
         # Expected number of rows: number of patients * number of background_vars
-        expected_rows = len(self.patients_info_pd) * len(self.background_vars)
-        self.assertEqual(len(result_df), expected_rows)
+        expected_rows = len(self.concepts["code"])
+        self.assertEqual(len(result), expected_rows)
 
-        # Check that all added concepts are prefixed by 'BG_'
-        self.assertTrue(result_df["concept"].str.startswith("BG_").all())
+        # Check that all background concepts are prefixed by 'BG_' and have birthdate as time
+        self.assertEqual(result["code"].str.startswith("BG_").sum(), 4)
+        bg_rows = result[result["code"].str.startswith("BG_")]
+        dob_rows = result[result["code"] == "DOB"]
+        self.assertTrue((bg_rows["time"] == dob_rows["time"].values).all())
 
-        # Check that each patient has one entry for each background_var
-        group_counts = result_df.groupby("PID").size()
-        self.assertTrue((group_counts == len(self.background_vars)).all())
+        # Check patient_info
+        self.assertTrue(
+            (len(patient_info) == len(self.concepts["subject_id"].unique()))
+        )
+        self.assertTrue(
+            all(
+                patient_info.columns
+                == ["subject_id", "birthdate", "deathdate", "GENDER"]
+            )
+        )
+        pd.testing.assert_frame_equal(patient_info, self.expected_patient_info)
 
-        # Verify that the 'concept' column contains the correct values
-        for pid, group in result_df.groupby("PID"):
-            patient_info = self.patients_info_pd[self.patients_info_pd["PID"] == pid]
-            for var in self.background_vars:
-                expected_concept = f"BG_{var}_{patient_info[var].values[0]}"
-                self.assertIn(expected_concept, group["concept"].values)
-
-    def test_create_death(self):
+    def test_create_age_in_years(self):
         """
-        Test the create_death function.
+        Test the create_age_in_years function.
         """
-        # Add 'DEATHDATE' to patients_info
-        patients_info_with_death = self.patients_info_pd.copy()
-        patients_info_with_death["DEATHDATE"] = pd.to_datetime(
-            ["2025-01-01", pd.NaT, "2022-12-31"]
+        concepts_with_birthdate = self.concepts.merge(
+            self.expected_patient_info[["subject_id", "birthdate"]],
+            on="subject_id",
+            how="left",
         )
 
-        # Convert to Dask DataFrame
-        patients_info_dd = dd.from_pandas(patients_info_with_death, npartitions=1)
+        # Merge concepts with patients_info to get 'BIRTHDATE'
+        result = create_age_in_years(concepts_with_birthdate)
+
+        # Expected ages
+        expected_ages = (
+            self.concepts["time"]
+            - self.expected_patient_info.set_index("subject_id")
+            .loc[self.concepts["subject_id"]]["birthdate"]
+            .values
+        ).dt.days // 365.25
+
+        # Assert the ages are as expected
+        self.assertTrue((result["age"].dropna() == expected_ages.dropna()).all())
+
+    def test_create_abspos(self):
+        """
+        Test the create_abspos function.
+        """
+        # Apply the function
+        concepts_no_nan = self.concepts.dropna(
+            subset=["time"]
+        )  # Remove rows with NaT time (BG)
+        result = create_abspos(concepts_no_nan, self.origin_point)
+
+        # Expected abspos
+        expected_abspos = (
+            concepts_no_nan["time"] - self.origin_point
+        ).dt.total_seconds() / 3600
+
+        # Assert the abspos values are as expected
+        self.assertTrue((result["abspos"] == expected_abspos).all())
+
+    def test_create_segments(self):
+        """
+        Test the create_segments function.
+        """
+        # Prepare concepts DataFrame by adding 'abspos' (required for sorting) and 'BG' rows
+        # concepts = self.concepts.rename(columns={"CONCEPT": "concept"})
+        concepts_with_bg, _ = create_background(self.concepts)
+        concepts_with_abspos = create_abspos(concepts_with_bg, self.origin_point)
 
         # Apply the function
-        result = create_death(patients_info_dd)
+        sorted_concepts = sort_features(concepts_with_abspos)
+        result = create_segments(sorted_concepts)
 
-        # Compute the result
-        result_df = result.compute()
-
-        # Expected result should have rows for patients with non-null DEATHDATE
-        expected_pids = patients_info_with_death[
-            ~patients_info_with_death["DEATHDATE"].isna()
-        ]["PID"].values
-
-        # Assert that the result contains the correct PIDs
-        self.assertTrue(set(result_df["PID"]) == set(expected_pids))
-
-        # Assert that 'concept' column is 'Death'
-        self.assertTrue((result_df["concept"] == "Death").all())
-
-        # Assert that 'TIMESTAMP' matches 'DEATHDATE' in patients_info
-        for pid in expected_pids:
-            death_timestamp = result_df[result_df["PID"] == pid]["TIMESTAMP"].values[0]
-            expected_timestamp = patients_info_with_death[
-                patients_info_with_death["PID"] == pid
-            ]["DEATHDATE"].values[0]
-            self.assertEqual(death_timestamp, expected_timestamp)
+        # Assert the segments are as expected
+        self.assertTrue((result["segment"] == self.expected_segments).all())
 
 
 if __name__ == "__main__":

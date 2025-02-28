@@ -2,7 +2,7 @@ from os.path import exists, getmtime, join
 
 import yaml
 
-from corebehrt.constants.paths import DATA_CFG, PRETRAIN_CFG, PROCESSED_DATA_DIR
+from corebehrt.constants.paths import DATA_CFG, PRETRAIN_CFG
 from corebehrt.main.pretrain import main_train
 
 from .base import TestMainScript
@@ -21,8 +21,7 @@ class TestCreateOutcomes(TestMainScript):
 
         # Update paths in the loaded config
         config["paths"] = {
-            "data": "./tests/data/raw",
-            "features": "./tests/data/features",
+            "prepared_data": "./tests/data/pretrain/processed_data",
             "tokenized": "./tests/data/tokenized",
             "model": self.pretrain_dir,
         }
@@ -51,9 +50,6 @@ class TestCreateOutcomes(TestMainScript):
             "pids_val",
         ]:
             self.assertTrue(exists(join(self.pretrain_dir, f"{file_name}.pt")))
-        self.assertTrue(
-            exists(join(self.pretrain_dir, PROCESSED_DATA_DIR, "vocabulary.pt"))
-        )
 
     def test_pretrain_with_existing_model(self):
         ### Call pretrain script to train initial model

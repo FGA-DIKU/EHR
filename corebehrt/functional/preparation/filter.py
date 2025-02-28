@@ -4,6 +4,7 @@ from typing import List
 import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
 
 
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
@@ -11,7 +12,7 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that have a PID in pids
     """
-    return df[df.PID.isin(set(pids))]
+    return df[df[PID_COL].isin(set(pids))]
 
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
@@ -19,7 +20,7 @@ def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     Assumes that the table has a column named TIMESTAMP.
     Returns a new table with only the rows that have a TIMESTAMP.
     """
-    return df[df.TIMESTAMP.notna()]
+    return df[df[TIMESTAMP_COL].notna()]
 
 
 def select_first_event(

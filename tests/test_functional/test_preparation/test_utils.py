@@ -1,12 +1,11 @@
 import unittest
 
-import dask.dataframe as dd
 import pandas as pd
 
 # Assuming these functions are in the same module, or adjust the import accordingly:
 from corebehrt.functional.preparation.utils import (
     get_background_length,
-    get_background_length_dd,
+    get_background_length_pd,
     get_background_tokens,
     get_non_priority_tokens,
     subset_patient_data,
@@ -70,27 +69,25 @@ class TestBackgroundFunctions(unittest.TestCase):
     # ---------------------------------------------------------------------
     # 2) get_background_length_dd
     # ---------------------------------------------------------------------
-    def test_get_background_length_dd_normal(self):
+    def test_get_background_length_pd_normal(self):
         # Construct a dask dataframe from a small pandas frame
         # This must have at least a "concept" column to match your usage
         pdf = pd.DataFrame(
             {
-                "pid": ["pidA"] * 4,
-                "concept": [0, 2, 3, 5],  # a few tokens
+                "subject_id": ["pidA"] * 4,
+                "code": [0, 2, 3, 5],  # a few tokens
             }
-        )
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        ).set_index("subject_id")
         # Intersection with background tokens = {0, 3}
         # => 2 + 2 => 4
-        length = get_background_length_dd(ddf, self.vocab)
+        length = get_background_length_pd(pdf, self.vocab)
         self.assertEqual(length, 4)
 
-    def test_get_background_length_dd_empty_df(self):
+    def test_get_background_length_pd_empty_df(self):
         # If the DataFrame is empty, function should return 2 (CLS + SEP)
-        pdf = pd.DataFrame(columns=["pid", "concept"])
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        pdf = pd.DataFrame(columns=["subject_id", "code"]).set_index("subject_id")
 
-        length = get_background_length_dd(ddf, self.vocab)
+        length = get_background_length_pd(pdf, self.vocab)
         self.assertEqual(length, 2)
 
     # ---------------------------------------------------------------------
