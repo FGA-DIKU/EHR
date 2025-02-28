@@ -15,6 +15,6 @@ OUTPUTS = {"model": {"type": "uri_folder"}}
 
 
 if __name__ == "__main__":
-    from corebehrt.modules.finetune_cv import finetune_cv
+    from corebehrt.main import finetune_cv
 
     util.run_main(finetune_cv.main_finetune, INPUTS, OUTPUTS)
