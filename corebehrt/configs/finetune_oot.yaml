@@ -4,14 +4,11 @@ logging:
 
 paths:
 ## INPUTS
-  features: ./outputs/features
-  tokenized: ./outputs/tokenized
-  cohort: ./outputs/cohort_absolute # path to cohort directory
+  prepared_data: ./outputs/finetuning/processed_data/
   test_pids: ./outputs/cohort_absolute/test_pids.pt # path to file with pids to use for test set
   pretrain_model: ./outputs/pretraining
  
   # restart_model: ... # Use for restarting from checkpoint
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv
   
 
 ## OUTPUTS
