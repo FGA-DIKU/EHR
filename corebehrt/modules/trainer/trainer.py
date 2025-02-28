@@ -183,7 +183,6 @@ class EHRTrainer:
 
         if self.scheduler is not None:
             self.scheduler.step()
-        train_loop.set_postfix(loss=step_loss / self.accumulation_steps)
         epoch_loss.append(step_loss / self.accumulation_steps)
 
         if self.args["info"]:
