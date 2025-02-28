@@ -1,39 +1,48 @@
+
+# Configuration file for cohort selection in a fine-tuning pipeline using EHR data.  
 logging: 
   level: INFO      # Defines the logging level (INFO, DEBUG, ERROR, etc.)
   path: ./outputs/logs   # Specifies the directory where log files will be stored
 
 paths:
   ### Inputs
-  patients_info: ./outputs/features/patient_info.parquet
-  initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
-  exposure: ./outputs/outcomes/TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv # Outcome
+  patients_info: ./outputs/features/patient_info.parquet   # Path to patient demographic and clinical information. 
+  initial_pids: ./outputs/tokenized/pids_tuning.pt # _optional_ Initial patients to select from [list of pids] 
+  exposure: ./outputs/outcomes/TEST_CENSOR.csv # _optional_ Path to exposure data; defaults to outcome if not specified.For multiple exposures, create a joint exposure file.
+  outcome: ./outputs/outcomes/TEST_OUTCOME.csv # #Path to the outcome labels used for cohort selection.  
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
-  cohort: ./outputs/cohort # Data directory
+  cohort: ./outputs/cohort # Directory where the final selected cohort data will be stored. 
 
 
 
 selection:
-  exclude_prior_outcomes: true # Exclude patients who had the outcome before index date
-  exposed_only: false # Exclude patients who are not exposed
+  exclude_prior_outcomes: true # Exclude patients who had the outcome before the index date.
+  exposed_only: false # If true, only include patients who have an exposure event.
   age:
-    min_years: 18 # Minimum age to include (inclusive)
-    max_years: 120 # Maximum age to include (inclusive)
-  categories: # here we can include OR exclude categories
+    min_years: 18  # Minimum age (inclusive) for patient inclusion.
+    max_years: 120 #Maximum age (inclusive) for patient inclusion.
+  categories: # Define inclusion or exclusion criteria for categorical variables.
     GENDER: # column name in the data
-      include: [M] # include only M/ exclude keyword can be used as well.
+      include: [M] # Include only male patients. Use 'exclude' instead to remove certain categories.
 
-index_date: # if not provided we can use exposures to get the index dates
-  mode: relative # absolute or relative (to exposure)
-  absolute: 
-    year: 2015
-    month: 1
-    day: 26
+index_date:   # Defines the reference date used for cohort selection and analysis
+# if not provided we can use exposures to get the index dates
+  mode: relative  # Can be 'absolute' (fixed date) or 'relative' (based on exposure).
+  absolute:   # Defines a fixed index date.
+    year: 2015 # The reference year for the fixed date.
+    month: 1  # The reference month for the fixed date (January).
+    day: 26  # The reference day for the fixed date.
   relative: # takes first exposure as index date
-    n_hours_from_exposure: -24 # negative means before exposure, 0 by default
+    n_hours_from_exposure: -24  # Index date is **24 hours before** exposure (negative = before, 0 = at exposure, positive = after)
 
 cv_folds: 1 # can be set to 1 if only a simple train/val split is needed
 val_ratio: 0.1 # only used if cv_folds is set to 1
 test_ratio: 0.1 # can be set to 1 for test set creation only
+=======
+split_ratios:
+ # Defines how the dataset is split into training, validation, and test sets.
+  train: 0.8  # 80% of the data is used for training the model.
+  val: 0.1  # 10% of the data is used for validation (to tune model parameters).
+  test: 0.1  # 10% of the data is used for testing (to evaluate model performance).
