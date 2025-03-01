@@ -1,34 +1,36 @@
 # Configuration file for fine-tuning a model using EHR data for a specific application.  
-
 logging:
   level: INFO   # Defines the logging level (INFO, DEBUG, ERROR, etc.)
   path: ./outputs/logs   # Specifies the directory where log files will be stored
 
 paths:
 ## INPUTS
+
   prepared_data: ./outputs/finetuning/processed_data/
 
   features: ./outputs/features # Path to preprocessed feature files
   tokenized: ./outputs/tokenized  # Path to tokenized dataset
-  cohort: ./outputs/cohort # path to cohort directory
+  cohort: ./outputs/cohort # Path to cohort file containing patient IDs  
   # test_pids: pids_path # path to file with pids to use for test set
 
   # tokenized_file: "features_finetune.pt" # can also be a list
   # tokenized_pids: "pids_finetune.pt" # can also be a list
+  pretrain_model: ./outputs/pretraining    # Path to pre-trained model directory  
+
+  # restart_model: ... # Use this to resume training from a saved checkpoint  
   
-  pretrain_model: ./outputs/pretraining # Save model/outputs to this folder
-  # restart_model: ... # Use for restarting from checkpoint
-      
+  outcome: ./outputs/outcomes/TEST_OUTCOME.csv  # Path to the outcome labels
+  
 ## OUTPUTS
-  model: ./outputs/finetuning 
+  model: ./outputs/finetuning # Directory to save fine-tuned model and outputs 
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 evaluate: false # evaluate best model on test sets
 
 model:
   cls:
-    _target_: ehr2vec.model.heads.ClassifierGRU
-    bidirectional: true
+    _target_: ehr2vec.model.heads.ClassifierGRU # GRU-based classifier for sequence modeling 
+    bidirectional: true   # Enables bidirectional GRU for capturing both past and future context (default: false)  
 
 data:
   cv_folds: 2 # fo splitting data into k folds
@@ -45,49 +47,60 @@ trainer_args:
   sampler: true  
   sample_weight_function:
     _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
-  batch_size: 128
-  val_batch_size: 128
-  effective_batch_size: 128
-  epochs: 1
-  info: true
-  gradient_clip: 
-    clip_value: 1.0
-  shuffle: true
+
+
+
+  batch_size: 128 # Number of samples per batch
+  val_batch_size: 128     
+  effective_batch_size: 128    # Total batch size after gradient accumulation
+  epochs: 3   # Number of training epochs
+  info: true  # Whether to print training info    
+  gradient_clip:  # prevent exploding gradients by limiting their magnitude during backpropagation
+    clip_value: 1.0  # Caps the maximum gradient value at 1.0 during training to prevent exploding gradients and stabilize learning.
+  shuffle: true     # Enables shuffling of training data before each epoch to improve model generalization.
+
   checkpoint_frequency: 1
-  early_stopping: 20
+  early_stopping: 20     # false/null: disable early stopping - Set a number (e.g., 15) to stop training after that many epochs without improvement.
+
   stopping_criterion: roc_auc
   
+
+
+  sampler: null  # Default sampler (no custom sampling applied). Options: "null" (default), "weighted" 
+
+
+
+
 optimizer:
-  lr: 5e-4
-  eps: 1e-6
+  lr: 5e-4 # Learning rate for the optimizer
+  eps: 1e-6  # Small epsilon value to prevent division by zero in Adam optimizer
 
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
-  num_warmup_steps: 10
-  num_training_steps: 100
+  num_warmup_steps: 10 # Number of warmup steps (gradually increases learning rate at the beginning)
+  num_training_steps: 100  #Total number of training steps
 
-metrics:
+metrics:    # List of evaluation metrics for model performance monitoring
   accuracy:
     _target_: corebehrt.modules.monitoring.metrics.Accuracy
-    threshold: 0.6
-  roc_auc:
-    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
+    threshold: 0.6  # Classification threshold for accuracy calculation
+  roc_auc:  
+    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC  # Area under the ROC curve
 
   pr_auc:
-    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
+    _target_: corebehrt.modules.monitoring.metrics.PR_AUC  # Area under the Precision-Recall curve
   precentage_positives:
-    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives
+    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives  # Percentage of positive predictions
 
   mean_probability:
-    _target_: corebehrt.modules.monitoring.metrics.Mean_Probability
+    _target_: corebehrt.modules.monitoring.metrics.Mean_Probability # Average predicted probability for the positive class
   true_positives:
-    _target_: corebehrt.modules.monitoring.metrics.True_Positives
+    _target_: corebehrt.modules.monitoring.metrics.True_Positives  # Count of correctly predicted positive cases
 
   true_negatives:
-    _target_: corebehrt.modules.monitoring.metrics.True_Negatives
+    _target_: corebehrt.modules.monitoring.metrics.True_Negatives # Count of correctly predicted negative cases
   false_positives:
-    _target_: corebehrt.modules.monitoring.metrics.False_Positives
+    _target_: corebehrt.modules.monitoring.metrics.False_Positives  # Count of incorrectly predicted positive cases (false alarms)
 
   false_negatives:
-    _target_: corebehrt.modules.monitoring.metrics.False_Negatives
-  
+    _target_: corebehrt.modules.monitoring.metrics.False_Negatives  # Count of incorrectly predicted negative cases (missed positives)

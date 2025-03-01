@@ -1,6 +1,6 @@
 logging:
   level: INFO  # Defines the logging level (INFO, DEBUG, ERROR, etc.)
-  path: ./outputs/logs
+  path: ./outputs/logs   # Specifies the directory where log files will be stored
 
 # Paths for input/output files
 paths:
@@ -51,7 +51,7 @@ model:
 # Optimizer settings  
 optimizer:
   lr: 5e-4   # Learning rate for training
-  eps: 1e-6  # Small value added for numerical stability
+  eps: 1e-6  # Small epsilon value to prevent division by zero in Adam optimizer
 
 # Learning rate scheduler settings, 
 scheduler:

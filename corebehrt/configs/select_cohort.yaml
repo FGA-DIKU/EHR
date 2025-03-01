@@ -14,9 +14,6 @@ paths:
   
   ### Outputs
   cohort: ./outputs/cohort # Directory where the final selected cohort data will be stored. 
-
-
-
 selection:
   exclude_prior_outcomes: true # Exclude patients who had the outcome before the index date.
   exposed_only: false # If true, only include patients who have an exposure event.
@@ -39,10 +36,10 @@ index_date:   # Defines the reference date used for cohort selection and analysi
 
 cv_folds: 1 # can be set to 1 if only a simple train/val split is needed
 val_ratio: 0.1 # only used if cv_folds is set to 1
+cv_folds: 5 # can be set to 1 if only a simple train/val split is needed
 test_ratio: 0.1 # can be set to 1 for test set creation only
-=======
 split_ratios:
- # Defines how the dataset is split into training, validation, and test sets.
+# Defines how the dataset is split into training, validation, and test sets.
   train: 0.8  # 80% of the data is used for training the model.
   val: 0.1  # 10% of the data is used for validation (to tune model parameters).
   test: 0.1  # 10% of the data is used for testing (to evaluate model performance).
