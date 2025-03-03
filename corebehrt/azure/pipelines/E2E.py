@@ -1,4 +1,5 @@
-from ..util import check_azure, create_component
+from corebehrt.azure.util import check_azure
+from corebehrt.azure.util.pipeline import create_component
 
 INPUTS = {"data": {"type": "uri_folder", "config": "create_data"}}
 OUTPUTS = {"model": {"type": "uri_folder", "config": "pretrain"}}
