@@ -1,30 +1,37 @@
 logging:
-  level: INFO
+  level: INFO  # Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
   path: ./outputs/logs
 
+# Paths for input/output files
 paths:
 ## INPUTS
   prepared_data: ./outputs/pretraining/processed_data/
   # restart_model: ... # Use for restarting from checkpoint
 
 ## OUTPUTS
-  model: ./outputs/pretraining # Save model/outputs to this folder
-  #runs: ./outputs/pretraining # Use for generating a new model folder
+  model: ./outputs/pretraining  # Path to save trained model
+  #runs: ./outputs/pretraining  # Use for generating a new model folder
   
 data:
   dataset:
-    select_ratio: 1.
-    masking_ratio: .8
-    replace_ratio: .1
-    ignore_special_tokens: true
+    select_ratio: 1. # Fraction of dataset to use (1.0 means 100%)
+    masking_ratio: .8 # Ratio of tokens to mask for masked language modeling
+    replace_ratio: .1 # Ratio of masked tokens replaced with random tokens
+    ignore_special_tokens: true # Ignore special tokens when processing data
+  truncation_len: 20 # Maximum sequence length after truncation
+  min_len: 2 # Minimum sequence length required for a valid sample
+  cutoff_date:
+    year: 2020
+    month: 1
+    day: 1
 
-
+# Training arguments
 trainer_args:
-  batch_size: 32
-  effective_batch_size: 64
-  epochs: 1
-  info: true
-  sampler: null
+  batch_size: 32       # Number of samples per batch
+  effective_batch_size: 64  # Total batch size after gradient accumulation
+  epochs: 5  # Number of training epochs
+  info: true  # Whether to print training info
+  sampler: null  # Custom sampler for training (set to null for default)
   gradient_clip: 
     clip_value: 1.0
   shuffle: true
