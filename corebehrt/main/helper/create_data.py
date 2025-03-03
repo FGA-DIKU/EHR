@@ -49,7 +49,9 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
     for split_name in ["train", "tuning", "held_out"]:
         path_name = f"{cfg.paths.data}/{split_name}"
         if not os.path.exists(path_name):
-            ValueError(f"Path {path_name} does not exist")
+            if split_name == "held_out":
+                continue
+            raise ValueError(f"Path {path_name} does not exist")
 
         split_save_path = f"{cfg.paths.features}/{split_name}"
         os.makedirs(split_save_path, exist_ok=True)
