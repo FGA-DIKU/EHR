@@ -19,6 +19,7 @@ from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.initializer import Initializer
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
+from corebehrt.constants.paths import PREPARED_TRAIN_PATIENTS, PREPARED_VAL_PATIENTS
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 
@@ -44,8 +45,8 @@ def main_train(config_path):
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
     # Get data
-    train_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, "patients_train.pt")))
-    val_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, "patients_val.pt")))
+    train_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, PREPARED_TRAIN_PATIENTS)))
+    val_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, PREPARED_VAL_PATIENTS)))
     vocab = load_vocabulary(cfg.paths.prepared_data)
 
     # Initialize datasets

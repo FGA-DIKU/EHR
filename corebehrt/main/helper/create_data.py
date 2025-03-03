@@ -3,7 +3,6 @@ from os.path import join
 import torch
 
 from corebehrt.constants.data import FEATURES_SCHEMA, TOKENIZED_SCHEMA
-from corebehrt.modules.features.excluder import Excluder
 
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
@@ -12,6 +11,7 @@ from corebehrt.modules.features.values import ValueCreator
 import os
 import pyarrow as pa
 import pandas as pd
+from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 
 
 def load_tokenize_and_save(
@@ -40,7 +40,7 @@ def load_tokenize_and_save(
     torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt"))  # save pids as ints
 
 
-def create_and_save_features(excluder: Excluder, cfg) -> None:
+def create_and_save_features(cfg) -> None:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
@@ -79,7 +79,7 @@ def create_and_save_features(excluder: Excluder, cfg) -> None:
             feature_creator = FeatureCreator(**features_args)
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
-            features = excluder.exclude_incorrect_events(features)
+            features = exclude_incorrect_event_ages(features)
             features.to_parquet(
                 f"{split_save_path}/{shard_n}.parquet",
                 index=False,

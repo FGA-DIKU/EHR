@@ -16,7 +16,6 @@ import torch
 
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.setup.args import get_args
-from corebehrt.modules.features.excluder import Excluder
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
@@ -54,10 +53,7 @@ def main_data(config_path):
         logger.info("Reusing existing features")
     else:
         logger.info("Create and process features")
-        create_and_save_features(
-            Excluder(**cfg.excluder),  # Excluder is the new Handler and old Excluder
-            cfg,
-        )
+        create_and_save_features(cfg)
         logger.info("Finished feature creation and processing")
 
     logger.info("Tokenizing")
