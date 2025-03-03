@@ -13,18 +13,25 @@ def create(
     from azure.ai.ml import dsl, Input
 
     @dsl.pipeline(description="Full E2E CoreBEHRT pipeline")
-    def pipeline(data: Input):
-        prepare_data = create_component(
+    def pipeline(data: Input) -> dict:
+        create_data = create_component(
             "create_data", configs, computes, register_output, log_system_metrics
         )(data=data)
+
+        create_outcomes = create_component(
+            "create_outcomes", configs, computes, register_output, log_system_metrics
+        )(
+            data=data,
+            features=create_data.outputs.features,
+        )
 
         pretrain = create_component(
             "pretrain", configs, computes, register_output, log_system_metrics
         )(
-            features=prepare_data.outputs.features,
-            tokenized=prepare_data.outputs.tokenized,
+            features=create_data.outputs.features,
+            tokenized=create_data.outputs.tokenized,
         )
 
-        return {"model": pretrain.outputs.model}
+        return {}
 
     return pipeline
