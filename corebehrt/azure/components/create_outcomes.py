@@ -9,4 +9,4 @@ OUTPUTS = {"outcomes": {"type": "uri_folder"}}
 if __name__ == "__main__":
     from corebehrt.main import create_outcomes
 
-    job.run_main(create_outcomes.main_data, INPUTS, OUTPUTS)
+    job.run_main("create_outcomes", create_outcomes.main_data, INPUTS, OUTPUTS)

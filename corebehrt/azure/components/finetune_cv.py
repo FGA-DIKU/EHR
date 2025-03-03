@@ -21,4 +21,4 @@ OUTPUTS = {"model": {"type": "uri_folder"}}
 if __name__ == "__main__":
     from corebehrt.main import finetune_cv
 
-    job.run_main(finetune_cv.main_finetune, INPUTS, OUTPUTS)
+    job.run_main("finetune_cv", finetune_cv.main_finetune, INPUTS, OUTPUTS)
