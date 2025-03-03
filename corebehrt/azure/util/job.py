@@ -64,7 +64,7 @@ def setup(
     cmd = f"python -m corebehrt.azure.components.{job}"
 
     # Make sure config is read-able -> save it in the root folder.
-    save_config(config)
+    save_config(job, config)
 
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
