@@ -40,6 +40,6 @@ def create(
             "pretrain", configs, computes, register_output, log_system_metrics
         )(prepared_data=prepare_pretrain.outputs.prepared_data)
 
-        return {"model": pretrain.outputs.model}
+        return {}
 
     return pipeline
