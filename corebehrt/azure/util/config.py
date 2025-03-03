@@ -14,7 +14,6 @@ def config_path(
         f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
         else join(defaul_cfg_folder, f"{cfg_name}.yaml")
-    )
 
 
 def load_config(path: str = None, job_name: str = None) -> dict:
