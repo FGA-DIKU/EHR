@@ -95,7 +95,7 @@ def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> st
         _cfg = cfg
         cfg_path = arg_cfg.get("key", f"paths.{arg}").split(".")
         for step in cfg_path[:-1]:
-            _cfg[step] = _cfg.get(step, {})  # If it does not exists in config
+            _cfg[step] = _cfg.get(step) or {}  # If it does not exists/is null
             _cfg = _cfg[step]
         _cfg[cfg_path[-1]] = args[arg]
 
