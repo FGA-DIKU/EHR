@@ -51,10 +51,19 @@ def create_and_run_pipeline(args) -> None:
     Run the pipeline from the given arguments
     """
 
-    configs = parse_pair_args(args.config)
+    # Read configs
+    configs = dict()
+    cfg_paths = parse_pair_args(args.config)
+    for job_name, cfg_path in cfg_paths.items():
+        with open(cfg_path, "r") as cfg_file:
+            configs[job_name] = yaml.safe_load(cfg_file)
+
+    # Parse computes and set default
     computes = parse_pair_args(args.compute)
     if args.COMPUTE is not None:
         computes["default"] = args.COMPUTE
+
+    # Parse register_output
     register_output = parse_pair_args(args.register_output)
 
     pl = util.pipeline.create(
