@@ -4,8 +4,6 @@ data:
     masking_ratio: 0.8
     replace_ratio: 0.1
     select_ratio: 1.0
-  predefined_splits: false
-  val_ratio: 0.2
 logging:
   level: INFO
   path: ./outputs/logs
@@ -31,8 +29,8 @@ optimizer:
   eps: 1.0e-06
   lr: 0.0005
 paths:
-  model: ./outputs/pretrai
-  prepared_data: ./outputs/pretrain/processed_data/
+  model: ./outputs/pretraining
+  prepared_data: ./outputs/pretraining/processed_data/
   tokenized: ./outputs/tokenized
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
