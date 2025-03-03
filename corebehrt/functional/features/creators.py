@@ -133,18 +133,15 @@ def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
     concepts = assign_segments_to_death(concepts)
     return concepts
 
-
-@staticmethod
-def _get_adm_id():
-    return str(uuid.uuid4())
-
-
 def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign 'admission_id' to each row in concepts based on 'ADMISSION' and 'DISCHARGE' events.
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
     If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
     """
+    def _get_adm_id():
+        return str(uuid.uuid4())
+        
     concepts = concepts.reset_index(drop=True)
     concepts["admission_id"] = None
     concepts["admission_id"] = concepts["admission_id"].astype(object)
