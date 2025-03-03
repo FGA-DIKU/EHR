@@ -29,14 +29,9 @@ class ModelManager:
         self.model_path = self.check_model("model", fold=fold, checkpoints=False)
         self.pretrain_model_path = self.check_model("pretrain_model")
 
-        if self.check_checkpoints(self.model_path):
-            # Given model has checkpoints -> restart
-            self.restart_model_path = self.model_path
-            cfg_path = self.cfg.paths.model
-        else:
-            # Restart model from other directory (if given)
-            self.restart_model_path = self.check_model("restart_model", fold=fold)
-            cfg_path = self.cfg.paths.get("restart_model")
+        # Restart model from other directory (if given)
+        self.restart_model_path = self.check_model("restart_model", fold=fold)
+        cfg_path = self.cfg.paths.get("restart_model")
 
         # Update config from old model, if relevant
         if self.restart_model_path is not None:
@@ -86,8 +81,13 @@ class ModelManager:
     def check_checkpoints(path: str) -> bool:
         return path is not None and len(os.listdir(join(path, CHECKPOINTS_DIR))) > 0
 
-    def load_checkpoint(self):
-        return ModelLoader(self.checkpoint_model_path).load_checkpoint()
+    def load_checkpoint(self, checkpoints=False):
+        if checkpoints and self.check_checkpoints(self.model_path):
+            checkpoint_path = self.model_path
+        else:
+            checkpoint_path = self.checkpoint_model_path
+
+        return ModelLoader(checkpoint_path).load_checkpoint()
 
     def initialize_finetune_model(self, checkpoint):
         logger.info("Initializing model")

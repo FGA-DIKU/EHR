@@ -18,7 +18,6 @@ from corebehrt.modules.preparation.prepare_data import DatasetPreparer
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.initializer import Initializer
-from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.trainer import EHRTrainer
 
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
@@ -32,15 +31,8 @@ def main_train(config_path):
 
     logger = logging.getLogger("pretrain")
 
-    # Are we restarting training from checkpoint?
-    restart_path = cfg.paths.get("restart_model")
-
-    if not restart_path and ModelManager.check_checkpoints(cfg.paths.model):
-        # No restart path provided, but model @ cfg.paths.model has checkpoints
-        # so we restart from them
-        restart_path = cfg.paths.model
-
     # Check if we are training from checkpoint, if so, update model config
+    restart_path = cfg.paths.get("restart_model")
     if restart_path:
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
@@ -75,8 +67,7 @@ def main_train(config_path):
         checkpoint, epoch = load_checkpoint_and_epoch(
             restart_path, cfg.paths.get("checkpoint_epoch")
         )
-
-    logger.info(f"Continue training from epoch {epoch}")
+        logger.info(f"Continue training from epoch {epoch}")
     initializer = Initializer(cfg, checkpoint=checkpoint, model_path=restart_path)
     model = initializer.initialize_pretrain_model(train_dataset)
     logger.info("Initializing optimizer")
