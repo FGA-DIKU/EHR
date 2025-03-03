@@ -160,6 +160,12 @@ def prepare_job_command_args(
             # Raise error
             raise Exception(f"Missing required configuration item '{arg}'.")
 
+        # Set input/output
+        job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
+
+        # Update command
+        cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
+
         # Must we register the output?
         if _type == "outputs" and arg in register_output:
             job_args[arg].name = register_output[arg]
