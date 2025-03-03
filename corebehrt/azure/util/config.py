@@ -95,6 +95,7 @@ def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> st
         _cfg = cfg
         cfg_path = arg_cfg.get("key", f"paths.{arg}").split(".")
         for step in cfg_path[:-1]:
+            _cfg[step] = _cfg.get(step, {})  # If it does not exists in config
             _cfg = _cfg[step]
         _cfg[cfg_path[-1]] = args[arg]
 
@@ -167,7 +168,7 @@ def get_path_from_cfg(cfg: dict, arg: str, arg_cfg: dict):
     # Traverse config path
     for step in steps:
         # Check if present
-        if step not in cfg:
+        if cfg is None or step not in cfg:
             return None
         # Next step
         cfg = cfg[step]
