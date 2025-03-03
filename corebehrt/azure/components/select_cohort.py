@@ -13,4 +13,4 @@ OUTPUTS = {"cohort": {"type": "uri_folder"}}
 if __name__ == "__main__":
     from corebehrt.main import select_cohort
 
-    job.run_main(select_cohort.main_select_cohort, INPUTS, OUTPUTS)
+    job.run_main("select_cohort", select_cohort.main_select_cohort, INPUTS, OUTPUTS)

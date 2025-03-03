@@ -4,6 +4,7 @@ corebehrt.egg-info/
 .venv
 .azure
 azure_job_config.yaml
+.azure_job_configs
 .amlignore
 **.amltmp
 corebehrt/sandbox
