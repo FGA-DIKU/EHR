@@ -106,25 +106,15 @@ def sort_features(concepts: pd.DataFrame) -> dd.DataFrame:
     """
     Sorting all concepts by 'subject_id' and 'abspos' (and 'index' and 'order' if they exist).
     """
-    concepts = _sort_partitions(concepts)
-    return concepts
-
-
-def _sort_partitions(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Sort the DataFrame by 'PID' and 'abspos' to ensure correct ordering.
-    Added "index" and "order" columns to ensure correct ordering if they exist.
-    """
-    if "index" in df.columns and "order" in df.columns:
-        df = df.sort_values(
+    if "index" in concepts.columns and "order" in concepts.columns:
+        concepts = concepts.sort_values(
             ["subject_id", "abspos", "index", "order"]
         )  # could maybe be done more optimally, is a bit slow
-        df = df.drop(columns=["index", "order"])
+        concepts = concepts.drop(columns=["index", "order"])
     else:
-        df = df.sort_values(["subject_id", "abspos"])
+        concepts = concepts.sort_values(["subject_id", "abspos"])
 
-    return df
-
+    return concepts
 
 def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
     """
