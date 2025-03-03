@@ -5,8 +5,8 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 
 import sys
 import argparse
-import yaml
-from . import environment, util
+from corebehrt.azure import environment, util
+from corebehrt.util.config import load_config
 
 
 def parse_pair_args(pair_args: list) -> dict:
@@ -28,9 +28,7 @@ def create_and_run_job(args) -> None:
     Run the job from the given arguments.
     """
 
-    cfg_path = args.config or f"./corebehrt/configs/{args.JOB}.yaml"
-    with open(cfg_path, "r") as cfg_file:
-        cfg = yaml.safe_load(cfg_file)
+    cfg = load_config(path=args.config, job_name=args.JOB)
 
     register_output = parse_pair_args(args.register_output)
 
@@ -52,11 +50,7 @@ def create_and_run_pipeline(args) -> None:
     """
 
     # Read configs
-    configs = dict()
     cfg_paths = parse_pair_args(args.config)
-    for job_name, cfg_path in cfg_paths.items():
-        with open(cfg_path, "r") as cfg_file:
-            configs[job_name] = yaml.safe_load(cfg_file)
 
     # Parse computes and set default
     computes = parse_pair_args(args.compute)
@@ -68,7 +62,7 @@ def create_and_run_pipeline(args) -> None:
 
     pl = util.pipeline.create(
         args.PIPELINE,
-        configs,
+        cfg_paths,
         computes,
         register_output=register_output,
         log_system_metrics=args.log_system_metrics,
