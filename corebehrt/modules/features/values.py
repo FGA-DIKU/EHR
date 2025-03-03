@@ -9,18 +9,18 @@ class ValueCreator:
 
     @staticmethod
     def bin_results(concepts: pd.DataFrame, num_bins=100) -> pd.DataFrame:
-        concepts["numeric_value"] = ValueCreator.bin(
+        concepts["binned_value"] = ValueCreator.bin(
             concepts["numeric_value"], num_bins=num_bins
         )
 
         # Add index + order
         concepts["index"] = concepts.index
-        values = concepts.dropna(subset=["numeric_value"]).copy()
-        values.loc[:, "code"] = values["numeric_value"]
+        values = concepts.dropna(subset=["binned_value"]).copy()
+        values.loc[:, "code"] = values["binned_value"]
         concepts.loc[:, "order"] = 0
         values.loc[:, "order"] = 1
         concatted = pd.concat([concepts, values])
-        return concatted.drop(columns=["numeric_value"], axis=1)
+        return concatted.drop(columns=["numeric_value", "binned_value"], axis=1)
 
     @staticmethod
     def bin(normalized_values: pd.Series, num_bins=100) -> pd.Series:
