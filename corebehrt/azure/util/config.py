@@ -141,10 +141,12 @@ def prepare_job_command_args(
     cmd = ""
     azure_arg_cls = Input if _type == "inputs" else Output
     for arg, arg_cfg in args.items():
-        value = get_path_from_cfg(config, arg, arg_cfg)
-
-        if arg_cfg.get("optional", False):
-            continue
+        if not (
+            (value := get_path_from_cfg(config, arg, arg_cfg))
+            and arg_cfg.get("optional")
+        ):
+            # Raise error
+            raise Exception(f"Missing required configuration item '{arg}'.")
 
         # Set input/output
         job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
