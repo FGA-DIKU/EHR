@@ -4,7 +4,7 @@ try:
     #
     # Check if azure is available and set flag.
     #
-    from azure.ai.ml import MLClient, command, Input, Output
+    from azure.ai.ml import MLClient
     from azure.identity import DefaultAzureCredential
 
     AZURE_AVAILABLE = True
