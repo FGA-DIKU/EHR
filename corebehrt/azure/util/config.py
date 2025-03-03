@@ -1,27 +1,89 @@
 import argparse
-from os.path import join
+from os.path import join, dirname
+from os import makedirs
 from typing import Tuple
+import yaml
 
-AZURE_CONFIG_FILE = "azure_job_config.yaml"
+AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
 
-def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:
+def config_path(job_name: str, is_job: bool = False) -> str:
+    return (
+        f"{AZURE_CONFIG_FOLDER}/{job_name}.yaml"
+        if is_job
+        else f"corebehrt/configs/{job_name}.yaml"
+    )
+
+
+def load_config(path: str = None, job_name: str = None) -> dict:
+    """
+    Load the config from the given path.
+    """
+    path = path or config_path(job_name)
+    with open(path, "r") as cfg_file:
+        return yaml.safe_load(cfg_file)
+
+
+def save_config(job_name: str, cfg: dict) -> str:
+    """
+    Save the prepared config before starting the job
+
+    :param job_name: Name of job.
+    :param cfg: Dictionary to be saved.
+
+    :return: Path to the saved config
+    """
+    # Make sure config is read-able -> save it in the root folder.
+    path = config_path(job_name)
+    makedirs(dirname(path), exist_ok=True)
+    with open(path, "w") as cfg_file:
+        yaml.dump(cfg, cfg_file)
+    return path
+
+
+def load_job_config(job_name: str) -> "Config":  # noqa: F821
+    """
+    Load the config on the cluster
+    """
+    from corebehrt.modules.setup.config import load_config as cb_load_config
+
+    # Read the config file
+    return cb_load_config(config_path(job_name, is_job=True))
+
+
+def save_job_config(job_name: str, cfg: "Config") -> path:  # noqa: F821
+    """
+    Save the config on the cluster
+
+    :param job_name: Name of job.
+    :param cfg: CoreBEHRT config object to be saved.
+
+    :return: Path to the saved config
+    """
+    path = config_path(job_name, is_job=True)
+    makedirs(dirname(path), exist_ok=True)
+    cfg.save_to_yaml(path)
+    return path
+
+
+def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> str:
     """
     Prepares the config on the cluster by substituing any input/output directories
     passed as arguments in the job setup configuration file:
-    -> The file (AZURE_CONFIG_FILE) is loaded.
+    -> The file is loaded.
     -> Arguments are read from the cmd-line
     -> Arguments are substituted into the configuration.
     -> The file is re-written.
 
+    :param job_name: The job name
     :param args: parsed arguments.
     :param inputs: input argument configuration/mapping.
     :param outputs: output argument configuration/mapping.
-    """
-    from corebehrt.modules.setup.config import load_config
 
+    :return: Path to the config on the cluster
+    """
     # Read the config file
-    cfg = load_config(AZURE_CONFIG_FILE)
+    cfg = load_job_config(job_name)
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
@@ -37,7 +99,7 @@ def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:
         _cfg[cfg_path[-1]] = args[arg]
 
     # Overwrite config file
-    cfg.save_to_yaml(AZURE_CONFIG_FILE)
+    return save_job_config(job_name, cfg)
 
 
 def parse_args(args: set) -> dict:

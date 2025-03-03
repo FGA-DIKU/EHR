@@ -1,5 +1,4 @@
 from datetime import datetime
-import yaml
 import importlib
 
 from corebehrt.azure.util import log, check_azure, ml_client
@@ -7,7 +6,7 @@ from corebehrt.azure.util.config import (
     prepare_config,
     prepare_job_command_args,
     parse_args,
-    AZURE_CONFIG_FILE,
+    save_config,
 )
 
 
@@ -65,8 +64,7 @@ def setup(
     cmd = f"python -m corebehrt.azure.components.{job}"
 
     # Make sure config is read-able -> save it in the root folder.
-    with open(AZURE_CONFIG_FILE, "w") as cfg_file:
-        yaml.dump(config, cfg_file)
+    save_config(config)
 
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
@@ -122,8 +120,8 @@ def run_main(
 
     log.start_run(log_system_metrics=args.pop("log_system_metrics", False))
 
-    prepare_config(args, inputs, outputs)
+    cfg_path = prepare_config(main.__name__, args, inputs, outputs)
 
-    main(AZURE_CONFIG_FILE)
+    main(cfg_path)
 
     log.end_run()
