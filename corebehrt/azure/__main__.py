@@ -18,7 +18,7 @@ def parse_pair_args(pair_args: list) -> dict:
 
     :return: a dict/mapping from key to value
     """
-    pairs = [p.split("=") for p in pairs]
+    pairs = [p.split("=") for p in pair_args]
     assert all(len(p) == 2 for p in pairs), "Invalid paired arg..."
     return dict(pairs)
 

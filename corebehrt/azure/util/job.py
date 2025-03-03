@@ -1,7 +1,4 @@
-import argparse
-from os.path import join
 from datetime import datetime
-from typing import Tuple
 import yaml
 import importlib
 
@@ -85,6 +82,8 @@ def setup(
         cmd += " --log_system_metrics"
 
     # Create job
+    from azure.ai.ml import command
+
     ts = datetime.now().strftime("%Y%m%d-%H%M%S")
     return command(
         code=".",
