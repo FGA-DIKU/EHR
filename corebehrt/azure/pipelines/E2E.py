@@ -1,18 +1,21 @@
 from ..util import check_azure, create_component
 
+INPUTS = {"data": {"type": "uri_folder", "config": "create_data"}}
+OUTPUTS = {"model": {"type": "uri_folder", "config": "pretrain"}}
+
 
 def create(
     configs: dict, computes: dict, register_output: dict, log_system_metrics: bool
 ) -> "pipeline":  # noqa: F821
 
     check_azure()
-    from azure.ai.ml import dsl, Input, Output
+    from azure.ai.ml import dsl, Input
 
     @dsl.pipeline(description="Full E2E CoreBEHRT pipeline")
-    def pipeline(raw_ehr_data):
+    def pipeline(data: Input):
         prepare_data = create_component(
             "create_data", configs, computes, register_output, log_system_metrics
-        )(data=raw_ehr_data)
+        )(data=data)
 
         pretrain = create_component(
             "pretrain", configs, computes, register_output, log_system_metrics
