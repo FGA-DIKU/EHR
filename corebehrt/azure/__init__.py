@@ -1,4 +1,4 @@
-from .log import (
+from .util.log import (
     is_mlflow_available,
     setup_metrics_dir,
     log_metric,
@@ -9,7 +9,7 @@ from .log import (
     log_figure,
     autolog,
 )
-from .util import create_job, run_job
+from .util.job import create as create_job, run as run_job
 
 __all__ = [
     is_mlflow_available,
