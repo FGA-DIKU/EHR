@@ -1,5 +1,4 @@
 from datetime import datetime
-import yaml
 import importlib
 
 from corebehrt.azure.util import log, check_azure, ml_client
@@ -7,7 +6,7 @@ from corebehrt.azure.util.config import (
     prepare_config,
     prepare_job_command_args,
     parse_args,
-    AZURE_CONFIG_FILE,
+    save_config,
 )
 
 
@@ -65,8 +64,7 @@ def setup(
     cmd = f"python -m corebehrt.azure.components.{job}"
 
     # Make sure config is read-able -> save it in the root folder.
-    with open(AZURE_CONFIG_FILE, "w") as cfg_file:
-        yaml.dump(config, cfg_file)
+    save_config(config)
 
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
@@ -104,9 +102,7 @@ def run(job, experiment: str):
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-def run_main(
-    main: callable, inputs: dict, outputs: dict, log_system_metrics: bool = False
-) -> None:
+def run_main(main: callable, inputs: dict, outputs: dict) -> None:
     """
     Implements a wrapper for running CoreBEHRT scrips on the cluster.
     Prepares input and outputs, sets up logging on Azure using MLFlow
@@ -115,15 +111,9 @@ def run_main(
     :param main: The main callable.
     :param inputs: inputs configuration.
     :param outputs: outputs configuration.
-    :param log_system_metrics: If true, logs GPU/CPU/mem usage
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
-
-    log.start_run(log_system_metrics=args.pop("log_system_metrics", False))
-
-    prepare_config(args, inputs, outputs)
-
-    main(AZURE_CONFIG_FILE)
-
-    log.end_run()
+    with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
+        prepare_config(args, inputs, outputs)
+        main(AZURE_CONFIG_FILE)

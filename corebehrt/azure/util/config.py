@@ -1,184 +1,89 @@
 import argparse
-from os.path import join
+from os.path import join, dirname
+from os import makedirs
 from typing import Tuple
+import yaml
 
-AZURE_CONFIG_FILE = "azure_job_config.yaml"
-AZURE_AVAILABLE = False
-CURRENT_RUN = None
-
-try:
-    #
-    # Check if azure is available and set flag.
-    #
-    from azure.ai.ml import MLClient, command, Input, Output
-    from azure.identity import DefaultAzureCredential
-
-    AZURE_AVAILABLE = True
-except:
-    pass
+AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
 
-def is_azure_available() -> bool:
-    """
-    Checks if Azure modules are available.
-
-    :return: True if available, otherwise False.
-    """
-    global AZURE_AVAILABLE
-    return AZURE_AVAILABLE
-
-
-def get_current_run():
-    """
-    Get the current run object, if available.
-    """
-    global CURRENT_RUN
-    return CURRENT_RUN
-
-
-def check_azure() -> None:
-    """
-    Checks if Azure modules are available, raises an exception if not.
-    """
-    if not is_azure_available():
-        raise Exception("Azure modules not found!")
-
-
-def ml_client() -> "MLClient":
-    """
-    Returns the Azure MLClient.
-    """
-    check_azure()
-    return MLClient.from_config(DefaultAzureCredential())
-
-
-def create_job(
-    name: str,
-    config: dict,
-    compute: str,
-    register_output: dict = dict(),
-    log_system_metrics: bool = False,
-) -> "command":  # noqa: F821
-    """
-    Creates the Azure command/job object. Job input/output
-    configuration is loaded from the components module.
-    """
-
-    # Load component
-    component = importlib.import_module(f"corebehrt.azure.components.{name}")
-
-    return setup_job(
-        name,
-        inputs=component.INPUTS,
-        outputs=component.OUTPUTS,
-        config=config,
-        compute=compute,
-        register_output=register_output,
-        log_system_metrics=log_system_metrics,
+def config_path(job_name: str, is_job: bool = False) -> str:
+    return (
+        f"{AZURE_CONFIG_FOLDER}/{job_name}.yaml"
+        if is_job
+        else f"corebehrt/configs/{job_name}.yaml"
     )
 
 
-def setup_job(
-    job: str,
-    inputs: dict,
-    outputs: dict,
-    config: dict,
-    compute: str,
-    register_output: dict = dict(),
-    log_system_metrics: bool = False,
-):
+def load_config(path: str = None, job_name: str = None) -> dict:
     """
-    Sets up the Azure job.
-
-    :param job: Name of job.
-    :param inputs: argument configuration for input directories, i.e. a mapping
-        to configuration elements, typically in the paths sub-config.
-    :param outputs: argument configuration for output directories.
-    :param config: The config for the current job.
-    :param compute: The azure compute to use for the job.
-    :register_output: A mapping from output id to name, if the output should be
-        registered as a data asset.
-    :log_system_metrics: If true, logs GPU/CPU/mem usage
+    Load the config from the given path.
     """
-    check_azure()
+    path = path or config_path(job_name)
+    with open(path, "r") as cfg_file:
+        return yaml.safe_load(cfg_file)
 
-    # Prepare command
-    cmd = f"python -m corebehrt.azure.components.{job}"
 
+def save_config(job_name: str, cfg: dict) -> str:
+    """
+    Save the prepared config before starting the job
+
+    :param job_name: Name of job.
+    :param cfg: Dictionary to be saved.
+
+    :return: Path to the saved config
+    """
     # Make sure config is read-able -> save it in the root folder.
-    with open(AZURE_CONFIG_FILE, "w") as cfg_file:
-        yaml.dump(config, cfg_file)
-
-    # Prepare input and output paths
-    input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
-    output_values, output_cmds = prepare_job_command_args(
-        config, outputs, "outputs", register_output=register_output
-    )
-
-    # Add input and output arguments to cmd.
-    cmd += input_cmds + output_cmds
-
-    # Add log_system_metrics if set
-    if log_system_metrics:
-        cmd += " --log_system_metrics"
-
-    # Create job
-    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return command(
-        code=".",
-        command=cmd,
-        inputs=input_values,
-        outputs=output_values,
-        environment="CoreBEHRT@latest",
-        compute=compute,
-        name=f"{job}_{ts}",
-    )
+    path = config_path(job_name)
+    makedirs(dirname(path), exist_ok=True)
+    with open(path, "w") as cfg_file:
+        yaml.dump(cfg, cfg_file)
+    return path
 
 
-def run_job(job, experiment: str):
+def load_job_config(job_name: str) -> "Config":  # noqa: F821
     """
-    Starts the given job in the given experiment.
+    Load the config on the cluster
     """
-    check_azure()
-    ml_client().create_or_update(job, experiment_name=experiment)
+    from corebehrt.modules.setup.config import load_config as cb_load_config
+
+    # Read the config file
+    return cb_load_config(config_path(job_name, is_job=True))
 
 
-def run_main(main: callable, inputs: dict, outputs: dict) -> None:
+def save_job_config(job_name: str, cfg: "Config") -> path:  # noqa: F821
     """
-    Implements a wrapper for running CoreBEHRT scrips on the cluster.
-    Prepares input and outputs, sets up logging on Azure using MLFlow
-    (if available), and finally calls the main script.
+    Save the config on the cluster
 
-    :param main: The main callable.
-    :param inputs: inputs configuration.
-    :param outputs: outputs configuration.
+    :param job_name: Name of job.
+    :param cfg: CoreBEHRT config object to be saved.
+
+    :return: Path to the saved config
     """
-    # Parse command line args
-    args = parse_args(inputs | outputs)
-    global CURRENT_RUN
-    with log.start_run(log_system_metrics=args.pop("log_system_metrics", False)) as run:
-        CURRENT_RUN = run
-        prepare_config(args, inputs, outputs)
-        main(AZURE_CONFIG_FILE)
+    path = config_path(job_name, is_job=True)
+    makedirs(dirname(path), exist_ok=True)
+    cfg.save_to_yaml(path)
+    return path
 
 
-def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:
+def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> str:
     """
     Prepares the config on the cluster by substituing any input/output directories
     passed as arguments in the job setup configuration file:
-    -> The file (AZURE_CONFIG_FILE) is loaded.
+    -> The file is loaded.
     -> Arguments are read from the cmd-line
     -> Arguments are substituted into the configuration.
     -> The file is re-written.
 
+    :param job_name: The job name
     :param args: parsed arguments.
     :param inputs: input argument configuration/mapping.
     :param outputs: output argument configuration/mapping.
-    """
-    from corebehrt.modules.setup.config import load_config
 
+    :return: Path to the config on the cluster
+    """
     # Read the config file
-    cfg = load_config(AZURE_CONFIG_FILE)
+    cfg = load_job_config(job_name)
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
@@ -194,7 +99,7 @@ def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:
         _cfg[cfg_path[-1]] = args[arg]
 
     # Overwrite config file
-    cfg.save_to_yaml(AZURE_CONFIG_FILE)
+    return save_job_config(job_name, cfg)
 
 
 def parse_args(args: set) -> dict:

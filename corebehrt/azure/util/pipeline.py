@@ -1,19 +1,24 @@
 import importlib
 from corebehrt.azure.util import check_azure, job
-from corebehrt.azure.util.config import map_azure_path
+from corebehrt.azure.util.config import load_config, map_azure_path
 
 
 def create_component(
     name: str,
-    configs: dict,
+    config_paths: dict,
     computes: dict,
     register_output: dict,
     log_system_metrics: bool,
 ) -> "command":  # noqa: F821
     check_azure()
 
-    config = configs.get(name, dict())
+    # Load config from path if given, otherwise load default
+    config = load_config(path=config_paths.get(name), job_name=name)
+
+    # Set compute for this job
     compute = computes.get(name, computes["default"])
+
+    # Apply all relevant output registrations
     register_output = {
         k[len(name) + 1 :]: v for k, v in register_output if k.startswith(name + ".")
     }
@@ -23,7 +28,7 @@ def create_component(
 
 def create(
     name: str,
-    configs: dict,
+    config_paths: dict,
     computes: dict,
     register_output: dict,
     log_system_metrics: bool,
@@ -37,14 +42,18 @@ def create(
 
     # Create pipeline command
     pipeline = pipeline_module.create(
-        configs, computes, register_output, log_system_metrics
+        config_paths, computes, register_output, log_system_metrics
     )
 
     # Prepare pipeline inputs
     inputs = dict()
     for inp_key, inp_cfg in pipeline_module.INPUTS.items():
+        # Pipeline inputs maps to an input in a config file for one of the components.
         job_name = inp_cfg["config"]
-        inp_path = map_azure_path(configs[job_name]["paths"][inp_key])
+        # Load the component config
+        config = load_config(path=config_paths.get(job_name), job_name=job_name)
+        # Get the mounted path from the component.
+        inp_path = map_azure_path(config["paths"][inp_key])
 
         inputs[inp_key] = Input(path=inp_path, type=inp_cfg.get("type"))
 
