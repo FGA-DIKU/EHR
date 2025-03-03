@@ -4,9 +4,6 @@ from corebehrt.azure.util.pipeline import create_component
 INPUTS = {"data": {"type": "uri_folder", "config": "create_data"}}
 OUTPUTS = {"model": {"type": "uri_folder", "config": "pretrain"}}
 
-INPUTS = {"data": {"type": "uri_folder", "config": "create_data"}}
-OUTPUTS = {"model": {"type": "uri_folder", "config": "pretrain"}}
-
 
 def create(
     configs: dict, computes: dict, register_output: dict, log_system_metrics: bool
