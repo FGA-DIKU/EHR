@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from sklearn.metrics import precision_recall_curve, roc_curve
 
-from corebehrt.azure.log import setup_metrics_dir, log_metric
+from corebehrt.azure import setup_metrics_dir, log_metric
 
 
 def compute_avg_metrics(metric_values: dict):
