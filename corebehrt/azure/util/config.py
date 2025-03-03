@@ -1,11 +1,6 @@
 import argparse
 from os.path import join
-from datetime import datetime
 from typing import Tuple
-import yaml
-import importlib
-
-from corebehrt.azure.util import log
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
@@ -233,6 +228,8 @@ def prepare_job_command_args(
     :return: Tuple with input/output dictionary and argument part of command.
     """
     assert _type in ("inputs", "outputs")
+
+    from azure.ai.ml import Input, Output
 
     job_args = dict()
     cmd = ""
