@@ -34,6 +34,28 @@ def create_age_in_years(concepts: pd.DataFrame) -> dd.DataFrame:
     concepts["age"] = (concepts["time"] - concepts["birthdate"]).dt.days // 365.25
     return concepts
 
+def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
+    # Get the patient info out
+    dod_rows = concepts[concepts["code"] == "DOD"]
+    deathdates = dict(zip(dod_rows["subject_id"], dod_rows["time"]))
+    patient_info = pd.DataFrame(
+        {
+            "subject_id": concepts["subject_id"].unique(),
+            "birthdate": concepts.drop_duplicates("subject_id")["birthdate"],
+        }
+    )
+    patient_info["deathdate"] = patient_info["subject_id"].map(deathdates)
+    bg_info = concepts[concepts["code"].str.startswith("BG_")][["subject_id", "code"]]
+    if len(bg_info) == 0:
+        warnings.warn("No background information found in concepts.")
+        return concepts, patient_info
+    bg_info[["column_name", "value"]] = bg_info["code"].str.split("//", expand=True)
+    bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
+    bg_info_pivot = bg_info.pivot_table(
+        index="subject_id", columns="column_name", values="value", aggfunc="first"
+    ).reset_index()
+    merged_info = pd.merge(patient_info, bg_info_pivot, on="subject_id", how="left")
+    return merged_info
 
 def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
     """
@@ -59,26 +81,8 @@ def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
     concepts.loc[adm_rows.index, "code"] = "ADM_" + concepts.loc[adm_rows.index, "code"]
 
     # Get the patient info out
-    dod_rows = concepts[concepts["code"] == "DOD"]
-    deathdates = dict(zip(dod_rows["subject_id"], dod_rows["time"]))
-    patient_info = pd.DataFrame(
-        {
-            "subject_id": concepts["subject_id"].unique(),
-            "birthdate": concepts.drop_duplicates("subject_id")["birthdate"],
-        }
-    )
-    patient_info["deathdate"] = patient_info["subject_id"].map(deathdates)
-    bg_info = concepts[concepts["code"].str.startswith("BG_")][["subject_id", "code"]]
-    if len(bg_info) == 0:
-        warnings.warn("No background information found in concepts.")
-        return concepts, patient_info
-    bg_info[["column_name", "value"]] = bg_info["code"].str.split("//", expand=True)
-    bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
-    bg_info_pivot = bg_info.pivot_table(
-        index="subject_id", columns="column_name", values="value", aggfunc="first"
-    ).reset_index()
-    merged_info = pd.merge(patient_info, bg_info_pivot, on="subject_id", how="left")
-    return concepts, merged_info
+    patient_info = _create_patient_info(concepts)
+    return concepts, patient_info
 
 
 def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
