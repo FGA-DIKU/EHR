@@ -2,7 +2,7 @@ from os.path import join
 
 import torch
 
-from corebehrt.constants.data import FEATURES_SCHEMA, TOKENIZED_SCHEMA
+from corebehrt.constants.data import FEATURES_SCHEMA, TOKENIZED_SCHEMA, PID_COL
 
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
@@ -12,7 +12,6 @@ import os
 import pyarrow as pa
 import pandas as pd
 from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
-
 
 def load_tokenize_and_save(
     features_path: str,
@@ -28,7 +27,7 @@ def load_tokenize_and_save(
     for shard in os.listdir(join(features_path, split)):
         shard_path = join(features_path, split, shard)
         shard_n = shard.split(".")[0]
-        df = pd.read_parquet(shard_path).set_index("subject_id")
+        df = pd.read_parquet(shard_path).set_index(PID_COL)
 
         df = tokenizer(df).reset_index()
         df.to_parquet(
@@ -36,7 +35,7 @@ def load_tokenize_and_save(
             index=False,
             schema=pa.schema(TOKENIZED_SCHEMA),
         )
-        pids.extend(df["subject_id"].unique().tolist())
+        pids.extend(df[PID_COL].unique().tolist())
     torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt"))  # save pids as ints
 
 

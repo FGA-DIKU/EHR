@@ -8,7 +8,11 @@ from corebehrt.functional.features.normalize import normalize_segments_series
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
 import uuid
 import warnings
-
+from corebehrt.constants.data import (
+    ABSPOS_COL, PID_COL, TIMESTAMP_COL, CONCEPT_COL, 
+    BIRTHDATE_COL, DEATHDATE_COL, SEGMENT_COL,
+    ADMISSION_CODE, DISCHARGE_CODE, DEATH_CODE, BIRTH_CODE
+)
 
 def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFrame:
     """
@@ -19,7 +23,7 @@ def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFram
     Returns:
         concepts with a new 'abspos' column
     """
-    concepts["abspos"] = get_abspos_from_origin_point(concepts["time"], origin_point)
+    concepts[ABSPOS_COL] = get_abspos_from_origin_point(concepts[TIMESTAMP_COL], origin_point)
     return concepts
 
 
@@ -31,30 +35,30 @@ def create_age_in_years(concepts: pd.DataFrame) -> dd.DataFrame:
     Returns:
         pd.DataFrame: concepts with a new 'age' column
     """
-    concepts["age"] = (concepts["time"] - concepts["birthdate"]).dt.days // 365.25
+    concepts["age"] = (concepts[TIMESTAMP_COL] - concepts[BIRTHDATE_COL]).dt.days // 365.25
     return concepts
 
 def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
     # Get the patient info out
-    dod_rows = concepts[concepts["code"] == "DOD"]
-    deathdates = dict(zip(dod_rows["subject_id"], dod_rows["time"]))
+    dod_rows = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
+    deathdates = dict(zip(dod_rows[PID_COL], dod_rows[TIMESTAMP_COL]))
     patient_info = pd.DataFrame(
         {
-            "subject_id": concepts["subject_id"].unique(),
-            "birthdate": concepts.drop_duplicates("subject_id")["birthdate"],
+            PID_COL: concepts[PID_COL].unique(),
+            BIRTHDATE_COL: concepts.drop_duplicates(PID_COL)[BIRTHDATE_COL],
         }
     )
-    patient_info["deathdate"] = patient_info["subject_id"].map(deathdates)
-    bg_info = concepts[concepts["code"].str.startswith("BG_")][["subject_id", "code"]]
+    patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdates)
+    bg_info = concepts[concepts[CONCEPT_COL].str.startswith("BG_")][[PID_COL, CONCEPT_COL]]
     if len(bg_info) == 0:
         warnings.warn("No background information found in concepts.")
         return concepts, patient_info
-    bg_info[["column_name", "value"]] = bg_info["code"].str.split("//", expand=True)
+    bg_info[["column_name", "value"]] = bg_info[CONCEPT_COL].str.split("//", expand=True)
     bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
     bg_info_pivot = bg_info.pivot_table(
-        index="subject_id", columns="column_name", values="value", aggfunc="first"
+        index=PID_COL, columns="column_name", values="value", aggfunc="first"
     ).reset_index()
-    merged_info = pd.merge(patient_info, bg_info_pivot, on="subject_id", how="left")
+    merged_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
     return merged_info
 
 def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
@@ -66,19 +70,19 @@ def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
         table with background concepts, including 'subject_id', 'time', 'code', and 'numeric_value' columns.
         additionally, 'birthdate' column is added to the concepts DataFrame.
     """
-    dob_rows = concepts[concepts["code"] == "DOB"]
-    birthdates = dict(zip(dob_rows["subject_id"], dob_rows["time"]))
-    concepts["birthdate"] = concepts["subject_id"].map(birthdates)
+    dob_rows = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
+    birthdates = dict(zip(dob_rows[PID_COL], dob_rows[TIMESTAMP_COL]))
+    concepts[BIRTHDATE_COL] = concepts[PID_COL].map(birthdates)
 
-    bg_rows = concepts[concepts["time"].isna()]
-    concepts.loc[bg_rows.index, "time"] = concepts.loc[bg_rows.index, "birthdate"]
-    concepts.loc[bg_rows.index, "code"] = "BG_" + concepts.loc[bg_rows.index, "code"]
+    bg_rows = concepts[concepts[TIMESTAMP_COL].isna()]
+    concepts.loc[bg_rows.index, TIMESTAMP_COL] = concepts.loc[bg_rows.index, BIRTHDATE_COL]
+    concepts.loc[bg_rows.index, CONCEPT_COL] = "BG_" + concepts.loc[bg_rows.index, CONCEPT_COL]
 
     adm_rows = concepts[
-        concepts["code"].str.contains("ADMISSION")
-        | concepts["code"].str.contains("DISCHARGE")
+        concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
+        | concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
     ]
-    concepts.loc[adm_rows.index, "code"] = "ADM_" + concepts.loc[adm_rows.index, "code"]
+    concepts.loc[adm_rows.index, CONCEPT_COL] = "ADM_" + concepts.loc[adm_rows.index, CONCEPT_COL]
 
     # Get the patient info out
     patient_info = _create_patient_info(concepts)
@@ -108,11 +112,11 @@ def sort_features(concepts: pd.DataFrame) -> dd.DataFrame:
     """
     if "index" in concepts.columns and "order" in concepts.columns:
         concepts = concepts.sort_values(
-            ["subject_id", "abspos", "index", "order"]
+            [PID_COL, ABSPOS_COL, "index", "order"]
         )  # could maybe be done more optimally, is a bit slow
         concepts = concepts.drop(columns=["index", "order"])
     else:
-        concepts = concepts.sort_values(["subject_id", "abspos"])
+        concepts = concepts.sort_values([PID_COL, ABSPOS_COL])
 
     return concepts
 
@@ -126,7 +130,7 @@ def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
         concepts with a new 'segment' column
     """
     concepts = _assign_admission_ids(concepts)
-    concepts["segment"] = np.nan
+    concepts[SEGMENT_COL] = np.nan
 
     # Assign maximum segment to 'Death' concepts
     concepts = _assign_segments(concepts)
@@ -148,8 +152,8 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     concepts["admission_id"] = concepts["admission_id"].astype(object)
 
     # Assign admission_id to all events between 'ADMISSION' and 'DISCHARGE' events
-    admission_mask = concepts["code"].str.contains("ADMISSION")
-    discharge_mask = concepts["code"].str.contains("DISCHARGE")
+    admission_mask = concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
+    discharge_mask = concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
     admission_indices = concepts[admission_mask].index
     discharge_indices = concepts[discharge_mask].index
 
@@ -165,9 +169,9 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     # Assign admission_id to concepts outside admissions
     # Concepts within 48 hours of each other are considered to be part of the same admission
     outside_segments = concepts[concepts["admission_id"].isna()].copy()
-    outside_segments = outside_segments.sort_values(by=["subject_id", "time"])
+    outside_segments = outside_segments.sort_values(by=[PID_COL, TIMESTAMP_COL])
     outside_segments["time_diff"] = (
-        outside_segments.groupby("subject_id")["time"].diff().dt.total_seconds()
+        outside_segments.groupby(PID_COL)[TIMESTAMP_COL].diff().dt.total_seconds()
     )
     outside_segments["new_admission"] = (outside_segments["time_diff"] > 48 * 3600) | (
         outside_segments["time_diff"].isna()
@@ -188,7 +192,7 @@ def _assign_segments(df):
     Assign segments to the concepts DataFrame based on 'admission_id'
     """
     # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df["segment"] = df.groupby("subject_id")["admission_id"].transform(
+    df[SEGMENT_COL] = df.groupby(PID_COL)["admission_id"].transform(
         normalize_segments_series
     )
     return df
@@ -204,9 +208,9 @@ def assign_segments_to_death(df: pd.DataFrame) -> pd.DataFrame:
     """
     # Compute the maximum segment per 'PID'
     max_segment = (
-        df.groupby("subject_id")["segment"].max().rename("max_segment").reset_index()
+        df.groupby(PID_COL)[SEGMENT_COL].max().rename("max_segment").reset_index()
     )
     # Merge and assign
-    df = df.merge(max_segment, on="subject_id", how="left")
-    df["segment"] = df["segment"].where(df["code"] != "DOD", df["max_segment"])
+    df = df.merge(max_segment, on=PID_COL, how="left")
+    df[SEGMENT_COL] = df[SEGMENT_COL].where(df[CONCEPT_COL] != DEATH_CODE, df["max_segment"])
     return df.drop(columns=["max_segment"])

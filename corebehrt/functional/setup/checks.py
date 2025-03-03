@@ -1,6 +1,6 @@
 import dask.dataframe as dd
 from typing import Set
-
+from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL, PID_COL, VALUE_COL
 
 def check_categories(categories: dict) -> None:
     for col, rules in categories.items():
@@ -20,13 +20,13 @@ def check_categories(categories: dict) -> None:
 
 def check_concepts_columns(df: dd.DataFrame) -> None:
     """Check if required columns are present in concepts."""
-    required_columns = {"subject_id", "time", "code", "numeric_value"}
+    required_columns = {PID_COL, TIMESTAMP_COL, CONCEPT_COL, VALUE_COL}
     check_required_columns(df, required_columns, "concepts")
 
 
 def check_features_columns(df: dd.DataFrame) -> None:
     """Check if required columns are present in features."""
-    required_columns = {"subject_id", "time", "code"}
+    required_columns = {PID_COL, TIMESTAMP_COL, CONCEPT_COL}
     check_required_columns(df, required_columns, "features")
 
 

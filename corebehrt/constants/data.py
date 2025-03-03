@@ -20,6 +20,14 @@ AGE_COL = "age"
 SEGMENT_COL = "segment"
 VALUE_COL = "numeric_value"
 
+# Codes
+ADMISSION_CODE = "ADMISSION"
+DISCHARGE_CODE = "DISCHARGE"
+DEATH_CODE = "DOD"
+BIRTH_CODE = "DOB"
+BIRTHDATE_COL = "birthdate"
+DEATHDATE_COL = "deathdate"
+
 ### Schema ###
 SCHEMA = {
     "subject_id": "int64",
