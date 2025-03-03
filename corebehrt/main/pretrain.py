@@ -5,7 +5,6 @@ import torch
 from os.path import join
 from corebehrt.functional.features.split import split_pids_into_train_val
 from corebehrt.functional.io_operations.load import load_vocabulary
-from corebehrt.functional.io_operations.save import save_pids_splits
 from corebehrt.functional.setup.args import get_args
 from corebehrt.functional.setup.model import load_model_cfg_from_checkpoint
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
@@ -45,25 +44,13 @@ def main_train(config_path):
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
     # Get data
-    loaded_data = torch.load(join(cfg.paths.prepared_data, "patients.pt"))
-    data = PatientDataset(loaded_data)
-
-    # Splitting data
-    if cfg.data.get("predefined_splits", False):
-        splits_path = get_splits_path(cfg.paths)
-        train_data, val_data = load_train_val_split(data, splits_path)
-    else:
-        train_data, val_data = split_pids_into_train_val(
-            data, cfg.data.get("val_ratio", 0.2)
-        )
-
+    train_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, "patients_train.pt")))
+    val_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, "patients_val.pt")))
     vocab = load_vocabulary(cfg.paths.prepared_data)
+
     # Initialize datasets
     train_dataset = MLMDataset(train_data.patients, vocab, **cfg.data.dataset)
     val_dataset = MLMDataset(val_data.patients, vocab, **cfg.data.dataset)
-
-    # Save split
-    save_pids_splits(train_data, val_data, cfg.paths.model)
 
     if "scheduler" in cfg:
         logger.info("Replacing steps with epochs in scheduler config")
