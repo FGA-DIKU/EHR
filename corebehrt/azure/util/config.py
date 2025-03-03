@@ -51,7 +51,7 @@ def load_job_config(job_name: str) -> "Config":  # noqa: F821
     return cb_load_config(config_path(job_name, is_job=True))
 
 
-def save_job_config(job_name: str, cfg: "Config") -> path:  # noqa: F821
+def save_job_config(job_name: str, cfg: "Config") -> str:  # noqa: F821
     """
     Save the config on the cluster
 

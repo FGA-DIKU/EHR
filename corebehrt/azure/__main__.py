@@ -6,7 +6,7 @@ Requires installation of azure-ml-ai python package and a valid Azure workspace.
 import sys
 import argparse
 from corebehrt.azure import environment, util
-from corebehrt.util.config import load_config
+from corebehrt.azure.util.config import load_config
 
 
 def parse_pair_args(pair_args: list) -> dict:
