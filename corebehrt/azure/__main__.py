@@ -132,7 +132,7 @@ if __name__ == "__main__":
     pl_parser.add_argument(
         "PIPELINE", type=str, choices={"E2E"}, help="Pipeline to run."
     )
-    job_parser.add_argument(
+    pl_parser.add_argument(
         "COMPUTE",
         type=str,
         default=None,
