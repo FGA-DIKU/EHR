@@ -3,8 +3,9 @@ from os.path import join
 from datetime import datetime
 from typing import Tuple
 import yaml
-from corebehrt.azure import log
 import importlib
+
+from corebehrt.azure.util import log
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
