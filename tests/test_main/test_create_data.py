@@ -104,9 +104,9 @@ class TestCreateData(TestMainScript):
                         features[features[PID_COL] == subject_id]["segment"].values
                     )
                     expected_segment = set(
-                        expected_features[
-                            expected_features[PID_COL] == subject_id
-                        ]["segment"].values
+                        expected_features[expected_features[PID_COL] == subject_id][
+                            "segment"
+                        ].values
                     )
                     self.assertEqual(
                         segment,

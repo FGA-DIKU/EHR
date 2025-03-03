@@ -9,6 +9,8 @@ from corebehrt.constants.data import (
     PID_COL,
     CONCEPT_COL,
 )
+
+
 class TestOutcomeMaker(unittest.TestCase):
     def setUp(self):
         # Create a mock outcomes configuration for testing

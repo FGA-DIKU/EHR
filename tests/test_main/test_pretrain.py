@@ -44,7 +44,7 @@
 #         # 2: Check existence of some files
 #         # 2.1: Final/best checkpoint
 #         self.check_last_checkpoint()
-  
+
 #     def test_pretrain_with_existing_model(self):
 #         ### Call pretrain script to train initial model
 

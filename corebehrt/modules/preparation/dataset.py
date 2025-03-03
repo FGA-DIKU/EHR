@@ -161,7 +161,7 @@ class MLMDataset(Dataset):
         }
 
         return sample
-    
+
     def __len__(self):
         return len(self.patients)
 

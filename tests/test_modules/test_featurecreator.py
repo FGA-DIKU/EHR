@@ -5,16 +5,30 @@ from corebehrt.modules.features.features import FeatureCreator
 from pandas import NaT
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
 
+
 class TestFeatureCreator(unittest.TestCase):
     def setUp(self):
         # Create larger sample data as pandas DataFrames
         self.concepts = pd.DataFrame(
             {
                 PID_COL: [
-                    1, 1, 1, 1, 1,
-                    2, 2, 2, 2,
-                    3, 3, 3, 3,
-                    4, 4, 4, 4,
+                    1,
+                    1,
+                    1,
+                    1,
+                    1,
+                    2,
+                    2,
+                    2,
+                    2,
+                    3,
+                    3,
+                    3,
+                    3,
+                    4,
+                    4,
+                    4,
+                    4,
                 ],
                 TIMESTAMP_COL: [
                     datetime(1998, 1, 1),

@@ -2,7 +2,13 @@ import unittest
 
 import pandas as pd
 
-from corebehrt.constants.data import CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, PID_COL, CONCEPT_COL
+from corebehrt.constants.data import (
+    CLS_TOKEN,
+    SEP_TOKEN,
+    UNKNOWN_TOKEN,
+    PID_COL,
+    CONCEPT_COL,
+)
 from corebehrt.functional.features.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,

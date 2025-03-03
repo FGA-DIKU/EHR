@@ -197,9 +197,7 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         new_outcomes = self.outcomes.copy()
         # Add outcomes for p3 => index=300 => we want to test outcomes at 295, 305, 310
         # Let's put them in new_outcomes
-        extra_rows = pd.DataFrame(
-            {PID_COL: [3, 3, 3], "abspos": [295, 305, 310]}
-        )
+        extra_rows = pd.DataFrame({PID_COL: [3, 3, 3], "abspos": [295, 305, 310]})
         new_outcomes = pd.concat([new_outcomes, extra_rows], ignore_index=True)
 
         # Now with end=10 => p3 => index=300 => valid window=[300..310]

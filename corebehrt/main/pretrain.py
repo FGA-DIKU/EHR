@@ -3,15 +3,12 @@
 import logging
 import torch
 from os.path import join
-from corebehrt.functional.features.split import split_pids_into_train_val
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.setup.args import get_args
 from corebehrt.functional.setup.model import load_model_cfg_from_checkpoint
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.main.helper.pretrain import (
     load_checkpoint_and_epoch,
-    load_train_val_split,
-    get_splits_path,
 )
 from corebehrt.modules.preparation.dataset import MLMDataset, PatientDataset
 from corebehrt.modules.setup.config import load_config
@@ -45,8 +42,12 @@ def main_train(config_path):
         cfg.model = load_model_cfg_from_checkpoint(restart_path, "pretrain_config")
 
     # Get data
-    train_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, PREPARED_TRAIN_PATIENTS)))
-    val_data = PatientDataset(torch.load(join(cfg.paths.prepared_data, PREPARED_VAL_PATIENTS)))
+    train_data = PatientDataset(
+        torch.load(join(cfg.paths.prepared_data, PREPARED_TRAIN_PATIENTS))
+    )
+    val_data = PatientDataset(
+        torch.load(join(cfg.paths.prepared_data, PREPARED_VAL_PATIENTS))
+    )
     vocab = load_vocabulary(cfg.paths.prepared_data)
 
     # Initialize datasets

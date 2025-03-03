@@ -11,6 +11,7 @@ from corebehrt.constants.data import (
     CONCEPT_COL,
 )
 
+
 class TestFormattedDataLoader(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory

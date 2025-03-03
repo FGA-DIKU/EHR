@@ -9,10 +9,19 @@ from corebehrt.functional.utils.time import get_abspos_from_origin_point
 import uuid
 import warnings
 from corebehrt.constants.data import (
-    ABSPOS_COL, PID_COL, TIMESTAMP_COL, CONCEPT_COL, 
-    BIRTHDATE_COL, DEATHDATE_COL, SEGMENT_COL,
-    ADMISSION_CODE, DISCHARGE_CODE, DEATH_CODE, BIRTH_CODE
+    ABSPOS_COL,
+    PID_COL,
+    TIMESTAMP_COL,
+    CONCEPT_COL,
+    BIRTHDATE_COL,
+    DEATHDATE_COL,
+    SEGMENT_COL,
+    ADMISSION_CODE,
+    DISCHARGE_CODE,
+    DEATH_CODE,
+    BIRTH_CODE,
 )
+
 
 def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFrame:
     """
@@ -23,7 +32,9 @@ def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFram
     Returns:
         concepts with a new 'abspos' column
     """
-    concepts[ABSPOS_COL] = get_abspos_from_origin_point(concepts[TIMESTAMP_COL], origin_point)
+    concepts[ABSPOS_COL] = get_abspos_from_origin_point(
+        concepts[TIMESTAMP_COL], origin_point
+    )
     return concepts
 
 
@@ -35,8 +46,11 @@ def create_age_in_years(concepts: pd.DataFrame) -> dd.DataFrame:
     Returns:
         pd.DataFrame: concepts with a new 'age' column
     """
-    concepts["age"] = (concepts[TIMESTAMP_COL] - concepts[BIRTHDATE_COL]).dt.days // 365.25
+    concepts["age"] = (
+        concepts[TIMESTAMP_COL] - concepts[BIRTHDATE_COL]
+    ).dt.days // 365.25
     return concepts
+
 
 def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
     # Get the patient info out
@@ -49,17 +63,22 @@ def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
         }
     )
     patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdates)
-    bg_info = concepts[concepts[CONCEPT_COL].str.startswith("BG_")][[PID_COL, CONCEPT_COL]]
+    bg_info = concepts[concepts[CONCEPT_COL].str.startswith("BG_")][
+        [PID_COL, CONCEPT_COL]
+    ]
     if len(bg_info) == 0:
         warnings.warn("No background information found in concepts.")
         return concepts, patient_info
-    bg_info[["column_name", "value"]] = bg_info[CONCEPT_COL].str.split("//", expand=True)
+    bg_info[["column_name", "value"]] = bg_info[CONCEPT_COL].str.split(
+        "//", expand=True
+    )
     bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
     bg_info_pivot = bg_info.pivot_table(
         index=PID_COL, columns="column_name", values="value", aggfunc="first"
     ).reset_index()
     merged_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
     return merged_info
+
 
 def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
     """
@@ -75,14 +94,20 @@ def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
     concepts[BIRTHDATE_COL] = concepts[PID_COL].map(birthdates)
 
     bg_rows = concepts[concepts[TIMESTAMP_COL].isna()]
-    concepts.loc[bg_rows.index, TIMESTAMP_COL] = concepts.loc[bg_rows.index, BIRTHDATE_COL]
-    concepts.loc[bg_rows.index, CONCEPT_COL] = "BG_" + concepts.loc[bg_rows.index, CONCEPT_COL]
+    concepts.loc[bg_rows.index, TIMESTAMP_COL] = concepts.loc[
+        bg_rows.index, BIRTHDATE_COL
+    ]
+    concepts.loc[bg_rows.index, CONCEPT_COL] = (
+        "BG_" + concepts.loc[bg_rows.index, CONCEPT_COL]
+    )
 
     adm_rows = concepts[
         concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
         | concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
     ]
-    concepts.loc[adm_rows.index, CONCEPT_COL] = "ADM_" + concepts.loc[adm_rows.index, CONCEPT_COL]
+    concepts.loc[adm_rows.index, CONCEPT_COL] = (
+        "ADM_" + concepts.loc[adm_rows.index, CONCEPT_COL]
+    )
 
     # Get the patient info out
     patient_info = _create_patient_info(concepts)
@@ -120,6 +145,7 @@ def sort_features(concepts: pd.DataFrame) -> dd.DataFrame:
 
     return concepts
 
+
 def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign segments to the concepts DataFrame based on 'ADMISSION_ID', ensuring that
@@ -137,6 +163,7 @@ def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
     concepts = assign_segments_to_death(concepts)
     return concepts
 
+
 def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign 'admission_id' to each row in concepts based on 'ADMISSION' and 'DISCHARGE' events.
@@ -144,9 +171,10 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
     Assumes not overlapping ADMISSION and DISCHARGE events.
     """
+
     def _get_adm_id():
         return str(uuid.uuid4())
-        
+
     concepts = concepts.reset_index(drop=True)
     concepts["admission_id"] = None
     concepts["admission_id"] = concepts["admission_id"].astype(object)
@@ -196,5 +224,7 @@ def assign_segments_to_death(df: pd.DataFrame) -> pd.DataFrame:
     )
     # Merge and assign
     df = df.merge(max_segment, on=PID_COL, how="left")
-    df[SEGMENT_COL] = df[SEGMENT_COL].where(df[CONCEPT_COL] != DEATH_CODE, df["max_segment"])
+    df[SEGMENT_COL] = df[SEGMENT_COL].where(
+        df[CONCEPT_COL] != DEATH_CODE, df["max_segment"]
+    )
     return df.drop(columns=["max_segment"])

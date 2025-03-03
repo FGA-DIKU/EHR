@@ -1,4 +1,4 @@
-from os.path import exists, getmtime, join
+from os.path import exists, join
 
 import yaml
 
@@ -15,7 +15,9 @@ class TestCreateOutcomes(TestMainScript):
         self.processed_dir = join(self.tmp_dir, "pretrain/processed_data")
 
         # Load config from pretrain config file
-        prepare_pretrain_config_path = f"./tests/data/pretrain/processed_data/{PREPARE_PRETRAIN_CFG}"
+        prepare_pretrain_config_path = (
+            f"./tests/data/pretrain/processed_data/{PREPARE_PRETRAIN_CFG}"
+        )
         with open(prepare_pretrain_config_path) as f:
             config = yaml.safe_load(f)
 
@@ -45,7 +47,7 @@ class TestCreateOutcomes(TestMainScript):
         for file_name in [
             "pids_train",
             "pids_val",
-            "patients_train",   
+            "patients_train",
             "patients_val",
             "patients",
         ]:

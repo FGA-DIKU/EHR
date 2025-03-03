@@ -1,14 +1,14 @@
 from dataclasses import replace
 from typing import List
-
-import numpy as np
 import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
 
+
 def normalize_segments_for_patient(patient: PatientData) -> PatientData:
     normalized_segments = normalize_segments(patient.segments)
     return replace(patient, segments=normalized_segments)
+
 
 def normalize_segments(segments: List[int]) -> List[int]:
     """Normalize a list of segment IDs to be zero-based and contiguous.

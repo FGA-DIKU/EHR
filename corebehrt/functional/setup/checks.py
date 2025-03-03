@@ -2,6 +2,7 @@ import dask.dataframe as dd
 from typing import Set
 from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL, PID_COL, VALUE_COL
 
+
 def check_categories(categories: dict) -> None:
     for col, rules in categories.items():
         # Check that we don't have both 'include' and 'exclude' in one category

@@ -4,7 +4,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from corebehrt.functional.preparation.truncate import truncate_patient_df
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
+from corebehrt.constants.data import CONCEPT_COL, ABSPOS_COL, SEP_TOKEN
 
 
 class TestTruncatePatientDf(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         """
         self.test_data = pd.DataFrame(
             {
-                "abspos": range(10),
+                ABSPOS_COL: range(10),
                 CONCEPT_COL: [f"token_{i}" for i in range(10)],
                 "other_col": [f"value_{i}" for i in range(10)],
             }
@@ -28,7 +28,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         # the boundary row is index=6 => boundary_token=='SEP'.
         self.test_data_with_sep = pd.DataFrame(
             {
-                "abspos": range(10),
+                ABSPOS_COL: range(10),
                 CONCEPT_COL: [
                     "token_0",
                     "token_1",
@@ -36,7 +36,7 @@ class TestTruncatePatientDf(unittest.TestCase):
                     "token_3",
                     "token_4",
                     "token_5",
-                    "SEP",
+                    SEP_TOKEN,
                     "token_7",
                     "token_8",
                     "token_9",
@@ -48,7 +48,7 @@ class TestTruncatePatientDf(unittest.TestCase):
     def test_no_truncation_needed(self):
         """If the total length <= max_len, return the entire DataFrame."""
         result = truncate_patient_df(
-            self.test_data.copy(), max_len=15, background_length=3, sep_token="SEP"
+            self.test_data.copy(), max_len=15, background_length=3, sep_token=SEP_TOKEN
         )
         assert_frame_equal(
             result.reset_index(drop=True), self.test_data.reset_index(drop=True)
@@ -61,7 +61,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         No boundary SEP triggers here because 'sep_token' doesn't appear.
         """
         result = truncate_patient_df(
-            self.test_data.copy(), max_len=6, background_length=2, sep_token="SEP"
+            self.test_data.copy(), max_len=6, background_length=2, sep_token=SEP_TOKEN
         )
 
         # Expect 2 from the front, then 4 from the tail = total 6.
@@ -90,7 +90,7 @@ class TestTruncatePatientDf(unittest.TestCase):
             self.test_data_with_sep.copy(),
             max_len=6,
             background_length=2,
-            sep_token="SEP",
+            sep_token=SEP_TOKEN,
         )
         # 2 front => indices [0,1], tail => last 3 => indices [7,8,9]
         expected = pd.concat(
@@ -110,7 +110,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         there's no tail portion left.
         """
         result = truncate_patient_df(
-            self.test_data.copy(), max_len=3, background_length=3, sep_token="SEP"
+            self.test_data.copy(), max_len=3, background_length=3, sep_token=SEP_TOKEN
         )
         expected = self.test_data.iloc[:3]
         assert_frame_equal(
