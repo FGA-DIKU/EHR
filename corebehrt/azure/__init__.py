@@ -8,6 +8,9 @@ from .log import (
     log_image,
     log_figure,
     autolog,
+    ml_client,
+    log_batch,
+    metric,
 )
 from .util import create_job, run_job
 
@@ -23,4 +26,7 @@ __all__ = [
     autolog,
     create_job,
     run_job,
+    ml_client,
+    log_batch,
+    metric,
 ]
