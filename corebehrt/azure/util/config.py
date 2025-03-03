@@ -34,7 +34,7 @@ def save_config(job_name: str, cfg: dict) -> str:
     :return: Path to the saved config
     """
     # Make sure config is read-able -> save it in the root folder.
-    path = config_path(job_name)
+    path = config_path(job_name, is_job=True)
     makedirs(dirname(path), exist_ok=True)
     with open(path, "w") as cfg_file:
         yaml.dump(cfg, cfg_file)
