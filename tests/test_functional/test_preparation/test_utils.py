@@ -11,7 +11,7 @@ from corebehrt.functional.preparation.utils import (
     subset_patient_data,
 )
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 
 class TestBackgroundFunctions(unittest.TestCase):
