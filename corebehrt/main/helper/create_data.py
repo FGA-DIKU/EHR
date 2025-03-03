@@ -24,13 +24,13 @@ def load_tokenize_and_save(
     Load df for split, tokenize and write to tokenized_path.
     """
     pids = []
+    os.makedirs(join(tokenized_path, f"features_{split}"), exist_ok=True)
     for shard in os.listdir(join(features_path, split)):
         shard_path = join(features_path, split, shard)
         shard_n = shard.split(".")[0]
         df = pd.read_parquet(shard_path).set_index("subject_id")
 
         df = tokenizer(df).reset_index()
-        os.makedirs(join(tokenized_path, f"features_{split}"), exist_ok=True)
         df.to_parquet(
             join(tokenized_path, f"features_{split}", f"{shard_n}.parquet"),
             index=False,

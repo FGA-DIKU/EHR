@@ -138,6 +138,7 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     Assign 'admission_id' to each row in concepts based on 'ADMISSION' and 'DISCHARGE' events.
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
     If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
+    Assumes not overlapping ADMISSION and DISCHARGE events.
     """
     def _get_adm_id():
         return str(uuid.uuid4())
@@ -149,18 +150,17 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     # Assign admission_id to all events between 'ADMISSION' and 'DISCHARGE' events
     admission_mask = concepts["code"].str.contains("ADMISSION")
     discharge_mask = concepts["code"].str.contains("DISCHARGE")
-    admission_indices = concepts[admission_mask].index.to_list()
-    discharge_indices = concepts[discharge_mask].index.to_list()
+    admission_indices = concepts[admission_mask].index
+    discharge_indices = concepts[discharge_mask].index
 
-    if admission_indices and discharge_indices:
-        start_idx = 0
-        while start_idx < len(admission_indices):
-            start = admission_indices[start_idx]
-            end = next((d for d in discharge_indices if d > start), None)
-
-            if end:
-                concepts.loc[start:end, "admission_id"] = _get_adm_id()
-            start_idx += 1
+    if not admission_indices.empty and not discharge_indices.empty:
+        for start in admission_indices:
+            # Find the first discharge index that is greater than the current admission index
+            end = discharge_indices[discharge_indices > start].min()
+            
+            if pd.notna(end):
+                adm_id = _get_adm_id()
+                concepts.loc[start:end, "admission_id"] = adm_id
 
     # Assign admission_id to concepts outside admissions
     # Concepts within 48 hours of each other are considered to be part of the same admission
