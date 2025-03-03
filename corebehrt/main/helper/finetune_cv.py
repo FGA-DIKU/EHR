@@ -21,6 +21,7 @@ def cv_loop(
     data: PatientDataset,
     folds: list,
     test_data: PatientDataset,
+    run,
 ) -> None:
     """Loop over predefined splits"""
     # find fold_1, fold_2, ... folders in predefined_splits_dir
@@ -35,7 +36,7 @@ def cv_loop(
 
         with setup_metrics_dir(f"Fold {fold}"):
             finetune_fold(
-                cfg, logger, finetune_folder, train_data, val_data, fold, test_data
+                cfg, logger, finetune_folder, train_data, val_data, fold, test_data, run=run
             )
 
 
@@ -71,6 +72,7 @@ def finetune_fold(
     val_data: PatientDataset,
     fold: int,
     test_data: PatientDataset = None,
+    run=None,
 ) -> None:
     """Finetune model on one fold"""
     if "scheduler" in cfg:
@@ -119,6 +121,7 @@ def finetune_fold(
         scheduler=scheduler,
         cfg=cfg,
         logger=logger,
+        run=run,
         accumulate_logits=True,
         run_folder=fold_folder,
         last_epoch=epoch,

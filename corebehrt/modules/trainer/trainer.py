@@ -15,6 +15,9 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt import azure
+import time
+from mlflow.entities import Metric
+from mlflow.tracking import MlflowClient
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -98,9 +101,7 @@ class EHRTrainer:
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
-
-        # Enable auto-logging (if available)
-        azure.autolog()
+        self.mlflow_client = MlflowClient()
 
     def _set_default_args(self, args):
         default_args = {
@@ -147,13 +148,15 @@ class EHRTrainer:
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
         step_loss = 0
+        metrics = []
         for i, batch in enumerate(train_loop):
             step_loss += self._train_step(batch).item()
             if (i + 1) % self.accumulation_steps == 0:
                 self._clip_gradients()
-                self._update_and_log(step_loss, train_loop, epoch_loss)
+                self._update()
+                self._accumulate_metrics(metrics, step_loss, epoch_loss, step=i)
                 step_loss = 0
-
+        self._log_batch(metrics)
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -177,21 +180,28 @@ class EHRTrainer:
 
         return unscaled_loss
 
-    def _update_and_log(self, step_loss, train_loop, epoch_loss):
-        """Updates the model and logs the loss"""
+    def _update(self):
+        """Updates the model (optimizer and scheduler)"""
         self.optimizer.step()
 
         if self.scheduler is not None:
             self.scheduler.step()
-        train_loop.set_postfix(loss=step_loss / self.accumulation_steps)
+
+    def _accumulate_metrics(self, metrics, step_loss, epoch_loss, step):
+        """Accumulates the metrics"""
+        timestamp = int(time.time()*1000)
+
         epoch_loss.append(step_loss / self.accumulation_steps)
+        metrics.append(Metric("Train loss", step_loss / self.accumulation_steps, timestamp, step))
 
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                self.run_log(name="Learning Rate", value=current_lr)
+                metrics.append(Metric("Learning Rate", current_lr, timestamp, step))
                 break
-        self.run_log(name="Train loss", value=step_loss / self.accumulation_steps)
+
+    def _log_batch(self, metrics: list):
+        self.mlflow_client.log_batch(run_id=self.run.info.run_id, metrics=metrics)
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader

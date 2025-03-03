@@ -139,7 +139,7 @@ def run_job(job, experiment: str):
 
 
 def run_main(
-    main: callable, inputs: dict, outputs: dict, log_system_metrics: bool = False
+    main: callable, inputs: dict, outputs: dict
 ) -> None:
     """
     Implements a wrapper for running CoreBEHRT scrips on the cluster.
@@ -149,18 +149,13 @@ def run_main(
     :param main: The main callable.
     :param inputs: inputs configuration.
     :param outputs: outputs configuration.
-    :param log_system_metrics: If true, logs GPU/CPU/mem usage
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
 
-    log.start_run(log_system_metrics=args.pop("log_system_metrics", False))
-
-    prepare_config(args, inputs, outputs)
-
-    main(AZURE_CONFIG_FILE)
-
-    log.end_run()
+    with log.start_run(log_system_metrics=args.pop("log_system_metrics", False)) as run:
+        prepare_config(args, inputs, outputs)
+        main(AZURE_CONFIG_FILE, run)
 
 
 def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:

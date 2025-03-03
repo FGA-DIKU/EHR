@@ -24,7 +24,7 @@ from corebehrt.modules.trainer.trainer import EHRTrainer
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 
 
-def main_train(config_path):
+def main_train(config_path, run):
     cfg = load_config(config_path)
 
     # Setup directories
@@ -94,6 +94,7 @@ def main_train(config_path):
         metrics=cfg.metrics,
         cfg=cfg,
         logger=logger,
+        run=run,
         last_epoch=epoch,
     )
     logger.info("Start training")
