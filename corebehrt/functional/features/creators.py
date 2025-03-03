@@ -151,22 +151,6 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     concepts["admission_id"] = None
     concepts["admission_id"] = concepts["admission_id"].astype(object)
 
-    # Assign admission_id to all events between 'ADMISSION' and 'DISCHARGE' events
-    admission_mask = concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
-    discharge_mask = concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
-    admission_indices = concepts[admission_mask].index
-    discharge_indices = concepts[discharge_mask].index
-
-    if not admission_indices.empty and not discharge_indices.empty:
-        for start in admission_indices:
-            # Find the first discharge index that is greater than the current admission index
-            end = discharge_indices[discharge_indices > start].min()
-            
-            if pd.notna(end):
-                adm_id = _get_adm_id()
-                concepts.loc[start:end, "admission_id"] = adm_id
-
-    # Assign admission_id to concepts outside admissions
     # Concepts within 48 hours of each other are considered to be part of the same admission
     outside_segments = concepts[concepts["admission_id"].isna()].copy()
     outside_segments = outside_segments.sort_values(by=[PID_COL, TIMESTAMP_COL])
