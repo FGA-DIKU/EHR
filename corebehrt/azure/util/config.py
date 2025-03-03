@@ -140,11 +140,17 @@ def prepare_job_command_args(
     cmd = ""
     azure_arg_cls = Input if _type == "inputs" else Output
     for arg, arg_cfg in args.items():
-        if value := get_path_from_cfg(config, arg, arg_cfg):
+        value = get_path_from_cfg(config, arg, arg_cfg)
+
+        if value or _type == "outputs":
             job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
 
             # Update command
             cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
+
+        elif not arg_cfg.get("optional", False):
+            # Raise error
+            raise Exception(f"Missing required configuration item '{arg}'.")
 
         # Must we register the output?
         if _type == "outputs" and arg in register_output:
@@ -163,14 +169,7 @@ def get_path_from_cfg(cfg: dict, arg: str, arg_cfg: dict):
     for step in steps:
         # Check if present
         if step not in cfg:
-            if arg_cfg.get("optional", False):
-                # Return None if optional
-                return None
-            else:
-                # Raise error
-                raise Exception(
-                    f"Missing required configuration item '{'.'.join(steps)}'."
-                )
+            return None
         # Next step
         cfg = cfg[step]
 
