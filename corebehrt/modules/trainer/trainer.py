@@ -425,9 +425,12 @@ class EHRTrainer:
             self.log(f"{name}: {value}")
 
     def _log_batch(self, metrics: list):
-        azure.log_batch(
-            client=self.mlflow_client, run_id=self.run.info.run_id, metrics=metrics
-        )
+        if azure.is_mlflow_available():
+            azure.log_batch(
+                client=self.mlflow_client, run_id=self.run.info.run_id, metrics=metrics
+            )
+        else:
+            self.log(metrics)
 
     def save_setup(self) -> None:
         """Saves the config and model config"""
