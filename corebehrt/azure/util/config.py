@@ -156,6 +156,10 @@ def prepare_job_command_args(
         else:
             cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
 
+        elif not arg_cfg.get("optional", False):
+            # Raise error
+            raise Exception(f"Missing required configuration item '{arg}'.")
+
         # Must we register the output?
         if _type == "outputs" and arg in register_output:
             job_args[arg].name = register_output[arg]
