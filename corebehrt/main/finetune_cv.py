@@ -23,7 +23,7 @@ from corebehrt.modules.setup.directory import DirectoryPreparer
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
 
 
-def main_finetune(config_path, run):
+def main_finetune(config_path, run=None):
     cfg = load_config(config_path)
 
     # Setup directories

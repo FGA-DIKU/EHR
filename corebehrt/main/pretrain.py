@@ -24,7 +24,7 @@ from corebehrt.modules.trainer.trainer import EHRTrainer
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 
 
-def main_train(config_path, run):
+def main_train(config_path, run=None):
     cfg = load_config(config_path)
 
     # Setup directories

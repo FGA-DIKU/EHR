@@ -138,9 +138,7 @@ def run_job(job, experiment: str):
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-def run_main(
-    main: callable, inputs: dict, outputs: dict
-) -> None:
+def run_main(main: callable, inputs: dict, outputs: dict) -> None:
     """
     Implements a wrapper for running CoreBEHRT scrips on the cluster.
     Prepares input and outputs, sets up logging on Azure using MLFlow

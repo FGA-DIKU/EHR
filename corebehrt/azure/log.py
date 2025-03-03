@@ -5,6 +5,8 @@ MLFLOW_AVAILABLE = False
 try:
     # Try to import mlflow and set availability flag
     import mlflow
+    from mlflow.tracking import MlflowClient
+    from mlflow.entities import Metric
 
     MLFLOW_AVAILABLE = True
 except:
@@ -142,3 +144,26 @@ def log_figure(*args, **kwargs):
     """
     if is_mlflow_available():
         mlflow.log_figure(*args, **kwargs)
+
+
+def log_batch(client, *args, **kwargs):
+    """
+    Log a batch of metrics
+
+    :param client: mlflow.tracking. MlflowClient.
+    :param artifact_file: filename to save image under.
+    """
+    if is_mlflow_available():
+        client.log_batch(**kwargs)
+
+
+def ml_client():
+    if is_mlflow_available():
+        return MlflowClient()
+
+
+def metric(name, value, timestamp, step):
+    if is_mlflow_available():
+        return Metric(name, value, timestamp, step)
+    else:
+        return (name, value)

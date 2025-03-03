@@ -36,7 +36,14 @@ def cv_loop(
 
         with setup_metrics_dir(f"Fold {fold}"):
             finetune_fold(
-                cfg, logger, finetune_folder, train_data, val_data, fold, test_data, run=run
+                cfg,
+                logger,
+                finetune_folder,
+                train_data,
+                val_data,
+                fold,
+                test_data,
+                run=run,
             )
 
 

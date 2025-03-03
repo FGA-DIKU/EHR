@@ -16,8 +16,6 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt import azure
 import time
-from mlflow.entities import Metric
-from mlflow.tracking import MlflowClient
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -44,7 +42,6 @@ class EHRTrainer:
         run_folder: str = None,
         last_epoch: int = None,
     ):
-
         self._initialize_basic_attributes(
             model,
             train_dataset,
@@ -101,7 +98,7 @@ class EHRTrainer:
         self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
-        self.mlflow_client = MlflowClient()
+        self.mlflow_client = azure.ml_client()
 
     def _set_default_args(self, args):
         default_args = {
@@ -189,19 +186,22 @@ class EHRTrainer:
 
     def _accumulate_metrics(self, metrics, step_loss, epoch_loss, step):
         """Accumulates the metrics"""
-        timestamp = int(time.time()*1000)
+        timestamp = int(time.time() * 1000)
 
         epoch_loss.append(step_loss / self.accumulation_steps)
-        metrics.append(Metric("Train loss", step_loss / self.accumulation_steps, timestamp, step))
+        metrics.append(
+            azure.metric(
+                "Train loss", step_loss / self.accumulation_steps, timestamp, step
+            )
+        )
 
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                metrics.append(Metric("Learning Rate", current_lr, timestamp, step))
+                metrics.append(
+                    azure.metric("Learning Rate", current_lr, timestamp, step)
+                )
                 break
-
-    def _log_batch(self, metrics: list):
-        self.mlflow_client.log_batch(run_id=self.run.info.run_id, metrics=metrics)
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader
