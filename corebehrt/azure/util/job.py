@@ -102,12 +102,18 @@ def run(job, experiment: str):
     ml_client().create_or_update(job, experiment_name=experiment)
 
 
-def run_main(main: callable, inputs: dict, outputs: dict) -> None:
+def run_main(
+    job_name: str,
+    main: callable,
+    inputs: dict,
+    outputs: dict,
+) -> None:
     """
     Implements a wrapper for running CoreBEHRT scrips on the cluster.
     Prepares input and outputs, sets up logging on Azure using MLFlow
     (if available), and finally calls the main script.
 
+    :param job_name: Name of job
     :param main: The main callable.
     :param inputs: inputs configuration.
     :param outputs: outputs configuration.
@@ -115,5 +121,5 @@ def run_main(main: callable, inputs: dict, outputs: dict) -> None:
     # Parse command line args
     args = parse_args(inputs | outputs)
     with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
-        prepare_config(args, inputs, outputs)
-        main(AZURE_CONFIG_FILE)
+        cfg_path = prepare_config(job_name, args, inputs, outputs)
+        main(cfg_path)
