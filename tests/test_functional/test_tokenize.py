@@ -2,7 +2,7 @@ import unittest
 
 import pandas as pd
 
-from corebehrt.constants.data import CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN
+from corebehrt.constants.data import CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, PID_COL, CONCEPT_COL
 from corebehrt.functional.features.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,
@@ -15,36 +15,36 @@ class TestAddSpecialTokensPartition(unittest.TestCase):
         # Sample data for testing with 'PID' as the index
         self.data = pd.DataFrame(
             {
-                "code": ["C1", "C2", "C3", "C4", "C5", "C6"],
+                CONCEPT_COL: ["C1", "C2", "C3", "C4", "C5", "C6"],
                 "abspos": [1.0, 2.0, 3.0, 1.0, 2.0, 1.0],
                 "segment": [0, 0, 1, 0, 1, 0],
             },
-            index=["P1", "P1", "P1", "P2", "P2", "P3"],
+            index=[1, 1, 1, 2, 2, 3],
         )
-        self.data.index.name = "subject_id"
+        self.data.index.name = PID_COL
 
     def test_add_cls_token(self):
         """Test that CLS_TOKEN is correctly added."""
         result = add_special_tokens_partition(self.data, add_sep=False, add_cls=True)
-        cls_rows = result[result["code"] == CLS_TOKEN]
+        cls_rows = result[result[CONCEPT_COL] == CLS_TOKEN]
         # There should be one CLS_TOKEN per PID
         self.assertEqual(cls_rows.index.nunique(), self.data.index.nunique())
         # CLS_TOKEN should have the smallest abspos for each PID
         for pid in self.data.index.unique():
             pid_rows = result[result.index == pid]
-            cls_row = pid_rows[pid_rows["code"] == CLS_TOKEN]
+            cls_row = pid_rows[pid_rows[CONCEPT_COL] == CLS_TOKEN]
             earliest_abspos = pid_rows["abspos"].min()
             self.assertTrue((cls_row["abspos"] <= earliest_abspos).all())
 
     def test_add_sep_token(self):
         """Test that SEP_TOKEN is correctly added after segment changes."""
         result = add_special_tokens_partition(self.data, add_sep=True, add_cls=False)
-        sep_rows = result[result["code"] == SEP_TOKEN]
+        sep_rows = result[result[CONCEPT_COL] == SEP_TOKEN]
         # There should be a SEP_TOKEN for each segment change within a PID
-        expected_sep_count = self.data.groupby("subject_id")["segment"].apply(
+        expected_sep_count = self.data.groupby(PID_COL)["segment"].apply(
             lambda x: x.diff().fillna(0).ne(0).sum()
         )
-        actual_sep_count = sep_rows.groupby(sep_rows.index)["code"].count()
+        actual_sep_count = sep_rows.groupby(sep_rows.index)[CONCEPT_COL].count()
         for pid in expected_sep_count.index:
             self.assertEqual(expected_sep_count[pid], actual_sep_count.get(pid, 0))
 
@@ -52,22 +52,22 @@ class TestAddSpecialTokensPartition(unittest.TestCase):
         """Test that both CLS_TOKEN and SEP_TOKEN are correctly added."""
         result = add_special_tokens_partition(self.data, add_sep=True, add_cls=True)
         # Verify CLS_TOKEN
-        cls_rows = result[result["code"] == CLS_TOKEN]
+        cls_rows = result[result[CONCEPT_COL] == CLS_TOKEN]
         self.assertEqual(cls_rows.index.nunique(), self.data.index.nunique())
         # Verify SEP_TOKEN
-        sep_rows = result[result["code"] == SEP_TOKEN]
-        expected_sep_count = self.data.groupby("subject_id")["segment"].apply(
+        sep_rows = result[result[CONCEPT_COL] == SEP_TOKEN]
+        expected_sep_count = self.data.groupby(PID_COL)["segment"].apply(
             lambda x: x.diff().fillna(0).ne(0).sum()
         )
-        actual_sep_count = sep_rows.groupby(sep_rows.index)["code"].count()
+        actual_sep_count = sep_rows.groupby(sep_rows.index)[CONCEPT_COL].count()
         for pid in expected_sep_count.index:
             self.assertEqual(expected_sep_count[pid], actual_sep_count.get(pid, 0))
 
     def test_no_special_tokens(self):
         """Test that no special tokens are added when flags are False."""
         result = add_special_tokens_partition(self.data, add_sep=False, add_cls=False)
-        self.assertNotIn(CLS_TOKEN, result["code"].values)
-        self.assertNotIn(SEP_TOKEN, result["code"].values)
+        self.assertNotIn(CLS_TOKEN, result[CONCEPT_COL].values)
+        self.assertNotIn(SEP_TOKEN, result[CONCEPT_COL].values)
         self.assertEqual(len(result), len(self.data))
 
 

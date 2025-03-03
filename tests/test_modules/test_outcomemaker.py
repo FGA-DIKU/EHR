@@ -5,8 +5,10 @@ import pandas as pd
 
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
-
-
+from corebehrt.constants.data import (
+    PID_COL,
+    CONCEPT_COL,
+)
 class TestOutcomeMaker(unittest.TestCase):
     def setUp(self):
         # Create a mock outcomes configuration for testing
@@ -32,8 +34,8 @@ class TestOutcomeMaker(unittest.TestCase):
         # Create a mock concepts_plus DataFrame
         self.concepts_plus = pd.DataFrame(
             {
-                "subject_id": ["P1", "P2", "P3", "P4"],
-                "code": ["D13", "D2", "D23", "D2"],
+                PID_COL: [1, 2, 3, 4],
+                CONCEPT_COL: ["D13", "D2", "D23", "D2"],
                 "time": [
                     pd.Timestamp("2020-01-10"),
                     pd.Timestamp("2020-01-12"),
@@ -47,7 +49,7 @@ class TestOutcomeMaker(unittest.TestCase):
         # Create a mock patients_info DataFrame
         self.patients_info = pd.DataFrame(
             {
-                "subject_id": ["P1", "P2", "P3", "P4"],
+                PID_COL: [1, 2, 3, 4],
                 "info1": [1, 2, 3, 4],
                 "time": [
                     pd.Timestamp("2020-01-10"),
@@ -59,7 +61,7 @@ class TestOutcomeMaker(unittest.TestCase):
         )
 
         # Patient set
-        self.patient_set = ["P1", "P2", "P3"]
+        self.patient_set = [1, 2, 3]
 
         # OutcomeMaker instance
         self.outcome_maker = OutcomeMaker(self.outcomes, self.origin_point)
@@ -72,7 +74,7 @@ class TestOutcomeMaker(unittest.TestCase):
         # Expected outcome for TEST_OUTCOME
         expected_outcome = pd.DataFrame(
             {
-                "subject_id": ["P2"],
+                PID_COL: [2],
                 "time": [
                     pd.Timestamp("2020-01-12"),
                 ],
@@ -90,7 +92,7 @@ class TestOutcomeMaker(unittest.TestCase):
 
         # Expected outcome for TEST_CENSOR
         expected_censor = pd.DataFrame(
-            {"subject_id": ["P1"], "time": [pd.Timestamp("2020-01-10")]}, index=[0]
+            {PID_COL: [1], "time": [pd.Timestamp("2020-01-10")]}, index=[0]
         )
         expected_censor["abspos"] = get_abspos_from_origin_point(
             expected_censor["time"], self.origin_point

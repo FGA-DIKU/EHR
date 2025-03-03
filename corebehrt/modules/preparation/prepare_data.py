@@ -59,7 +59,7 @@ class DatasetPreparer:
         index_dates = pd.read_csv(
             join(paths_cfg.cohort, INDEX_DATES_FILE), parse_dates=[TIMESTAMP_COL]
         )
-        index_dates[PID_COL] = index_dates[PID_COL].astype(str)
+        index_dates[PID_COL] = index_dates[PID_COL].astype(int)
         origin_point = load_config(
             join(paths_cfg.features, "data_config.yaml")
         ).features.origin_point
@@ -89,7 +89,7 @@ class DatasetPreparer:
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
-        outcomes[PID_COL] = outcomes[PID_COL].astype(str)
+        outcomes[PID_COL] = outcomes[PID_COL].astype(int)
         outcomes = filter_df_by_pids(outcomes, data.get_pids())
         logger.info("Handling outcomes")
         # Outcome Handler now only needs to do 1 thing: if outcome is in follow up window 1 else 0

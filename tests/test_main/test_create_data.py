@@ -6,6 +6,7 @@ import torch
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.main.create_data import main_data
 from tests.helpers import compute_column_checksum
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 from .base import TestMainScript
 
@@ -52,7 +53,7 @@ class TestCreateData(TestMainScript):
         features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
             features.columns.to_list(),
-            ["subject_id", "age", "abspos", "segment", "code"],
+            [PID_COL, "age", "abspos", "segment", CONCEPT_COL],
         )
 
         expected_features_train = pd.read_parquet(
@@ -71,18 +72,17 @@ class TestCreateData(TestMainScript):
                 expected_features_held_out,
             ]
         )
-        expected_features["subject_id"] = expected_features["subject_id"].astype(str)
 
         # 2.1: check patients
         self.assertListEqual(
-            features["subject_id"].tolist(),
-            expected_features["subject_id"].tolist(),
+            features[PID_COL].tolist(),
+            expected_features[PID_COL].tolist(),
             "subject_id lists do not match.",
         )
 
         # 2.2: check number of entries per patient
-        features_group = features.groupby("subject_id").size()
-        expected_group = expected_features.groupby("subject_id").size()
+        features_group = features.groupby(PID_COL).size()
+        expected_group = expected_features.groupby(PID_COL).size()
         pd.testing.assert_series_equal(
             features_group,
             expected_group,
@@ -99,13 +99,13 @@ class TestCreateData(TestMainScript):
                     checksum, expected_checksum, f"Checksum for {col} does not match."
                 )
             else:  # compare sets for every patient
-                for subject_id in features["subject_id"].unique():
+                for subject_id in features[PID_COL].unique():
                     segment = set(
-                        features[features["subject_id"] == subject_id]["segment"].values
+                        features[features[PID_COL] == subject_id]["segment"].values
                     )
                     expected_segment = set(
                         expected_features[
-                            expected_features["subject_id"] == subject_id
+                            expected_features[PID_COL] == subject_id
                         ]["segment"].values
                     )
                     self.assertEqual(

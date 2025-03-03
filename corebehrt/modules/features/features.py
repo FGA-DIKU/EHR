@@ -61,6 +61,6 @@ class FeatureCreator:
 
         features = create_segments(features)
         features = features.drop(columns=["admission_id", "time", "birthdate"])
-        features["subject_id"] = features["subject_id"].astype(str)
+        features["subject_id"] = features["subject_id"].astype(int)
 
         return features, patient_info

@@ -4,6 +4,7 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 
 from corebehrt.functional.preparation.truncate import truncate_patient_df
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
 
 
 class TestTruncatePatientDf(unittest.TestCase):
@@ -18,7 +19,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         self.test_data = pd.DataFrame(
             {
                 "abspos": range(10),
-                "code": [f"token_{i}" for i in range(10)],
+                CONCEPT_COL: [f"token_{i}" for i in range(10)],
                 "other_col": [f"value_{i}" for i in range(10)],
             }
         )
@@ -28,7 +29,7 @@ class TestTruncatePatientDf(unittest.TestCase):
         self.test_data_with_sep = pd.DataFrame(
             {
                 "abspos": range(10),
-                "code": [
+                CONCEPT_COL: [
                     "token_0",
                     "token_1",
                     "token_2",

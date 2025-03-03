@@ -2,21 +2,15 @@ import unittest
 import pandas as pd
 
 from corebehrt.functional.preparation.utils import get_background_length_pd
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
 
 
 class TestGetBackgroundLengthPD(unittest.TestCase):
     def setUp(self):
         # Test data setup that will be used by multiple tests
         self.data = {
-            "subject_id": [
-                "patient1",
-                "patient1",
-                "patient1",
-                "patient2",
-                "patient2",
-                "patient2",
-            ],
-            "code": [1, 2, 3, 1, 2, 3],
+            PID_COL: [1, 1, 1, 2, 2, 2],
+            CONCEPT_COL: [1, 2, 3, 1, 2, 3],
         }
 
         self.vocabulary = {
@@ -29,7 +23,7 @@ class TestGetBackgroundLengthPD(unittest.TestCase):
 
     def test_normal_case(self):
         # Create Dask DataFrame from test data
-        df = pd.DataFrame(self.data).set_index("subject_id")
+        df = pd.DataFrame(self.data).set_index(PID_COL)
         # Test the function
         result = get_background_length_pd(df, self.vocabulary)
 
@@ -38,7 +32,7 @@ class TestGetBackgroundLengthPD(unittest.TestCase):
 
     def test_empty_dataframe(self):
         # Test with empty DataFrame
-        empty_df = pd.DataFrame(columns=["subject_id", "code"]).set_index("subject_id")
+        empty_df = pd.DataFrame(columns=[PID_COL, CONCEPT_COL]).set_index(PID_COL)
 
         result = get_background_length_pd(empty_df, self.vocabulary)
 

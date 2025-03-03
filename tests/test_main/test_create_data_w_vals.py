@@ -7,6 +7,7 @@ import torch
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.main.create_data import main_data
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 from .base import TestMainScript
 
@@ -56,15 +57,14 @@ class TestCreateData(TestMainScript):
         features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
             features.columns.to_list(),
-            ["subject_id", "age", "abspos", "segment", "code"],
+            [PID_COL, "age", "abspos", "segment", CONCEPT_COL],
         )
 
         # 3: Check patients
         patient_info = pd.read_parquet(f"{self.features_dir}/patient_info.parquet")
-        patient_info["subject_id"] = patient_info["subject_id"].astype(str)
         self.assertEqual(
-            sorted(features["subject_id"].unique().tolist()),
-            sorted(patient_info["subject_id"].tolist()),
+            sorted(features[PID_COL].unique().tolist()),
+            sorted(patient_info[PID_COL].tolist()),
         )
 
         # 4: Check vocabulary
@@ -90,7 +90,7 @@ class TestCreateData(TestMainScript):
             # print(f"First few rows:\n{tokenised_features.head()}")
 
             # Ensure required columns exist
-            required_columns = ["subject_id", "code", "abspos", "segment", "age"]
+            required_columns = [PID_COL, CONCEPT_COL, "abspos", "segment", "age"]
             for col in required_columns:
                 self.assertIn(
                     col, tokenised_features.columns, f"Missing required column: {col}"

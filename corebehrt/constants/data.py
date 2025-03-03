@@ -22,7 +22,7 @@ VALUE_COL = "numeric_value"
 
 ### Schema ###
 SCHEMA = {
-    "subject_id": "str",
+    "subject_id": "int64",
     "age": "float32",
     "abspos": "float64",
     "segment": "int32",

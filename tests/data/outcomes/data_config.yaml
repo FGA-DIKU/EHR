@@ -10,7 +10,7 @@ logging:
   level: INFO
   path: ./outputs/logs
 paths:
-  data: ./example_data/example_MEDS_data
+  data: ./example_data/raw
   features: ./outputs/features
   tokenized: ./outputs/tokenized
 tokenizer:

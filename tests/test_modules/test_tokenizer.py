@@ -17,7 +17,7 @@ class TestEHRTokenizer(unittest.TestCase):
     def setUp(self):
         # Simplified example data
         data = {
-            PID_COL: ["P1", "P1", "P1", "P2", "P2", "P3", "P3", "P4"],
+            PID_COL: [1, 1, 1, 2, 2, 3, 3, 4],
             CONCEPT_COL: ["C1", "C2", "C3", "C1", "C4", "C5", "C6", "C7"],
             "age": [20, 21, 22, 23, 24, 25, 26, 27],
             "abspos": [1, 2, 3, 1, 2, 1, 2, 1],
@@ -136,7 +136,7 @@ class TestEHRTokenizer(unittest.TestCase):
         result = tokenizer(self.df)
 
         # Check that all PIDs are present
-        expected_pids = ["P1", "P2", "P3", "P4"]
+        expected_pids = [1, 2, 3, 4]
         self.assertCountEqual(result.index.unique(), expected_pids)
 
     def test_tokenizer_abspos_order(self):

@@ -55,7 +55,7 @@ class OutcomeMaker:
                 timestamps[TIMESTAMP_COL], self.origin_point
             )
             timestamps[ABSPOS_COL] = timestamps[ABSPOS_COL].astype(int)
-            timestamps[PID_COL] = timestamps[PID_COL].astype(str)
+            timestamps[PID_COL] = timestamps[PID_COL].astype(int)
             outcome_tables[outcome] = timestamps
         return outcome_tables
 

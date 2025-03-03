@@ -3,33 +3,20 @@ import pandas as pd
 from datetime import datetime
 from corebehrt.modules.features.features import FeatureCreator
 from pandas import NaT
-
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
 
 class TestFeatureCreator(unittest.TestCase):
     def setUp(self):
         # Create larger sample data as pandas DataFrames
         self.concepts = pd.DataFrame(
             {
-                "subject_id": [
-                    "1",
-                    "1",
-                    "1",
-                    "1",
-                    "1",
-                    "2",
-                    "2",
-                    "2",
-                    "2",
-                    "3",
-                    "3",
-                    "3",
-                    "3",
-                    "4",
-                    "4",
-                    "4",
-                    "4",
+                PID_COL: [
+                    1, 1, 1, 1, 1,
+                    2, 2, 2, 2,
+                    3, 3, 3, 3,
+                    4, 4, 4, 4,
                 ],
-                "time": [
+                TIMESTAMP_COL: [
                     datetime(1998, 1, 1),
                     NaT,
                     datetime(2020, 1, 1),
@@ -48,7 +35,7 @@ class TestFeatureCreator(unittest.TestCase):
                     datetime(2020, 1, 7),
                     datetime(2020, 2, 8),
                 ],
-                "code": [
+                CONCEPT_COL: [
                     "DOB",
                     "GENDER//M",
                     "A",
@@ -88,14 +75,14 @@ class TestFeatureCreator(unittest.TestCase):
         self.assertIn("segment", result.columns)
 
         # Sort result_df to ensure consistent ordering
-        result = result.sort_values(["subject_id", "abspos"]).reset_index(drop=True)
+        result = result.sort_values([PID_COL, "abspos"]).reset_index(drop=True)
 
         # Ensure the lengths match
         self.assertEqual(len(result["segment"]), len(self.expected_segments))
 
     def test_create_background(self):
         result, _ = self.feature_creator(self.concepts)
-        self.assertTrue(any(result["code"].str.startswith("BG_GENDER")))
+        self.assertTrue(any(result[CONCEPT_COL].str.startswith("BG_GENDER")))
         # Compare the segment values
         self.assertTrue(
             (result["segment"].values == self.expected_segments.values).all()
@@ -108,14 +95,14 @@ class TestFeatureCreator(unittest.TestCase):
 
     def test_death(self):
         result, _ = self.feature_creator(self.concepts)
-        self.assertTrue(any(result["code"] == "DOD"))
+        self.assertTrue(any(result[CONCEPT_COL] == "DOD"))
         self.assertEqual(
-            sum(result["code"] == "DOD"), 1
+            sum(result[CONCEPT_COL] == "DOD"), 1
         )  # Only one patient has death info
 
     def test_all_features_created(self):
         result, _ = self.feature_creator(self.concepts)
-        expected_columns = {"subject_id", "age", "segment", "abspos", "code"}
+        expected_columns = {PID_COL, "age", "segment", "abspos", CONCEPT_COL}
         self.assertTrue(expected_columns.issubset(set(result.columns)))
 
     def test_origin_point_as_dict(self):
@@ -126,7 +113,7 @@ class TestFeatureCreator(unittest.TestCase):
         self.assertIn("abspos", result.columns)
 
     def test_missing_required_columns(self):
-        concepts_missing_column = self.concepts.drop("code", axis=1)
+        concepts_missing_column = self.concepts.drop(CONCEPT_COL, axis=1)
         with self.assertRaises(ValueError):
             self.feature_creator(concepts_missing_column)
 

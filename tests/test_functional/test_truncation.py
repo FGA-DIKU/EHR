@@ -51,7 +51,7 @@ class TestTruncationFunctions(unittest.TestCase):
         p1_segments = [0] * len(p1_concepts)
         p1_ages = [30 + 0.1 * i for i in range(len(p1_concepts))]
         self.patient1 = PatientData(
-            pid="1",
+            pid=1,
             concepts=p1_concepts,
             abspos=p1_abspos,
             segments=p1_segments,
@@ -69,7 +69,7 @@ class TestTruncationFunctions(unittest.TestCase):
         )
         p2_abspos = [i for i in range(len(p2_concepts))]
         self.patient2 = PatientData(
-            pid="2",
+            pid=2,
             concepts=p2_concepts,
             abspos=p2_abspos,
             segments=[0] * len(p2_concepts),
@@ -85,7 +85,7 @@ class TestTruncationFunctions(unittest.TestCase):
         )
         p3_abspos = [i for i in range(len(p3_concepts))]
         self.patient3 = PatientData(
-            pid="3",
+            pid=3,
             concepts=p3_concepts,
             abspos=p3_abspos,
             segments=[0] * len(p3_concepts),
@@ -105,7 +105,7 @@ class TestTruncationFunctions(unittest.TestCase):
         )
         p4_abspos = [i for i in range(len(p4_concepts))]
         self.patient4 = PatientData(
-            pid="4",
+            pid=4,
             concepts=p4_concepts,
             abspos=p4_abspos,
             segments=[0] * len(p4_concepts),
@@ -119,7 +119,7 @@ class TestTruncationFunctions(unittest.TestCase):
         # Example abspos array
         p5_abspos = [-100, -100, -100] + list(range(15, 25)) * 2
         self.patient5 = PatientData(
-            pid="5",
+            pid=5,
             concepts=p5_concepts,
             abspos=p5_abspos,
             segments=[0] * len(p5_concepts),
@@ -267,7 +267,7 @@ class TestHelperFunctions(unittest.TestCase):
         # Basic patient #1 with 10 tokens
         # Background region = first 3 tokens
         self.patient1 = PatientData(
-            pid="P1",
+            pid=1,
             concepts=[1, 2, 3, 4, 4, 6, 7, 3, 4, 6],  # 10 tokens
             abspos=[0, 0, 1, 2, 3, 4, 4, 5, 6, 7],  # positions
             segments=[0] * 10,
@@ -277,7 +277,7 @@ class TestHelperFunctions(unittest.TestCase):
 
         # Another small patient #2
         self.patient2 = PatientData(
-            pid="P2",
+            pid=2,
             concepts=[1, 6, 2, 3, 6, 7, 4],
             abspos=[0, 0, 0, 1, 1, 1, 2],
             segments=[0] * 7,

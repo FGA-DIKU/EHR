@@ -1,4 +1,8 @@
 data:
+  cutoff_date:
+    day: 1
+    month: 1
+    year: 2020
   min_len: 2
   predefined_splits: false
   truncation_len: 20

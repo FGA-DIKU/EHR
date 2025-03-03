@@ -6,7 +6,10 @@ from tempfile import mkdtemp
 import pandas as pd
 
 from corebehrt.modules.features.loader import FormattedDataLoader
-
+from corebehrt.constants.data import (
+    PID_COL,
+    CONCEPT_COL,
+)
 
 class TestFormattedDataLoader(unittest.TestCase):
     def setUp(self):
@@ -16,9 +19,9 @@ class TestFormattedDataLoader(unittest.TestCase):
         # Create test concept data
         concept_data = pd.DataFrame(
             {
-                "subject_id": [1, 2],
+                PID_COL: [1, 2],
                 "time": pd.to_datetime(["2020-01-01", "2010-01-01"]),
-                "code": ["A", "B"],
+                CONCEPT_COL: ["A", "B"],
                 "numeric_value": ["1", "2"],
             }
         )
@@ -40,9 +43,9 @@ class TestFormattedDataLoader(unittest.TestCase):
         # Verify the concepts data
         expected_concepts_data = pd.DataFrame(
             {
-                "subject_id": [1, 2],
+                PID_COL: [1, 2],
                 "time": pd.to_datetime(["2020-01-01", "2010-01-01"]),
-                "code": pd.Series(["A", "B"], dtype="object"),
+                CONCEPT_COL: pd.Series(["A", "B"], dtype="object"),
                 "numeric_value": ["1", "2"],
             }
         )

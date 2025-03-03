@@ -34,8 +34,8 @@ paths:
   tokenized: ./outputs/tokenized
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
-  num_training_steps: 29
-  num_warmup_steps: 19
+  num_training_steps: 26
+  num_warmup_steps: 17
 trainer_args:
   batch_size: 32
   early_stopping: null
