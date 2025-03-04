@@ -282,7 +282,7 @@ class DirectoryPreparer:
         self.setup_logging("prepare pretrain data")
         self.check_directory("features")
         self.check_directory("tokenized")
-        self.create_run_directory("prepared_data", base="runs")
+        self.create_directory("prepared_data", clear=True)
         self.write_config("prepared_data", name=PREPARE_PRETRAIN_CFG)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
 
@@ -298,8 +298,6 @@ class DirectoryPreparer:
         self.create_run_directory("model", base="runs")
 
         # Write config in output directory.
-        self.write_config("model", source="prepared_data", name=DATA_CFG)
-        self.write_config("model", source="prepared_data", name=PREPARE_PRETRAIN_CFG)
         self.write_config("model", name=PRETRAIN_CFG)
 
     def setup_select_cohort(self) -> None:
@@ -342,7 +340,7 @@ class DirectoryPreparer:
         self.check_directory("features")
         self.check_directory("tokenized")
         self.check_directory("cohort")
-        self.create_run_directory("prepared_data", base="runs")
+        self.create_directory("prepared_data", clear=True)
         self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
 
@@ -359,12 +357,11 @@ class DirectoryPreparer:
         self.create_run_directory("model", base="runs")
 
         # Write config in output directory.
-        self.write_config("model", source="prepared_data", name=DATA_CFG)
         self.write_config("model", source="pretrain_model", name=PRETRAIN_CFG)
         self.write_config("model", name=FINETUNE_CFG)
 
         # Add pretrain info to config
-        data_cfg = self.get_config("model", name=DATA_CFG)
+        data_cfg = self.get_config("prepared_data", name=DATA_CFG)
         self.cfg.paths.data = data_cfg.paths.data
         if "tokenized" not in self.cfg.paths:
             logger.info("Tokenized dir not in config. Adding from pretrain config.")

@@ -25,7 +25,7 @@ def main_prepare_data(config_path):
         logger = logging.getLogger("prepare pretrain data")
         logger.info("Preparing pretrain data")
         # Prepare data
-        data = DatasetPreparer(cfg).prepare_pretrain_data()
+        data = DatasetPreparer(cfg).prepare_pretrain_data(save_data=False)
 
         # Splitting data
         if cfg.data.get("predefined_splits", False):
