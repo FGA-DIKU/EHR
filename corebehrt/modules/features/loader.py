@@ -139,22 +139,6 @@ class ShardLoader:
         return df
 
 
-class ParquetIterator:
-    def __init__(self, filename, batch_size=100000):
-        parquet_file = pq.ParquetFile(filename)
-        self.batch_iterator = parquet_file.iter_batches(batch_size=batch_size)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            batch = next(self.batch_iterator)
-            return batch.to_pandas()
-        except StopIteration:
-            raise StopIteration
-
-
 class FormattedDataLoader:
     """
     A class to load concepts and patients_info from a specified folder.
