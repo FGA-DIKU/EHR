@@ -10,13 +10,13 @@ from corebehrt.modules.cohort_handling.index_dates import IndexDateHandler
 class TestIndexDateHandler(unittest.TestCase):
     def setUp(self):
         """Set up sample data for testing IndexDateHandler."""
-        self.pids = {"p1", "p2", "p3"}
+        self.pids = {1, 2, 3}
 
         # For get_index_timestamps_for_exposed tests:
         # Each patient has at most ONE exposure row:
         self.exposures = pd.DataFrame(
             {
-                PID_COL: ["p1", "p2", "p4"],  # p4 not in self.pids
+                PID_COL: [1, 2, 4],  # p4 not in self.pids
                 TIMESTAMP_COL: pd.to_datetime(
                     [
                         "2021-01-01 08:00:00",  # p1
@@ -30,18 +30,18 @@ class TestIndexDateHandler(unittest.TestCase):
         # For draw_index_dates_for_unexposed tests:
         self.censoring_timestamps = pd.Series(
             {
-                "p1": pd.Timestamp("2021-05-01 00:00:00"),
-                "p2": pd.Timestamp("2021-05-02 00:00:00"),
+                1: pd.Timestamp("2021-05-01 00:00:00"),
+                2: pd.Timestamp("2021-05-02 00:00:00"),
                 # p3 missing, p4 missing
             },
             name=TIMESTAMP_COL,
         )
         self.censoring_timestamps.index.name = PID_COL
 
-        self.all_pids = ["p1", "p2", "p3", "p4"]
+        self.all_pids = [1, 2, 3, 4]
 
         # For determine_index_dates tests:
-        self.patients_info = pd.DataFrame({PID_COL: ["p1", "p2", "p3"]})
+        self.patients_info = pd.DataFrame({PID_COL: [1, 2, 3]})
         # We'll reuse self.exposures in the 'relative' mode tests
 
     # --------------------------------------------------------
@@ -80,17 +80,17 @@ class TestIndexDateHandler(unittest.TestCase):
         )
         # We expect a Series indexed by p1, p2 only, each plus 5 hours
         self.assertEqual(len(result), 2, "p1 and p2 => 2 rows total.")
-        self.assertIn("p1", result.index)
-        self.assertIn("p2", result.index)
+        self.assertIn(1, result.index)
+        self.assertIn(2, result.index)
         # p3 => no entry => not in index
-        self.assertNotIn("p3", result.index)
+        self.assertNotIn(3, result.index)
         # p4 => not in self.pids => filtered out
 
         # Check offset
         p1_expected = pd.Timestamp("2021-01-01 08:00:00") + pd.Timedelta(hours=5)
-        self.assertEqual(result["p1"], p1_expected)
+        self.assertEqual(result[1], p1_expected)
         p2_expected = pd.Timestamp("2021-01-02 10:00:00") + pd.Timedelta(hours=5)
-        self.assertEqual(result["p2"], p2_expected)
+        self.assertEqual(result[2], p2_expected)
 
         # Validate metadata
         self.assertEqual(result.index.name, PID_COL)
@@ -115,16 +115,16 @@ class TestIndexDateHandler(unittest.TestCase):
             data_pids=self.all_pids, censoring_timestamps=self.censoring_timestamps
         )
         self.assertEqual(len(combined), 4)
-        self.assertIn("p3", combined.index)
-        self.assertIn("p4", combined.index)
+        self.assertIn(3, combined.index)
+        self.assertIn(4, combined.index)
 
         # The newly added p3/p4 should be randomly chosen from [p1, p2]'s values
         possible = [
             pd.Timestamp("2021-05-01 00:00:00"),
             pd.Timestamp("2021-05-02 00:00:00"),
         ]
-        self.assertIn(combined["p3"], possible)
-        self.assertIn(combined["p4"], possible)
+        self.assertIn(combined[3], possible)
+        self.assertIn(combined[4], possible)
 
         # Check index name
         self.assertEqual(combined.index.name, PID_COL)
@@ -133,15 +133,15 @@ class TestIndexDateHandler(unittest.TestCase):
         """If no PIDs are missing, we just return the original censoring_timestamps unchanged."""
         all_in_series = pd.Series(
             {
-                "p1": pd.Timestamp("2021-05-01"),
-                "p2": pd.Timestamp("2021-05-02"),
-                "p3": pd.Timestamp("2021-05-03"),
+                1: pd.Timestamp("2021-05-01"),
+                2: pd.Timestamp("2021-05-02"),
+                3: pd.Timestamp("2021-05-03"),
             }
         )
         all_in_series.index.name = PID_COL
 
         combined = IndexDateHandler.draw_index_dates_for_unexposed(
-            censoring_timestamps=all_in_series, data_pids=["p1", "p2", "p3"]
+            censoring_timestamps=all_in_series, data_pids=[1, 2, 3]
         )
 
         # Compare
@@ -162,7 +162,7 @@ class TestIndexDateHandler(unittest.TestCase):
         )
         # We have p1, p2, p3 => each should have 2022-01-15
         self.assertEqual(len(result), 3)
-        for pid in ["p1", "p2", "p3"]:
+        for pid in [1, 2, 3]:
             self.assertEqual(result[pid], pd.Timestamp("2022-01-15"))
         self.assertEqual(result.index.name, PID_COL)
 
@@ -182,20 +182,20 @@ class TestIndexDateHandler(unittest.TestCase):
             exposures=self.exposures,
         )
 
-        self.assertIn("p1", result.index)
-        self.assertIn("p2", result.index)
-        self.assertIn("p3", result.index)
+        self.assertIn(1, result.index)
+        self.assertIn(2, result.index)
+        self.assertIn(3, result.index)
         self.assertEqual(len(result), 3, "p1, p2, p3 => total 3")
 
-        self.assertEqual(result["p1"], pd.Timestamp("2021-01-01 13:00:00"))
-        self.assertEqual(result["p2"], pd.Timestamp("2021-01-02 15:00:00"))
+        self.assertEqual(result[1], pd.Timestamp("2021-01-01 13:00:00"))
+        self.assertEqual(result[2], pd.Timestamp("2021-01-02 15:00:00"))
 
         # p3 should be randomly chosen from the existing [p1, p2] values
         possible = [
             pd.Timestamp("2021-01-01 13:00:00"),
             pd.Timestamp("2021-01-02 15:00:00"),
         ]
-        self.assertIn(result["p3"], possible)
+        self.assertIn(result[3], possible)
 
     def test_determine_index_dates_unsupported_mode(self):
         """Passing an invalid index_date_mode should raise ValueError."""

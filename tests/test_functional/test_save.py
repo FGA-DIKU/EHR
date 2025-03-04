@@ -23,14 +23,14 @@ class TestSaveFunctions(unittest.TestCase):
         # Create mock PatientDataset instances with PatientData objects
         mock_train_dataset = PatientDataset(
             patients=[
-                PatientData(pid="pid1", concepts=[], abspos=[], segments=[], ages=[]),
-                PatientData(pid="pid2", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid=1, concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid=2, concepts=[], abspos=[], segments=[], ages=[]),
             ],
         )
         mock_val_dataset = PatientDataset(
             patients=[
-                PatientData(pid="pid3", concepts=[], abspos=[], segments=[], ages=[]),
-                PatientData(pid="pid4", concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid=3, concepts=[], abspos=[], segments=[], ages=[]),
+                PatientData(pid=4, concepts=[], abspos=[], segments=[], ages=[]),
             ],
         )
 
@@ -40,12 +40,12 @@ class TestSaveFunctions(unittest.TestCase):
         train_pids = torch.load(
             os.path.join(self.test_dir, "pids_train.pt"), weights_only=True
         )
-        self.assertEqual(train_pids, ["pid1", "pid2"])
+        self.assertEqual(train_pids, [1, 2])
         # Load and verify val PIDs
         val_pids = torch.load(
             os.path.join(self.test_dir, "pids_val.pt"), weights_only=True
         )
-        self.assertEqual(val_pids, ["pid3", "pid4"])
+        self.assertEqual(val_pids, [3, 4])
 
 
 if __name__ == "__main__":

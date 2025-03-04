@@ -15,7 +15,7 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         # Example: 5 patients with index positions
         self.index_dates = pd.DataFrame(
             {
-                PID_COL: ["p1", "p2", "p3", "p4", "p5"],
+                PID_COL: [1, 2, 3, 4, 5],
                 ABSPOS_COL: [100, 200, 300, 400, 500],  # The 'index' positions in hours
             }
         )
@@ -28,7 +28,7 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         # p5 => no outcomes
         self.outcomes = pd.DataFrame(
             {
-                PID_COL: ["p1", "p1", "p2", "p2", "p4", "p4"],
+                PID_COL: [1, 1, 2, 2, 4, 4],
                 ABSPOS_COL: [90, 110, 200, 1000, 390, 405],
             }
         )
@@ -65,11 +65,11 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         )
 
         # Check individual flags
-        self.assertTrue(result["p1"], "p1 should be True (has outcome at 110 >= 100).")
-        self.assertTrue(result["p2"], "p2 should be True (outcome at 200 >= 200).")
-        self.assertFalse(result["p3"], "p3 has no outcomes => False.")
-        self.assertTrue(result["p4"], "p4 should be True (outcome at 405 >= 400).")
-        self.assertFalse(result["p5"], "p5 has no outcomes => False.")
+        self.assertTrue(result[1], "p1 should be True (has outcome at 110 >= 100).")
+        self.assertTrue(result[2], "p2 should be True (outcome at 200 >= 200).")
+        self.assertFalse(result[3], "p3 has no outcomes => False.")
+        self.assertTrue(result[4], "p4 should be True (outcome at 405 >= 400).")
+        self.assertFalse(result[5], "p5 has no outcomes => False.")
 
     # ----------------------------------------------------------------------
     # 2) Test with a start and end window
@@ -94,11 +94,11 @@ class TestGetBinaryOutcomes(unittest.TestCase):
 
         # Expect identical booleans to test_no_end_followup except that p2's outcome at 1000 doesn't matter
         # but p2 is still True from its 200 outcome
-        self.assertTrue(result["p1"])
-        self.assertTrue(result["p2"])
-        self.assertFalse(result["p3"])
-        self.assertTrue(result["p4"])
-        self.assertFalse(result["p5"])
+        self.assertTrue(result[1])
+        self.assertTrue(result[2])
+        self.assertFalse(result[3])
+        self.assertTrue(result[4])
+        self.assertFalse(result[5])
 
     # ----------------------------------------------------------------------
     # 3) Test a different start_offset
@@ -122,11 +122,11 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         )
 
         # p1 => True, p2 => True, p3 => False, p4 => True, p5 => False
-        self.assertTrue(result["p1"])
-        self.assertTrue(result["p2"])
-        self.assertFalse(result["p3"])
-        self.assertTrue(result["p4"])
-        self.assertFalse(result["p5"])
+        self.assertTrue(result[1])
+        self.assertTrue(result[2])
+        self.assertFalse(result[3])
+        self.assertTrue(result[4])
+        self.assertFalse(result[5])
 
     # ----------------------------------------------------------------------
     # 4) Test scenario where end_pos excludes borderline outcome
@@ -148,11 +148,11 @@ class TestGetBinaryOutcomes(unittest.TestCase):
             n_hours_end_follow_up=0,
         )
 
-        self.assertFalse(result["p1"], "p1 has no outcome exactly at index=100.")
-        self.assertTrue(result["p2"], "p2 has outcome exactly at index=200.")
-        self.assertFalse(result["p3"])
-        self.assertFalse(result["p4"])
-        self.assertFalse(result["p5"])
+        self.assertFalse(result[1], "p1 has no outcome exactly at index=100.")
+        self.assertTrue(result[2], "p2 has outcome exactly at index=200.")
+        self.assertFalse(result[3])
+        self.assertFalse(result[4])
+        self.assertFalse(result[5])
 
     # ----------------------------------------------------------------------
     # 5) Test no outcomes at all
@@ -174,15 +174,15 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         If outcomes contains PIDs not in index_dates,
         they should be ignored and not appear in the final result.
         """
-        extra = pd.DataFrame({PID_COL: ["p6", "p7"], "abspos": [100, 200]})
+        extra = pd.DataFrame({PID_COL: [6, 7], "abspos": [100, 200]})
         new_outcomes = pd.concat([self.outcomes, extra], ignore_index=True)
         # No change expected for p1..p5 results because p6,p7 aren't in index_dates
         result = get_binary_outcomes(
             index_dates=self.index_dates, outcomes=new_outcomes
         )
         self.assertEqual(len(result), 5, "We only expect p1..p5 in the result.")
-        self.assertIn("p1", result.index)
-        self.assertNotIn("p6", result.index)
+        self.assertIn(1, result.index)
+        self.assertNotIn(6, result.index)
 
     # ----------------------------------------------------------------------
     # 7) Test multiple outcomes for same patient
@@ -197,9 +197,7 @@ class TestGetBinaryOutcomes(unittest.TestCase):
         new_outcomes = self.outcomes.copy()
         # Add outcomes for p3 => index=300 => we want to test outcomes at 295, 305, 310
         # Let's put them in new_outcomes
-        extra_rows = pd.DataFrame(
-            {PID_COL: ["p3", "p3", "p3"], "abspos": [295, 305, 310]}
-        )
+        extra_rows = pd.DataFrame({PID_COL: [3, 3, 3], "abspos": [295, 305, 310]})
         new_outcomes = pd.concat([new_outcomes, extra_rows], ignore_index=True)
 
         # Now with end=10 => p3 => index=300 => valid window=[300..310]
@@ -214,7 +212,7 @@ class TestGetBinaryOutcomes(unittest.TestCase):
             n_hours_end_follow_up=10,
         )
         self.assertTrue(
-            result["p3"],
+            result[3],
             "p3 should be True because it has an outcome at abspos=305 or 310.",
         )
 

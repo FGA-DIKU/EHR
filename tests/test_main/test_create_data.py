@@ -1,12 +1,12 @@
 from os.path import exists, join
 
-import dask.dataframe as dd
 import pandas as pd
 import torch
 
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.main.create_data import main_data
 from tests.helpers import compute_column_checksum
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 from .base import TestMainScript
 
@@ -26,16 +26,11 @@ class TestCreateData(TestMainScript):
                     "features": self.features_dir,
                     "tokenized": self.tokenized_dir,
                 },
-                "loader": {
-                    "concept_types": ["diagnose", "medication"],
-                },
                 "features": {
                     "origin_point": {"year": 2020, "month": 1, "day": 26},
-                    "background_vars": ["GENDER"],
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
                 "excluder": {"min_age": -1, "max_age": 120},
-                "split_ratios": {"pretrain": 0.72, "finetune": 0.18, "test": 0.1},
             }
         )
 
@@ -52,28 +47,47 @@ class TestCreateData(TestMainScript):
 
         # 2: Check that the features file is created as expected
         self.assertTrue(exists(self.features_dir))
-        features = dd.read_parquet(self.features_dir).compute()
+        features_train = pd.read_parquet(join(self.features_dir, "train"))
+        features_tuning = pd.read_parquet(join(self.features_dir, "tuning"))
+        features_held_out = pd.read_parquet(join(self.features_dir, "held_out"))
+        features = pd.concat([features_train, features_tuning, features_held_out])
         self.assertEqual(
-            features.columns.to_list(), ["PID", "concept", "age", "abspos", "segment"]
+            features.columns.to_list(),
+            [PID_COL, "age", "abspos", "segment", CONCEPT_COL],
         )
 
-        expected_features = dd.read_parquet("./tests/data/features").compute()
+        expected_features_train = pd.read_parquet(
+            join("./tests/data/features", "train")
+        )
+        expected_features_tuning = pd.read_parquet(
+            join("./tests/data/features", "tuning")
+        )
+        expected_features_held_out = pd.read_parquet(
+            join("./tests/data/features", "held_out")
+        )
+        expected_features = pd.concat(
+            [
+                expected_features_train,
+                expected_features_tuning,
+                expected_features_held_out,
+            ]
+        )
 
         # 2.1: check patients
         self.assertListEqual(
-            features["PID"].tolist(),
-            expected_features["PID"].tolist(),
-            "PID lists do not match.",
+            features[PID_COL].tolist(),
+            expected_features[PID_COL].tolist(),
+            "subject_id lists do not match.",
         )
 
         # 2.2: check number of entries per patient
-        features_group = features.groupby("PID").size()
-        expected_group = expected_features.groupby("PID").size()
+        features_group = features.groupby(PID_COL).size()
+        expected_group = expected_features.groupby(PID_COL).size()
         pd.testing.assert_series_equal(
             features_group,
             expected_group,
             check_names=False,
-            obj="Event counts per PID do not match.",
+            obj="Event counts per subject_id do not match.",
         )
 
         # 2.3: checksum
@@ -85,17 +99,19 @@ class TestCreateData(TestMainScript):
                     checksum, expected_checksum, f"Checksum for {col} does not match."
                 )
             else:  # compare sets for every patient
-                for pid in features["PID"].unique():
-                    segment = set(features[features["PID"] == pid]["segment"].values)
+                for subject_id in features[PID_COL].unique():
+                    segment = set(
+                        features[features[PID_COL] == subject_id]["segment"].values
+                    )
                     expected_segment = set(
-                        expected_features[expected_features["PID"] == pid][
+                        expected_features[expected_features[PID_COL] == subject_id][
                             "segment"
                         ].values
                     )
                     self.assertEqual(
                         segment,
                         expected_segment,
-                        f"Segments for PID {pid} do not match.",
+                        f"Segments for subject_id {subject_id} do not match.",
                     )
 
         # 3: Check vocabulary
@@ -108,11 +124,11 @@ class TestCreateData(TestMainScript):
         self.assertEqual(len(vocab), len(expected_vocab))
 
         # 4: Check the tokenized files
-        for suffix in ["pretrain", "finetune", "test"]:
+        for suffix in ["train", "tuning", "held_out"]:
             pids_path = join(self.tokenized_dir, f"pids_{suffix}.pt")
             self.assertTrue(exists(pids_path))
-            pids = torch.load(pids_path, weights_only=True)
+            pids = torch.load(pids_path, weights_only=False)
             expected_pids = torch.load(
-                f"./tests/data/tokenized/pids_{suffix}.pt", weights_only=True
+                f"./tests/data/tokenized/pids_{suffix}.pt", weights_only=False
             )
             self.assertEqual(pids, expected_pids)

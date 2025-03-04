@@ -5,7 +5,13 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import (
+    PID_COL,
+    TIMESTAMP_COL,
+    ABSPOS_COL,
+    CONCEPT_COL,
+    VALUE_COL,
+)
 from corebehrt.functional.cohort_handling.matching import get_col_booleans
 from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,
@@ -45,10 +51,11 @@ class OutcomeMaker:
                 timestamps = self.match_patient_info(patients_info, matches)
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
-            timestamps["abspos"] = get_abspos_from_origin_point(
+            timestamps[ABSPOS_COL] = get_abspos_from_origin_point(
                 timestamps[TIMESTAMP_COL], self.origin_point
             )
-            timestamps["abspos"] = timestamps["abspos"].astype(int)
+            timestamps[ABSPOS_COL] = timestamps[ABSPOS_COL].astype(int)
+            timestamps[PID_COL] = timestamps[PID_COL].astype(int)
             outcome_tables[outcome] = timestamps
         return outcome_tables
 
@@ -68,7 +75,7 @@ class OutcomeMaker:
         """
         if "exclude" in attrs:
             concepts_plus = concepts_plus[
-                ~concepts_plus["CONCEPT"].isin(attrs["exclude"])
+                ~concepts_plus[CONCEPT_COL].isin(attrs["exclude"])
             ]
         col_booleans = get_col_booleans(
             concepts_plus,
@@ -80,4 +87,4 @@ class OutcomeMaker:
         mask = np.bitwise_and.reduce(col_booleans)
         if "negation" in attrs:
             mask = ~mask
-        return concepts_plus[mask].drop(columns=["ADMISSION_ID", "CONCEPT"])
+        return concepts_plus[mask].drop(columns=[CONCEPT_COL, VALUE_COL])
