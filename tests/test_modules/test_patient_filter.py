@@ -34,7 +34,7 @@ class TestFilterFunctions(unittest.TestCase):
         """Prepare test data in the required format."""
         self.patients_info = pd.DataFrame(
             {
-                PID_COL: ["p1", "p2", "p3", "p4", "p5"],
+                PID_COL: [1, 2, 3, 4, 5],
                 BIRTHDATE_COL: pd.to_datetime(
                     [
                         "1980-01-01",  # p1
@@ -69,7 +69,7 @@ class TestFilterFunctions(unittest.TestCase):
         # Outcomes: must have PID_COL and TIMESTAMP_COL
         self.outcomes = pd.DataFrame(
             {
-                PID_COL: ["p2", "p5"],
+                PID_COL: [2, 5],
                 TIMESTAMP_COL: pd.to_datetime(["2018-01-01", "2024-01-01"]),
             }
         )
@@ -88,7 +88,7 @@ class TestFilterFunctions(unittest.TestCase):
         """
         Filtering by a specific subset of PIDs should return only those rows.
         """
-        pids_to_keep = {"p1", "p3"}
+        pids_to_keep = {1, 3}
         result = filter_df_by_pids(self.patients_info, pids_to_keep)
         self.assertEqual(len(result), 2)
         self.assertSetEqual(set(result[PID_COL]), pids_to_keep)
@@ -116,10 +116,10 @@ class TestFilterFunctions(unittest.TestCase):
         """
         Exclude a subset of PIDs; others remain.
         """
-        pids_to_exclude = {"p1", "p3"}
+        pids_to_exclude = {1, 3}
         result = exclude_pids_from_df(self.patients_info, pids_to_exclude)
         self.assertEqual(len(result), 3)
-        self.assertSetEqual(set(result[PID_COL]), {"p2", "p4", "p5"})
+        self.assertSetEqual(set(result[PID_COL]), {2, 4, 5})
 
     def test_exclude_pids_from_df_nonexistent(self):
         """
@@ -153,7 +153,7 @@ class TestFilterFunctions(unittest.TestCase):
         """
         category_filters = {"category": {"include": ["B"]}}
         result = filter_by_categories(self.patients_info, category_filters)
-        self.assertSetEqual(set(result[PID_COL]), {"p2", "p3"})
+        self.assertSetEqual(set(result[PID_COL]), {2, 3})
 
     def test_filter_by_categories_exclude(self):
         """
@@ -161,7 +161,7 @@ class TestFilterFunctions(unittest.TestCase):
         """
         category_filters = {"category": {"exclude": ["A"]}}
         result = filter_by_categories(self.patients_info, category_filters)
-        self.assertSetEqual(set(result[PID_COL]), {"p2", "p3", "p5"})
+        self.assertSetEqual(set(result[PID_COL]), {2, 3, 5})
 
     def test_filter_by_categories_multiple(self):
         """
@@ -178,7 +178,7 @@ class TestFilterFunctions(unittest.TestCase):
         # p2 => category=B, region=X => gets excluded due to region
         # p3 => category=B, region=Y => included
         # Others => category != B => excluded anyway
-        self.assertSetEqual(set(filtered[PID_COL]), {"p3"})
+        self.assertSetEqual(set(filtered[PID_COL]), {3})
 
     # ----------------------------------------------------------------------
     # filter_by_age
@@ -195,21 +195,21 @@ class TestFilterFunctions(unittest.TestCase):
         min_age=30 => exclude patients younger than 30.
         """
         result = filter_by_age(self.patients_info, min_age=30)
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p2", "p5"})
+        self.assertSetEqual(set(result[PID_COL]), {1, 2, 5})
 
     def test_filter_by_age_max_only(self):
         """
         max_age=31 => exclude patients older than 31.
         """
         result = filter_by_age(self.patients_info, max_age=31)
-        self.assertSetEqual(set(result[PID_COL]), {"p2", "p3", "p4", "p5"})
+        self.assertSetEqual(set(result[PID_COL]), {2, 3, 4, 5})
 
     def test_filter_by_age_min_and_max(self):
         """
         min_age=20, max_age=40 => keep 20 <= age <= 40.
         """
         result = filter_by_age(self.patients_info, min_age=20, max_age=40)
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p2", "p5"})
+        self.assertSetEqual(set(result[PID_COL]), {1, 2, 5})
 
     def test_filter_by_age_negative_min(self):
         """
@@ -227,7 +227,7 @@ class TestFilterFunctions(unittest.TestCase):
         new_row = pd.DataFrame(
             [
                 {
-                    PID_COL: "p6",
+                    PID_COL: 6,
                     BIRTHDATE_COL: pd.to_datetime("2020-01-01"),
                     DEATHDATE_COL: pd.NaT,
                     TIMESTAMP_COL: pd.to_datetime("2020-01-01"),
@@ -239,11 +239,11 @@ class TestFilterFunctions(unittest.TestCase):
 
         # min_age=0 => p6 should remain
         res_min0 = filter_by_age(df, min_age=0)
-        self.assertIn("p6", res_min0[PID_COL].values)
+        self.assertIn(6, res_min0[PID_COL].values)
 
         # min_age=1 => p6 should be excluded
         res_min1 = filter_by_age(df, min_age=1)
-        self.assertNotIn("p6", res_min1[PID_COL].values)
+        self.assertNotIn(6, res_min1[PID_COL].values)
 
     # ----------------------------------------------------------------------
     # filter_by_death
@@ -261,7 +261,7 @@ class TestFilterFunctions(unittest.TestCase):
         #   * In your data: p5 has deathdate=2025-01-01, index=2025-01-02 => died before index
         #   * So p5 should be excluded if strictly "died before or on index".
         #   * Double-check if you want strict '>' or '>=': The code uses `>` => p5 is excluded
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p3", "p4"})
+        self.assertSetEqual(set(result[PID_COL]), {1, 3, 4})
 
     def test_filter_by_death_all_alive(self):
         """
@@ -294,7 +294,7 @@ class TestFilterFunctions(unittest.TestCase):
         # outcomes: p2 has outcome=2018, p2's index=2020 => outcome before index => exclude p2
         #           p5 has outcome=2024, p5's index=2025 => outcome before index => exclude p5
         # Remaining: p1, p3, p4
-        self.assertSetEqual(set(result[PID_COL]), {"p1", "p3", "p4"})
+        self.assertSetEqual(set(result[PID_COL]), {1, 3, 4})
 
     def test_filter_by_prior_outcomes_empty_outcomes(self):
         """
@@ -311,7 +311,7 @@ class TestFilterFunctions(unittest.TestCase):
         """
         outcomes = pd.DataFrame(
             {
-                PID_COL: ["p1", "p2"],
+                PID_COL: [1, 2],
                 TIMESTAMP_COL: pd.to_datetime(["2021-01-01", "2021-01-01"]),
             }
         )
@@ -325,7 +325,7 @@ class TestFilterFunctions(unittest.TestCase):
         """
         outcomes = pd.DataFrame(
             {
-                PID_COL: ["p1", "p2", "p3", "p4", "p5"],
+                PID_COL: [1, 2, 3, 4, 5],
                 TIMESTAMP_COL: pd.to_datetime("1979-01-01"),
             }
         )

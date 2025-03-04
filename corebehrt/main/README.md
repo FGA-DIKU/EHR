@@ -36,11 +36,35 @@ For example, you might have:
 
 These files feed into the **Create Data** pipeline, which merges, tokenizes, and structures the data for subsequent **Pretrain** and **Finetune** steps.
 
-## 2. Pretrain
+## 2. Prepare training data (pretrain)
+
+The `prepare_training_data` prepares data before training. For pre-training this includes truncating the data, cutoffs data (optional), excludes short sequences (optional), and then normalises segments. If the cutoff date is defined in the config file, then the data will be cutoff at that date. This can be used for a simulated prospective validation. A specific cohort created using `select_cohort` can also be used here, where splits from the cohort will be used if predefined_folds is set to True. 
+
+
+### Prepare data for pretrain configuration
+
+Edit the **prepare_pretrain configuration file**:
+
+```yaml
+data:
+  type: "pretrain"
+  predefined_splits: false # set to true if you want to use predefined splits for reproducibility. Expects a list (of length 1) of dicts with train, val created by select_cohort
+  val_ratio: 0.2 # only used if predefined_splits is false
+  truncation_len: 512
+  min_len: 2
+  
+  # Cutoff date for simulated prospective validation
+  cutoff_date:
+    year: 2020
+    month: 1
+    day: 1
+```
+
+## 3. Pretrain
 
 The `pretrain` script trains a base BERT model on the tokenized medical data.
 
-## 3. Create Outcome Definition
+## 4. Create Outcome Definition
 
 The `create_outcomes` script defines and extracts patient outcomes from structured data.
 
@@ -64,7 +88,7 @@ case_sensitive: false    # Case sensitivity for matching
 
 ---
 
-## 4. Define Study Cohort
+## 5. Define Study Cohort
 
 The `select_cohort` script selects patients based on predefined criteria.
 
@@ -115,7 +139,28 @@ index_date:
 
 ---
 
-## 5. Finetune Model
+## 6. Prepare training data (fine-tuning)
+
+The `prepare_training_data` script prepares data. Should be used to prepare data before fine-tuning. 
+This includes assigning binary outcomes, excluding short sequences, truncation, and normalising segments. 
+
+### Prepare data for finetune configuration
+
+Edit the **prepare_finetune configuration file**:
+
+```yaml
+data:
+  type: "finetune"
+  truncation_len: 512
+  min_len: 2 # 0 by default
+
+outcome: # we will convert outcomes to binary based on whether at least one outcome is in the follow up window
+  n_hours_censoring: -10 # censor time after index date (negative means before)
+  n_hours_start_follow_up: 1 # start follow up (considering outcomes) time after index date (negative means before)
+  n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)
+```
+
+## 7. Finetune Model
 
 The `finetune_cv` script trains a model using the selected cohort.
 
@@ -147,7 +192,7 @@ trainer_args:
 
 ---
 
-## 6. Out-of-Time Evaluation (Temporal Validation)
+## 8. Out-of-Time Evaluation (Temporal Validation)
 
 Our pipeline simulates a real-world deployment scenario by distinguishing the data available for training from that used during testing.
 

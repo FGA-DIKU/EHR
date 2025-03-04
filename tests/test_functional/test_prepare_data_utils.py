@@ -4,20 +4,21 @@ import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.functional.preparation.filter import filter_table_by_pids
+from corebehrt.constants.data import PID_COL, VALUE_COL
 
 
 class TestPrepDataUtilsFunctions(unittest.TestCase):
     def setUp(self):
         # Sample data for testing
         data = pd.DataFrame(
-            {"PID": [1, 2, 3, 4, 5], "Value": ["A", "B", "C", "D", "E"]}
+            {PID_COL: [1, 2, 3, 4, 5], VALUE_COL: ["A", "B", "C", "D", "E"]}
         )
         self.data_dd = dd.from_pandas(data, npartitions=1)
 
     def test_select_data_by_pids(self):
         selected_data = filter_table_by_pids(self.data_dd, [1, 2])
         self.assertEqual(len(selected_data), 2)
-        self.assertTrue(set(selected_data.compute()["PID"]).issubset({1, 2}))
+        self.assertTrue(set(selected_data.compute()[PID_COL]).issubset({1, 2}))
 
 
 if __name__ == "__main__":

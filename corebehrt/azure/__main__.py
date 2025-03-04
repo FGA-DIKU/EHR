@@ -68,6 +68,7 @@ if __name__ == "__main__":
             "create_outcomes",
             "select_cohort",
             "finetune_cv",
+            "prepare_training_data",
         },
         help="Job to run.",
     )
