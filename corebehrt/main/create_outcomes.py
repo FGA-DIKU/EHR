@@ -12,7 +12,7 @@ from corebehrt.main.helper.create_outcomes import process_data
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
 
-def main_data(config_path, run=None):
+def main_data(config_path):
     cfg = load_config(config_path)
 
     prepper = DirectoryPreparer(cfg)

@@ -20,7 +20,7 @@ from corebehrt.constants.paths import PREPARED_TRAIN_PATIENTS, PREPARED_VAL_PATI
 CONFIG_PATH = "./corebehrt/configs/pretrain.yaml"
 
 
-def main_train(config_path, run=None):
+def main_train(config_path):
     cfg = load_config(config_path)
 
     # Setup directories
@@ -75,7 +75,6 @@ def main_train(config_path, run=None):
         metrics=cfg.metrics,
         cfg=cfg,
         logger=logger,
-        run=run,
         last_epoch=epoch,
     )
     logger.info("Start training")

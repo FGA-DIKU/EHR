@@ -8,6 +8,7 @@ import importlib
 
 AZURE_CONFIG_FILE = "azure_job_config.yaml"
 AZURE_AVAILABLE = False
+CURRENT_RUN = None
 
 try:
     #
@@ -29,6 +30,14 @@ def is_azure_available() -> bool:
     """
     global AZURE_AVAILABLE
     return AZURE_AVAILABLE
+
+
+def get_current_run():
+    """
+    Get the current run object, if available.
+    """
+    global CURRENT_RUN
+    return CURRENT_RUN
 
 
 def check_azure() -> None:
@@ -150,10 +159,11 @@ def run_main(main: callable, inputs: dict, outputs: dict) -> None:
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
-
+    global CURRENT_RUN
     with log.start_run(log_system_metrics=args.pop("log_system_metrics", False)) as run:
+        CURRENT_RUN = run
         prepare_config(args, inputs, outputs)
-        main(AZURE_CONFIG_FILE, run)
+        main(AZURE_CONFIG_FILE)
 
 
 def prepare_config(args: dict, inputs: dict, outputs: dict) -> None:

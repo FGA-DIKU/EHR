@@ -22,7 +22,7 @@ from corebehrt.modules.setup.directory import DirectoryPreparer
 CONFIG_PATH = "./corebehrt/configs/finetune.yaml"
 
 
-def main_finetune(config_path, run=None):
+def main_finetune(config_path):
     cfg = load_config(config_path)
 
     # Setup directories
@@ -89,7 +89,6 @@ def main_finetune(config_path, run=None):
         train_val_data,
         folds,
         test_data,
-        run=run,
     )
 
     compute_and_save_scores_mean_std(n_folds, cfg.paths.model, mode="val")

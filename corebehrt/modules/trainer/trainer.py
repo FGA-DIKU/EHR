@@ -15,7 +15,6 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt import azure
-import time
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -37,7 +36,6 @@ class EHRTrainer:
         sampler: callable = None,
         cfg=None,
         logger=None,
-        run=None,
         accumulate_logits: bool = False,
         run_folder: str = None,
         last_epoch: int = None,
@@ -52,7 +50,6 @@ class EHRTrainer:
             metrics,
             sampler,
             cfg,
-            run,
             accumulate_logits,
             last_epoch,
         )
@@ -77,7 +74,6 @@ class EHRTrainer:
         metrics,
         sampler,
         cfg,
-        run,
         accumulate_logits,
         last_epoch,
     ):
@@ -95,10 +91,8 @@ class EHRTrainer:
         )
         self.sampler = sampler
         self.cfg = cfg
-        self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
-        self.mlflow_client = azure.ml_client()
 
     def _set_default_args(self, args):
         default_args = {
@@ -186,21 +180,16 @@ class EHRTrainer:
 
     def _accumulate_metrics(self, metrics, step_loss, epoch_loss, step):
         """Accumulates the metrics"""
-        timestamp = int(time.time() * 1000)
 
         epoch_loss.append(step_loss / self.accumulation_steps)
         metrics.append(
-            azure.metric(
-                "Train loss", step_loss / self.accumulation_steps, timestamp, step
-            )
+            azure.metric("Train loss", step_loss / self.accumulation_steps, step)
         )
 
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                metrics.append(
-                    azure.metric("Learning Rate", current_lr, timestamp, step)
-                )
+                metrics.append(azure.metric("Learning Rate", current_lr, step))
                 break
 
     def validate_and_log(
@@ -426,9 +415,7 @@ class EHRTrainer:
 
     def _log_batch(self, metrics: list):
         if azure.is_mlflow_available():
-            azure.log_batch(
-                client=self.mlflow_client, run_id=self.run.info.run_id, metrics=metrics
-            )
+            azure.log_batch(metrics=metrics)
         else:
             self.log(metrics)
 

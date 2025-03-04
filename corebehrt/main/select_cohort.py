@@ -18,7 +18,7 @@ from corebehrt.modules.setup.directory import DirectoryPreparer
 CONFIG_PATH = "./corebehrt/configs/select_cohort.yaml"
 
 
-def main_select_cohort(config_path: str, run=None):
+def main_select_cohort(config_path: str):
     """Execute cohort selection and save results."""
     cfg = load_config(config_path)
     DirectoryPreparer(cfg).setup_select_cohort()

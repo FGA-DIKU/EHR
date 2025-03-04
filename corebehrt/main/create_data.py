@@ -27,7 +27,7 @@ from corebehrt.main.helper.create_data import (
 CONFIG_PATH = "./corebehrt/configs/create_data.yaml"
 
 
-def main_data(config_path, run=None):
+def main_data(config_path):
     """
     Loads data
     Finds outcomes
