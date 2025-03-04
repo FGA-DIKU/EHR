@@ -4,7 +4,6 @@ from typing import Iterator, List, Tuple
 
 import dask.dataframe as dd
 import pandas as pd
-import pyarrow.parquet as pq
 
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, SCHEMA
 from corebehrt.constants.paths import (
