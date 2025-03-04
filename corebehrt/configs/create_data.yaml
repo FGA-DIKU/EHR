@@ -19,9 +19,6 @@ features:
 tokenizer:
   sep_tokens: true
   cls_token: true
-  cutoffs:
-   D: 3 # diagnosis
-   M: 4 # medication
 
 excluder:
   min_age: -1
