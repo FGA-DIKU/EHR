@@ -10,7 +10,7 @@ from .log import (
     log_batch,
     metric,
 )
-from .util import create_job, run_job, get_current_run
+from .util import create_job, run_job
 
 __all__ = [
     is_mlflow_available,
@@ -25,5 +25,4 @@ __all__ = [
     run_job,
     log_batch,
     metric,
-    get_current_run,
 ]

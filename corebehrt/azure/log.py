@@ -148,10 +148,10 @@ def log_batch(*args, **kwargs):
 
     :param metrics: metrics list
     """
-    global MLFLOW_CLIENT
-    run = get_current_run()
     if is_mlflow_available():
-        MLFLOW_CLIENT.log_batch(run_id=run.info.run_id, **kwargs)
+        global MLFLOW_CLIENT
+        run = get_current_run()
+        MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
 
 
 def metric(name, value, step):
