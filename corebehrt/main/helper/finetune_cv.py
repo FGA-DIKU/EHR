@@ -137,7 +137,7 @@ def finetune_fold(
 
     logger.info("Load best finetuned model to compute test scores")
     modelmanager_trained = ModelManager(cfg, fold)
-    checkpoint = modelmanager_trained.load_checkpoint()
+    checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
     trainer.model = model
     trainer.test_dataset = test_dataset

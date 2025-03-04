@@ -4,8 +4,8 @@ logging:
 
 paths:
   ### Inputs
-  patients_info: ./example_data/example_data_w_labs/patients_info.csv
-  initial_pids: ./outputs/tokenized/pids_finetune.pt # Initial patients to select from [list of pids] (optional)
+  patients_info: ./outputs/features/patient_info.parquet
+  initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv # Outcome
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   

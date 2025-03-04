@@ -25,7 +25,17 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.create_data
+
+            - name: main.create_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.create_data --config_path ./corebehrt/configs/create_data_wo_held_out.yaml
             
+            - name: main.prepare_training_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_pretrain.yaml
+
             - name: main.pretrain
               run: |
                 source .venv/bin/activate
@@ -40,6 +50,11 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.select_cohort
+
+            - name: main.prepare_training_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_finetune.yaml
 
             - name: main.finetune_cv
               run: |

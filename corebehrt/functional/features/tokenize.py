@@ -5,6 +5,10 @@ from corebehrt.constants.data import (
     SEP_TOKEN,
     SPECIAL_TOKEN_ABSPOS_ADJUSTMENT,
     UNKNOWN_TOKEN,
+    PID_COL,
+    CONCEPT_COL,
+    SEGMENT_COL,
+    ABSPOS_COL,
 )
 
 
@@ -22,33 +26,33 @@ def add_special_tokens_partition(
 
     if add_cls:
         # Find indices of the earliest event for each PID
-        cls_rows = df.groupby("PID").first()
+        cls_rows = df.groupby(PID_COL).first()
         # Create [CLS] rows
-        cls_rows["concept"] = CLS_TOKEN
+        cls_rows[CONCEPT_COL] = CLS_TOKEN
         cls_rows[
-            "abspos"
+            ABSPOS_COL
         ] -= SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position to come before earliest event
-        cls_rows["segment"] = 0
+        cls_rows[SEGMENT_COL] = 0
         special_rows.append(cls_rows)
 
     if add_sep:
         # Find segment changes within same PID
-        df = df.sort_values(["PID", "abspos", "segment"])
+        df = df.sort_values([PID_COL, ABSPOS_COL, SEGMENT_COL])
         pid_series = df.index.to_series()
-        segment_changes = (df["segment"] != df["segment"].shift(-1)) & (
+        segment_changes = (df[SEGMENT_COL] != df[SEGMENT_COL].shift(-1)) & (
             pid_series == pid_series.shift(-1)
         )
         sep_rows = df[segment_changes].copy()
-        sep_rows["concept"] = SEP_TOKEN
+        sep_rows[CONCEPT_COL] = SEP_TOKEN
         sep_rows[
-            "abspos"
+            ABSPOS_COL
         ] += SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position slightly
         special_rows.append(sep_rows)
 
     # Combine all rows and sort by 'PID' and 'abspos'
     if special_rows:
         df = pd.concat([df] + special_rows, ignore_index=False)
-        df = df.sort_values(["PID", "abspos"])
+        df = df.sort_values([PID_COL, ABSPOS_COL])
 
     return df
 

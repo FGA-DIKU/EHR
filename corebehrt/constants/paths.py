@@ -7,7 +7,9 @@ COHORT_CFG = "cohort_config.yaml"
 OUTCOMES_CFG = "outcomes_config.yaml"
 
 PRETRAIN_CFG = "pretrain_config.yaml"
+PREPARE_PRETRAIN_CFG = "prepare_pretrain.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
+PREPARE_FINETUNE_CFG = "prepare_finetune.yaml"
 
 ### Files ###
 VOCABULARY_FILE = "vocabulary.pt"
@@ -17,6 +19,8 @@ INDEX_DATES_FILE = "index_dates.csv"
 PID_FILE = "pids.pt"
 TEST_PIDS_FILE = "test_pids.pt"
 FOLDS_FILE = "folds.pt"
+PREPARED_TRAIN_PATIENTS = "patients_train.pt"
+PREPARED_VAL_PATIENTS = "patients_val.pt"
 
 ### File Patterns ###
 CONCEPT_FORMAT = "concept.*"

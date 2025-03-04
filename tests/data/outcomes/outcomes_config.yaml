@@ -1,29 +1,25 @@
-loader:
-  batchsize: 50
-  chunksize: 300
-  concepts:
-  - diagnose
 logging:
-  level: 20
-  path: ./.test_create_outcomes/logs
+  level: INFO
+  path: ./outputs/logs
 outcomes:
   TEST_CENSOR:
     case_sensitive: false
     match:
-    - - '10509'
+    - - M112
     match_how: startswith
     type:
-    - CONCEPT
+    - code
   TEST_OUTCOME:
     case_sensitive: true
     exclude:
-    - '157141000119108'
+    - D30
     match:
-    - - '157'
-    match_how: contains
+    - - D10
+      - D02
+    match_how: startswith
     type:
-    - CONCEPT
+    - code
 paths:
-  data: ./tests/data/raw
-  features: ./tests/data/features
-  outcomes: ./.test_create_outcomes/outputs/outcomes
+  data: ./example_data/raw
+  features: ./outputs/features/
+  outcomes: ./outputs/outcomes/

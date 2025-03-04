@@ -5,6 +5,10 @@ import pandas as pd
 
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
+from corebehrt.constants.data import (
+    PID_COL,
+    CONCEPT_COL,
+)
 
 
 class TestOutcomeMaker(unittest.TestCase):
@@ -12,14 +16,14 @@ class TestOutcomeMaker(unittest.TestCase):
         # Create a mock outcomes configuration for testing
         self.outcomes = {
             "TEST_OUTCOME": {
-                "type": ["CONCEPT"],
+                "type": ["code"],
                 "match": [["2"]],
                 "exclude": ["D23"],
                 "match_how": "contains",
                 "case_sensitive": True,
             },
             "TEST_CENSOR": {
-                "type": ["CONCEPT"],
+                "type": ["code"],
                 "match": [["D1"]],
                 "match_how": "startswith",
                 "case_sensitive": False,
@@ -32,24 +36,24 @@ class TestOutcomeMaker(unittest.TestCase):
         # Create a mock concepts_plus DataFrame
         self.concepts_plus = pd.DataFrame(
             {
-                "PID": ["P1", "P2", "P3", "P4"],
-                "CONCEPT": ["D13", "D2", "D23", "D2"],
-                "TIMESTAMP": [
+                PID_COL: [1, 2, 3, 4],
+                CONCEPT_COL: ["D13", "D2", "D23", "D2"],
+                "time": [
                     pd.Timestamp("2020-01-10"),
                     pd.Timestamp("2020-01-12"),
                     pd.Timestamp("2020-01-12"),
                     pd.Timestamp("2020-01-15"),
                 ],
-                "ADMISSION_ID": [1, 2, 3, 4],
+                "numeric_value": [1, 2, 3, 4],
             }
         )
 
         # Create a mock patients_info DataFrame
         self.patients_info = pd.DataFrame(
             {
-                "PID": ["P1", "P2", "P3", "P4"],
+                PID_COL: [1, 2, 3, 4],
                 "info1": [1, 2, 3, 4],
-                "TIMESTAMP": [
+                "time": [
                     pd.Timestamp("2020-01-10"),
                     pd.Timestamp("2020-01-12"),
                     pd.NaT,
@@ -59,7 +63,7 @@ class TestOutcomeMaker(unittest.TestCase):
         )
 
         # Patient set
-        self.patient_set = ["P1", "P2", "P3"]
+        self.patient_set = [1, 2, 3]
 
         # OutcomeMaker instance
         self.outcome_maker = OutcomeMaker(self.outcomes, self.origin_point)
@@ -72,15 +76,15 @@ class TestOutcomeMaker(unittest.TestCase):
         # Expected outcome for TEST_OUTCOME
         expected_outcome = pd.DataFrame(
             {
-                "PID": ["P2"],
-                "TIMESTAMP": [
+                PID_COL: [2],
+                "time": [
                     pd.Timestamp("2020-01-12"),
                 ],
             },
             index=[1],
         )
         expected_outcome["abspos"] = get_abspos_from_origin_point(
-            expected_outcome["TIMESTAMP"], self.origin_point
+            expected_outcome["time"], self.origin_point
         )
         expected_outcome["abspos"] = expected_outcome["abspos"].astype(int)
         # Check that the outcome table matches the expected result
@@ -90,10 +94,10 @@ class TestOutcomeMaker(unittest.TestCase):
 
         # Expected outcome for TEST_CENSOR
         expected_censor = pd.DataFrame(
-            {"PID": ["P1"], "TIMESTAMP": [pd.Timestamp("2020-01-10")]}, index=[0]
+            {PID_COL: [1], "time": [pd.Timestamp("2020-01-10")]}, index=[0]
         )
         expected_censor["abspos"] = get_abspos_from_origin_point(
-            expected_censor["TIMESTAMP"], self.origin_point
+            expected_censor["time"], self.origin_point
         )
         expected_censor["abspos"] = expected_censor["abspos"].astype(int)
         # Check that the censor table matches the expected result

@@ -16,8 +16,9 @@ import pyarrow.parquet as pq
 
 DEFAULT_N = 10_000
 DEFAULT_N_CONCEPTS = 20  # Number of concepts per patient
-DEFAULT_WRITE_DIR = "tmp/example_data_large"
+DEFAULT_WRITE_DIR = "tmp/example_data"
 DEFAULT_BATCH_SIZE = 200_000
+DEFAULT_INCLUDE_LABS = True
 
 
 def main_write(
@@ -48,11 +49,14 @@ def main_write(
             else None
         )
 
+        adm_concepts = generate_admissions_batch(patients_info, 5)
+
         # Dictionary mapping DataFrames to their output files
         data_mapping = {
             "patients_info": (patients_info, f"{write_dir}/patients_info.parquet"),
             "diagnose": (concepts, f"{write_dir}/concept.diagnose.parquet"),
             "medication": (concepts_m, f"{write_dir}/concept.medication.parquet"),
+            "admission": (adm_concepts, f"{write_dir}/concept.admission.parquet"),
         }
 
         if include_labs:
@@ -135,6 +139,75 @@ def generate_patients_info_batch(n_patients):
     )
 
 
+def generate_admissions_batch(patients_info, mean_records_per_pid):
+    # Generate random number of records for each patient using exponential distribution
+    n_records_per_patient = np.random.exponential(
+        scale=mean_records_per_pid, size=len(patients_info)
+    ).astype(int)
+    # Ensure at least 1 record per patient
+    n_records_per_patient = np.maximum(n_records_per_patient, 1)
+
+    # Create index array for repeating patient rows
+    repeated_indices = np.repeat(patients_info.index.values, n_records_per_patient)
+
+    # Repeat each row variable number of times
+    repeated_patients_info = patients_info.loc[repeated_indices].reset_index(drop=True)
+
+    # Convert BIRTHDATE and DEATHDATE to pandas datetime format
+    repeated_patients_info["BIRTHDATE"] = pd.to_datetime(
+        repeated_patients_info["BIRTHDATE"]
+    )
+    end_dates = pd.to_datetime(repeated_patients_info["DEATHDATE"]).fillna(
+        pd.Timestamp(year=2025, month=1, day=1)
+    )
+    # Convert birthdates and deathdates to Unix timestamps (seconds since epoch)
+    birthdates = repeated_patients_info["BIRTHDATE"].astype(np.int64) // 10**9
+    deathdates = end_dates.astype(np.int64) // 10**9
+    valid_mask = birthdates < deathdates
+    deathdates[~valid_mask] = birthdates[~valid_mask] + 1
+    # Generate random timestamps between birthdates and deathdates
+    random_timestamps = np.random.randint(birthdates, deathdates, dtype=np.int64)
+    timestamps = pd.to_datetime(random_timestamps, unit="s")
+    durations = np.random.randint(10, 700, size=len(timestamps))
+    end_timestamps = timestamps + pd.to_timedelta(durations, unit="d")
+
+    # Generate ADMISSION_ID column using vectorized operations
+    admission_ids = np.array(
+        [str(uuid.uuid4()) for _ in range(len(repeated_patients_info))]
+    )
+
+    # Create the DataFrame
+    admissions_data = pd.DataFrame(
+        {
+            "TIMESTAMP": timestamps,
+            "PID": repeated_patients_info["PID"],
+            "ADMISSION_ID": admission_ids,
+            "CONCEPT": ["ADMISSION"] * len(repeated_patients_info),
+        }
+    )
+
+    discharge_data = pd.DataFrame(
+        {
+            "TIMESTAMP": end_timestamps,
+            "PID": repeated_patients_info["PID"],
+            "ADMISSION_ID": admission_ids,
+            "CONCEPT": ["DISCHARGE"] * len(repeated_patients_info),
+        }
+    )
+
+    # Filter out rows where TIMESTAMP is less than BIRTHDATE
+    admissions_data = admissions_data[
+        admissions_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+    ]
+
+    discharge_data = discharge_data[
+        discharge_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+    ]
+
+    comb_admissions_data = pd.concat([admissions_data, discharge_data])
+    return comb_admissions_data
+
+
 def generate_concepts_batch(
     patients_info,
     mean_records_per_pid,
@@ -179,7 +252,7 @@ def generate_concepts_batch(
     # Generate CONCEPT column using vectorized operations
     concepts = np.random.randint(0, n_unique_concepts, size=len(repeated_patients_info))
     if prefix != "":
-        concepts = [f"{prefix}_{c}" for c in concepts]
+        concepts = [f"{prefix}{c}" for c in concepts]
     # Create the DataFrame
     concepts_data = pd.DataFrame(
         {
@@ -227,14 +300,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--include-labs",
         action="store_true",
-        default=True,
+        default=DEFAULT_INCLUDE_LABS,
         help="Include lab test data generation (default: True)",
-    )
-    parser.add_argument(
-        "--no-labs",
-        action="store_false",
-        dest="include_labs",
-        help="Exclude lab test data generation",
     )
 
     args = parser.parse_args()

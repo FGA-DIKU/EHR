@@ -3,18 +3,17 @@ import os
 from datetime import datetime
 from os.path import join
 from typing import Tuple
+from tqdm import tqdm
+from corebehrt.modules.monitoring.logger import TqdmToLogger
 
-import dask.dataframe as dd
 import pandas as pd
 import torch
-from dask.diagnostics import ProgressBar
 
 from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
 from corebehrt.constants.paths import (
     INDEX_DATES_FILE,
     OUTCOMES_FILE,
     PID_FILE,
-    PROCESSED_DATA_DIR,
 )
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
@@ -25,13 +24,14 @@ from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
 )
+from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.functional.preparation.truncate import (
     truncate_patient,
     truncate_patient_df,
 )
 from corebehrt.functional.preparation.utils import (
     get_background_length,
-    get_background_length_dd,
+    get_background_length_pd,
     get_non_priority_tokens,
 )
 from corebehrt.functional.utils.time import get_abspos_from_origin_point
@@ -46,12 +46,12 @@ logger = logging.getLogger(__name__)  # Get the logger for this module
 class DatasetPreparer:
     def __init__(self, cfg: Config):
         self.cfg = cfg
-        self.save_dir = cfg.paths.model
-        self.processed_dir = join(self.save_dir, PROCESSED_DATA_DIR)
+        self.processed_dir = cfg.paths.prepared_data
 
     def prepare_finetune_data(self) -> PatientDataset:
-        data_cfg = self.cfg.data
+        outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
+        data_cfg = self.cfg.data
 
         pids = self.load_cohort(paths_cfg)
 
@@ -59,6 +59,7 @@ class DatasetPreparer:
         index_dates = pd.read_csv(
             join(paths_cfg.cohort, INDEX_DATES_FILE), parse_dates=[TIMESTAMP_COL]
         )
+        index_dates[PID_COL] = index_dates[PID_COL].astype(int)
         origin_point = load_config(
             join(paths_cfg.features, "data_config.yaml")
         ).features.origin_point
@@ -67,33 +68,36 @@ class DatasetPreparer:
         )
 
         # Load tokenized data
-        with ProgressBar(dt=1):
-            df = dd.read_parquet(
-                join(
-                    paths_cfg.tokenized,
-                    "features_finetune",
-                )
-            )
+        loader = ShardLoader(
+            data_dir=paths_cfg.tokenized,
+            splits=["features_tuning"],
+            patient_info_path=None,
+        )
+        patient_list = []
+        for df, _ in tqdm(
+            loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
+        ):
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             # !TODO: if index date is the same for all patients, then we can censor here.
-            df = df.compute()
-        self._check_sorted(df)
-        patient_list = dataframe_to_patient_list(df)
+            self._check_sorted(df)
+            batch_patient_list = dataframe_to_patient_list(df)
+            patient_list.extend(batch_patient_list)
         logger.info(f"Number of patients: {len(patient_list)}")
-        vocab = load_vocabulary(paths_cfg.tokenized)
         data = PatientDataset(patients=patient_list)
+        vocab = load_vocabulary(paths_cfg.tokenized)
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
+        outcomes[PID_COL] = outcomes[PID_COL].astype(int)
         outcomes = filter_df_by_pids(outcomes, data.get_pids())
         logger.info("Handling outcomes")
         # Outcome Handler now only needs to do 1 thing: if outcome is in follow up window 1 else 0
         binary_outcomes = get_binary_outcomes(
             index_dates,
             outcomes,
-            data_cfg.get("n_hours_start_follow_up", 0),
-            data_cfg.get("n_hours_end_follow_up", None),
+            outcome_cfg.get("n_hours_start_follow_up", 0),
+            outcome_cfg.get("n_hours_end_follow_up", None),
         )
 
         logger.info("Assigning outcomes")
@@ -141,10 +145,9 @@ class DatasetPreparer:
         # save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
-            outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
-            index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
+        data.save(self.processed_dir)
+        outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
+        index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
 
         return data
 
@@ -155,14 +158,15 @@ class DatasetPreparer:
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
         vocab = load_vocabulary(paths_cfg.tokenized)
-
-        with ProgressBar(dt=1):
-            df = dd.read_parquet(
-                join(
-                    paths_cfg.tokenized,
-                    "features_pretrain",
-                )
-            )
+        loader = ShardLoader(
+            data_dir=paths_cfg.tokenized,
+            splits=["features_train"],
+            patient_info_path=None,
+        )
+        patient_list = []
+        for df, _ in tqdm(
+            loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
+        ):
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
@@ -170,9 +174,10 @@ class DatasetPreparer:
             if data_cfg.get("cutoff_date"):
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
             df = df.reset_index(drop=False)
-            df = df.compute()
-        self._check_sorted(df)
-        patient_list = dataframe_to_patient_list(df)
+            self._check_sorted(df)
+            batch_patient_list = dataframe_to_patient_list(df)
+            patient_list.extend(batch_patient_list)
+
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
 
@@ -192,25 +197,23 @@ class DatasetPreparer:
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        if self.cfg.get("save_processed_data", False):
-            data.save(self.processed_dir)
+        data.save(self.processed_dir)
         return data
 
     @staticmethod
     def _truncate(
-        df: dd.DataFrame, vocab: dict, truncation_length: int
-    ) -> dd.DataFrame:
+        df: pd.DataFrame, vocab: dict, truncation_length: int
+    ) -> pd.DataFrame:
         """
         Truncate the dataframe to the truncation length.
         """
-        background_length = get_background_length_dd(df, vocab)
+        background_length = get_background_length_pd(df, vocab)
 
         df = df.groupby(PID_COL, group_keys=False).apply(
             truncate_patient_df,
             max_len=truncation_length,
             background_length=background_length,
             sep_token=vocab["[SEP]"],
-            meta=df._meta,
         )
         return df
 
@@ -231,7 +234,7 @@ class DatasetPreparer:
             if not patient_df[ABSPOS_COL].is_monotonic_increasing:
                 raise ValueError(f"Patient {pid} has unsorted abspos values")
 
-    def _cutoff_data(self, df: dd.DataFrame, cutoff_date: dict) -> dd.DataFrame:
+    def _cutoff_data(self, df: pd.DataFrame, cutoff_date: dict) -> pd.DataFrame:
         """Cutoff data after a given date."""
         origin_point = load_config(
             join(self.cfg.paths.features, "data_config.yaml")

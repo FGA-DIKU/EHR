@@ -1,17 +1,17 @@
 import unittest
 
-import dask.dataframe as dd
 import pandas as pd
 
 # Assuming these functions are in the same module, or adjust the import accordingly:
 from corebehrt.functional.preparation.utils import (
     get_background_length,
-    get_background_length_dd,
+    get_background_length_pd,
     get_background_tokens,
     get_non_priority_tokens,
     subset_patient_data,
 )
 from corebehrt.modules.preparation.dataset import PatientData
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 
 class TestBackgroundFunctions(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestBackgroundFunctions(unittest.TestCase):
         # A list of patient objects
         self.patients = [
             PatientData(
-                pid="pid1",
+                pid=1,
                 concepts=[0, 2, 3],  # tokens found in vocab
                 abspos=[1, 2, 3],
                 segments=[0, 0, 0],
@@ -41,7 +41,7 @@ class TestBackgroundFunctions(unittest.TestCase):
                 outcome=0,
             ),
             PatientData(
-                pid="pid2",
+                pid=2,
                 concepts=[1, 4],  # tokens found in vocab
                 abspos=[4, 5],
                 segments=[1, 1],
@@ -70,27 +70,25 @@ class TestBackgroundFunctions(unittest.TestCase):
     # ---------------------------------------------------------------------
     # 2) get_background_length_dd
     # ---------------------------------------------------------------------
-    def test_get_background_length_dd_normal(self):
+    def test_get_background_length_pd_normal(self):
         # Construct a dask dataframe from a small pandas frame
         # This must have at least a "concept" column to match your usage
         pdf = pd.DataFrame(
             {
-                "pid": ["pidA"] * 4,
-                "concept": [0, 2, 3, 5],  # a few tokens
+                PID_COL: [1] * 4,
+                CONCEPT_COL: [0, 2, 3, 5],  # a few tokens
             }
-        )
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        ).set_index(PID_COL)
         # Intersection with background tokens = {0, 3}
         # => 2 + 2 => 4
-        length = get_background_length_dd(ddf, self.vocab)
+        length = get_background_length_pd(pdf, self.vocab)
         self.assertEqual(length, 4)
 
-    def test_get_background_length_dd_empty_df(self):
+    def test_get_background_length_pd_empty_df(self):
         # If the DataFrame is empty, function should return 2 (CLS + SEP)
-        pdf = pd.DataFrame(columns=["pid", "concept"])
-        ddf = dd.from_pandas(pdf, npartitions=1).set_index("pid")
+        pdf = pd.DataFrame(columns=[PID_COL, CONCEPT_COL]).set_index(PID_COL)
 
-        length = get_background_length_dd(ddf, self.vocab)
+        length = get_background_length_pd(pdf, self.vocab)
         self.assertEqual(length, 2)
 
     # ---------------------------------------------------------------------
@@ -140,7 +138,7 @@ class TestBackgroundFunctions(unittest.TestCase):
         self.assertEqual(new_patient.ages, [30, 32])
         # Non-list attribute remains
         self.assertEqual(new_patient.outcome, 0)
-        self.assertEqual(new_patient.pid, "pid1")
+        self.assertEqual(new_patient.pid, 1)
 
     def test_subset_patient_data_full_indices(self):
         patient = self.patients[0]
@@ -163,7 +161,7 @@ class TestBackgroundFunctions(unittest.TestCase):
         self.assertEqual(new_patient.ages, [])
         # Non-list fields unchanged
         self.assertEqual(new_patient.outcome, 0)
-        self.assertEqual(new_patient.pid, "pid1")
+        self.assertEqual(new_patient.pid, 1)
 
 
 if __name__ == "__main__":
