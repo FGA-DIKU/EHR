@@ -1,12 +1,18 @@
 from contextlib import contextmanager
+from corebehrt.azure.util import get_current_run
+import time
 
 MLFLOW_AVAILABLE = False
+MLFLOW_CLIENT = None
 
 try:
     # Try to import mlflow and set availability flag
     import mlflow
+    from mlflow.tracking import MlflowClient
+    from mlflow.entities import Metric
 
     MLFLOW_AVAILABLE = True
+    MLFLOW_CLIENT = MlflowClient()
 except:
     pass
 
@@ -65,14 +71,6 @@ def setup_metrics_dir(name: str):
 # Simple wrapper functions below. Review full args at:
 # https://www.mlflow.org/docs/latest/python_api/mlflow.html
 #
-
-
-def autolog(*args, **kwargs):
-    """
-    Enables mlflow autologging (if mlflow is available)
-    """
-    if is_mlflow_available():
-        mlflow.autolog(*args, **kwargs)
 
 
 def log_metric(*args, **kwargs):
@@ -142,3 +140,23 @@ def log_figure(*args, **kwargs):
     """
     if is_mlflow_available():
         mlflow.log_figure(*args, **kwargs)
+
+
+def log_batch(*args, **kwargs):
+    """
+    Log a batch of metrics
+
+    :param metrics: metrics list
+    """
+    if is_mlflow_available():
+        global MLFLOW_CLIENT
+        run = get_current_run()
+        MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
+
+
+def metric(name, value, step):
+    if is_mlflow_available():
+        timestamp = int(time.time() * 1000)
+        return Metric(name, value, timestamp, step)
+    else:
+        return (name, value)

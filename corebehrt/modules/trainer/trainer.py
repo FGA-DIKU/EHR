@@ -36,12 +36,10 @@ class EHRTrainer:
         sampler: callable = None,
         cfg=None,
         logger=None,
-        run=None,
         accumulate_logits: bool = False,
         run_folder: str = None,
         last_epoch: int = None,
     ):
-
         self._initialize_basic_attributes(
             model,
             train_dataset,
@@ -52,7 +50,6 @@ class EHRTrainer:
             metrics,
             sampler,
             cfg,
-            run,
             accumulate_logits,
             last_epoch,
         )
@@ -77,7 +74,6 @@ class EHRTrainer:
         metrics,
         sampler,
         cfg,
-        run,
         accumulate_logits,
         last_epoch,
     ):
@@ -95,12 +91,8 @@ class EHRTrainer:
         )
         self.sampler = sampler
         self.cfg = cfg
-        self.run = run
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
-
-        # Enable auto-logging (if available)
-        azure.autolog()
 
     def _set_default_args(self, args):
         default_args = {
@@ -147,13 +139,15 @@ class EHRTrainer:
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
         step_loss = 0
+        metrics = []
         for i, batch in enumerate(train_loop):
             step_loss += self._train_step(batch).item()
             if (i + 1) % self.accumulation_steps == 0:
                 self._clip_gradients()
-                self._update_and_log(step_loss, train_loop, epoch_loss)
+                self._update()
+                self._accumulate_metrics(metrics, step_loss, epoch_loss, step=i)
                 step_loss = 0
-
+        self._log_batch(metrics)
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
         del train_loop
@@ -177,21 +171,26 @@ class EHRTrainer:
 
         return unscaled_loss
 
-    def _update_and_log(self, step_loss, train_loop, epoch_loss):
-        """Updates the model and logs the loss"""
+    def _update(self):
+        """Updates the model (optimizer and scheduler)"""
         self.optimizer.step()
 
         if self.scheduler is not None:
             self.scheduler.step()
-        train_loop.set_postfix(loss=step_loss / self.accumulation_steps)
+
+    def _accumulate_metrics(self, metrics, step_loss, epoch_loss, step):
+        """Accumulates the metrics"""
+
         epoch_loss.append(step_loss / self.accumulation_steps)
+        metrics.append(
+            azure.metric("Train loss", step_loss / self.accumulation_steps, step)
+        )
 
         if self.args["info"]:
             for param_group in self.optimizer.param_groups:
                 current_lr = param_group["lr"]
-                self.run_log(name="Learning Rate", value=current_lr)
+                metrics.append(azure.metric("Learning Rate", current_lr, step))
                 break
-        self.run_log(name="Train loss", value=step_loss / self.accumulation_steps)
 
     def validate_and_log(
         self, epoch: int, epoch_loss: float, train_loop: DataLoader
@@ -413,6 +412,12 @@ class EHRTrainer:
             azure.log_metric(name, value, step=step)
         else:
             self.log(f"{name}: {value}")
+
+    def _log_batch(self, metrics: list):
+        if azure.is_mlflow_available():
+            azure.log_batch(metrics=metrics)
+        else:
+            self.log(metrics)
 
     def save_setup(self) -> None:
         """Saves the config and model config"""
