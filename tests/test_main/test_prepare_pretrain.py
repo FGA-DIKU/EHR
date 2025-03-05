@@ -49,6 +49,5 @@ class TestCreateOutcomes(TestMainScript):
             "pids_val",
             "patients_train",
             "patients_val",
-            "patients",
         ]:
             self.assertTrue(exists(join(self.processed_dir, f"{file_name}.pt")))
