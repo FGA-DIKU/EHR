@@ -58,19 +58,15 @@ class EhrEmbeddings(nn.Module):
     def forward(
         self,
         input_ids: torch.LongTensor,  # concepts
-        token_type_ids: torch.LongTensor = None,  # segments
-        position_ids: Dict[str, torch.Tensor] = None,  # age and abspos
-        inputs_embeds: torch.Tensor = None,
-        **kwargs
+        segments: torch.LongTensor,
+        age: torch.Tensor,
+        abspos: torch.Tensor,
     ) -> torch.Tensor:
-        if inputs_embeds is not None:
-            return inputs_embeds
-
         embeddings = self.concept_embeddings(input_ids)
 
-        embeddings += self.segment_embeddings(token_type_ids)
-        embeddings += self.age_embeddings(position_ids["age"])
-        embeddings += self.abspos_embeddings(position_ids["abspos"])
+        embeddings += self.segment_embeddings(segments)
+        embeddings += self.age_embeddings(age)
+        embeddings += self.abspos_embeddings(abspos)
 
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
