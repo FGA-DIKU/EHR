@@ -43,7 +43,10 @@ def main_select_cohort(config_path: str):
 
     if len(train_val_pids) > 0:
         folds = create_folds(
-            train_val_pids, cfg.get("cv_folds", 1), cfg.get("seed", 42)
+            train_val_pids,
+            cfg.get("cv_folds", 1),
+            cfg.get("seed", 42),
+            cfg.get("val_ratio", 0.1),
         )
         torch.save(folds, join(path_cfg.cohort, FOLDS_FILE))
 
