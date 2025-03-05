@@ -1,5 +1,3 @@
-from typing import Dict
-
 import torch
 import torch.nn as nn
 
@@ -35,7 +33,6 @@ class EhrEmbeddings(nn.Module):
         type_vocab_size: int,
         embedding_dropout: float,
         pad_token_id: int = 0,
-        **kwargs,
     ):
         super().__init__()
         self.LayerNorm = nn.LayerNorm(hidden_size)
@@ -65,7 +62,10 @@ class EhrEmbeddings(nn.Module):
         segments: torch.LongTensor,
         age: torch.Tensor,
         abspos: torch.Tensor,
+        inputs_embeds: torch.Tensor = None,
     ) -> torch.Tensor:
+        if inputs_embeds is not None:
+            return inputs_embeds
         embeddings = self.concept_embeddings(input_ids)
 
         embeddings += self.segment_embeddings(segments)
