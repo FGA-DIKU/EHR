@@ -59,9 +59,9 @@ class EhrEmbeddings(nn.Module):
     def forward(
         self,
         input_ids: torch.LongTensor,  # concepts
-        segments: torch.LongTensor,
-        age: torch.Tensor,
-        abspos: torch.Tensor,
+        segments: torch.LongTensor = None,
+        age: torch.Tensor = None,
+        abspos: torch.Tensor = None,
         inputs_embeds: torch.Tensor = None,
     ) -> torch.Tensor:
         if inputs_embeds is not None:
