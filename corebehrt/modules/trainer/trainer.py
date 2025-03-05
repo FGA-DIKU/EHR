@@ -346,7 +346,9 @@ class EHRTrainer:
                 loss += outputs.loss.item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
+                    logits_list.append(
+                        outputs.logits.float().cpu()
+                    )  # .float to convert to float32 (from bfloat16)
                     targets_list.append(batch["target"].cpu())
                 else:
                     for name, func in self.metrics.items():
