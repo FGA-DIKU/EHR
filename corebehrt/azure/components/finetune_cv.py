@@ -3,6 +3,7 @@ from corebehrt.azure import util
 INPUTS = {
     "prepared_data": {"type": "uri_folder"},
     "test_pids": {"type": "uri_file", "optional": True},
+    "cohort": {"type": "uri_folder", "optional": True},
     "pretrain_model": {
         "type": "uri_folder",
         "optional": True,
