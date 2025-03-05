@@ -34,13 +34,15 @@ class EhrEmbeddings(nn.Module):
         hidden_size: int,
         type_vocab_size: int,
         embedding_dropout: float,
+        pad_token_id: int = 0,
     ):
         super().__init__()
         self.LayerNorm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(embedding_dropout)
 
         # Initalize embeddings
-        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
+        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size, padding_idx=pad_token_id)
+        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size, padding_idx=pad_token_id)
         self.age_embeddings = Time2Vec(
             hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
@@ -53,7 +55,6 @@ class EhrEmbeddings(nn.Module):
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
-        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
 
     def forward(
         self,

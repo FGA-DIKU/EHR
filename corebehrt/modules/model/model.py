@@ -14,6 +14,7 @@ class BertEHREncoder(ModernBertModel):
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
             embedding_dropout=config.embedding_dropout,
+            pad_token_id=config.pad_token_id,
         )
 
     def forward(self, batch: dict):
