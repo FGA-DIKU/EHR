@@ -151,6 +151,9 @@ class MLMDataset(Dataset):
         patient = self.patients[index]
         concepts = torch.tensor(patient.concepts, dtype=torch.long)
         masked_concepts, target = self.masker.mask_patient_concepts(concepts)
+        attention_mask = torch.ones(
+            len(patient.concepts), dtype=torch.bool
+        )  # Require attention mask for bi-gru head
 
         sample = {
             "concept": masked_concepts,
@@ -158,6 +161,7 @@ class MLMDataset(Dataset):
             "abspos": torch.tensor(patient.abspos, dtype=torch.float),
             "segment": torch.tensor(patient.segments, dtype=torch.long),
             "age": torch.tensor(patient.ages, dtype=torch.float),
+            "attention_mask": attention_mask,
         }
 
         return sample
@@ -178,7 +182,7 @@ class BinaryOutcomeDataset(Dataset):
     def __getitem__(self, index: int) -> dict:
         patient = self.patients[index]
         attention_mask = torch.ones(
-            len(patient.concepts), dtype=torch.long
+            len(patient.concepts), dtype=torch.bool
         )  # Require attention mask for bi-gru head
         sample = {
             "concept": torch.tensor(patient.concepts, dtype=torch.long),

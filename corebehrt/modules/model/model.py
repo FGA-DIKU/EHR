@@ -19,7 +19,6 @@ class BertEHREncoder(ModernBertModel):
     def forward(self, batch: dict):
         input_ids = batch["concept"]
         token_type_ids = batch["segment"]
-        attention_mask = torch.ones_like(input_ids)
         position_ids = {key: batch[key] for key in ["age", "abspos"]}
 
         inputs_embeds = self.embeddings(
@@ -29,7 +28,7 @@ class BertEHREncoder(ModernBertModel):
         )
 
         return super().forward(
-            inputs_embeds=inputs_embeds, attention_mask=attention_mask
+            inputs_embeds=inputs_embeds, attention_mask=batch["attention_mask"]
         )
 
 
