@@ -5,7 +5,6 @@ logging:
 paths:
 ## INPUTS
   prepared_data: ./outputs/pretraining/processed_data/
-  tokenized: ./outputs/tokenized  
   # restart_model: ... # Use for restarting from checkpoint
 
 ## OUTPUTS

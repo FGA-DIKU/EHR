@@ -60,6 +60,7 @@ class EHRTrainer:
         self.metrics = (
             {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
         )
+        self.scaler = torch.GradScaler()
 
         self._initialize_early_stopping()
 
@@ -156,6 +157,7 @@ class EHRTrainer:
     def _clip_gradients(self):
         # Then clip them if needed
         if self.cfg.trainer_args.get("gradient_clip", False):
+            self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
                 max_norm=self.cfg.trainer_args.gradient_clip.get("max_norm", 1.0),
@@ -165,15 +167,17 @@ class EHRTrainer:
         self.optimizer.zero_grad()
         self.batch_to_device(batch)
 
-        outputs = self.model(batch)
-        unscaled_loss = outputs.loss
-        unscaled_loss.backward()
+        with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+            loss = self.model(batch).loss
+        self.scaler.scale(loss).backward()
 
-        return unscaled_loss
+        return loss
 
     def _update(self):
         """Updates the model (optimizer and scheduler)"""
-        self.optimizer.step()
+        """Updates the model and logs the loss"""
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
 
         if self.scheduler is not None:
             self.scheduler.step()
@@ -337,11 +341,14 @@ class EHRTrainer:
         with torch.no_grad():
             for batch in loop:
                 self.batch_to_device(batch)
-                outputs = self.model(batch)
+                with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                    outputs = self.model(batch)
                 loss += outputs.loss.item()
 
                 if self.accumulate_logits:
-                    logits_list.append(outputs.logits.cpu())
+                    logits_list.append(
+                        outputs.logits.float().cpu()
+                    )  # .float to convert to float32 (from bfloat16)
                     targets_list.append(batch["target"].cpu())
                 else:
                     for name, func in self.metrics.items():
