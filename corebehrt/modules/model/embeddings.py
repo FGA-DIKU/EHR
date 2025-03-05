@@ -42,7 +42,7 @@ class EhrEmbeddings(nn.Module):
 
         # Initalize embeddings
         self.concept_embeddings = nn.Embedding(vocab_size, hidden_size, padding_idx=pad_token_id)
-        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size, padding_idx=pad_token_id)
+        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
         self.age_embeddings = Time2Vec(
             hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
