@@ -151,7 +151,7 @@ class DatasetPreparer:
 
         return data
 
-    def prepare_pretrain_data(self) -> Tuple[PatientDataset, dict]:
+    def prepare_pretrain_data(self, save_data=False) -> Tuple[PatientDataset, dict]:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
@@ -197,7 +197,8 @@ class DatasetPreparer:
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
         save_vocabulary(vocab, self.processed_dir)
-        data.save(self.processed_dir)
+        if save_data:
+            data.save(self.processed_dir)
         return data
 
     @staticmethod
