@@ -14,18 +14,17 @@ class BertEHREncoder(ModernBertModel):
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
             embedding_dropout=config.embedding_dropout,
+            pad_token_id=config.pad_token_id,
         )
 
     def forward(self, batch: dict):
-        input_ids = batch["concept"]
-        token_type_ids = batch["segment"]
-        attention_mask = torch.ones_like(input_ids)
-        position_ids = {key: batch[key] for key in ["age", "abspos"]}
+        attention_mask = torch.ones_like(batch["concept"])
 
         inputs_embeds = self.embeddings(
-            input_ids=input_ids,
-            token_type_ids=token_type_ids,
-            position_ids=position_ids,
+            input_ids=batch["concept"],
+            segments=batch["segment"],
+            age=batch["age"],
+            abspos=batch["abspos"],
         )
 
         return super().forward(

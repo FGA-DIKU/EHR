@@ -1,5 +1,3 @@
-from typing import Dict
-
 import torch
 import torch.nn as nn
 
@@ -34,13 +32,17 @@ class EhrEmbeddings(nn.Module):
         hidden_size: int,
         type_vocab_size: int,
         embedding_dropout: float,
+        pad_token_id: int = 0,
     ):
         super().__init__()
         self.LayerNorm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(embedding_dropout)
 
         # Initalize embeddings
-        self.concept_embeddings = nn.Embedding(vocab_size, hidden_size)
+        self.concept_embeddings = nn.Embedding(
+            vocab_size, hidden_size, padding_idx=pad_token_id
+        )
+        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
         self.age_embeddings = Time2Vec(
             hidden_size,
             init_scale=TIME2VEC_AGE_MULTIPLIER,
@@ -53,24 +55,22 @@ class EhrEmbeddings(nn.Module):
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
-        self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
 
     def forward(
         self,
         input_ids: torch.LongTensor,  # concepts
-        token_type_ids: torch.LongTensor = None,  # segments
-        position_ids: Dict[str, torch.Tensor] = None,  # age and abspos
+        segments: torch.LongTensor = None,
+        age: torch.Tensor = None,
+        abspos: torch.Tensor = None,
         inputs_embeds: torch.Tensor = None,
-        **kwargs
     ) -> torch.Tensor:
         if inputs_embeds is not None:
             return inputs_embeds
-
         embeddings = self.concept_embeddings(input_ids)
 
-        embeddings += self.segment_embeddings(token_type_ids)
-        embeddings += self.age_embeddings(position_ids["age"])
-        embeddings += self.abspos_embeddings(position_ids["abspos"])
+        embeddings += self.segment_embeddings(segments)
+        embeddings += self.age_embeddings(age)
+        embeddings += self.abspos_embeddings(abspos)
 
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
