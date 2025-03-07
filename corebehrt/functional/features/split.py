@@ -127,7 +127,9 @@ def split_into_test_and_train_val_pids(pids: list, test_split: float):
     return test_pids, train_val_pids
 
 
-def create_folds(pids: list, num_folds: int, seed: int = 42) -> List[Dict[str, list]]:
+def create_folds(
+    pids: list, num_folds: int, seed: int = 42, val_ratio: float = 0.8
+) -> List[Dict[str, list]]:
     """
     Create k folds from a list of PIDs.
     example output:
@@ -143,6 +145,7 @@ def create_folds(pids: list, num_folds: int, seed: int = 42) -> List[Dict[str, l
         pids (list): List of patient IDs.
         num_folds (int): Number of folds.
         seed (int): Random seed for reproducibility.
+        val_ratio (float): Fraction of patients to use for validation set if num_folds=1.
 
     Returns:
         list: List of folds with train and val PIDs.
@@ -151,11 +154,17 @@ def create_folds(pids: list, num_folds: int, seed: int = 42) -> List[Dict[str, l
     pids_array = np.array(pids)
     rng.shuffle(pids_array)  # Shuffle before splitting
 
-    kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
-    folds = [{TRAIN_KEY: [], VAL_KEY: []} for _ in range(num_folds)]
+    if num_folds == 1:
+        split_idx = int(len(pids_array) * (1 - val_ratio))
+        train_pids = pids_array[:split_idx].tolist()
+        val_pids = pids_array[split_idx:].tolist()
+        folds = [{TRAIN_KEY: train_pids, VAL_KEY: val_pids}]
+    else:
+        kf = KFold(n_splits=num_folds, shuffle=True, random_state=seed)
+        folds = [{TRAIN_KEY: [], VAL_KEY: []} for _ in range(num_folds)]
 
-    for i, (train_idx, val_idx) in enumerate(kf.split(pids_array)):
-        folds[i][TRAIN_KEY] = [pids_array[idx] for idx in train_idx]
-        folds[i][VAL_KEY] = [pids_array[idx] for idx in val_idx]
+        for i, (train_idx, val_idx) in enumerate(kf.split(pids_array)):
+            folds[i][TRAIN_KEY] = [pids_array[idx] for idx in train_idx]
+            folds[i][VAL_KEY] = [pids_array[idx] for idx in val_idx]
 
     return folds

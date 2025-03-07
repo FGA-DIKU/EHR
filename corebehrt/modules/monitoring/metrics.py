@@ -72,14 +72,14 @@ class BaseMetric:
         probas = torch.sigmoid(outputs.logits)
         return probas.cpu(), batch["target"].cpu()
 
-    def _return_predictions_and_targrets(self, outputs, batch):
+    def _return_predictions_and_targets(self, outputs, batch):
         probas, targets = self._return_probas_and_targrets(outputs, batch)
         predictions = (probas > self.threshold).long().view(-1)
         return predictions, targets
 
     def _return_confusion_matrix(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
-        return confusion_matrix(targets, predictions, labels=[True, False]).ravel()
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
+        return confusion_matrix(targets, predictions, labels=[0, 1]).ravel()
 
     def __call__(self, outputs, batch):
         raise NotImplementedError
@@ -87,7 +87,7 @@ class BaseMetric:
 
 class Accuracy(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         try:
             return accuracy_score(targets, predictions)
         except:
@@ -103,7 +103,7 @@ class Dice(BaseMetric):
 
 class Balanced_Accuracy(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         try:
             return balanced_accuracy_score(targets, predictions)
         except:
@@ -113,13 +113,13 @@ class Balanced_Accuracy(BaseMetric):
 
 class Precision(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         return precision_score(targets, predictions, zero_division=0)
 
 
 class Recall(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         return recall_score(targets, predictions, zero_division=0)
 
 
@@ -145,25 +145,25 @@ class PR_AUC(BaseMetric):
 
 class F1(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         return f1_score(targets, predictions, zero_division=0)
 
 
 class Cohen_Kappa(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         return cohen_kappa_score(targets, predictions)
 
 
 class Matthews_Correlation_Coefficient(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, targets = self._return_predictions_and_targrets(outputs, batch)
+        predictions, targets = self._return_predictions_and_targets(outputs, batch)
         return matthews_corrcoef(targets, predictions)
 
 
 class Percentage_Positives(BaseMetric):
     def __call__(self, outputs, batch):
-        predictions, _ = self._return_predictions_and_targrets(outputs, batch)
+        predictions, _ = self._return_predictions_and_targets(outputs, batch)
         return predictions.float().mean().item()
 
 
