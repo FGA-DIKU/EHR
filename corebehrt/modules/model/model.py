@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
+from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
 
 from corebehrt.modules.model.embeddings import EhrEmbeddings
-from corebehrt.modules.model.heads import FineTuneHead, MLMHead
+from corebehrt.modules.model.heads import FineTuneHead
 
 
-class BertEHREncoder(ModernBertModel):
+class CorebehrtEncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
         self.embeddings = EhrEmbeddings(
@@ -32,24 +33,40 @@ class BertEHREncoder(ModernBertModel):
         )
 
 
-class BertEHRModel(BertEHREncoder):
+class CorebehrtForPretraining(CorebehrtEncoder):
     def __init__(self, config):
         super().__init__(config)
         self.loss_fct = nn.CrossEntropyLoss()
-        self.cls = MLMHead(
-            hidden_size=config.hidden_size,
-            vocab_size=config.vocab_size,
+        self.head = ModernBertPredictionHead(config)
+        self.decoder = nn.Linear(
+            config.hidden_size, config.vocab_size, bias=config.decoder_bias
         )
 
+        self.sparse_prediction = self.config.sparse_prediction
+        self.sparse_pred_ignore_index = self.config.sparse_pred_ignore_index
+
+    # Inspiration from ModernBertForMaskedLM
     def forward(self, batch: dict):
         outputs = super().forward(batch)
+        last_hidden_state = outputs[0]
 
-        sequence_output = outputs[0]  # Last hidden state
-        logits = self.cls(sequence_output)
+        labels = batch.get("target")
+        if self.sparse_prediction and labels is not None:
+            # flatten labels and output first
+            labels = labels.view(-1)
+            last_hidden_state = last_hidden_state.view(labels.shape[0], -1)
+
+            # then filter out the non-masked tokens
+            mask_tokens = labels != self.sparse_pred_ignore_index
+            last_hidden_state = last_hidden_state[mask_tokens]
+            labels = labels[mask_tokens]
+
+        logits = self.decoder(self.head(last_hidden_state))
         outputs.logits = logits
 
-        if batch.get("target") is not None:
-            outputs.loss = self.get_loss(logits, batch["target"])
+        if labels is not None:
+            outputs.loss = self.get_loss(logits, labels)
+            outputs.labels = labels
 
         return outputs
 
@@ -58,7 +75,7 @@ class BertEHRModel(BertEHREncoder):
         return self.loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
 
 
-class BertForFineTuning(BertEHREncoder):
+class CorebehrtForFineTuning(CorebehrtEncoder):
     def __init__(self, config):
         super().__init__(config)
 
