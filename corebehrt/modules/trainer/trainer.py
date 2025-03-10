@@ -60,7 +60,7 @@ class EHRTrainer:
         self.metrics = (
             {k: instantiate_class(v) for k, v in metrics.items()} if metrics else {}
         )
-        self.scaler = torch.GradScaler()
+        self.scaler = torch.GradScaler(device=self.device.type)
 
         self._initialize_early_stopping()
 
