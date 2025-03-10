@@ -78,8 +78,8 @@ Model head implementations.
 
 Core model implementations.
 
-- **`BertEHREncoder`**: Base BERT encoder for EHR data.
-- **`BertForFineTuning`**: Fine-tuning model implementation.
+- **`CorebehrtEncoder`**: Base BERT encoder for EHR data.
+- **`CorebehrtForFineTuning`**: Fine-tuning model implementation.
 
 ## Preparation
 
