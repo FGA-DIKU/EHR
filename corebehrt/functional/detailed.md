@@ -66,10 +66,8 @@ Tokenization utilities.
 
 Data loading utilities.
 
-- **`load_patients_info`**: Load patient information
 - **`load_concept`**: Load concept data
 - **`load_vocabulary`**: Load tokenizer vocabulary
-- **`load_predefined_splits`**: Load dataset splits
 
 ### `save.py`
 

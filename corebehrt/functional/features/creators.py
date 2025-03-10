@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
@@ -38,7 +37,7 @@ def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFram
     return concepts
 
 
-def create_age_in_years(concepts: pd.DataFrame) -> dd.DataFrame:
+def create_age_in_years(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Compute age in years for each row in concepts
     Parameters:
@@ -80,7 +79,7 @@ def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
     return merged_info
 
 
-def create_background(concepts: pd.DataFrame) -> dd.DataFrame:
+def create_background(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Create background concepts for each patient based on the static background variables in the dataframe.
     Sets the time of the background concepts to the birthdate of the patient.
@@ -121,7 +120,7 @@ def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
     - The 'order' column can be used for additional custom ordering if needed.
     - Both columns are initialized with 0 to ensure consistent behavior across partitions.
     Parameters:
-        df: dd.DataFrame with 'PID' column.
+        df: pd.DataFrame with 'PID' column.
     Returns:
         df with 'index' and 'order' columns.
     """
@@ -131,7 +130,7 @@ def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def sort_features(concepts: pd.DataFrame) -> dd.DataFrame:
+def sort_features(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Sorting all concepts by 'subject_id' and 'abspos' (and 'index' and 'order' if they exist).
     """

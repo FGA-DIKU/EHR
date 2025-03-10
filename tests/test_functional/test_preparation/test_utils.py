@@ -71,7 +71,7 @@ class TestBackgroundFunctions(unittest.TestCase):
     # 2) get_background_length_dd
     # ---------------------------------------------------------------------
     def test_get_background_length_pd_normal(self):
-        # Construct a dask dataframe from a small pandas frame
+        # Construct a pandas dataframe from a small pandas frame
         # This must have at least a "concept" column to match your usage
         pdf = pd.DataFrame(
             {
