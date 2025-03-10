@@ -22,7 +22,7 @@ class TestGetBackgroundLengthPD(unittest.TestCase):
         }
 
     def test_normal_case(self):
-        # Create Dask DataFrame from test data
+        # Create Pandas DataFrame from test data
         df = pd.DataFrame(self.data).set_index(PID_COL)
         # Test the function
         result = get_background_length_pd(df, self.vocabulary)
