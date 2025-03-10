@@ -170,9 +170,10 @@ class DatasetPreparer:
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
             df = df.set_index(PID_COL, drop=True)
-            df = self._truncate(df, vocab, data_cfg.truncation_len)
+
             if data_cfg.get("cutoff_date"):
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
+            df = self._truncate(df, vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             self._check_sorted(df)
             batch_patient_list = dataframe_to_patient_list(df)
