@@ -16,7 +16,7 @@ class TestPrepDataUtilsFunctions(unittest.TestCase):
     def test_select_data_by_pids(self):
         selected_data = filter_table_by_pids(self.data, [1, 2])
         self.assertEqual(len(selected_data), 2)
-        self.assertTrue(set(selected_data.compute()[PID_COL]).issubset({1, 2}))
+        self.assertTrue(set(selected_data[PID_COL]).issubset({1, 2}))
 
 
 if __name__ == "__main__":

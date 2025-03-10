@@ -82,7 +82,7 @@ class TestCreateData(TestMainScript):
                     self.tokenized_dir,
                     f"features_{mode}",
                 )
-            ).compute()
+            )
 
             # # Debug print to verify DataFrame structure
             # print(f"Columns in DataFrame: {tokenised_features.columns}")
