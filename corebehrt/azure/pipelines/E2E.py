@@ -38,7 +38,9 @@ def create(
 
         pretrain = create_component(
             "pretrain", configs, computes, register_output, log_system_metrics
-        )(prepared_data=prepare_pretrain.outputs.prepared_data)
+        )(
+            prepared_data=prepare_pretrain.outputs.prepared_data,
+        )
 
         return {}
 
