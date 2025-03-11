@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import List, Union
+from typing import Union
 
 import pandas as pd
 
 
 def get_hours_since_epoch(
-    timestamps: Union[pd.Series, List[datetime], datetime],
-) -> Union[pd.Series, List[float], float]:
+    timestamps: Union[pd.Series, datetime],
+) -> Union[pd.Series, float]:
     """
     Convert timestamps to hours since Unix epoch (January 1, 1970 UTC).
 
@@ -19,10 +19,9 @@ def get_hours_since_epoch(
         if len(timestamps) == 0:
             return pd.Series([])
         return (timestamps.astype("int64") // 10**9) / 3600
-    elif isinstance(timestamps, list):
-        return [timestamp.timestamp() / 3600 for timestamp in timestamps]
     elif isinstance(timestamps, datetime):
-        return timestamps.timestamp() / 3600
+        # Use same calculation method as Series
+        return (pd.Series([timestamps]).astype("int64").iloc[0] // 10**9) / 3600
     else:
         raise TypeError(
             "Invalid type for timestamps, only pd.Series, list, and datetime are supported."
