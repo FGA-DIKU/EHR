@@ -64,16 +64,7 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
-
-            if "values" in cfg.features:
-                concepts = ValueCreator.bin_results(
-                    concepts,
-                    num_bins=cfg.features.values.value_creator_kwargs.get(
-                        "num_bins", 100
-                    ),
-                )
-            else:
-                concepts = concepts.drop(columns=["numeric_value"])
+            concepts = handle_numeric_values(concepts, cfg.features)
             feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
@@ -85,3 +76,22 @@ def create_and_save_features(cfg) -> None:
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
+
+
+def handle_numeric_values(concepts: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
+    """
+    Process numeric values in concepts DataFrame based on configuration.
+    Either bins the values or drops the numeric_value column.
+
+    Parameters:
+        concepts: DataFrame containing concepts data
+        features_cfg: Configuration object containing features settings
+    """
+    if "numeric_value" not in concepts.columns:
+        return concepts
+
+    if "values" in features_cfg:
+        num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
+        return ValueCreator.bin_results(concepts, num_bins=num_bins)
+
+    return concepts.drop(columns=["numeric_value"])
