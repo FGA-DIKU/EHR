@@ -12,7 +12,7 @@ outcomes:
   TEST_OUTCOME:
     case_sensitive: true
     exclude:
-    - D30
+    - '157141000119108'
     match:
     - - D10
       - D02
@@ -20,6 +20,6 @@ outcomes:
     type:
     - code
 paths:
-  data: ./example_data/raw
-  features: ./outputs/features/
-  outcomes: ./outputs/outcomes/
+  data: ./tests/data/raw
+  features: ./tests/data/features
+  outcomes: ./tests/data/outcomes
