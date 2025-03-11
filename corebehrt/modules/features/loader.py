@@ -2,7 +2,6 @@ import glob
 import os
 from typing import Iterator, List, Tuple
 
-import dask.dataframe as dd
 import pandas as pd
 
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, SCHEMA
@@ -153,7 +152,7 @@ class FormattedDataLoader:
         include_values (List[str]): A list of concept types to include values for e.g. ['labtest', 'medication']. The given concept file is excepted to have a 'RESULT' column.
 
     Methods:
-        load() -> Tuple[dd.DataFrame, dd.DataFrame]:
+        load() -> Tuple[pd.DataFrame, pd.DataFrame]:
             Loads the concepts and patients_info DataFrames from the specified folder.
             Returns a tuple containing the concepts DataFrame and the patients_info DataFrame.
     """
@@ -164,7 +163,7 @@ class FormattedDataLoader:
     ):
         self.path = path
 
-    def load(self) -> Tuple[dd.DataFrame, dd.DataFrame]:
+    def load(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Loads the concepts and patients_info DataFrames."""
         concepts = self._load_concept(self.path)
         check_concepts_columns(concepts)
@@ -174,6 +173,6 @@ class FormattedDataLoader:
         """
         Load concept data from formatted_data_dir.
         Expects TIMESTAMP column to be present.
-        Returns a dask dataframe.
+        Returns a pandas dataframe.
         """
         return load_concept(path)
