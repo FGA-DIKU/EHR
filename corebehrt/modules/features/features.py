@@ -1,20 +1,15 @@
-from datetime import datetime
-from typing import Union
-
 import pandas as pd
 
 from corebehrt.functional.features.creators import (
+    assign_index_and_order,
     create_abspos,
     create_age_in_years,
     create_background,
     create_segments,
-    assign_index_and_order,
     sort_features,
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
-from corebehrt.functional.setup.checks import (
-    check_features_columns,
-)
+from corebehrt.functional.setup.checks import check_features_columns
 
 
 class FeatureCreator:
