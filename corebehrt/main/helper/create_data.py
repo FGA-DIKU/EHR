@@ -64,7 +64,7 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
-            concepts = handle_numeric_values(concepts, cfg.features)
+            concepts = handle_numeric_values(concepts, cfg.get("features"))
             feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
