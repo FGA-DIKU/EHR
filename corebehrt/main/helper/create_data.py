@@ -1,17 +1,16 @@
+import os
 from os.path import join
 
+import pandas as pd
+import pyarrow as pa
 import torch
 
-from corebehrt.constants.data import FEATURES_SCHEMA, TOKENIZED_SCHEMA, PID_COL
-
+from corebehrt.constants.data import FEATURES_SCHEMA, PID_COL, TOKENIZED_SCHEMA
+from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
-import os
-import pyarrow as pa
-import pandas as pd
-from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 
 
 def load_tokenize_and_save(
@@ -75,8 +74,7 @@ def create_and_save_features(cfg) -> None:
                 )
             else:
                 concepts = concepts.drop(columns=["numeric_value"])
-            features_args = {k: v for k, v in cfg.features.items() if k != "values"}
-            feature_creator = FeatureCreator(**features_args)
+            feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
