@@ -8,7 +8,10 @@ from transformers import ModernBertConfig
 
 
 from corebehrt.modules.setup.config import Config, instantiate_class
-from corebehrt.modules.model.model import BertEHRModel, BertForFineTuning
+from corebehrt.modules.model.model import (
+    CorebehrtForPretraining,
+    CorebehrtForFineTuning,
+)
 from corebehrt.modules.setup.loader import ModelLoader
 from corebehrt.modules.trainer.utils import get_sampler
 
@@ -29,18 +32,21 @@ class Initializer:
         """Initialize model from checkpoint or from scratch."""
         if self.checkpoint:
             logger.info("Loading model from checkpoint")
-            model = self.loader.load_model(BertEHRModel, checkpoint=self.checkpoint)
+            model = self.loader.load_model(
+                CorebehrtForPretraining, checkpoint=self.checkpoint
+            )
             model.to(self.device)
         else:
             logger.info("Initializing new model")
             vocab_size = len(train_dataset.vocabulary)
-            model = BertEHRModel(
+            model = CorebehrtForPretraining(
                 ModernBertConfig(
                     **self.cfg.model,
                     vocab_size=vocab_size,
                     pad_token_id=0,
                     cls_token_id=1,
                     sep_token_id=2,
+                    sparse_prediction=True,
                 )
             )
         return model
@@ -50,7 +56,7 @@ class Initializer:
             logger.info("Loading model from checkpoint")
             add_config = {**self.cfg.model}
             model = self.loader.load_model(
-                BertForFineTuning,
+                CorebehrtForFineTuning,
                 checkpoint=self.checkpoint,
                 add_config=add_config,
             )
