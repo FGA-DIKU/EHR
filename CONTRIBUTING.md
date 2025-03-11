@@ -44,6 +44,39 @@ Thank you for considering contributing to our project! Please follow the guideli
 
 4. Push to your fork and open a Pull Request
 
+### Handling Data Changes in Tests
+
+When making changes that affect output data, follow these steps:
+
+1. If the test fails due to intentional changes in output data:
+
+   ```bash
+   # 1. Remove existing test data
+   rm -rf tests/data/features/
+   rm -rf tests/data/outcomes/
+
+   # 2. Regenerate features test data
+   python -m corebehrt.main.create_data \
+     --config tests/pipeline_configs/create_data.yaml
+
+   # 3. Regenerate outcomes test data
+   python -m corebehrt.main.create_outcomes \
+     --config tests/pipeline_configs/create_outcomes.yaml
+   ```
+
+2. The test configs must use the same paths:
+   - Features test data: `tests/data/features/`
+   - Outcomes test data: `tests/data/outcomes/`
+   - Test configs: `tests/pipeline_configs/*.yaml`
+
+3. Verify the changes:
+
+   ```bash
+   python -m unittest discover -s tests/test_main
+   ```
+
+Note: Always document significant changes to the output data format in the PR description.
+
 ### PR Requirements
 
 - Follow existing code style
