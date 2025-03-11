@@ -78,7 +78,9 @@ def create_and_save_features(cfg) -> None:
     combined_patient_info.to_parquet(patient_info_path, index=False)
 
 
-def handle_numeric_values(concepts: pd.DataFrame, features_cfg: dict) -> pd.DataFrame:
+def handle_numeric_values(
+    concepts: pd.DataFrame, features_cfg: dict = None
+) -> pd.DataFrame:
     """
     Process numeric values in concepts DataFrame based on configuration.
     Either bins the values or drops the numeric_value column.
@@ -90,7 +92,7 @@ def handle_numeric_values(concepts: pd.DataFrame, features_cfg: dict) -> pd.Data
     if "numeric_value" not in concepts.columns:
         return concepts
 
-    if "values" in features_cfg:
+    if features_cfg and "values" in features_cfg:
         num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
         return ValueCreator.bin_results(concepts, num_bins=num_bins)
 
