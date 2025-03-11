@@ -1,6 +1,5 @@
 from os.path import exists, join
 
-import dask.dataframe as dd
 import pandas as pd
 import torch
 
@@ -78,12 +77,12 @@ class TestCreateData(TestMainScript):
         # 5. Check tokenisation
         for mode in ["train", "tuning", "held_out"]:
             # Load the parquet file and immediately convert to pandas DataFrame
-            tokenised_features = dd.read_parquet(
+            tokenised_features = pd.read_parquet(
                 join(
                     self.tokenized_dir,
                     f"features_{mode}",
                 )
-            ).compute()
+            )
 
             # # Debug print to verify DataFrame structure
             # print(f"Columns in DataFrame: {tokenised_features.columns}")
