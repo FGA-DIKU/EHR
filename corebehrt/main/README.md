@@ -3,11 +3,13 @@
 This guide walks through the steps required to **finetune a model for binary classification** of patient outcomes. The pipeline consists of:
 
 1. [**Create Data**](#1-create-data)
-2. [**Pretrain**](#2-pretrain)
-3. [**Create Outcome Definition**](#3-create-outcome-definition)
-4. [**Define Study Cohort**](#4-define-study-cohort)
-5. [**Finetune Model**](#5-finetune-model)
-6. [**Out-of-Time Evaluation (Temporal Validation)**](#6-out-of-time-evaluation-temporal-validation)
+2. [**Prepare Training Data (pretrain)**](#2-prepare-training-data-pretrain)
+3. [**Pretrain**](#3-pretrain)
+4. [**Create Outcome Definition**](#4-create-outcome-definition)
+5. [**Define Study Cohort**](#5-define-study-cohort)
+6. [**Prepare Training Data (finetune)**](#6-prepare-training-data-finetune)
+7. [**Finetune Model**](#7-finetune-model)
+8. [**Out-of-Time Evaluation (Temporal Validation)**](#8-out-of-time-evaluation-temporal-validation)
 
 ---
 
@@ -36,10 +38,9 @@ For example, you might have:
 
 These files feed into the **Create Data** pipeline, which merges, tokenizes, and structures the data for subsequent **Pretrain** and **Finetune** steps.
 
-## 2. Prepare training data (pretrain)
+## 2. Prepare Training Data (pretrain)
 
-The `prepare_training_data` prepares data before training. For pre-training this includes truncating the data, cutoffs data (optional), excludes short sequences (optional), and then normalises segments. If the cutoff date is defined in the config file, then the data will be cutoff at that date. This can be used for a simulated prospective validation. A specific cohort created using `select_cohort` can also be used here, where splits from the cohort will be used if predefined_folds is set to True. 
-
+The `prepare_training_data` prepares data before training. For pre-training this includes truncating the data, cutoffs data (optional), excludes short sequences (optional), and then normalises segments. If the cutoff date is defined in the config file, then the data will be cutoff at that date. This can be used for a simulated prospective validation. A specific cohort created using `select_cohort` can also be used here, where splits from the cohort will be used if predefined_folds is set to True.
 
 ### Prepare data for pretrain configuration
 
@@ -139,10 +140,10 @@ index_date:
 
 ---
 
-## 6. Prepare training data (fine-tuning)
+## 6. Prepare Training Data (finetune)
 
-The `prepare_training_data` script prepares data. Should be used to prepare data before fine-tuning. 
-This includes assigning binary outcomes, excluding short sequences, truncation, and normalising segments. 
+The `prepare_training_data` script prepares data. Should be used to prepare data before fine-tuning.
+This includes assigning binary outcomes, excluding short sequences, truncation, and normalising segments.
 
 ### Prepare data for finetune configuration
 

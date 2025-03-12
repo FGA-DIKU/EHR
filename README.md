@@ -66,6 +66,8 @@ source .venv/bin/activate
 
 ## Pipeline
 
+![COREBEHRT Overview](docs/COREBEHRT_overview_dark.jpg){width=800}
+
 Below is a high-level description of the steps in the COREBEHRT pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
 The pipeline can be run from the root directory by executing the following commands:
 
@@ -77,7 +79,6 @@ The pipeline can be run from the root directory by executing the following comma
 (.venv) python -m corebehrt.main.select_cohort
 (.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_finetune.yaml
 (.venv) python -m corebehrt.main.finetune_cv
-(.venv) python -m corebehrt.main.evaluate_cv # not implemented yet
 ```
 
 ### 1. Create Data
