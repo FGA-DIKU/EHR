@@ -7,11 +7,11 @@ import yaml
 AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
 
-def config_path(job_name: str, is_job: bool = False) -> str:
+def config_path(cfg_name: str, is_job: bool = False) -> str:
     return (
-        f"{AZURE_CONFIG_FOLDER}/{job_name}.yaml"
+        f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
-        else f"corebehrt/configs/{job_name}.yaml"
+        else f"corebehrt/configs/{cfg_name}.yaml"
     )
 
 
@@ -19,39 +19,38 @@ def load_config(path: str = None, job_name: str = None) -> dict:
     """
     Load the config from the given path.
     """
-    path = path or config_path(job_name)
+    path = path or config_path(cfg_name=job_name)
     with open(path, "r") as cfg_file:
         return yaml.safe_load(cfg_file)
 
 
-def save_config(job_name: str, cfg: dict) -> str:
+def save_config(cfg_name: str, cfg: dict) -> None:
     """
     Save the prepared config before starting the job
 
-    :param job_name: Name of job.
+    :param cfg_name: Name of config file.
     :param cfg: Dictionary to be saved.
 
     :return: Path to the saved config
     """
     # Make sure config is read-able -> save it in the root folder.
-    path = config_path(job_name, is_job=True)
+    path = config_path(cfg_name, is_job=True)
     makedirs(dirname(path), exist_ok=True)
     with open(path, "w") as cfg_file:
         yaml.dump(cfg, cfg_file)
-    return path
 
 
-def load_job_config(job_name: str) -> "Config":  # noqa: F821
+def load_job_config(cfg_name: str) -> "Config":  # noqa: F821
     """
     Load the config on the cluster
     """
     from corebehrt.modules.setup.config import load_config as cb_load_config
 
     # Read the config file
-    return cb_load_config(config_path(job_name, is_job=True))
+    return cb_load_config(config_path(cfg_name, is_job=True))
 
 
-def save_job_config(job_name: str, cfg: "Config") -> str:  # noqa: F821
+def save_job_config(cfg_name: str, cfg: "Config") -> str:  # noqa: F821
     """
     Save the config on the cluster
 
@@ -60,13 +59,13 @@ def save_job_config(job_name: str, cfg: "Config") -> str:  # noqa: F821
 
     :return: Path to the saved config
     """
-    path = config_path(job_name, is_job=True)
+    path = config_path(cfg_name, is_job=True)
     makedirs(dirname(path), exist_ok=True)
     cfg.save_to_yaml(path)
     return path
 
 
-def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> str:
+def prepare_config(cfg_name: str, args: dict, inputs: dict, outputs: dict) -> str:
     """
     Prepares the config on the cluster by substituing any input/output directories
     passed as arguments in the job setup configuration file:
@@ -75,7 +74,7 @@ def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> st
     -> Arguments are substituted into the configuration.
     -> The file is re-written.
 
-    :param job_name: The job name
+    :param cfg_path: Path to the configuration file
     :param args: parsed arguments.
     :param inputs: input argument configuration/mapping.
     :param outputs: output argument configuration/mapping.
@@ -83,7 +82,7 @@ def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> st
     :return: Path to the config on the cluster
     """
     # Read the config file
-    cfg = load_job_config(job_name)
+    cfg = load_job_config(cfg_name)
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
@@ -100,7 +99,7 @@ def prepare_config(job_name: str, args: dict, inputs: dict, outputs: dict) -> st
         _cfg[cfg_path[-1]] = args[arg]
 
     # Overwrite config file
-    return save_job_config(job_name, cfg)
+    return save_job_config(cfg_name, cfg)
 
 
 def parse_args(args: set) -> dict:
@@ -116,6 +115,7 @@ def parse_args(args: set) -> dict:
     for arg in args:
         parser.add_argument(f"--{arg}", type=str)
     parser.add_argument("--log_system_metrics", action="store_true", default=False)
+    parser.add_argument("--config", type=str)
     return vars(parser.parse_args())
 
 
