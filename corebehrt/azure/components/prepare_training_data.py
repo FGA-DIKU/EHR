@@ -4,7 +4,7 @@ INPUTS = {
     "features": {"type": "uri_folder"},
     "tokenized": {"type": "uri_folder"},
     "cohort": {"type": "uri_folder", "optional": True},
-    "outcome": {"type": "uri_file", "optional": True},
+    "outcomes": {"type": "uri_folder", "optional": True},
     "restart_model": {
         "type": "uri_folder",
         "optional": True,
