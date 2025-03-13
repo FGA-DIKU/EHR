@@ -144,9 +144,6 @@ def prepare_job_command_args(
         value = get_path_from_cfg(config, arg, arg_cfg)
         optional = arg_cfg.get("optional", False)
 
-        if arg_cfg.get("optional", False):
-            continue
-
         # Set input/output
         job_args[arg] = azure_arg_cls(
             path=value, type=arg_cfg["type"], optional=optional
