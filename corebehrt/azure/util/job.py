@@ -1,5 +1,6 @@
 from datetime import datetime
 import importlib
+from uuid import uuid4
 
 from corebehrt.azure.util import log, check_azure, ml_client
 from corebehrt.azure.util.config import (
@@ -64,7 +65,8 @@ def setup(
     cmd = f"python -m corebehrt.azure.components.{job}"
 
     # Make sure config is read-able -> save it in the root folder.
-    save_config(job, config)
+    cfg_name = f"{job}_{uuid4()}"
+    save_config(cfg_name, config)
 
     # Prepare input and output paths
     input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
@@ -74,6 +76,9 @@ def setup(
 
     # Add input and output arguments to cmd.
     cmd += input_cmds + output_cmds
+
+    # Add config name to cmd
+    cmd += f" --config {cfg_name}"
 
     # Add log_system_metrics if set
     if log_system_metrics:
@@ -120,6 +125,7 @@ def run_main(
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
+    cfg_path = args.config
     with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
-        cfg_path = prepare_config(job_name, args, inputs, outputs)
+        prepare_config(cfg_path, args, inputs, outputs)
         main(cfg_path)
