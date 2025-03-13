@@ -42,16 +42,40 @@ def create(
             computes,
             register_output,
             log_system_metrics,
+            name="prepare_pretrain",
         )(
             features=create_data.outputs.features,
             tokenized=create_data.outputs.tokenized,
-            cohort=select_cohort.outputs.cohort,
         )
 
         pretrain = create_component(
             "pretrain", configs, computes, register_output, log_system_metrics
         )(
             prepared_data=prepare_pretrain.outputs.prepared_data,
+        )
+
+        prepare_finetune = create_component(
+            "prepare_training_data",
+            configs,
+            computes,
+            register_output,
+            log_system_metrics,
+            name="prepare_finetune",
+        )(
+            features=create_data.outputs.features,
+            tokenized=create_data.outputs.tokenized,
+            cohort=select_cohort.outputs.cohort,
+        )
+
+        finetune = create_component(
+            "finetune_cv",
+            configs,
+            computes,
+            register_output,
+            log_system_metrics,
+        )(
+            prepared_data=prepare_finetune.outputs.cohort,
+            pretrain_model=pretrain.outputs.model,
         )
 
         return {}
