@@ -3,36 +3,42 @@ This repository contains configuration files for processing Electronic Health Re
 
 In the following sections, each configuration file is explained in detail.
 
-## **Create Data**  
-This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.  
+# Create Data
 
-### **Key Functions:**  
-- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures and lab tests**.  
-- Defines **data paths** for raw data, tokenized sequences, and extracted features.  
-- Tokenizes **patient records** into structured sequences for modeling.  
-- Extracts **background variables** and sets a **reference timestamp** .  
-- Configures **value processing**, including:  
-  - **Binning** values into categories.  
-  - **Normalization** for feature scaling.  
-  - **Handling missing values**.  
-- Splits the dataset into: **pretrain, finetune and test sets**  
+This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.
 
-### Hyperparameters for the `create data` stage:
+## Key Functions
+- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.
+- Defines **data paths** for raw data, tokenized sequences, and extracted features.
+- Tokenizes **patient records** into structured sequences for modeling.
+- Extracts **background variables** and sets a **reference timestamp**.
+- Configures **value processing**, including:
+  - **Binning** values into categories.
+  - **Normalization** for feature scaling.
+  - **Handling missing values**.
+- Splits the dataset into: **pretrain, finetune, and test sets**.
 
+## Hyperparameters for the `create data` stage
 
-| **Category**   | **Parameter**                   | **Value** |
-|--------------|--------------------------------|----------|
-| **Loader**   | `concept_types`               | `["diagnose", "medication", "procedure", "labtest"]` |
-|              | `include_values`              | `["labtest"]` |
-| **Features** | `background_vars`             | `["GENDER"]` |
-|              | `origin_point`                | `2020-01-26` |
-| **Values**   | `value_type`                  | `binned` |
-|              | `normalize.func`              | `min_max_normalize_results` |
-|              | `normalize.kwargs.min_count`  | `3` |
-| **Excluder** | `min_age`                     | `-1` |
-|              | `max_age`                     | `120` |
-| **Split Ratios** | `pretrain`                 | `0.72` |
-|              | `finetune`                    | `0.18` |
+| **Category**   | **Parameter**                | **Default Value** | **Possible Values**                     | **Description** |
+|--------------|-----------------------------|----------------|----------------------------------|----------------|
+| **Loader**   | `concept_types`              | No default value. Must be specified by user | `["diagnose", "medication", "procedure", "labtest"]` | The types of concepts extracted from EHR data. |
+|              | `include_values`             | No default value. specified by user   | `["labtest", "medication_dose"]` | Specifies which numerical values should be included in processing |
+| **Features** | `background_vars`            | `["GENDER"]`   | `["GENDER", "AGE", "ETHNICITY"]` | Background variables (demographic data) considered. |
+|              | `origin_point`               | `2020-01-26`   | `Any valid date` | The reference timestamp for data analysis. |
+| **Values**   | `value_type`                 | `binned`       | `["binned", "normalized", "raw"]` | The method of processing numerical values (categorization, normalization, or raw values). |
+|              | `normalize.func`             | `min_max_normalize_results` | `["min_max_normalize_results", "z_score_normalize"]` | The function used for normalizing numerical values. |
+|              | `normalize.kwargs.min_count` | `3`            | `Any positive integer` | Minimum count required for normalization to be applied. |
+| **Excluder** | `min_age`                    | `-1`           | `Any integer` | The minimum patient age to be included in the model. |
+|              | `max_age`                    | `120`          | `Any integer` | The maximum patient age to be included in the model. |
+| **Split Ratios** | `pretrain`               | `0.72`         | `0 - 1` | The proportion of data allocated for model pretraining. |
+|              | `finetune`                   | `0.18`         | `0 - 1` | The proportion of data allocated for model fine-tuning. |
+
+---
+
+## 📌 **Next Steps**
+Now we need to refine **default values and possible values** for each parameter. Let me know which parameters need updates or if you'd like to add more details! 🚀
+
 
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 
