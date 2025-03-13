@@ -25,6 +25,17 @@ def create(
             features=create_data.outputs.features,
         )
 
+        select_cohort = create_component(
+            "select_cohort",
+            configs,
+            computes,
+            register_output,
+            log_system_metrics,
+        )(
+            features=create_data.outputs.features,
+            outcomes=create_outcomes.outputs.outcomes,
+        )
+
         prepare_pretrain = create_component(
             "prepare_training_data",
             configs,
@@ -34,6 +45,7 @@ def create(
         )(
             features=create_data.outputs.features,
             tokenized=create_data.outputs.tokenized,
+            cohort=select_cohort.outputs.cohort,
         )
 
         pretrain = create_component(
