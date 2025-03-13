@@ -6,8 +6,8 @@ INPUTS = {
     "code_mapping": {"type": "uri_file", "optional": True},
 }
 OUTPUTS = {
-    "tokenized": {"type": "uri_folder"},
     "features": {"type": "uri_folder"},
+    "tokenized": {"type": "uri_folder"},
 }
 
 
