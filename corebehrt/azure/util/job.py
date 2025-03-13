@@ -125,7 +125,7 @@ def run_main(
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
-    cfg_path = args.config
+    cfg_path = args["config"]
     with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
         prepare_config(cfg_path, args, inputs, outputs)
         main(cfg_path)
