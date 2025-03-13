@@ -161,10 +161,15 @@ def prepare_job_command_args(
             raise Exception(f"Missing required configuration item '{arg}'.")
 
         # Set input/output
-        job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
+        job_args[arg] = azure_arg_cls(
+            path=value, type=arg_cfg["type"], optional=optional
+        )
 
         # Update command
-        cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
+        if optional:
+            cmd += " $[[--" + arg + " ${{" + _type + "." + arg + "}}]]"
+        else:
+            cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
 
         # Must we register the output?
         if _type == "outputs" and arg in register_output:
