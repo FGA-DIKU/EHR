@@ -142,15 +142,21 @@ def prepare_job_command_args(
     azure_arg_cls = Input if _type == "inputs" else Output
     for arg, arg_cfg in args.items():
         value = get_path_from_cfg(config, arg, arg_cfg)
+        optional = arg_cfg.get("optional", False)
 
         if arg_cfg.get("optional", False):
             continue
 
         # Set input/output
-        job_args[arg] = azure_arg_cls(path=value, type=arg_cfg["type"])
+        job_args[arg] = azure_arg_cls(
+            path=value, type=arg_cfg["type"], optional=optional
+        )
 
         # Update command
-        cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
+        if optional:
+            cmd += " $[[--" + arg + " ${{" + _type + "." + arg + "}}]]"
+        else:
+            cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
 
         # Must we register the output?
         if _type == "outputs" and arg in register_output:
