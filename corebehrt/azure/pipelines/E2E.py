@@ -75,7 +75,7 @@ def create(
             register_output,
             log_system_metrics,
         )(
-            prepared_data=prepare_finetune.outputs.cohort,
+            prepared_data=prepare_finetune.outputs.prepared_data,
             pretrain_model=pretrain.outputs.model,
         )
 
