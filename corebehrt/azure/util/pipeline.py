@@ -4,7 +4,7 @@ from corebehrt.azure.util.config import load_config, map_azure_path
 
 
 def create_component(
-    job: str,
+    job_name: str,
     config_paths: dict,
     computes: dict,
     register_output: dict,
@@ -13,11 +13,11 @@ def create_component(
 ) -> "command":  # noqa: F821
     check_azure()
 
-    # Default component name is job
-    name = name or job
+    # Default component name is job_name
+    name = name or job_name
 
     # Load config from path if given, otherwise load default
-    config = load_config(path=config_paths.get(name), job_name=job)
+    config = load_config(path=config_paths.get(name), job_name=job_name)
 
     # Set compute for this job
     compute = computes.get(name, computes["default"])
@@ -27,7 +27,7 @@ def create_component(
         k[len(name) + 1 :]: v for k, v in register_output if k.startswith(name + ".")
     }
 
-    return job.create(job, config, compute, register_output, log_system_metrics)
+    return job.create(job_name, config, compute, register_output, log_system_metrics)
 
 
 def create(
