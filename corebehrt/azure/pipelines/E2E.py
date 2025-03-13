@@ -46,7 +46,6 @@ def create(
         )(
             features=create_data.outputs.features,
             tokenized=create_data.outputs.tokenized,
-            cohort=select_cohort.outputs.cohort,
         )
 
         pretrain = create_component(
