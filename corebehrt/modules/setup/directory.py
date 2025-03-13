@@ -310,11 +310,11 @@ class DirectoryPreparer:
         # Validate and create directories
         ## Patients info
         ##   If patients_info is not set, features must be set, which must
-        ##   contain patients_info.parquet
+        ##   contain patient_info.parquet
         if not self.cfg.paths.get("patients_info", False):
             self.check_directory("features")
             self.cfg.paths.patients_info = join(
-                self.cfg.paths.features, "patients_info.parquet"
+                self.cfg.paths.features, "patient_info.parquet"
             )
         self.check_file("patients_info")
 
