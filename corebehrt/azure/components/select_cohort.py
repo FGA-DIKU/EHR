@@ -1,11 +1,10 @@
 from corebehrt.azure.util import job
 
 INPUTS = {
-    "patients_info": {"type": "uri_file"},
+    "features": {"type": "uri_folder"},
     "initial_pids": {"type": "uri_file", "optional": True},
     "exclude_pids": {"type": "uri_file", "optional": True},
-    "exposure": {"type": "uri_file", "optional": True},
-    "outcome": {"type": "uri_file"},
+    "outcomes": {"type": "uri_folder"},
 }
 OUTPUTS = {"cohort": {"type": "uri_folder"}}
 
