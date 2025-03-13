@@ -282,15 +282,6 @@ class DirectoryPreparer:
         self.setup_logging("prepare pretrain data")
         self.check_directory("features")
         self.check_directory("tokenized")
-
-        # If "outcome" is set, check that it exists.
-        if outcome := self.cfg.paths.get("outcome", False):
-            # If "outcomes" is also set, use as prefix
-            if outcomes := self.cfg.paths.get("outcomes", False):
-                self.cfg.paths.outcome = join(outcomes, outcome)
-
-            self.check_file("outcome")
-
         self.create_directory("prepared_data", clear=True)
         self.write_config("prepared_data", name=PREPARE_PRETRAIN_CFG)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
@@ -368,6 +359,15 @@ class DirectoryPreparer:
         self.check_directory("features")
         self.check_directory("tokenized")
         self.check_directory("cohort")
+
+        # If "outcome" is set, check that it exists.
+        if outcome := self.cfg.paths.get("outcome", False):
+            # If "outcomes" is also set, use as prefix
+            if outcomes := self.cfg.paths.get("outcomes", False):
+                self.cfg.paths.outcome = join(outcomes, outcome)
+
+            self.check_file("outcome")
+
         self.create_directory("prepared_data", clear=True)
         self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
