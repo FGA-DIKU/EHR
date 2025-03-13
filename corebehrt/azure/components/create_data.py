@@ -2,8 +2,8 @@ from corebehrt.azure.util import job
 
 INPUTS = {"data": {"type": "uri_folder"}}
 OUTPUTS = {
-    "tokenized": {"type": "uri_folder"},
     "features": {"type": "uri_folder"},
+    "tokenized": {"type": "uri_folder"},
 }
 
 
