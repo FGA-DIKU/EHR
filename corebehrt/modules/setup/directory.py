@@ -308,14 +308,33 @@ class DirectoryPreparer:
         self.setup_logging("select_cohort")
 
         # Validate and create directories
+        ## Patients info
+        ##   If patients_info is not set, features must be set, which must
+        ##   contain patients_info.parquet
+        if not self.cfg.paths.get("patients_info", False):
+            self.check_directory("features")
+            self.cfg.paths.patients_info = join(
+                self.cfg.paths.feature, "patients_info.parquet"
+            )
         self.check_file("patients_info")
+
+        ## Outcomes
+        ##   Files outcome and exposure must be set.
+        ##   If outcomes (directory) is set, it is added
+        ##   as path-prefix to outcome and exposure
+        if outcomes := self.cfg.paths.get("outcomes", False):
+            self.cfg.paths.outcome = join(outcomes, self.cfg.paths.get("outcome", ""))
+            if exposure := self.cfg.paths.get("exposure", False):
+                self.cfg.paths.exposure = join(outcomes, exposure)
         self.check_file("outcome")
-        if self.cfg.paths.get("initial_pids", False):
-            self.check_file("initial_pids")
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
-        self.create_directory("cohort", clear=True)
 
+        # Initial pids is optional.
+        if self.cfg.paths.get("initial_pids", False):
+            self.check_file("initial_pids")
+
+        self.create_directory("cohort", clear=True)
         self.write_config("cohort", name=COHORT_CFG)
 
         ## Further config checks
