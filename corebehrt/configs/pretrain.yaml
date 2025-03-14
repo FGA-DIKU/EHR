@@ -39,6 +39,10 @@ model:
   type_vocab_size: 1024 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
   embedding_dropout: 0.1 
   max_position_embeddings: 512 # the longest sequence length we will use this model with
+  age_scale: 1e-2 # 100 -> 1
+  abspos_scale: 1e-5 # 400k -> 4
+  age_shift: -50 # center around 0
+  abspos_shift: -90_000 # 0 will be around 2015
   
 optimizer:
   lr: 5e-4
