@@ -3,12 +3,12 @@ from os.path import exists, join
 import pandas as pd
 import torch
 
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.main.create_data import main_data
-from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
-from .base import TestMainScript
+from tests.test_main.base import TestMainScript
 
 
 class TestCreateData(TestMainScript):
@@ -27,7 +27,6 @@ class TestCreateData(TestMainScript):
                     "tokenized": self.tokenized_dir,
                 },
                 "features": {
-                    "origin_point": {"year": 2020, "month": 1, "day": 26},
                     "values": {
                         "value_creator_kwargs": {"num_bins": 100},
                     },

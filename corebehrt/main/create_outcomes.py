@@ -3,11 +3,11 @@
 import logging
 from os.path import join
 
+from corebehrt.functional.setup.args import get_args
+from corebehrt.main.helper.create_outcomes import process_data
+from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
-from corebehrt.functional.setup.args import get_args
-from corebehrt.modules.features.loader import ShardLoader
-from corebehrt.main.helper.create_outcomes import process_data
 
 CONFIG_PATH = "./corebehrt/configs/outcomes_test.yaml"
 
@@ -20,7 +20,6 @@ def main_data(config_path):
 
     logger = logging.getLogger("create_outcomes")
     logger.info("Starting outcomes creation")
-    features_cfg = prepper.get_config("features")
     outcome_tables = process_data(
         ShardLoader(
             data_dir=cfg.paths.data,
@@ -28,7 +27,6 @@ def main_data(config_path):
             patient_info_path=join(cfg.paths.features, "patient_info.parquet"),
         ),
         cfg,
-        features_cfg,
         logger,
     )
 

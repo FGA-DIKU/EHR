@@ -44,6 +44,37 @@ Thank you for considering contributing to our project! Please follow the guideli
 
 4. Push to your fork and open a Pull Request
 
+### Updating Test Data
+
+If a test fails due to intentional changes in output data (e.g., changes in feature calculation or data processing), you'll need to regenerate the test data.
+
+#### Steps to Update
+
+1. **Regenerate Test Data**
+
+   Run the update script from the project root directory:
+
+   ```bash
+   # First time only: make script executable
+   chmod +x tests/data/update.sh
+
+   # Run the update script
+   ./tests/data/update.sh
+   ```
+
+   This script will:
+   - Remove existing test data
+   - Regenerate features test data
+   - Regenerate outcomes test data
+
+2. **Verify Changes**
+
+   Run the tests to ensure everything works:
+
+   ```bash
+   python -m unittest discover -s tests/test_main
+   ```
+
 ### PR Requirements
 
 - Follow existing code style

@@ -1,17 +1,16 @@
+import os
 from os.path import join
 
+import pandas as pd
+import pyarrow as pa
 import torch
 
-from corebehrt.constants.data import FEATURES_SCHEMA, TOKENIZED_SCHEMA, PID_COL
-
+from corebehrt.constants.data import FEATURES_SCHEMA, PID_COL, TOKENIZED_SCHEMA
+from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
-import os
-import pyarrow as pa
-import pandas as pd
-from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 
 
 def load_tokenize_and_save(
@@ -65,18 +64,8 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
-
-            if "values" in cfg.features:
-                concepts = ValueCreator.bin_results(
-                    concepts,
-                    num_bins=cfg.features.values.value_creator_kwargs.get(
-                        "num_bins", 100
-                    ),
-                )
-            else:
-                concepts = concepts.drop(columns=["numeric_value"])
-            features_args = {k: v for k, v in cfg.features.items() if k != "values"}
-            feature_creator = FeatureCreator(**features_args)
+            concepts = handle_numeric_values(concepts, cfg.get("features"))
+            feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
@@ -87,3 +76,24 @@ def create_and_save_features(cfg) -> None:
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
+
+
+def handle_numeric_values(
+    concepts: pd.DataFrame, features_cfg: dict = None
+) -> pd.DataFrame:
+    """
+    Process numeric values in concepts DataFrame based on configuration.
+    Either bins the values or drops the numeric_value column.
+
+    Parameters:
+        concepts: DataFrame containing concepts data
+        features_cfg: Configuration object containing features settings
+    """
+    if "numeric_value" not in concepts.columns:
+        return concepts
+
+    if features_cfg and "values" in features_cfg:
+        num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
+        return ValueCreator.bin_results(concepts, num_bins=num_bins)
+
+    return concepts.drop(columns=["numeric_value"])

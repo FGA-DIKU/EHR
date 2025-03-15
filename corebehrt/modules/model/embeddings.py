@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 
 from corebehrt.constants.model import (
-    TIME2VEC_ABSPOS_MULTIPLIER,
-    TIME2VEC_AGE_MULTIPLIER,
+    TIME2VEC_ABSPOS_SCALE,
+    TIME2VEC_AGE_SCALE,
     TIME2VEC_MAX_CLIP,
     TIME2VEC_MIN_CLIP,
+    TIME2VEC_AGE_SHIFT,
+    TIME2VEC_ABSPOS_SHIFT,
 )
 
 
@@ -18,12 +20,16 @@ class EhrEmbeddings(nn.Module):
             We abuse huggingface's standard position_ids to pass additional information (age, abspos)
             This makes BertModel's forward method compatible with our EhrEmbeddings
 
-    Config:
+    Parameters:
         vocab_size: int                         - size of the vocabulary
         hidden_size: int                        - size of the hidden layer
         type_vocab_size: int                    - size of max segments
-        layer_norm_eps: float                   - epsilon for layer normalization
-        hidden_dropout_prob: float              - dropout probability
+        embedding_dropout: float                - dropout probability
+        pad_token_id: int                       - token ID used for padding
+        age_scale: float                        - scaling factor for age embeddings
+        abspos_scale: float                     - scaling factor for absolute position embeddings
+        age_shift: float                        - shift value for age embeddings
+        abspos_shift: float                     - shift value for absolute position embeddings
     """
 
     def __init__(
@@ -33,25 +39,31 @@ class EhrEmbeddings(nn.Module):
         type_vocab_size: int,
         embedding_dropout: float,
         pad_token_id: int = 0,
+        age_scale: float = TIME2VEC_AGE_SCALE,
+        abspos_scale: float = TIME2VEC_ABSPOS_SCALE,
+        age_shift: float = TIME2VEC_AGE_SHIFT,
+        abspos_shift: float = TIME2VEC_ABSPOS_SHIFT,
     ):
         super().__init__()
         self.LayerNorm = nn.LayerNorm(hidden_size)
         self.dropout = nn.Dropout(embedding_dropout)
 
-        # Initalize embeddings
+        # Initialize embeddings
         self.concept_embeddings = nn.Embedding(
             vocab_size, hidden_size, padding_idx=pad_token_id
         )
         self.segment_embeddings = nn.Embedding(type_vocab_size, hidden_size)
         self.age_embeddings = Time2Vec(
             hidden_size,
-            init_scale=TIME2VEC_AGE_MULTIPLIER,
+            shift=age_shift,
+            scale=age_scale,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
         self.abspos_embeddings = Time2Vec(
             hidden_size,
-            init_scale=TIME2VEC_ABSPOS_MULTIPLIER,
+            shift=abspos_shift,
+            scale=abspos_scale,
             clip_min=TIME2VEC_MIN_CLIP,
             clip_max=TIME2VEC_MAX_CLIP,
         )
@@ -79,14 +91,56 @@ class EhrEmbeddings(nn.Module):
 
 
 class Time2Vec(torch.nn.Module):
+    """Time2Vec embedding layer that combines linear and periodic components.
+
+    This layer transforms temporal inputs using a combination of linear and periodic embeddings:
+    - First component (i=0): linear transformation w0*t + phi0
+    - Remaining components: periodic transformations f(w*t + phi)
+
+    The input can optionally be shifted and scaled before transformation, and the linear
+    component can be clipped to a specified range.
+
+    Parameters:
+        output_dim: int
+            Dimension of the output embedding vector. Default: 768
+        function: callable
+            Periodic function to use (e.g., torch.cos). Default: torch.cos
+        init_scale: float
+            Scaling factor applied to input values before transformation. Default: 1
+        clip_min: float, optional
+            Minimum value for clipping the linear component
+        clip_max: float, optional
+            Maximum value for clipping the linear component
+        shift: float, optional
+            Constant shift applied to input values before scaling and transformation
+
+    Forward Input:
+        tau: torch.Tensor
+            Input temporal values of shape (batch_size, sequence_length)
+
+    Returns:
+        torch.Tensor: Concatenated linear and periodic embeddings
+            of shape (batch_size, sequence_length, output_dim)
+    """
+
     def __init__(
         self,
         output_dim: int = 768,
         function: callable = torch.cos,
-        init_scale: float = 1,
+        shift: float = 0,
+        scale: float = 1,
         clip_min: float = None,
         clip_max: float = None,
     ):
+        """
+        Parameters:
+            output_dim: int - dimension of the output
+            function: callable - function to use for the time2vec transformation
+            init_scale: float - scale of the initial parameters
+            clip_min: float - minimum value of the output
+            clip_max: float - maximum value of the output
+            shift: float - shift of the output
+        """
         super().__init__()
         self.f = function
         self.clip_min = clip_min
@@ -97,13 +151,13 @@ class Time2Vec(torch.nn.Module):
         # for 1 <= i <= k (output_dim)
         self.w = torch.nn.Parameter(torch.randn(1, output_dim - 1))
         self.phi = torch.nn.Parameter(torch.randn(output_dim - 1))
-
-        self.init_scale = init_scale
+        self.shift = shift
+        self.scale = scale
 
     def forward(self, tau: torch.Tensor) -> torch.Tensor:
-        if self.init_scale is not None:
-            tau = tau * self.init_scale
-        tau = tau.unsqueeze(2)
+        tau = (tau + self.shift) * self.scale
+
+        tau = tau.unsqueeze(2)  # (batch_size, sequence_length, 1)
 
         linear_1 = torch.matmul(tau, self.w0) + self.phi0
         linear_2 = torch.matmul(tau, self.w)

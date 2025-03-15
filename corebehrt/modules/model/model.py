@@ -3,6 +3,12 @@ import torch.nn as nn
 from transformers import ModernBertModel
 from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
 
+from corebehrt.constants.model import (
+    TIME2VEC_ABSPOS_SCALE,
+    TIME2VEC_ABSPOS_SHIFT,
+    TIME2VEC_AGE_SCALE,
+    TIME2VEC_AGE_SHIFT,
+)
 from corebehrt.modules.model.embeddings import EhrEmbeddings
 from corebehrt.modules.model.heads import FineTuneHead
 
@@ -16,6 +22,10 @@ class CorebehrtEncoder(ModernBertModel):
             type_vocab_size=config.type_vocab_size,
             embedding_dropout=config.embedding_dropout,
             pad_token_id=config.pad_token_id,
+            age_scale=getattr(config, "age_scale", TIME2VEC_AGE_SCALE),
+            age_shift=getattr(config, "age_shift", TIME2VEC_AGE_SHIFT),
+            abspos_scale=getattr(config, "abspos_scale", TIME2VEC_ABSPOS_SCALE),
+            abspos_shift=getattr(config, "abspos_shift", TIME2VEC_ABSPOS_SHIFT),
         )
 
     def forward(self, batch: dict):

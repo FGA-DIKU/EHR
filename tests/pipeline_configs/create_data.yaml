@@ -3,9 +3,9 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_MEDS_data_w_labs
-  tokenized: ./outputs/tokenized
-  features: ./outputs/features
+  data: ./tests/data/raw
+  tokenized: ./tests/data/tokenized
+  features: ./tests/data/features
   
 features:
   values:

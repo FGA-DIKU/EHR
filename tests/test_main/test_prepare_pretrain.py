@@ -5,7 +5,7 @@ import yaml
 from corebehrt.constants.paths import DATA_CFG, PREPARE_PRETRAIN_CFG
 from corebehrt.main.prepare_training_data import main_prepare_data
 
-from .base import TestMainScript
+from tests.test_main.base import TestMainScript
 
 
 class TestCreateOutcomes(TestMainScript):

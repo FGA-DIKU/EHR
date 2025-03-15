@@ -8,13 +8,12 @@ from corebehrt.modules.monitoring.logger import TqdmToLogger
 from corebehrt.constants.data import PID_COL
 
 
-def process_data(loader, cfg, features_cfg, logger) -> dict:
+def process_data(loader, cfg, logger) -> dict:
     """Process batches of concept and patient data to create outcome tables.
 
     Args:
         loader: A callable that yields tuples of (concept_batch, patient_batch) DataFrames.
         cfg: Configuration object containing outcome settings.
-        features_cfg: Configuration object containing feature settings, including origin point.
         logger: Logger object for tracking progress.
 
     Returns:
@@ -31,9 +30,7 @@ def process_data(loader, cfg, features_cfg, logger) -> dict:
         loader(), desc="Batch Process Data", file=TqdmToLogger(logger)
     ):
         pids = concept_batch[PID_COL].unique()
-        outcome_tables = OutcomeMaker(cfg.outcomes, features_cfg.features.origin_point)(
-            concept_batch, patient_batch, pids
-        )
+        outcome_tables = OutcomeMaker(cfg.outcomes)(concept_batch, patient_batch, pids)
         # Concatenate the tables for each key
         for key, df in outcome_tables.items():
             if key in all_outcomes:

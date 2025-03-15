@@ -14,7 +14,6 @@ from corebehrt.functional.features.creators import (
 
 class TestCreators(unittest.TestCase):
     def setUp(self):
-        self.origin_point = datetime(2020, 1, 26)
         self.background_vars = ["GENDER"]
 
         self.concepts = pd.DataFrame(
@@ -177,12 +176,10 @@ class TestCreators(unittest.TestCase):
         concepts_no_nan = self.concepts.dropna(
             subset=["time"]
         )  # Remove rows with NaT time (BG)
-        result = create_abspos(concepts_no_nan, self.origin_point)
+        result = create_abspos(concepts_no_nan)
 
         # Expected abspos
-        expected_abspos = (
-            concepts_no_nan["time"] - self.origin_point
-        ).dt.total_seconds() / 3600
+        expected_abspos = concepts_no_nan["time"].astype("int64") // 10**9 / 3600
 
         # Assert the abspos values are as expected
         self.assertTrue((result["abspos"] == expected_abspos).all())
@@ -194,7 +191,7 @@ class TestCreators(unittest.TestCase):
         # Prepare concepts DataFrame by adding 'abspos' (required for sorting) and 'BG' rows
         # concepts = self.concepts.rename(columns={"CONCEPT": "concept"})
         concepts_with_bg, _ = create_background(self.concepts)
-        concepts_with_abspos = create_abspos(concepts_with_bg, self.origin_point)
+        concepts_with_abspos = create_abspos(concepts_with_bg)
 
         # Apply the function
         sorted_concepts = sort_features(concepts_with_abspos)
