@@ -1,27 +1,25 @@
 from datetime import datetime
-import pandas as pd
 from typing import Union
+
+import pandas as pd
 
 
 def get_hours_since_epoch(
     timestamps: Union[pd.Series, datetime],
 ) -> Union[pd.Series, float]:
-    """
-    Convert timestamps to hours since Unix epoch (January 1, 1970 UTC).
-    Ensures all timestamps are in UTC before conversion.
-
-    Parameters:
-        timestamps: Timestamps to convert, can be pandas Series, list of datetimes, or single datetime
-    Returns:
-        Hours since epoch in the same container type as input (Series, list, or float)
-    """
     if isinstance(timestamps, pd.Series):
         if len(timestamps) == 0:
-            return pd.Series([])
-        if not pd.api.types.is_datetime64_any_dtype(timestamps):
-            timestamps = pd.to_datetime(timestamps, utc=True)
-
-        hours = (timestamps.astype("int64") // 10**9) / 3600
+            return pd.Series([], dtype=float)
+        # Convert timestamps to UTC (timezone-aware)
+        timestamps = pd.to_datetime(
+            timestamps, utc=True
+        )  # ensure consistency across dataset
+        # Remove the timezone information to get a timezone-naive series, necessary for the next step
+        timestamps = timestamps.dt.tz_localize(None)
+        # Cast to microsecond precision
+        timestamps = timestamps.astype("datetime64[us]")
+        # Convert microseconds to hours
+        hours = (timestamps.astype("int64") // 10**6) / 3600
         return hours
 
     elif isinstance(timestamps, datetime):
