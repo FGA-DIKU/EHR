@@ -94,15 +94,13 @@ class DatasetPreparer:
         logger.info("Assigning outcomes")
         data = data.assign_outcomes(binary_outcomes)
 
-        censor_dates = pd.Series(
-            index_dates[ABSPOS_COL] + self.cfg.outcome.n_hours_censoring,
-            index=index_dates[PID_COL],
+        censor_dates = (
+            index_dates.set_index(PID_COL)[ABSPOS_COL]
+            + self.cfg.outcome.n_hours_censoring
         )
-
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
-
         background_length = get_background_length(data, vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")
