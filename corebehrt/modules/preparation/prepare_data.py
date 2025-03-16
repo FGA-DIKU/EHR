@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from os.path import join
-from typing import Tuple
+from typing import Tuple, List
 
 import pandas as pd
 import torch
@@ -32,7 +32,7 @@ from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
 from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.modules.monitoring.logger import TqdmToLogger
-from corebehrt.modules.preparation.dataset import PatientDataset
+from corebehrt.modules.preparation.dataset import PatientDataset, PatientData
 from corebehrt.modules.setup.config import Config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -98,6 +98,7 @@ class DatasetPreparer:
             index_dates.set_index(PID_COL)[ABSPOS_COL]
             + self.cfg.outcome.n_hours_censoring
         )
+        self._validate_censoring(data.patients, censor_dates, logger)
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
@@ -230,3 +231,34 @@ class DatasetPreparer:
         cutoff_abspos = get_hours_since_epoch(datetime(**cutoff_date))
         df = df[df[ABSPOS_COL] <= cutoff_abspos]
         return df
+
+    @staticmethod
+    def _validate_censoring(
+        patients: List["PatientData"], censor_dates: pd.Series, logger: logging.Logger
+    ) -> None:
+        """Validate censoring dates and log basic statistics.
+
+        Args:
+            patients: List of patient data objects
+            censor_dates: Series with censoring dates indexed by patient ID
+            logger: Logger instance
+        """
+        patient_pids = set(p.pid for p in patients)
+        censor_pids = set(censor_dates.index)
+
+        missing_censor_dates = patient_pids - censor_pids
+        if missing_censor_dates:
+            logger.error(
+                f"Missing censor dates for {len(missing_censor_dates)} patients"
+            )
+            raise ValueError("Some patients are missing censor dates")
+
+        logger.info(f"Censoring validated for {len(patient_pids)} patients")
+
+        # Check for NaN values in censor dates
+        nan_censor_dates = censor_dates.isna().sum()
+        if nan_censor_dates > 0:
+            logger.error(f"Found {nan_censor_dates} NaN values in censor dates")
+            raise ValueError("NaN values detected in censor dates")
+
+        logger.info(f"Censoring validated for {len(patient_pids)} patients")
