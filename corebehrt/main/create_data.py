@@ -64,7 +64,13 @@ def main_data(config_path):
     if "vocabulary" in cfg.paths:
         logger.info(f"Loading vocabulary from {cfg.paths.vocabulary}")
         vocabulary = load_vocabulary(cfg.paths.vocabulary)
-    tokenizer = EHRTokenizer(vocabulary=vocabulary, **cfg.tokenizer)
+    code_mapping = None
+    if "code_mapping" in cfg.paths:
+        logger.info(f"Loading code mapping from {cfg.paths.code_mapping}")
+        code_mapping = torch.load(cfg.paths.code_mapping)
+    tokenizer = EHRTokenizer(
+        vocabulary=vocabulary, code_mapping=code_mapping, **cfg.tokenizer
+    )
 
     logger.info("Tokenizing train")
     load_tokenize_and_save(
