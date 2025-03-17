@@ -69,7 +69,7 @@ def save_job_config(cfg_name: str, cfg: "Config") -> str:  # noqa: F821
     return path
 
 
-def prepare_config(cfg_name: str, args: dict, inputs: dict, outputs: dict) -> str:
+def prepare_config(args: dict, inputs: dict, outputs: dict) -> str:
     """
     Prepares the config on the cluster by substituing any input/output directories
     passed as arguments in the job setup configuration file:
@@ -86,7 +86,7 @@ def prepare_config(cfg_name: str, args: dict, inputs: dict, outputs: dict) -> st
     :return: Path to the config on the cluster
     """
     # Read the config file
-    cfg = load_job_config(cfg_name)
+    cfg = load_job_config(args["config"])
 
     # Update input arguments in config file
     for arg, arg_cfg in (inputs | outputs).items():
@@ -103,7 +103,7 @@ def prepare_config(cfg_name: str, args: dict, inputs: dict, outputs: dict) -> st
         _cfg[cfg_path[-1]] = args[arg]
 
     # Overwrite config file
-    return save_job_config(cfg_name, cfg)
+    return save_job_config(args["config"], cfg)
 
 
 def parse_args(args: set) -> dict:

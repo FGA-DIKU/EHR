@@ -66,6 +66,7 @@ def create_and_run_pipeline(args) -> None:
         computes,
         register_output=register_output,
         log_system_metrics=args.log_system_metrics,
+        test_cfg_file="TEST_FILE",
     )
 
     util.pipeline.run(pl, args.experiment)

@@ -9,6 +9,7 @@ from corebehrt.azure.util.config import (
     parse_args,
     save_config,
 )
+from corebehrt.azure.util.test import evaluate_run
 
 
 def create(
@@ -17,6 +18,7 @@ def create(
     compute: str,
     register_output: dict = dict(),
     log_system_metrics: bool = False,
+    test_cfg_file: str = None,
 ) -> "command":  # noqa: F821
     """
     Creates the Azure command/job object. Job input/output
@@ -34,6 +36,7 @@ def create(
         compute=compute,
         register_output=register_output,
         log_system_metrics=log_system_metrics,
+        test_cfg_file=test_cfg_file,
     )
 
 
@@ -45,6 +48,7 @@ def setup(
     compute: str,
     register_output: dict = dict(),
     log_system_metrics: bool = False,
+    test_cfg_file: str = None,
 ):
     """
     Sets up the Azure job.
@@ -83,6 +87,10 @@ def setup(
     # Add log_system_metrics if set
     if log_system_metrics:
         cmd += " --log_system_metrics"
+
+    # Add test argument if test_cfg_file is set
+    if test_cfg_file:
+        cmd += f" --test {test_cfg_file}"
 
     # Create job
     from azure.ai.ml import command
@@ -125,7 +133,10 @@ def run_main(
     """
     # Parse command line args
     args = parse_args(inputs | outputs)
-    cfg_name = args["config"]
-    with log.start_run(log_system_metrics=args.get("log_system_metrics", False)):
-        cfg_path = prepare_config(cfg_name, args, inputs, outputs)
+    with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
+        cfg_path = prepare_config(args, inputs, outputs)
         main(cfg_path)
+
+    # Evaluate run if test param is given
+    if test_cfg_file := args.get("test", False):
+        evaluate_run(run, test_cfg_file)
