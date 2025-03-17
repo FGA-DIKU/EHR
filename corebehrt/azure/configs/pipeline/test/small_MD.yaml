@@ -1,0 +1,31 @@
+data: "CoreBEHRT_example_data@latest"
+
+computes:
+    default: "CPU-20-LP"
+    pretrain: "GPU-A100-Single"
+    finetune_cv: "GPU-A100-Single"
+
+create_data:
+    max_run_time: 300 # 5m
+
+create_outcomes:
+    max_run_time: 300 # 5m
+
+prepare_training_data:
+    max_run_time: 300 # 5m
+
+select_cohort:
+    max_run_time: 120 # 2m
+
+pretrain:
+    max_run_time: 300 # 5m
+    metrics:
+        roc_auc:
+            min: 0.9
+
+finetune_cv:
+    max_run_time: 300 # 5m
+    metrics:
+        roc_auc:
+            min: 0.9
+

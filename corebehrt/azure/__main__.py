@@ -62,11 +62,35 @@ def create_and_run_pipeline(args) -> None:
 
     pl = util.pipeline.create(
         args.PIPELINE,
+        args.DATA,
         cfg_paths,
         computes,
         register_output=register_output,
         log_system_metrics=args.log_system_metrics,
         test_cfg_file="TEST_FILE",
+    )
+
+    util.pipeline.run(pl, args.experiment)
+
+
+def create_and_run_test(args) -> None:
+    """
+    Run a pipeline test from the given args.
+    """
+    size = args.SIZE
+    concepts = args.CONCEPTS
+
+    test_cfg_file = f"corebehrt/azure/configs/pipeline/test/{size}_{concepts}.yaml"
+    test_cfg = load_config(test_cfg_file)
+
+    pl = util.pipeline.create(
+        "E2E",
+        test_cfg["data"],
+        test_cfg.get("configs", {}),
+        test_cfg.get("computes", {}),
+        register_output={},
+        log_system_metrics=True,
+        test_cfg_file=test_cfg_file,
     )
 
     util.pipeline.run(pl, args.experiment)
@@ -181,6 +205,11 @@ if __name__ == "__main__":
         help="If set, system metrics such as CPU, GPU and memory usage are logged in Azure.",
     )
 
+    # Test parser
+    test_parser = subparsers.add_parser("test", help="Run a test job.")
+    test_parser.add_argument("SIZE", choices={"small"})
+    test_parser.add_argument("CONCEPTS", choices={"MD", "MDP", "MDPL"})
+
     # Parse args
     args = parser.parse_args()
 
@@ -193,6 +222,9 @@ if __name__ == "__main__":
     elif args.call_type == "pipeline":
         # Handle pipelne
         create_and_run_pipeline(args)
+    elif args.call_type == "test":
+        # Handle test
+        create_and_run_test(args)
     else:
         parser.print_help()
         sys.exit(1)

@@ -39,6 +39,7 @@ def create_component(
 
 def create(
     name: str,
+    data_path: str,
     config_paths: dict,
     computes: dict,
     register_output: dict,
@@ -57,19 +58,11 @@ def create(
         config_paths, computes, register_output, log_system_metrics, test_cfg_file
     )
 
-    # Prepare pipeline inputs
-    inputs = dict()
-    for inp_key, inp_cfg in pipeline_module.INPUTS.items():
-        # Pipeline inputs maps to an input in a config file for one of the components.
-        job_name = inp_cfg["config"]
-        # Load the component config
-        config = load_config(path=config_paths.get(job_name), job_name=job_name)
-        # Get the mounted path from the component.
-        inp_path = map_azure_path(config["paths"][inp_key])
+    # Prepare pipeline inputs - currently only data
+    data_path = map_azure_path(data_path)
+    data_input = Input(path=data_path, type="uri_folder")
 
-        inputs[inp_key] = Input(path=inp_path, type=inp_cfg.get("type"))
-
-    return pipeline(**inputs)
+    return pipeline(data=data_input)
 
 
 def run(pipeline: "command", experiment: str) -> None:  # noqa: F821
