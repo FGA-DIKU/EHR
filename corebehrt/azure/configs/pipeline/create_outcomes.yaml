@@ -2,9 +2,6 @@ logging:
   level: INFO
   path: ./logs
 
-paths:
-  data: "CoreBEHRT_example_data@latest"
-
 outcomes:
   TEST_OUTCOME: 
     type: [code]
