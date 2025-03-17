@@ -1,0 +1,20 @@
+logging:
+  level: INFO
+  path: ./logs
+
+paths:
+  data: "CoreBEHRT_example_data@latest"
+
+outcomes:
+  TEST_OUTCOME: 
+    type: [code]
+    match: [['D10', 'D02']]
+    exclude: ['157141000119108']
+    match_how: startswith
+    case_sensitive: true
+  TEST_CENSOR:
+    type: [code]
+    match: [['M112']]
+    match_how: startswith
+    case_sensitive: false
+

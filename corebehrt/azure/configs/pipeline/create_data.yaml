@@ -1,0 +1,14 @@
+logging:
+  level: INFO
+  path: ./logs
+
+paths:
+  data: "CoreBEHRT_example_data@latest"
+
+tokenizer:
+  sep_tokens: true
+  cls_token: true
+
+excluder:
+  min_age: -1
+  max_age: 120
