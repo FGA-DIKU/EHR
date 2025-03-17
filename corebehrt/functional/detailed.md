@@ -106,7 +106,7 @@ Sequence truncation utilities.
 General preparation utilities.
 
 - **`get_background_length`**: Get background sequence length
-- **`get_abspos_from_origin_point`**: Calculate temporal positions
+- **`get_hours_since_epoch`**: Calculate temporal positions
 - **`get_non_priority_tokens`**: Identify low-priority tokens
 
 ## Setup

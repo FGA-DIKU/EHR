@@ -3,12 +3,12 @@ from os.path import exists, join
 import pandas as pd
 import torch
 
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.main.create_data import main_data
 from tests.helpers import compute_column_checksum
-from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
-from .base import TestMainScript
+from tests.test_main.base import TestMainScript
 
 
 class TestCreateData(TestMainScript):
@@ -25,9 +25,6 @@ class TestCreateData(TestMainScript):
                     "data": "./tests/data/raw",
                     "features": self.features_dir,
                     "tokenized": self.tokenized_dir,
-                },
-                "features": {
-                    "origin_point": {"year": 2020, "month": 1, "day": 26},
                 },
                 "tokenizer": {"sep_tokens": True, "cls_token": True},
                 "excluder": {"min_age": -1, "max_age": 120},

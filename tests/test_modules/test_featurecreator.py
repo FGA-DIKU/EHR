@@ -1,9 +1,11 @@
 import unittest
-import pandas as pd
 from datetime import datetime
-from corebehrt.modules.features.features import FeatureCreator
+
+import pandas as pd
 from pandas import NaT
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
+
+from corebehrt.constants.data import CONCEPT_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.modules.features.features import FeatureCreator
 
 
 class TestFeatureCreator(unittest.TestCase):
@@ -71,9 +73,7 @@ class TestFeatureCreator(unittest.TestCase):
             }
         )
 
-        self.feature_creator = FeatureCreator(
-            origin_point=datetime(2020, 1, 1),
-        )
+        self.feature_creator = FeatureCreator()
         self.expected_segments = pd.Series(
             [0, 0, 1, 1, 2, 0, 0, 1, 2, 0, 0, 1, 1, 0, 0, 1, 2],
             name="segment",  # bg + death
@@ -118,13 +118,6 @@ class TestFeatureCreator(unittest.TestCase):
         result, _ = self.feature_creator(self.concepts)
         expected_columns = {PID_COL, "age", "segment", "abspos", CONCEPT_COL}
         self.assertTrue(expected_columns.issubset(set(result.columns)))
-
-    def test_origin_point_as_dict(self):
-        feature_creator = FeatureCreator(
-            origin_point={"year": 2020, "month": 1, "day": 1}
-        )
-        result, _ = feature_creator(self.concepts)
-        self.assertIn("abspos", result.columns)
 
     def test_missing_required_columns(self):
         concepts_missing_column = self.concepts.drop(CONCEPT_COL, axis=1)
