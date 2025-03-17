@@ -3,6 +3,7 @@ from os.path import join, dirname
 from os import makedirs
 from typing import Tuple
 import yaml
+import shutil
 
 AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
@@ -67,6 +68,13 @@ def save_job_config(cfg_name: str, cfg: "Config") -> str:  # noqa: F821
     makedirs(dirname(path), exist_ok=True)
     cfg.save_to_yaml(path)
     return path
+
+
+def cleanup_configs():
+    """
+    Removes the temporary config folder
+    """
+    shutil.rmtree(AZURE_CONFIG_FOLDER, ignore_errors=True)
 
 
 def prepare_config(args: dict, inputs: dict, outputs: dict) -> str:
