@@ -93,7 +93,7 @@ def create_and_run_test(args) -> None:
         test_cfg_file=test_cfg_file,
     )
 
-    util.pipeline.run(pl, args.experiment)
+    util.pipeline.run(pl, "corebehrt_pipeline_tests")
 
 
 if __name__ == "__main__":
