@@ -6,60 +6,61 @@ OUTPUTS = {"model": {"type": "uri_folder", "config": "pretrain"}}
 
 
 def create(
-    configs: dict, computes: dict, register_output: dict, log_system_metrics: bool
+    configs: dict,
+    computes: dict,
+    register_output: dict,
+    log_system_metrics: bool,
+    test_cfg_file: str = None,
 ) -> "pipeline":  # noqa: F821
 
     check_azure()
     from azure.ai.ml import dsl, Input
 
+    def component(job_name: str, name: str = None):
+        return create_component(
+            job_name,
+            configs,
+            computes,
+            register_output,
+            log_system_metrics,
+            test_cfg_file,
+            name=name,
+        )
+
     @dsl.pipeline(description="Full E2E CoreBEHRT pipeline")
     def pipeline(data: Input) -> dict:
-        create_data = create_component(
-            "create_data", configs, computes, register_output, log_system_metrics
+        create_data = component(
+            "create_data",
         )(data=data)
 
-        create_outcomes = create_component(
-            "create_outcomes", configs, computes, register_output, log_system_metrics
+        create_outcomes = component(
+            "create_outcomes",
         )(
             data=data,
             features=create_data.outputs.features,
         )
 
-        select_cohort = create_component(
+        select_cohort = component(
             "select_cohort",
-            configs,
-            computes,
-            register_output,
-            log_system_metrics,
         )(
             features=create_data.outputs.features,
             outcomes=create_outcomes.outputs.outcomes,
         )
 
-        prepare_pretrain = create_component(
+        prepare_pretrain = component(
             "prepare_training_data",
-            configs,
-            computes,
-            register_output,
-            log_system_metrics,
             name="prepare_pretrain",
         )(
             features=create_data.outputs.features,
             tokenized=create_data.outputs.tokenized,
         )
 
-        pretrain = create_component(
-            "pretrain", configs, computes, register_output, log_system_metrics
-        )(
+        pretrain = component("pretrain")(
             prepared_data=prepare_pretrain.outputs.prepared_data,
         )
 
-        prepare_finetune = create_component(
+        prepare_finetune = component(
             "prepare_training_data",
-            configs,
-            computes,
-            register_output,
-            log_system_metrics,
             name="prepare_finetune",
         )(
             features=create_data.outputs.features,
@@ -68,12 +69,8 @@ def create(
             outcomes=create_outcomes.outputs.outcomes,
         )
 
-        finetune = create_component(
+        finetune = component(
             "finetune_cv",
-            configs,
-            computes,
-            register_output,
-            log_system_metrics,
         )(
             prepared_data=prepare_finetune.outputs.prepared_data,
             pretrain_model=pretrain.outputs.model,

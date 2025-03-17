@@ -9,6 +9,7 @@ def create_component(
     computes: dict,
     register_output: dict,
     log_system_metrics: bool,
+    test_cfg_file: str = None,
     name: str = None,
 ) -> "command":  # noqa: F821
     check_azure()
@@ -31,7 +32,9 @@ def create_component(
         k[len(name) + 1 :]: v for k, v in register_output if k.startswith(name + ".")
     }
 
-    return job.create(job_name, config, compute, register_output, log_system_metrics)
+    return job.create(
+        job_name, config, compute, register_output, log_system_metrics, test_cfg_file
+    )
 
 
 def create(
@@ -40,6 +43,7 @@ def create(
     computes: dict,
     register_output: dict,
     log_system_metrics: bool,
+    test_cfg_file: str = None,
 ) -> "command":  # noqa: F821
     check_azure()
 
@@ -50,7 +54,7 @@ def create(
 
     # Create pipeline command
     pipeline = pipeline_module.create(
-        config_paths, computes, register_output, log_system_metrics
+        config_paths, computes, register_output, log_system_metrics, test_cfg_file
     )
 
     # Prepare pipeline inputs
