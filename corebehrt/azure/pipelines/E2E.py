@@ -32,6 +32,6 @@ def create(
             tokenized=create_data.outputs.tokenized,
         )
 
-        return {}
+        return {"model": pretrain.outputs.model}
 
     return pipeline
