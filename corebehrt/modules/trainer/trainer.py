@@ -54,6 +54,7 @@ class EHRTrainer:
             last_epoch,
         )
         self._set_default_args(args)
+
         self.logger = logger
         self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
@@ -63,6 +64,9 @@ class EHRTrainer:
         self.scaler = torch.GradScaler(device=self.device.type)
 
         self._initialize_early_stopping()
+        # Add layer freezing if specified in config
+        if cfg.trainer_args.get("freeze_layers", 0) > 0:
+            self._freeze_bottom_layers(cfg.trainer_args.freeze_layers)
 
     def _initialize_basic_attributes(
         self,
@@ -459,3 +463,66 @@ class EHRTrainer:
                 self.args = {**self.args, **value}
             else:
                 setattr(self, key, value)
+
+    def _freeze_bottom_layers(self, n_layers: int):
+        """Freezes the bottom n_layers of the transformer model."""
+        self.log(f"Freezing bottom {n_layers} layers of the model")
+
+        # Most transformer models have a 'encoder.layer' or 'layers' attribute
+        if hasattr(self.model, "encoder"):
+            layers = self.model.encoder.layer
+        elif hasattr(self.model, "layers"):
+            layers = self.model.layers
+        else:
+            self.log(
+                "Warning: Could not detect model layers structure. Freezing skipped."
+            )
+            return
+
+        # Freeze embeddings if they exist
+        if hasattr(self.model, "embeddings"):
+            for param in self.model.embeddings.parameters():
+                param.requires_grad = False
+            self.log("Frozen embedding layer")
+
+        # Freeze the specified number of layers
+        for i in range(n_layers):
+            if i < len(layers):
+                for param in layers[i].parameters():
+                    param.requires_grad = False
+                self.log(f"Frozen layer {i}")
+
+        # Print parameter status after freezing
+        self._print_frozen_status()
+
+    def _print_frozen_status(self):
+        """Prints which parameters are frozen and which are trainable."""
+        self.log("\nModel parameters status:")
+        self.log("-" * 50)
+
+        total_params = 0
+        trainable_params = 0
+        frozen_params = 0
+
+        # Iterate through all named parameters
+        for name, param in self.model.named_parameters():
+            num_params = param.numel()
+            total_params += num_params
+            if param.requires_grad:
+                trainable_params += num_params
+                status = "TRAINABLE"
+            else:
+                frozen_params += num_params
+                status = "FROZEN"
+            self.log(f"{name}: {status} (params: {num_params:,})")
+
+        # Print summary
+        self.log("-" * 50)
+        self.log(f"Total parameters: {total_params:,}")
+        self.log(
+            f"Trainable parameters: {trainable_params:,} ({trainable_params/total_params*100:.2f}%)"
+        )
+        self.log(
+            f"Frozen parameters: {frozen_params:,} ({frozen_params/total_params*100:.2f}%)"
+        )
+        self.log("-" * 50 + "\n")

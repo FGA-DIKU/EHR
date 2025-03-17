@@ -45,6 +45,7 @@ trainer_args:
   checkpoint_frequency: 1
   early_stopping: 20
   stopping_criterion: roc_auc
+  freeze_layers: 0
   
 optimizer:
   lr: 5e-4
