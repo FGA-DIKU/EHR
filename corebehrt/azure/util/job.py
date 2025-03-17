@@ -8,6 +8,7 @@ from corebehrt.azure.util.config import (
     prepare_job_command_args,
     parse_args,
     save_config,
+    cleanup_configs,
 )
 from corebehrt.azure.util.test import evaluate_run
 
@@ -112,7 +113,10 @@ def run(job, experiment: str):
     Starts the given job in the given experiment.
     """
     check_azure()
+
     ml_client().create_or_update(job, experiment_name=experiment)
+
+    cleanup_configs()
 
 
 def run_main(
