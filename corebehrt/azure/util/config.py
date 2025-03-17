@@ -13,7 +13,7 @@ def config_path(
     return (
         f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
-        else join(defaul_cfg_folder, f"{cfg_name}.yaml")
+        else join(default_cfg_folder, f"{cfg_name}.yaml")
     )
 
 

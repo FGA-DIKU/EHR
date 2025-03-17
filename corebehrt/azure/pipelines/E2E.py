@@ -79,6 +79,9 @@ def create(
             pretrain_model=pretrain.outputs.model,
         )
 
-        return {}
+        return {
+            "pretrain_model": pretrain.outputs.model,
+            "model": finetune.outputs.model,
+        }
 
     return pipeline
