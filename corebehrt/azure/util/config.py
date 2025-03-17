@@ -7,11 +7,13 @@ import yaml
 AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
 
-def config_path(cfg_name: str, is_job: bool = False) -> str:
+def config_path(
+    cfg_name: str, is_job: bool = False, default_cfg_folder: str = "corebehrt/configs/"
+) -> str:
     return (
         f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
-        else f"corebehrt/configs/{cfg_name}.yaml"
+        else join(defaul_cfg_folder, f"{cfg_name}.yaml")
     )
 
 

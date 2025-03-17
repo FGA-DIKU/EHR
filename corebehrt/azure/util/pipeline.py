@@ -17,7 +17,11 @@ def create_component(
     name = name or job_name
 
     # Load config from path if given, otherwise load default
-    config = load_config(path=config_paths.get(name), job_name=job_name)
+    config = load_config(
+        path=config_paths.get(name),
+        job_name=job_name,
+        default_cfg_folder="corebehrt/azure/configs/pipeline",
+    )
 
     # Set compute for this job
     compute = computes.get(name, computes["default"])
