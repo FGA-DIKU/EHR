@@ -1,18 +1,9 @@
 logging:
   level: INFO
-  path: ./outputs/logs
+  path: ./logs
 
 paths:
-## INPUTS
-  features: ./outputs/features
-  tokenized: ./outputs/tokenized
-  cohort: ./outputs/cohort # path to cohort directory
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv
-
-## OUTPUTS
-  prepared_data: ./outputs/finetuning/processed_data/ # Save model/outputs to this folder
-  #runs: ./outputs/pretraining # Use for generating a new model folder
-  
+  outcome: TEST_OUTCOME.csv
 
 data:
   type: "finetune"
