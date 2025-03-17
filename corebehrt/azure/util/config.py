@@ -120,6 +120,7 @@ def parse_args(args: set) -> dict:
         parser.add_argument(f"--{arg}", type=str)
     parser.add_argument("--log_system_metrics", action="store_true", default=False)
     parser.add_argument("--config", type=str)
+    parser.add_argument("--test", type=str)
     return vars(parser.parse_args())
 
 
