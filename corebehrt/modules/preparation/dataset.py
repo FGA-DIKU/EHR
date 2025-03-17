@@ -77,7 +77,7 @@ class PatientDataset:
             desc=f"{func.__name__}",
             mininterval=10,
         )
-        results = Parallel(n_jobs=n_jobs, batch_size=chunk_size)(
+        results = Parallel(n_jobs=n_jobs, batch_size=chunk_size, backend="threading")(
             delayed(func)(patient, **kwargs) for patient in loop
         )
 
