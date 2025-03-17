@@ -8,19 +8,22 @@ AZURE_CONFIG_FOLDER = ".azure_job_configs"
 
 
 def config_path(
-    cfg_name: str, is_job: bool = False, default_cfg_folder: str = "corebehrt/configs/"
+    cfg_name: str, is_job: bool = False, default_folder: str = "corebehrt/configs/"
 ) -> str:
     return (
         f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
-        else join(defaul_cfg_folder, f"{cfg_name}.yaml")
+        else join(default_folder, f"{cfg_name}.yaml")
+    )
 
 
-def load_config(path: str = None, job_name: str = None) -> dict:
+def load_config(
+    path: str = None, job_name: str = None, default_folder: str = "corebehrt/configs/"
+) -> dict:
     """
     Load the config from the given path.
     """
-    path = path or config_path(cfg_name=job_name)
+    path = path or config_path(cfg_name=job_name, default_folder=default_folder)
     with open(path, "r") as cfg_file:
         return yaml.safe_load(cfg_file)
 
