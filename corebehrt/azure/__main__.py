@@ -160,6 +160,7 @@ if __name__ == "__main__":
     pl_parser.add_argument(
         "PIPELINE", type=str, choices={"E2E"}, help="Pipeline to run."
     )
+    pl_parser.add_argument("DATA", type=str, help="Raw input data.")
     pl_parser.add_argument(
         "COMPUTE",
         type=str,
