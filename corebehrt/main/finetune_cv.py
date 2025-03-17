@@ -7,15 +7,11 @@ import torch
 
 from corebehrt.constants.paths import (
     FOLDS_FILE,
-    PROCESSED_DATA_DIR,
     TEST_PIDS_FILE,
     PREPARED_ALL_PATIENTS,
 )
-from corebehrt.constants.train import DEFAULT_CV_FOLDS, DEFAULT_VAL_SPLIT
-from corebehrt.functional.features.split import split_into_test_and_train_val_pids
 from corebehrt.functional.setup.args import get_args
-from corebehrt.main.helper.finetune_cv import cv_loop, get_n_folds
-from corebehrt.main.helper.pretrain import get_splits_path
+from corebehrt.main.helper.finetune_cv import cv_loop
 from corebehrt.main.helper.finetune_cv import check_for_overlap
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
