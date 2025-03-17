@@ -1,14 +1,10 @@
 import unittest
-from datetime import datetime
 
 import pandas as pd
 
-from corebehrt.functional.utils.time import get_abspos_from_origin_point
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
+from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.outcomes import OutcomeMaker
-from corebehrt.constants.data import (
-    PID_COL,
-    CONCEPT_COL,
-)
 
 
 class TestOutcomeMaker(unittest.TestCase):
@@ -29,9 +25,6 @@ class TestOutcomeMaker(unittest.TestCase):
                 "case_sensitive": False,
             },
         }
-
-        # Mock origin point
-        self.origin_point = datetime(**{"year": 2020, "month": 1, "day": 26})
 
         # Create a mock concepts_plus DataFrame
         self.concepts_plus = pd.DataFrame(
@@ -66,7 +59,7 @@ class TestOutcomeMaker(unittest.TestCase):
         self.patient_set = [1, 2, 3]
 
         # OutcomeMaker instance
-        self.outcome_maker = OutcomeMaker(self.outcomes, self.origin_point)
+        self.outcome_maker = OutcomeMaker(self.outcomes)
 
     def test_outcome_maker(self):
         # Call OutcomeMaker with the mock data
@@ -83,26 +76,26 @@ class TestOutcomeMaker(unittest.TestCase):
             },
             index=[1],
         )
-        expected_outcome["abspos"] = get_abspos_from_origin_point(
-            expected_outcome["time"], self.origin_point
-        )
+        expected_outcome["abspos"] = get_hours_since_epoch(expected_outcome["time"])
         expected_outcome["abspos"] = expected_outcome["abspos"].astype(int)
         # Check that the outcome table matches the expected result
         pd.testing.assert_frame_equal(
-            result["TEST_OUTCOME"], expected_outcome, check_index_type=False
+            result["TEST_OUTCOME"].astype("int64"),
+            expected_outcome.astype("int64"),
+            check_index_type=False,
         )
 
         # Expected outcome for TEST_CENSOR
         expected_censor = pd.DataFrame(
             {PID_COL: [1], "time": [pd.Timestamp("2020-01-10")]}, index=[0]
         )
-        expected_censor["abspos"] = get_abspos_from_origin_point(
-            expected_censor["time"], self.origin_point
-        )
+        expected_censor["abspos"] = get_hours_since_epoch(expected_censor["time"])
         expected_censor["abspos"] = expected_censor["abspos"].astype(int)
         # Check that the censor table matches the expected result
         pd.testing.assert_frame_equal(
-            result["TEST_CENSOR"], expected_censor, check_index_type=False
+            result["TEST_CENSOR"].astype("int64"),
+            expected_censor.astype("int64"),
+            check_index_type=False,
         )
 
 

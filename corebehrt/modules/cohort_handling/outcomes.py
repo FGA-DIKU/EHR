@@ -1,15 +1,14 @@
 import logging
-from datetime import datetime
 from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
 from corebehrt.constants.data import (
-    PID_COL,
-    TIMESTAMP_COL,
     ABSPOS_COL,
     CONCEPT_COL,
+    PID_COL,
+    TIMESTAMP_COL,
     VALUE_COL,
 )
 from corebehrt.functional.cohort_handling.matching import get_col_booleans
@@ -17,20 +16,14 @@ from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,
     remove_missing_timestamps,
 )
-from corebehrt.functional.utils.time import get_abspos_from_origin_point
+from corebehrt.functional.utils.time import get_hours_since_epoch
 
 logger = logging.getLogger(__name__)
 
 
 class OutcomeMaker:
-    def __init__(self, outcomes: dict, origin_point: dict):
+    def __init__(self, outcomes: dict):
         self.outcomes = outcomes
-        self.origin_point = self.get_origin_point(origin_point)
-
-    def get_origin_point(self, origin_point: dict) -> datetime:
-        if isinstance(origin_point, datetime):
-            return origin_point
-        return datetime(**origin_point)
 
     def __call__(
         self,
@@ -51,9 +44,7 @@ class OutcomeMaker:
                 timestamps = self.match_patient_info(patients_info, matches)
             else:
                 timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
-            timestamps[ABSPOS_COL] = get_abspos_from_origin_point(
-                timestamps[TIMESTAMP_COL], self.origin_point
-            )
+            timestamps[ABSPOS_COL] = get_hours_since_epoch(timestamps[TIMESTAMP_COL])
             timestamps[ABSPOS_COL] = timestamps[ABSPOS_COL].astype(int)
             timestamps[PID_COL] = timestamps[PID_COL].astype(int)
             outcome_tables[outcome] = timestamps
