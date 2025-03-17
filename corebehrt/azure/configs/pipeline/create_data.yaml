@@ -2,9 +2,6 @@ logging:
   level: INFO
   path: ./logs
 
-paths:
-  data: "CoreBEHRT_example_data@latest"
-
 tokenizer:
   sep_tokens: true
   cls_token: true
