@@ -14,11 +14,13 @@ from corebehrt.functional.preparation.filter import filter_rows_by_regex
 from corebehrt.constants.data import CONCEPT_COL, PID_COL
 from corebehrt.functional.preparation.utils import is_valid_regex
 
+
 class FeatureCreator:
     """
     A class to create features from patient information and concepts DataFrames.
     We create background, death, age, absolute position, and segments features.
     """
+
     def __init__(self, exclude_regex: str = None):
         if exclude_regex is not None and not is_valid_regex(exclude_regex):
             raise ValueError(f"Invalid regex: {exclude_regex}")

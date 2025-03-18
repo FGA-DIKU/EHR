@@ -73,6 +73,7 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
     # Recreate a new PatientData from the updated dictionary
     return PatientData(**data)
 
+
 def is_valid_regex(pattern):
     try:
         re.compile(pattern)
