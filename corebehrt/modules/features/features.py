@@ -30,6 +30,7 @@ class FeatureCreator:
             concepts = filter_rows_by_regex(
                 concepts, col=CONCEPT_COL, regex=exclude_regex
             )
+            concepts = concepts.copy()  # to avoid SettingWithCopyWarning
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)
