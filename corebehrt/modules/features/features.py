@@ -11,6 +11,7 @@ from corebehrt.functional.features.creators import (
 from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.setup.checks import check_features_columns
 from corebehrt.functional.preparation.filter import filter_rows_by_regex
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
 
 class FeatureCreator:
     """
@@ -25,7 +26,7 @@ class FeatureCreator:
     ) -> pd.DataFrame:
         check_features_columns(concepts)
         if include_regex is not None:
-            concepts = filter_rows_by_regex(concepts, col="code", regex=include_regex)
+            concepts = filter_rows_by_regex(concepts, col=CONCEPT_COL, regex=include_regex)
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)
@@ -36,6 +37,6 @@ class FeatureCreator:
 
         features = create_segments(features)
         features = features.drop(columns=["admission_id", "time", "birthdate"])
-        features["subject_id"] = features["subject_id"].astype(int)
+        features[PID_COL] = features[PID_COL].astype(int)
 
         return features, patient_info
