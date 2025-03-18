@@ -2,7 +2,6 @@ from bisect import bisect_right
 from typing import List
 
 import pandas as pd
-import re
 
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
@@ -89,9 +88,5 @@ def filter_rows_by_regex(df, col, regex):
     Returns:
         Filtered DataFrame.
     """
-    try:
-        mask = df[col].astype(str).str.contains(regex, case=False, na=False, regex=True)
-        return df.loc[~mask]
-    except re.error as e:
-        print(f"Invalid regex pattern: {regex}\nError: {e}")
-        return df  # Return unfiltered df if regex fails
+    mask = df[col].astype(str).str.contains(regex, case=False, na=False, regex=True)
+    return df.loc[~mask]

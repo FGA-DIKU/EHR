@@ -65,10 +65,10 @@ def create_and_save_features(cfg) -> None:
                 shard_path,
             ).load()
             concepts = handle_numeric_values(concepts, cfg.get("features"))
-            feature_creator = FeatureCreator()
             exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
+            feature_creator = FeatureCreator(exclude_regex=exclude_regex)
             features, patient_info = feature_creator(
-                concepts, exclude_regex=exclude_regex
+                concepts
             )
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
