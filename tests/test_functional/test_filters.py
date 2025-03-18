@@ -4,7 +4,10 @@ from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.functional.preparation.filter import (
     exclude_short_sequences,
     censor_patient,
+    filter_rows_by_regex,
 )
+import pandas as pd
+from datetime import datetime
 
 
 class TestExcludeShortSequences(unittest.TestCase):
@@ -91,6 +94,48 @@ class TestCensorPatient(unittest.TestCase):
         censor_dates = {1: 999.0}
         censored = censor_patient(p1, censor_dates)
         self.assertEqual(len(censored.concepts), 1)
+
+
+class TestRegexFilter(unittest.TestCase):
+    def setUp(self):
+        self.df = pd.DataFrame(
+            {
+                "subject_id": [1, 1, 2, 3, 3, 3],
+                "code": [
+                    "DOB",
+                    "DC521",
+                    "MN001",
+                    "PZZ3912",
+                    "MA01",
+                    "LAB_KOLESTEROL LDL;P",
+                ],
+                "time": [
+                    datetime(1995, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(2015, 7, 2),
+                    datetime(2016, 8, 2),
+                    datetime(2016, 8, 2),
+                ],
+            }
+        )
+
+    def test_positive_filter(self):
+        md_regex = r"^(LAB_.*|P[A-Z].*)$"
+        expected_md = ["DOB", "DC521", "MN001", "MA01"]
+        md_df = filter_rows_by_regex(self.df, "code", md_regex)
+        self.assertListEqual(md_df["code"].tolist(), expected_md)
+
+    def test_negative_filter(self):
+        non_md_regex = r"^(?!LAB_.*|P[A-Z].*).*$"
+        expected_non_md = ["PZZ3912", "LAB_KOLESTEROL LDL;P"]
+        non_md_df = filter_rows_by_regex(self.df, "code", non_md_regex)
+        self.assertListEqual(non_md_df["code"].tolist(), expected_non_md)
+
+    def test_empty_filter(self):
+        all_regex = ".*"
+        empty_df = filter_rows_by_regex(self.df, "code", all_regex)
+        self.assertEqual(empty_df.shape[0], 0)
 
 
 if __name__ == "__main__":
