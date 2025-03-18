@@ -120,8 +120,8 @@ def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
         df with 'index' and 'order' columns.
     """
     if "index" in df.columns and "order" in df.columns:
-        df["index"] = df["index"].fillna(0)
-        df["order"] = df["order"].fillna(0)
+        df.loc[:, "index"] = df["index"].fillna(0)
+        df.loc[:, "order"] = df["order"].fillna(0)
     return df
 
 
