@@ -8,6 +8,7 @@ paths:
   features: ./outputs/features
   
 features:
+  include_regex: '^(?!LAB).*' # example regex to exclude all features that start with 'LAB'
   values:
     value_creator_kwargs:
       num_bins: 100

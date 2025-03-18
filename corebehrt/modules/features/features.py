@@ -10,7 +10,7 @@ from corebehrt.functional.features.creators import (
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.setup.checks import check_features_columns
-
+from corebehrt.functional.preparation.filter import filter_rows_by_regex
 
 class FeatureCreator:
     """
@@ -21,8 +21,11 @@ class FeatureCreator:
     def __call__(
         self,
         concepts: pd.DataFrame,
+        include_regex: str = None,
     ) -> pd.DataFrame:
         check_features_columns(concepts)
+        if include_regex is not None:
+            concepts = filter_rows_by_regex(concepts, col="code", regex=include_regex)
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)
