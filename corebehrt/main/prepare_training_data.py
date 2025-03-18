@@ -1,6 +1,9 @@
 """Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
 
 import logging
+import torch
+from os.path import join
+import os
 
 from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.preparation.prepare_data import DatasetPreparer
@@ -14,6 +17,7 @@ from corebehrt.main.helper.pretrain import (
 from corebehrt.functional.io_operations.save import save_pids_splits
 
 CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
+from corebehrt.constants.paths import FOLDS_FILE, TEST_PIDS_FILE
 
 
 def main_prepare_data(config_path):
@@ -46,6 +50,15 @@ def main_prepare_data(config_path):
         logger.info("Preparing finetune data")
         # Prepare data
         _ = DatasetPreparer(cfg).prepare_finetune_data()
+
+        # Save splits from cohort selection
+        folds_path = get_splits_path(cfg.paths)
+        folds = torch.load(folds_path)
+        torch.save(folds, join(cfg.paths.prepared_data, FOLDS_FILE))
+        test_pids_file = join(cfg.paths.cohort, TEST_PIDS_FILE)
+        if os.path.exists(test_pids_file):
+            test_pids = torch.load(test_pids_file)
+            torch.save(test_pids, join(cfg.paths.prepared_data, TEST_PIDS_FILE))
 
     else:
         raise ValueError(f"Unsupported data type: {cfg.data.type}")
