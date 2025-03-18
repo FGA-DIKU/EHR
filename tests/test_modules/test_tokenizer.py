@@ -10,6 +10,7 @@ from corebehrt.constants.data import (
     UNKNOWN_TOKEN,
     PID_COL,
     CONCEPT_COL,
+    MASK_TOKEN,
 )
 
 
@@ -202,6 +203,80 @@ class TestEHRTokenizer(unittest.TestCase):
             pid_df = result[result[PID_COL] == pid]
             first_concept = pid_df[CONCEPT_COL].iloc[0]
             self.assertEqual(first_concept, cls_token_id)
+
+    def test_tokenizer_with_code_mapping(self):
+        """Test tokenizer with code mapping dictionary."""
+        # Create a mapping dictionary
+        code_mapping = {
+            "C1": "MAPPED_C1",
+            "C2": "MAPPED_C2",
+            # C3 and others intentionally not mapped
+        }
+
+        tokenizer = EHRTokenizer(code_mapping=code_mapping)
+        result = tokenizer(self.df)
+
+        # Get special token IDs
+        special_tokens = {
+            tokenizer.vocabulary[CLS_TOKEN],
+            tokenizer.vocabulary[SEP_TOKEN],
+        }
+
+        # Create a list of non-special tokens from result
+        result_tokens = []
+        for _, row in result.reset_index().iterrows():
+            if row[CONCEPT_COL] not in special_tokens:
+                result_tokens.append(row[CONCEPT_COL])
+
+        # Create list of expected tokens
+        expected_tokens = []
+        for code in self.df[CONCEPT_COL]:
+            mapped_code = code_mapping.get(code, code)
+            expected_tokens.append(tokenizer.vocabulary[mapped_code])
+
+        # Compare the tokens
+        self.assertEqual(result_tokens, expected_tokens)
+
+        # Verify vocabulary contents
+        self.assertIn("MAPPED_C1", tokenizer.vocabulary)
+        self.assertIn("MAPPED_C2", tokenizer.vocabulary)
+        self.assertNotIn("C1", tokenizer.vocabulary)
+        self.assertNotIn("C2", tokenizer.vocabulary)
+        self.assertIn("C3", tokenizer.vocabulary)
+        self.assertIn("C4", tokenizer.vocabulary)
+
+    def test_tokenizer_with_empty_code_mapping(self):
+        """Test tokenizer with empty code mapping dictionary."""
+        tokenizer = EHRTokenizer(code_mapping={})
+        tokenizer(self.df)
+
+        # Should behave same as without mapping
+        df_codes = set(self.df[CONCEPT_COL].unique())
+        vocab_codes = {
+            k
+            for k in tokenizer.vocabulary.keys()
+            if k not in [PAD_TOKEN, CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, MASK_TOKEN]
+        }
+
+        # All original codes should be in vocabulary
+        self.assertEqual(df_codes, vocab_codes)
+
+    def test_tokenizer_with_partial_code_mapping(self):
+        """Test tokenizer with code mapping that includes non-existent codes."""
+        code_mapping = {
+            "C1": "MAPPED_C1",
+            "NONEXISTENT": "MAPPED_NONEXISTENT",  # Code that doesn't exist in data
+        }
+
+        tokenizer = EHRTokenizer(code_mapping=code_mapping)
+        tokenizer(self.df)
+
+        # Check that MAPPED_C1 is in vocabulary
+        self.assertIn("MAPPED_C1", tokenizer.vocabulary)
+
+        # Check that MAPPED_NONEXISTENT is not in vocabulary
+        # (since the original code wasn't in the data)
+        self.assertNotIn("MAPPED_NONEXISTENT", tokenizer.vocabulary)
 
 
 if __name__ == "__main__":

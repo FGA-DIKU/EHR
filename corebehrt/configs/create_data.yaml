@@ -6,6 +6,9 @@ paths:
   data: ./example_data/example_MEDS_data_w_labs
   tokenized: ./outputs/tokenized
   features: ./outputs/features
+  # optional
+  # code_mapping: ./outputs/code_mapping.pt
+  # vocabulary: ./outputs/vocabulary # vocab folder
   
 features:
   include_regex: '^(?!LAB).*' # example regex to exclude all features that start with 'LAB'
