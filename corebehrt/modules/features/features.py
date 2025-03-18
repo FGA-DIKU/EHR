@@ -13,6 +13,7 @@ from corebehrt.functional.setup.checks import check_features_columns
 from corebehrt.functional.preparation.filter import filter_rows_by_regex
 from corebehrt.constants.data import CONCEPT_COL, PID_COL
 
+
 class FeatureCreator:
     """
     A class to create features from patient information and concepts DataFrames.
@@ -26,7 +27,9 @@ class FeatureCreator:
     ) -> pd.DataFrame:
         check_features_columns(concepts)
         if include_regex is not None:
-            concepts = filter_rows_by_regex(concepts, col=CONCEPT_COL, regex=include_regex)
+            concepts = filter_rows_by_regex(
+                concepts, col=CONCEPT_COL, regex=include_regex
+            )
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)

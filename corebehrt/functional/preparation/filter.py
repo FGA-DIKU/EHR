@@ -74,6 +74,7 @@ def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
         df = df[~df[column].isin(exclude_values)]
     return df
 
+
 def filter_rows_by_regex(df, col, regex):
     """
     Filter rows in a DataFrame based on a regex pattern applied to a specific column.
