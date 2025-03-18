@@ -100,9 +100,17 @@ class TestRegexFilter(unittest.TestCase):
     def setUp(self):
         self.df = pd.DataFrame(
             {
-                "subject_id": [1, 2, 3, 3, 3],
-                "code": ["DC521", "MN001", "PZZ3912", "MA01", "LAB_KOLESTEROL LDL;P"],
+                "subject_id": [1, 1, 2, 3, 3, 3],
+                "code": [
+                    "DOB",
+                    "DC521",
+                    "MN001",
+                    "PZZ3912",
+                    "MA01",
+                    "LAB_KOLESTEROL LDL;P",
+                ],
                 "time": [
+                    datetime(1995, 5, 1),
                     datetime(2000, 5, 1),
                     datetime(2015, 7, 1),
                     datetime(2015, 7, 2),
@@ -113,21 +121,21 @@ class TestRegexFilter(unittest.TestCase):
         )
 
     def test_positive_filter(self):
-        md_regex = r"^[DM][A-Z]\d.*"
-        expected_md = ["DC521", "MN001", "MA01"]
+        md_regex = r"^(LAB_.*|P[A-Z].*)$"
+        expected_md = ["DOB", "DC521", "MN001", "MA01"]
         md_df = filter_rows_by_regex(self.df, "code", md_regex)
         self.assertListEqual(md_df["code"].tolist(), expected_md)
 
     def test_negative_filter(self):
-        non_md_regex = r"^(?![DM][A-Z]\d).*"
+        non_md_regex = r"^(?!LAB_.*|P[A-Z].*).*$"
         expected_non_md = ["PZZ3912", "LAB_KOLESTEROL LDL;P"]
         non_md_df = filter_rows_by_regex(self.df, "code", non_md_regex)
         self.assertListEqual(non_md_df["code"].tolist(), expected_non_md)
 
     def test_empty_filter(self):
-        empty_regex = ".*"
-        empty_df = filter_rows_by_regex(self.df, "code", empty_regex)
-        self.assertEqual(empty_df.shape[0], self.df.shape[0])
+        all_regex = ".*"
+        empty_df = filter_rows_by_regex(self.df, "code", all_regex)
+        self.assertEqual(empty_df.shape[0], 0)
 
 
 if __name__ == "__main__":

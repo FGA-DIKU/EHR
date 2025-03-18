@@ -66,9 +66,9 @@ def create_and_save_features(cfg) -> None:
             ).load()
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             feature_creator = FeatureCreator()
-            include_regex = cfg.get("features", {}).get("include_regex", None)
+            exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
             features, patient_info = feature_creator(
-                concepts, include_regex=include_regex
+                concepts, exclude_regex=exclude_regex
             )
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
