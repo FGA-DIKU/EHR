@@ -21,6 +21,7 @@ TEST_PIDS_FILE = "test_pids.pt"
 FOLDS_FILE = "folds.pt"
 PREPARED_TRAIN_PATIENTS = "patients_train.pt"
 PREPARED_VAL_PATIENTS = "patients_val.pt"
+PREPARED_ALL_PATIENTS = "patients.pt"
 
 ### File Patterns ###
 CONCEPT_FORMAT = "concept.*"
