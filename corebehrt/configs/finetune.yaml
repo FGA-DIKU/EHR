@@ -39,7 +39,12 @@ trainer_args:
   checkpoint_frequency: 1
   early_stopping: 20
   stopping_criterion: roc_auc
+  
+  # Freezing options
   n_layers_to_freeze: 1
+  unfreeze_on_plateau: true # unfreeze all layers if the performance is less than plateau_threshold 
+  plateau_threshold: 0.01 
+  reset_patience_after_unfreeze: true # reset early stopping counter after unfreezing
   
 optimizer:
   lr: 5e-4

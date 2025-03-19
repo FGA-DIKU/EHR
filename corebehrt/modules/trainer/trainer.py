@@ -16,7 +16,8 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     save_predictions,
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
-from corebehrt.modules.trainer.freezing import freeze_bottom_layers
+from corebehrt.modules.trainer.freezing import freeze_bottom_layers, unfreeze_all_layers
+from corebehrt.modules.trainer.utils import is_plateau
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -65,13 +66,7 @@ class EHRTrainer:
         self.scaler = torch.GradScaler(device=self.device.type)
 
         self._initialize_early_stopping()
-        if self.cfg.trainer_args.get("n_layers_to_freeze", 0) > 0:
-            self.model = freeze_bottom_layers(
-                self.model, self.cfg.trainer_args.get("n_layers_to_freeze", 0)
-            )
-        self.unfreeze_on_plateau = self.cfg.trainer_args.get(
-            "unfreeze_on_plateau", False
-        )
+        self._initialize_freezing()
         log_number_of_trainable_parameters(self.model)
 
     def _initialize_basic_attributes(
@@ -105,6 +100,20 @@ class EHRTrainer:
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
 
+        self.already_unfrozen = False
+
+    def _initialize_freezing(self):
+        self.already_unfrozen = True
+        if self.cfg.trainer_args.get("n_layers_to_freeze", 0) > 0:
+            self.model = freeze_bottom_layers(
+                self.model, self.cfg.trainer_args.n_layers_to_freeze
+            )
+            self.already_unfrozen = False
+
+        self.unfreeze_on_plateau = self.cfg.trainer_args.get(
+            "unfreeze_on_plateau", False
+        )
+
     def _set_default_args(self, args):
         default_args = {
             "save_every_k_steps": float("inf"),
@@ -129,6 +138,7 @@ class EHRTrainer:
         self.log(
             f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
         )
+        self.best_metric_value = None
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
@@ -221,6 +231,7 @@ class EHRTrainer:
                 final_step_loss=epoch_loss[-1],
                 best_model=True,
             )
+        self._check_unfreeze_on_plateau(val_metrics)
         if self._should_stop_early(
             epoch, val_loss, epoch_loss, val_metrics, test_metrics
         ):
@@ -308,6 +319,8 @@ class EHRTrainer:
 
     def _is_improvement(self, current_metric_value):
         """Returns True if the current metric value is an improvement over the best metric value"""
+        if self.best_metric_value is None:
+            return True
         if self.stopping_metric == "val_loss":
             return current_metric_value < self.best_metric_value
         else:
@@ -469,3 +482,33 @@ class EHRTrainer:
                 self.args = {**self.args, **value}
             else:
                 setattr(self, key, value)
+
+    def _check_unfreeze_on_plateau(self, val_metrics):
+        """Check if we should unfreeze all layers based on plateau detection."""
+        # Skip if either feature is disabled or we've already unfrozen or if we don't have a best metric value
+        if (
+            not self.unfreeze_on_plateau
+            or getattr(self, "already_unfrozen", False)
+            or self.best_metric_value is None
+        ):
+            return
+
+        current_metric_value = val_metrics.get(
+            self.stopping_metric
+        )  # get the metric we monits. Same as early stopping
+
+        if is_plateau(
+            self.best_metric_value,
+            current_metric_value,
+            self.cfg.trainer_args.get("plateau_threshold", 0.01),
+        ):
+            self.log("Performance plateau detected! Unfreezing all layers of the model")
+            self.model = unfreeze_all_layers(self.model)
+
+            # Mark as unfrozen to avoid repeated unfreezing
+            self.already_unfrozen = True
+
+            # Optionally reset early stopping counter after unfreezing
+            if self.cfg.trainer_args.get("reset_patience_after_unfreeze", True):
+                self.early_stopping_counter = 0
+                self.log("Reset early stopping counter after unfreezing")
