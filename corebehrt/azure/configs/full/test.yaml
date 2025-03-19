@@ -1,0 +1,39 @@
+data: "MEDS_all_20240910:1"
+
+computes:
+    default: "CPU-20-LP"
+    pretrain: "GPU-A100-Single"
+    finetune_cv: "GPU-A100-Single"
+
+create_data:
+    max_run_time: 200
+
+create_outcomes:
+    max_run_time: 30
+
+prepare_training_data:
+    max_run_time: 30
+
+select_cohort:
+    max_run_time: 30
+
+pretrain:
+    max_run_time: 300
+    metrics:
+        - type: "Val loss"
+          max: 7.8
+        - type: "Learning Rate"
+          min: 0.0001
+
+finetune_cv:
+    max_run_time: 200
+    metrics:
+        - type: "false_negatives"
+          child: "Fold 1"
+          max: 1
+        - type: "accuracy mean"
+          child: "val scores"
+          min: 0.5
+          
+
+on_fail: "raise"
