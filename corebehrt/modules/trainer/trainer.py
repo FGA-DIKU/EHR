@@ -5,7 +5,9 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, Dataset
 
+from corebehrt import azure
 from corebehrt.functional.trainer.collate import dynamic_padding
+from corebehrt.functional.trainer.log import log_number_of_trainable_parameters
 from corebehrt.modules.monitoring.logger import get_tqdm
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_avg_metrics,
@@ -14,8 +16,6 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     save_predictions,
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
-from corebehrt import azure
-from corebehrt.modules.trainer.log import log_number_of_trainable_parameters
 from corebehrt.modules.trainer.freezing import freeze_bottom_layers
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
@@ -69,7 +69,9 @@ class EHRTrainer:
             self.model = freeze_bottom_layers(
                 self.model, self.cfg.trainer_args.get("n_layers_to_freeze", 0)
             )
-
+        self.unfreeze_on_plateau = self.cfg.trainer_args.get(
+            "unfreeze_on_plateau", False
+        )
         log_number_of_trainable_parameters(self.model)
 
     def _initialize_basic_attributes(
