@@ -14,9 +14,11 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
 
     ## Setup
     try:
+        import mlflow
+
         run = mlflow.get_run(run_id)
-    except:
-        logger.error("Could not load run!")
+    except Exception as e:
+        logger.error(f"Could not load run with ID {run_id}! Error: {e}")
         return
 
     # Check that cfg file exists
