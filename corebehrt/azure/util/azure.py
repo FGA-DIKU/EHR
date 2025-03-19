@@ -1,4 +1,4 @@
-from corebehrt.azure.util.supress import supress_warnings
+from corebehrt.azure.util.suppress import suppress_warnings
 
 AZURE_AVAILABLE = False
 
@@ -6,7 +6,7 @@ try:
     #
     # Check if azure is available and set flag.
     #
-    with supress_warnings():
+    with suppress_warnings():
         from azure.ai.ml import MLClient
         from azure.identity import DefaultAzureCredential
 
