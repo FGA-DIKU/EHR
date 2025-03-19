@@ -133,10 +133,22 @@ class EHRTrainer:
             0  # Counter to keep track of epochs since last best val loss
         )
         self.stop_training = False
+
         # Get the metric to use for early stopping from the config
         self.stopping_metric = self.cfg.trainer_args.get("stopping_metric", "val_loss")
+
+        # Check if the specified metric is available in our metrics
+        metric_exists = (
+            self.stopping_metric == "val_loss" or self.stopping_metric in self.metrics
+        )
+        if not metric_exists:
+            self.log(
+                f"WARNING: Specified stopping metric '{self.stopping_metric}' is not available in metrics. Falling back to 'val_loss'."
+            )
+            self.stopping_metric = "val_loss"
+
         self.log(
-            f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
+            f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} using metric '{self.stopping_metric}'"
         )
         self.best_metric_value = None
 
@@ -231,9 +243,14 @@ class EHRTrainer:
                 final_step_loss=epoch_loss[-1],
                 best_model=True,
             )
-        self._check_unfreeze_on_plateau(val_metrics)
+
+        current_metric_value = val_metrics.get(
+            self.stopping_metric, val_loss
+        )  # get the metric we monitor. Same as early stopping
+
+        self._check_unfreeze_on_plateau(current_metric_value)
         if self._should_stop_early(
-            epoch, val_loss, epoch_loss, val_metrics, test_metrics
+            epoch, current_metric_value, val_loss, epoch_loss, val_metrics, test_metrics
         ):
             return
         self._save_checkpoint_conditionally(
@@ -286,6 +303,7 @@ class EHRTrainer:
     def _should_stop_early(
         self,
         epoch,
+        current_metric_value: float,
         val_loss: float,
         epoch_loss: float,
         val_metrics: dict,
@@ -294,7 +312,6 @@ class EHRTrainer:
         if not self.early_stopping:
             return False
         # Get the current value of the metric
-        current_metric_value = val_metrics.get(self.stopping_metric, val_loss)
         self._initialize_best_metric_value(current_metric_value)
         if self._is_improvement(current_metric_value):
             self.best_metric_value = current_metric_value
@@ -483,7 +500,7 @@ class EHRTrainer:
             else:
                 setattr(self, key, value)
 
-    def _check_unfreeze_on_plateau(self, val_metrics):
+    def _check_unfreeze_on_plateau(self, current_metric_value):
         """Check if we should unfreeze all layers based on plateau detection."""
         # Skip if either feature is disabled or we've already unfrozen or if we don't have a best metric value
         if (
@@ -492,10 +509,6 @@ class EHRTrainer:
             or self.best_metric_value is None
         ):
             return
-
-        current_metric_value = val_metrics.get(
-            self.stopping_metric
-        )  # get the metric we monits. Same as early stopping
 
         if is_plateau(
             self.best_metric_value,
