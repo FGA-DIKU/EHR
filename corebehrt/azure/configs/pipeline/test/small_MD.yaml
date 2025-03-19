@@ -20,14 +20,20 @@ select_cohort:
 pretrain:
     max_run_time: 300
     metrics:
-        - type: roc_auc
-          min: 0.9
+        - type: "Val loss"
+          max: 7.8
+        - type: "Learning Rate"
+          min: 0.0001
 
 finetune_cv:
     max_run_time: 20
     metrics:
-        - type: roc_auc
+        - type: "false_negatives"
           child: "Fold 1"
-          min: 0.9
+          max: 1
+        - type: "accuracy mean"
+          child: "val scores"
+          min: 0.5
+          
 
 on_fail: "raise"
