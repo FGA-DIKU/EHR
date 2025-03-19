@@ -43,7 +43,14 @@ def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa:
     # Metrics test
     metrics = cfg.get("metrics", {})
     for metric, metric_cfg in metrics.items():
-        results.append(perform_metric_test(run, metric, **metric_cfg))
+        results.append(
+            perform_metric_test(
+                run,
+                metric,
+                min_value=metric_cfg.get("min"),
+                max_value=metric_cfg.get("max"),
+            )
+        )
 
     ## Finish
     if all(results):
