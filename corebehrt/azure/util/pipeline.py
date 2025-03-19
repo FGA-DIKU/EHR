@@ -72,9 +72,9 @@ def create(
         )
 
         # Apply all relevant output registrations
-        register_output = {
+        outputs = {
             k[len(name) + 1 :]: v
-            for k, v in register_output
+            for k, v in register_output.items()
             if k.startswith(name + ".")
         }
 
@@ -82,7 +82,7 @@ def create(
             job_type,
             config,
             compute,
-            register_output,
+            outputs,
             log_system_metrics,
             test_cfg_file,
         )
