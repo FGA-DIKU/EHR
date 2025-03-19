@@ -80,14 +80,14 @@ def create_and_run_test(args) -> None:
     size = args.SIZE
     concepts = args.CONCEPTS
 
-    test_cfg_file = f"corebehrt/azure/configs/pipeline/test/{size}_{concepts}.yaml"
+    test_cfg_file = f"corebehrt/azure/configs/tests/{size}/test.yaml"
     test_cfg = load_config(test_cfg_file)
 
     pl = util.pipeline.create(
         "E2E",
         test_cfg["data"],
-        test_cfg.get("configs", {}),
         test_cfg.get("computes", {}),
+        config_dir=f"corebehrt/azure/configs/tests/{size}",
         register_output={},
         log_system_metrics=True,
         test_cfg_file=test_cfg_file,

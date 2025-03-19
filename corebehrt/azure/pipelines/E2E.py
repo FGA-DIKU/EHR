@@ -1,28 +1,17 @@
 from corebehrt.azure.util import check_azure
-from corebehrt.azure.util.pipeline import create_component
 
 
 def create(
-    configs: dict,
-    computes: dict,
-    register_output: dict,
-    log_system_metrics: bool,
-    test_cfg_file: str = None,
+    #    configs: dict,
+    #    computes: dict,
+    #    register_output: dict,
+    #    log_system_metrics: bool,
+    #    test_cfg_file: str = None,
+    component: callable,
 ) -> "pipeline":  # noqa: F821
 
     check_azure()
     from azure.ai.ml import dsl, Input
-
-    def component(job_name: str, name: str = None):
-        return create_component(
-            job_name,
-            configs,
-            computes,
-            register_output,
-            log_system_metrics,
-            test_cfg_file,
-            name=name,
-        )
 
     @dsl.pipeline(description="Full E2E CoreBEHRT pipeline")
     def pipeline(data: Input) -> dict:
