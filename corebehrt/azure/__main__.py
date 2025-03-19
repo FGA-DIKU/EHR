@@ -79,14 +79,14 @@ def create_and_run_test(args) -> None:
     """
     name = args.NAME
 
-    test_cfg_file = f"corebehrt/azure/configs/tests/{name}/test.yaml"
+    test_cfg_file = f"corebehrt/azure/configs/{name}/test.yaml"
     test_cfg = load_config(test_cfg_file)
 
     pl = util.pipeline.create(
         "E2E",
         test_cfg["data"],
         test_cfg.get("computes", {}),
-        config_dir=f"corebehrt/azure/configs/tests/{name}",
+        config_dir=f"corebehrt/azure/configs/{name}",
         register_output={},
         log_system_metrics=True,
         test_cfg_file=test_cfg_file,
