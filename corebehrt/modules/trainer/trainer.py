@@ -15,6 +15,8 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt import azure
+from corebehrt.modules.trainer.log import log_number_of_trainable_parameters
+from corebehrt.modules.trainer.freezing import freeze_bottom_layers
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -63,6 +65,12 @@ class EHRTrainer:
         self.scaler = torch.GradScaler(device=self.device.type)
 
         self._initialize_early_stopping()
+        if self.cfg.trainer_args.get("n_layers_to_freeze", 0) > 0:
+            self.model = freeze_bottom_layers(
+                self.model, self.cfg.trainer_args.get("n_layers_to_freeze", 0)
+            )
+
+        log_number_of_trainable_parameters(self.model)
 
     def _initialize_basic_attributes(
         self,
