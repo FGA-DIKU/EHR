@@ -15,28 +15,32 @@ This guide walks through the steps required to **finetune a model for binary cla
 
 ## 1. Create Data
 
-The starting point is a set of CSV files containing patient-level metadata and event-level data, consider using the [EHR_PREPROCESS](https://github.com/kirilklein/ehr_preprocess.git) repository to generate formatted data in CVS files.
+The COREBEHRT pipeline requires input data in the [MEDS (Medical-Event-Data-Standard)](https://github.com/Medical-Event-Data-Standard/meds) format, which is a standardized structure for longitudinal healthcare data. You can use [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to convert your raw healthcare data into MEDS format.
+`create_data` is the first step in the pipeline and is used to convert MEDS data into features and tokenize them.
+Feature creation done by `FeatureCreator` class in `corebehrt/functional/features/creators.py`. Consists of:
 
-For example, you might have:
+- Convert timestamps to relative positions (hours from unix epoch)
+- Create segments of (events occuring no more than 24 hours apart)
+- Bin values and convert to codes.
 
-- **`patients_info.csv`** (holding patient-level metadata)
+### Example input format
 
-  | PID  | BIRTHDATE   | DEATHDATE   | GENDER | …   |
-  |------|-------------|-------------|--------|-----|
-  | p1   | 1980-01-01  | 2022-06-01  | M      | …   |
-  | p2   | 1975-03-12  | NaN         | F      | …   |
-  | …    | …           | …           | …      | …   |
+subject_id | event_datetime       | concept_code | value
+-----------|----------------------|--------------|----------
+P001       | 1980-05-10 00:00:00  | DOB          | null
+P001       | 1980-05-10 00:00:00  | GENDER       | F
+P001       | 2022-01-15 09:30:00  | I21.0        | null
+P001       | 2022-01-15 09:50:00  | LAB_GLUCOSE  | 145
 
-- **`concept.diagnose.csv`, `concept.procedure.csv`, `concept.medication.csv`, `concept.lab.csv`, …** (event-level data)
+### Example output format
 
-  | TIMESTAMP   | PID  | ADMISSION_ID | CONCEPT  | …   |
-  |-------------|------|--------------|----------|-----|
-  | 2012-01-05  | p1   | adm101       | D123     | …   |
-  | 2012-01-05  | p1   | adm101       | D124     | …   |
-  | 2015-03-20  | p2   | adm205       | D786     | …   |
-  | …           | …    | …            | …        | …   |
-
-These files feed into the **Create Data** pipeline, which merges, tokenizes, and structures the data for subsequent **Pretrain** and **Finetune** steps.
+subject_id | abspos     | code                | segment
+-----------|------------|---------------------|--------
+0          | 304704.0   | DOB                 | 0
+0          | 304704.0   | BG_GENDER//F        | 0
+0          | 457833.0   | I21.0               | 1
+0          | 457833.5   | LAB_GLUCOSE         | 1
+0          | 457833.5   | VAL_1               | 1
 
 ## 2. Prepare Training Data (pretrain)
 
@@ -85,7 +89,6 @@ case_sensitive: false    # Case sensitivity for matching
 ### Outputs
 
 - A CSV file containing **outcome timestamps** for each patient.
-- If needed, a separate outcome file can be created to serve as the **exposure**.
 
 ---
 
@@ -170,13 +173,6 @@ The `finetune_cv` script trains a model using the selected cohort.
 Edit the **training configuration file**:
 
 ```yaml
-# Outcome Definitions
-outcome:
-
-  n_hours_censoring: -10        # Censor outcomes occurring this many hours before index date
-  n_hours_start_follow_up: 1    # Start of outcome observation window
-  n_hours_end_follow_up: 168    # End of observation window (e.g., 7 days), can be null
-
 # Training Parameters
 trainer_args:
   batch_size: 256
@@ -287,12 +283,12 @@ This configuration ensures that the model is trained on data available up to the
 
 ## Summary
 
-| Step                     | Script           | Key Configs | Output Files |
-|--------------------------|-----------------|-------------|-------------|
-| **1. Outcome Definition** | `create_outcomes` | Outcome matching criteria | `outcomes.csv` |
-| **2. Cohort Selection** | `select_cohort` | Patient criteria, demographics, index date | `pids.pt`, `folds.pt`, `index_dates.csv` |
-| **3. Model Finetuning** | `finetune_cv` | Censoring time, follow-up window, training params | Trained model, performance metrics |
-| **4. Temporal Validation** | `select_cohort` + `finetune_cv` | Time-based validation, shifting follow-up | Evaluation results |
+Step                     | Script           | Key Configs | Output Files
+--------------------------|-----------------|-------------|-------------
+**1. Outcome Definition** | `create_outcomes` | Outcome matching criteria | `outcomes.csv`
+**2. Cohort Selection** | `select_cohort` | Patient criteria, demographics, index date | `pids.pt`, `folds.pt`, `index_dates.csv`
+**3. Model Finetuning** | `finetune_cv` | Censoring time, follow-up window, training params | Trained model, performance metrics
+**4. Temporal Validation** | `select_cohort` + `finetune_cv` | Time-based validation, shifting follow-up | Evaluation results
 
 ---
   
