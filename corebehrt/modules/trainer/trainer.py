@@ -135,7 +135,9 @@ class EHRTrainer:
         self.stop_training = False
 
         # Get the metric to use for early stopping from the config
-        self.stopping_metric = self.cfg.trainer_args.get("stopping_metric", "val_loss")
+        self.stopping_metric = self.cfg.trainer_args.get(
+            "stopping_criterion", "val_loss"
+        )
 
         # Check if the specified metric is available in our metrics
         metric_exists = (
@@ -145,6 +147,9 @@ class EHRTrainer:
             self.log(
                 f"WARNING: Specified stopping metric '{self.stopping_metric}' is not available in metrics. Falling back to 'val_loss'."
             )
+            self.log("Available metrics:")
+            for metric in self.metrics:
+                self.log(f"- {metric}")
             self.stopping_metric = "val_loss"
 
         self.log(
