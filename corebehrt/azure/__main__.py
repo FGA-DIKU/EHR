@@ -63,11 +63,11 @@ def create_and_run_pipeline(args) -> None:
     pl = util.pipeline.create(
         args.PIPELINE,
         args.DATA,
-        cfg_paths,
         computes,
+        config_paths=cfg_paths,
+        config_dir=args.CONFIG_DIR,
         register_output=register_output,
         log_system_metrics=args.log_system_metrics,
-        test_cfg_file="TEST_FILE",
     )
 
     util.pipeline.run(pl, args.experiment)
@@ -164,7 +164,15 @@ if __name__ == "__main__":
         "COMPUTE",
         type=str,
         default=None,
+        nargs="?",
         help="Default compute target to use. If not set, compute targets must be specified for all components.",
+    )
+    pl_parser.add_argument(
+        "CONFIG_DIR",
+        type=str,
+        default=None,
+        nargs="?",
+        help="Path to folder with configs. If not set, configs must be specified for all components.",
     )
     pl_parser.add_argument(
         "-cp",
