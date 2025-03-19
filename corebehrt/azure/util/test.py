@@ -62,7 +62,7 @@ def perform_time_test(run, max_value: int) -> bool:
     run_time = (end_time - run.info.start_time) // 1000
     return log_test_result(
         "Run time",
-        run_time > max_value,
+        run_time <= max_value,
         f"Actual run time: {run_time}, threshold: {max_value}",
     )
 
@@ -76,11 +76,11 @@ def perform_metric_test(
     max_ok = True
     if min_value:
         min_ok = log_test_result(
-            f"{metric} [minimum]", metric > min_value, f"{metric}>{min_value}"
+            f"{metric} [minimum]", metric >= min_value, f"{metric}>{min_value}"
         )
     if max_value:
         max_ok = log_test_result(
-            f"{metric} [maximum]", metric < max_value, f"{metric}<{max_value}"
+            f"{metric} [maximum]", metric <= max_value, f"{metric}<{max_value}"
         )
     return min_ok and max_ok
 
@@ -90,8 +90,8 @@ def log_test_result(test_name: str, ok: bool, msg: str = "") -> None:
 
     if ok:
         msg = f"{test_name} test passed. " + msg
-        logger.warning(msg)
-    else:
-        msg = f"{test_name} passed. " + msg
         logger.info(msg)
+    else:
+        msg = f"{test_name} test failed. " + msg
+        logger.warning(msg)
     return ok
