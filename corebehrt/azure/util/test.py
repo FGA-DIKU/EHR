@@ -30,6 +30,9 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
         )
         return
 
+    # Read 'on_fail' from top level config
+    on_fail = cfg.get("on_fail")
+
     # Get sub-config for this job
     if not (cfg := cfg.get(job_name, False)):
         logger.warning(
@@ -58,7 +61,7 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
         msg = f"One or more tests failed!"
         logger.error(msg)
         print(msg, file=sys.stderr)
-        if cfg.get("on_fail") == "raise":
+        if on_fail == "raise":
             raise Exception(msg)
 
 
