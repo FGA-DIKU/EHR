@@ -1,7 +1,8 @@
 import os
 import yaml
 
-from .util import check_azure, ml_client
+from corebehrt.azure.util import check_azure, ml_client
+from corebehrt.azure.util.supress import supress_warnings
 
 TMP_CONDA_FILE = ".cb_conda.yaml"
 REQUIREMENTS_FILE = "requirements.txt"
@@ -20,16 +21,17 @@ def build():
     # Create config file
     create_conda_cfg()
 
-    # Create environment and start build
-    from azure.ai.ml.entities import Environment
+    with supress_warnings():
+        # Create environment and start build
+        from azure.ai.ml.entities import Environment
 
-    env = Environment(
-        image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04",
-        conda_file=TMP_CONDA_FILE,
-        name="CoreBEHRT",
-        description="Environment created by the CoreBEHRT package.",
-    )
-    mlc.environments.create_or_update(env)
+        env = Environment(
+            image="mcr.microsoft.com/azureml/openmpi4.1.0-ubuntu20.04",
+            conda_file=TMP_CONDA_FILE,
+            name="CoreBEHRT",
+            description="Environment created by the CoreBEHRT package.",
+        )
+        mlc.environments.create_or_update(env)
 
     # Clean-up
     remove_conda_cfg()
