@@ -82,7 +82,7 @@ def perform_metric_test(
     run, metric: str, min_value: float = None, max_value: float = None
 ) -> bool:
     if metric not in run.data.metrics:
-        return log_rest_result(f"{metric}", False, f"Metric not found!")
+        return log_test_result(f"{metric}", False, f"Metric not found!")
 
     metric_value = run.data.metrics.get(metric)
 
