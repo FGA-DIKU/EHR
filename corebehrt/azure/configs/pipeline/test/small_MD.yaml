@@ -26,7 +26,7 @@ pretrain:
           min: 0.0001
 
 finetune_cv:
-    max_run_time: 20
+    max_run_time: 200
     metrics:
         - type: "false_negatives"
           child: "Fold 1"

@@ -2,7 +2,7 @@ import os
 import yaml
 
 from corebehrt.azure.util import check_azure, ml_client
-from corebehrt.azure.util.supress import supress_warnings
+from corebehrt.azure.util.suppress import suppress_warnings
 
 TMP_CONDA_FILE = ".cb_conda.yaml"
 REQUIREMENTS_FILE = "requirements.txt"
@@ -21,7 +21,7 @@ def build():
     # Create config file
     create_conda_cfg()
 
-    with supress_warnings():
+    with suppress_warnings():
         # Create environment and start build
         from azure.ai.ml.entities import Environment
 
