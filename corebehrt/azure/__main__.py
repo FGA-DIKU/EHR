@@ -77,17 +77,16 @@ def create_and_run_test(args) -> None:
     """
     Run a pipeline test from the given args.
     """
-    size = args.SIZE
-    concepts = args.CONCEPTS
+    name = args.NAME
 
-    test_cfg_file = f"corebehrt/azure/configs/tests/{size}/test.yaml"
+    test_cfg_file = f"corebehrt/azure/configs/tests/{name}/test.yaml"
     test_cfg = load_config(test_cfg_file)
 
     pl = util.pipeline.create(
         "E2E",
         test_cfg["data"],
         test_cfg.get("computes", {}),
-        config_dir=f"corebehrt/azure/configs/tests/{size}",
+        config_dir=f"corebehrt/azure/configs/tests/{name}",
         register_output={},
         log_system_metrics=True,
         test_cfg_file=test_cfg_file,
@@ -208,8 +207,7 @@ if __name__ == "__main__":
 
     # Test parser
     test_parser = subparsers.add_parser("test", help="Run a test job.")
-    test_parser.add_argument("SIZE", choices={"small"})
-    test_parser.add_argument("CONCEPTS", choices={"MD", "MDP", "MDPL"})
+    test_parser.add_argument("NAME", choices={"small"})
 
     # Parse args
     args = parser.parse_args()

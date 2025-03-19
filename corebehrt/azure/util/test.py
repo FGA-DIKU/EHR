@@ -11,6 +11,7 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
     """
 
     logger = logging.getLogger("test")
+    logger.info(f"Evaluating run using config file {test_cfg_file}")
 
     ## Setup
     try:
