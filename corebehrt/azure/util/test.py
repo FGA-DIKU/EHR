@@ -1,6 +1,7 @@
 import sys
 from corebehrt.azure.util.config import load_config
 import logging
+import time
 
 
 def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa: F821
@@ -57,7 +58,8 @@ def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa:
 
 
 def perform_time_test(run, max_value: int) -> bool:
-    run_time = run.info.end_time - run.info.start_time
+    end_time = run.info.end_time or int(time.time() * 1000)
+    run_time = (end_time - run.info.start_time) // 1000
     return log_test_result(
         "Run time",
         run_time > max_value,

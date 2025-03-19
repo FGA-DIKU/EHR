@@ -143,4 +143,4 @@ def run_main(
 
     # Evaluate run if test param is given
     if test_cfg_file := args.get("test", False):
-        evaluate_run(run, test_cfg_file)
+        evaluate_run(run, job_name, test_cfg_file)
