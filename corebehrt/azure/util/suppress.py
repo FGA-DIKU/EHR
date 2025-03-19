@@ -3,17 +3,17 @@ import contextlib
 
 SUPRESS_WARNINGS = [
     "pathOnCompute is not a known attribute of class",
-    ".*This is an experimental class.*",
+    "This is an experimental class",
     "Found the config file in: /config.json",
 ]
 
 
 @contextlib.contextmanager
 def suppress_warnings():
-    stdout_backup = sys.stdout
-    sys.stdout = AzureWarningFilter(sys.stdout)
+    backup = sys.stderr
+    sys.stderr = AzureWarningFilter(sys.stderr)
     yield
-    sys.stdout = stdout_backup
+    sys.stderr = backup
 
 
 class AzureWarningFilter(object):
