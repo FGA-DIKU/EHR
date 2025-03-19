@@ -3,6 +3,7 @@ import importlib
 from uuid import uuid4
 
 from corebehrt.azure.util import log, check_azure, ml_client
+from corebehrt.azure.util.azure import AzureWarningSupressor
 from corebehrt.azure.util.config import (
     prepare_config,
     prepare_job_command_args,
@@ -114,7 +115,8 @@ def run(job, experiment: str):
     """
     check_azure()
 
-    ml_client().create_or_update(job, experiment_name=experiment)
+    with AzureWarningSupressor(["pathOnCompute is not a known attribute of class"]):
+        ml_client().create_or_update(job, experiment_name=experiment)
 
     cleanup_configs()
 
