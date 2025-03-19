@@ -20,13 +20,14 @@ select_cohort:
 pretrain:
     max_run_time: 300
     metrics:
-        roc_auc:
-            min: 0.9
+        - type: roc_auc
+          min: 0.9
 
 finetune_cv:
     max_run_time: 20
     metrics:
-        roc_auc:
-            min: 0.9
+        - type: roc_auc
+          child: "Fold 1"
+          min: 0.9
 
 on_fail: "raise"

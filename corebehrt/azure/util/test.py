@@ -45,30 +45,24 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
         results.append(perform_time_test(run, max_value=max_run_time))
 
     # Metrics test
-    metrics = cfg.get("metrics", {})
-    for metric, metric_cfg in metrics.items():
-        results.append(
-            perform_metric_test(
-                run,
-                metric,
-                min_value=metric_cfg.get("min"),
-                max_value=metric_cfg.get("max"),
-            )
-        )
+    metrics = cfg.get("metrics", [])
+    children = get_children(run_id)
+    for metric_cfg in metrics:
+        relevant_run = children.get(metric_cfg.get("child"), run)
+        results.append(perform_metric_test(relevant_run, metric_cfg))
 
     ## Finish
     if all(results):
         logger.info("All tests passed!")
     else:
-        num_failed = len(results) - sum(results)
-        msg = f"{num_failed} test(s) failed!"
+        msg = f"One or more tests failed!"
         logger.error(msg)
         print(msg, file=sys.stderr)
         if cfg.get("on_fail") == "raise":
             raise Exception(msg)
 
 
-def perform_time_test(run, max_value: int) -> bool:
+def perform_time_test(run, max_value: int) -> int:
     end_time = run.info.end_time or int(time.time() * 1000)
     run_time = (end_time - run.info.start_time) // 1000
     return log_test_result(
@@ -78,11 +72,16 @@ def perform_time_test(run, max_value: int) -> bool:
     )
 
 
-def perform_metric_test(
-    run, metric: str, min_value: float = None, max_value: float = None
-) -> bool:
+def perform_metric_test(run, metric_cfg: dict) -> bool:
+
+    if not (metric := metric_cfg.get("type", False)):
+        return log_test_result("Metric", False, "Metric type missing!")
+
+    min_value = metric_cfg.get("min")
+    max_value = metric_cfg.get("max")
+
     if metric not in run.data.metrics:
-        return log_test_result(f"{metric}", False, f"Metric not found!")
+        return log_test_result(metric, False, "Metric not found in run!")
 
     metric_value = run.data.metrics.get(metric)
 
@@ -96,10 +95,11 @@ def perform_metric_test(
         max_ok = log_test_result(
             f"{metric} [maximum]", metric_value <= max_value, f"{metric}<{max_value}"
         )
+
     return min_ok and max_ok
 
 
-def log_test_result(test_name: str, ok: bool, msg: str = "") -> bool:
+def log_test_result(test_name: str, ok: bool, msg: str = "") -> int:
     logger = logging.getLogger("test")
 
     if ok:
@@ -109,3 +109,14 @@ def log_test_result(test_name: str, ok: bool, msg: str = "") -> bool:
         msg = f"{test_name} test failed. " + msg
         logger.warning(msg)
     return ok
+
+
+def get_children(run_id) -> dict:  # noqa: F821
+    import mlflow
+
+    query = f"tags.mlflow.parentRunId = '{run_id}'"
+    results = mlflow.search_runs(filter_string=query)
+    return {
+        r["tags.mlflow.runName"]: mlflow.get_run(r.run_id)
+        for _, r in results.iterrows()
+    }
