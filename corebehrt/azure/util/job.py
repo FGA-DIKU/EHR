@@ -138,9 +138,10 @@ def run_main(
     # Parse command line args
     args = parse_args(inputs | outputs)
     with log.start_run(log_system_metrics=args.get("log_system_metrics", False)) as run:
+        run_id = run.info.run_id
         cfg_path = prepare_config(args, inputs, outputs)
         main(cfg_path)
 
     # Evaluate run if test param is given
     if test_cfg_file := args.get("test", False):
-        evaluate_run(run, job_name, test_cfg_file)
+        evaluate_run(run_id, job_name, test_cfg_file)

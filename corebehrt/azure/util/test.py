@@ -4,7 +4,7 @@ import logging
 import time
 
 
-def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa: F821
+def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
     """
     If given a MLFlow Run object, evaluates the run according
     to the given job_name and test configuration file.
@@ -13,6 +13,12 @@ def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa:
     logger = logging.getLogger("test")
 
     ## Setup
+    try:
+        run = mlflow.get_run(run_id)
+    except:
+        logger.error("Could not load run!")
+        return
+
     # Check that cfg file exists
     try:
         cfg = load_config(test_cfg_file)
@@ -21,10 +27,6 @@ def evaluate_run(run: "mlflow.Run", job_name: str, test_cfg_file: str):  # noqa:
             "Could not load test configuration file - no evaluation will be performed"
         )
         return
-
-    # Check that run is set
-    if run is None:
-        logger.warning(f"No run supplied for {job_name} - maybe MLFlow is not enabled?")
 
     # Get sub-config for this job
     if not (cfg := cfg.get(job_name, False)):
@@ -77,22 +79,25 @@ def perform_time_test(run, max_value: int) -> bool:
 def perform_metric_test(
     run, metric: str, min_value: float = None, max_value: float = None
 ) -> bool:
+    if metric not in run.data.metrics:
+        return log_rest_result(f"{metric}", False, f"Metric not found!")
+
     metric_value = run.data.metrics.get(metric)
 
     min_ok = True
     max_ok = True
     if min_value:
         min_ok = log_test_result(
-            f"{metric} [minimum]", metric >= min_value, f"{metric}>{min_value}"
+            f"{metric} [minimum]", metric_value >= min_value, f"{metric}>{min_value}"
         )
     if max_value:
         max_ok = log_test_result(
-            f"{metric} [maximum]", metric <= max_value, f"{metric}<{max_value}"
+            f"{metric} [maximum]", metric_value <= max_value, f"{metric}<{max_value}"
         )
     return min_ok and max_ok
 
 
-def log_test_result(test_name: str, ok: bool, msg: str = "") -> None:
+def log_test_result(test_name: str, ok: bool, msg: str = "") -> bool:
     logger = logging.getLogger("test")
 
     if ok:
