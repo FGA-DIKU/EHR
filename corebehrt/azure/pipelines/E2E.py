@@ -1,15 +1,7 @@
 from corebehrt.azure.util import check_azure
 
 
-def create(
-    #    configs: dict,
-    #    computes: dict,
-    #    register_output: dict,
-    #    log_system_metrics: bool,
-    #    test_cfg_file: str = None,
-    component: callable,
-) -> "pipeline":  # noqa: F821
-
+def create(component: callable):
     check_azure()
     from azure.ai.ml import dsl, Input
 
