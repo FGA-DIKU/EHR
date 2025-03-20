@@ -21,7 +21,7 @@ trainer_args:
   batch_size: 512
   val_batch_size: 256
   effective_batch_size: 512
-  epochs: 1
+  epochs: 10
   info: true
   gradient_clip: 
     clip_value: 1.0
@@ -37,7 +37,7 @@ optimizer:
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
   num_warmup_steps: 10
-  num_training_steps: 1000000
+  num_training_steps: 1000
 
 metrics:
   accuracy:
