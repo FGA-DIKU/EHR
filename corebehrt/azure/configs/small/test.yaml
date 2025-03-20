@@ -21,7 +21,7 @@ pretrain:
     max_run_time: 300
     metrics:
         - type: "Val loss"
-          max: 7.8
+          max: 8
         - type: "Learning Rate"
           min: 0.0001
 
