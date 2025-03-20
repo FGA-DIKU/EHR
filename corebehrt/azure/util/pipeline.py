@@ -85,6 +85,7 @@ def create(
             outputs,
             log_system_metrics,
             test_cfg_file,
+            as_component=True,
         )
 
     # Create pipeline command

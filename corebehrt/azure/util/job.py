@@ -21,6 +21,7 @@ def create(
     register_output: dict = dict(),
     log_system_metrics: bool = False,
     test_cfg_file: str = None,
+    as_component: bool = False,
 ) -> "command":  # noqa: F821
     """
     Creates the Azure command/job object. Job input/output
@@ -39,6 +40,7 @@ def create(
         register_output=register_output,
         log_system_metrics=log_system_metrics,
         test_cfg_file=test_cfg_file,
+        as_component=as_component,
     )
 
 
@@ -51,6 +53,7 @@ def setup(
     register_output: dict = dict(),
     log_system_metrics: bool = False,
     test_cfg_file: str = None,
+    as_component: bool = False,
 ):
     """
     Sets up the Azure job.
@@ -75,9 +78,11 @@ def setup(
     save_config(cfg_name, config)
 
     # Prepare input and output paths
-    input_values, input_cmds = prepare_job_command_args(config, inputs, "inputs")
+    input_values, input_cmds = prepare_job_command_args(
+        config, inputs, "inputs", require_path=not as_component
+    )
     output_values, output_cmds = prepare_job_command_args(
-        config, outputs, "outputs", register_output=register_output
+        config, outputs, "outputs", register_output=register_output, require_path=False
     )
 
     # Add input and output arguments to cmd.

@@ -133,7 +133,11 @@ def parse_args(args: set) -> dict:
 
 
 def prepare_job_command_args(
-    config: dict, args: dict, _type: str, register_output: dict = dict()
+    config: dict,
+    args: dict,
+    _type: str,
+    register_output: dict = dict(),
+    require_path: bool = True,
 ) -> Tuple[dict, str]:
     """
     Prepare the input/output dictionary and construct the input/output
@@ -147,6 +151,7 @@ def prepare_job_command_args(
     :return: Tuple with input/output dictionary and argument part of command.
     """
     assert _type in ("inputs", "outputs")
+    require_path = False if _type == "outputs" else require_path
 
     from azure.ai.ml import Input, Output
 
@@ -156,6 +161,12 @@ def prepare_job_command_args(
     for arg, arg_cfg in args.items():
         value = get_path_from_cfg(config, arg, arg_cfg)
         optional = arg_cfg.get("optional", False)
+
+        if require_path and value is None:
+            if optional:
+                continue
+            else:
+                raise Exception(f"Missing required path: {arg}")
 
         # Set input/output
         job_args[arg] = azure_arg_cls(
