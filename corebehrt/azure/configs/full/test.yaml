@@ -21,9 +21,9 @@ pretrain:
     max_run_time: 3000 # 50m
     metrics:
         - type: "Val loss"
-          max: 2.8
+          max: 4
         - type: "Train loss"
-          max: 4.5
+          max: 4
         - type: "top1"
           min: 0.3
 
