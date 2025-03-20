@@ -8,12 +8,6 @@ model:
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU
     bidirectional: true
-
-data:
-  cv_folds: 2 # fo splitting data into k folds
-  test_split: 0.2 # only used if predefined_folds is false and test_pids is not provided
-  val_split: 0.2 # only used if predefined_folds is false and cv_folds is 1
-  predefined_folds: false # using predefined folds, ignore cv_folds if true
   
 outcome: # we will convert outcomes to binary based on whether at least one outcome is in the follow up window
   n_hours_censoring: -10 # censor time after index date (negative means before)
