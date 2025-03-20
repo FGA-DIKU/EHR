@@ -174,7 +174,7 @@ def prepare_job_command_args(
         )
 
         # Update command
-        if optional:
+        if optional and not require_path:
             cmd += " $[[--" + arg + " ${{" + _type + "." + arg + "}}]]"
         else:
             cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"
