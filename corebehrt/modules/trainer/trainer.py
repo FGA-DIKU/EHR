@@ -249,6 +249,10 @@ class EHRTrainer:
                 best_model=True,
             )
 
+        self._self_log_results(
+            epoch, val_loss, val_metrics, epoch_loss, len(train_loop)
+        )
+        
         current_metric_value = val_metrics.get(
             self.stopping_metric, val_loss
         )  # get the metric we monitor. Same as early stopping
@@ -260,9 +264,6 @@ class EHRTrainer:
             return
         self._save_checkpoint_conditionally(
             epoch, epoch_loss, val_loss, val_metrics, test_metrics
-        )
-        self._self_log_results(
-            epoch, val_loss, val_metrics, epoch_loss, len(train_loop)
         )
 
     def _save_checkpoint_conditionally(
