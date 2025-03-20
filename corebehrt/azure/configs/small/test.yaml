@@ -9,13 +9,13 @@ create_data:
     max_run_time: 200
 
 create_outcomes:
-    max_run_time: 30
+    max_run_time: 200
 
 prepare_training_data:
-    max_run_time: 30
+    max_run_time: 200
 
 select_cohort:
-    max_run_time: 30
+    max_run_time: 200
 
 pretrain:
     max_run_time: 300

@@ -15,7 +15,7 @@ prepare_training_data:
     max_run_time: 1500 # 25m
 
 select_cohort:
-    max_run_time: 60
+    max_run_time: 200
 
 pretrain:
     max_run_time: 3000 # 50m
