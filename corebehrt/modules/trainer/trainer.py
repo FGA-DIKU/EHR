@@ -104,15 +104,11 @@ class EHRTrainer:
 
     def _initialize_freezing(self):
         self.already_unfrozen = True
-        if self.cfg.trainer_args.get("n_layers_to_freeze", 0) > 0:
-            self.model = freeze_bottom_layers(
-                self.model, self.cfg.trainer_args.n_layers_to_freeze
-            )
+        if self.args.get("n_layers_to_freeze", 0) > 0:
+            self.model = freeze_bottom_layers(self.model, self.args.n_layers_to_freeze)
             self.already_unfrozen = False
 
-        self.unfreeze_on_plateau = self.cfg.trainer_args.get(
-            "unfreeze_on_plateau", False
-        )
+        self.unfreeze_on_plateau = self.args.get("unfreeze_on_plateau", False)
 
     def _set_default_args(self, args):
         default_args = {
@@ -124,7 +120,7 @@ class EHRTrainer:
             raise ValueError("effective_batch_size must be a multiple of batch_size")
 
     def _initialize_early_stopping(self):
-        early_stopping = self.cfg.trainer_args.get("early_stopping", False)
+        early_stopping = self.args.get("early_stopping", False)
         self.early_stopping = True if early_stopping else False
         self.early_stopping_patience = (
             early_stopping if early_stopping else 1000
@@ -135,9 +131,7 @@ class EHRTrainer:
         self.stop_training = False
 
         # Get the metric to use for early stopping from the config
-        self.stopping_metric = self.cfg.trainer_args.get(
-            "stopping_criterion", "val_loss"
-        )
+        self.stopping_metric = self.args.get("stopping_criterion", "val_loss")
 
         # Check if the specified metric is available in our metrics
         metric_exists = (
@@ -193,11 +187,11 @@ class EHRTrainer:
 
     def _clip_gradients(self):
         # Then clip them if needed
-        if self.cfg.trainer_args.get("gradient_clip", False):
+        if self.args.get("gradient_clip", False):
             self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
-                max_norm=self.cfg.trainer_args.gradient_clip.get("max_norm", 1.0),
+                max_norm=self.args.gradient_clip.get("max_norm", 1.0),
             )
 
     def _train_step(self, batch: dict):
@@ -252,7 +246,7 @@ class EHRTrainer:
         self._self_log_results(
             epoch, val_loss, val_metrics, epoch_loss, len(train_loop)
         )
-        
+
         current_metric_value = val_metrics.get(
             self.stopping_metric, val_loss
         )  # get the metric we monitor. Same as early stopping
@@ -519,7 +513,7 @@ class EHRTrainer:
         if is_plateau(
             self.best_metric_value,
             current_metric_value,
-            self.cfg.trainer_args.get("plateau_threshold", 0.01),
+            self.args.get("plateau_threshold", 0.01),
         ):
             self.log("Performance plateau detected! Unfreezing all layers of the model")
             self.model = unfreeze_all_layers(self.model)
@@ -528,6 +522,6 @@ class EHRTrainer:
             self.already_unfrozen = True
 
             # Optionally reset early stopping counter after unfreezing
-            if self.cfg.trainer_args.get("reset_patience_after_unfreeze", True):
+            if self.args.get("reset_patience_after_unfreeze", True):
                 self.early_stopping_counter = 0
                 self.log("Reset early stopping counter after unfreezing")
