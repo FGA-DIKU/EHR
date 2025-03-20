@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
     # Test parser
     test_parser = subparsers.add_parser("test", help="Run a test job.")
-    test_parser.add_argument("NAME", choices={"small"})
+    test_parser.add_argument("NAME", choices={"small", "full"})
 
     # Parse args
     args = parser.parse_args()
