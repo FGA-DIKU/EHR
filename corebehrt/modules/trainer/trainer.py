@@ -105,7 +105,9 @@ class EHRTrainer:
     def _initialize_freezing(self):
         self.already_unfrozen = True
         if self.args.get("n_layers_to_freeze", 0) > 0:
-            self.model = freeze_bottom_layers(self.model, self.args.n_layers_to_freeze)
+            self.model = freeze_bottom_layers(
+                self.model, self.args.get("n_layers_to_freeze", 0)
+            )
             self.already_unfrozen = False
 
         self.unfreeze_on_plateau = self.args.get("unfreeze_on_plateau", False)
