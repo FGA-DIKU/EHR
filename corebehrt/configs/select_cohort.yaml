@@ -4,10 +4,11 @@ logging:
 
 paths:
   ### Inputs
-  patients_info: ./outputs/features/patient_info.parquet
+  features: ./outputs/features
   initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
-  exposure: ./outputs/outcomes/TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv # Outcome
+  outcomes: ./outputs/outcomes/
+  exposure: TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
+  outcome: TEST_OUTCOME.csv # Outcome
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
