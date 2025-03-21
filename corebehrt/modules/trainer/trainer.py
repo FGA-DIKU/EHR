@@ -177,7 +177,9 @@ class EHRTrainer:
             if (i + 1) % self.accumulation_steps == 0:
                 self._clip_gradients()
                 self._update()
-                self._accumulate_metrics(metrics, step_loss, epoch_loss, step=i)
+                self._accumulate_metrics(
+                    metrics, step_loss, epoch_loss, step=(epoch * len(train_loop)) + i
+                )
                 step_loss = 0
         self._log_batch(metrics)
         self.validate_and_log(epoch, epoch_loss, train_loop)
