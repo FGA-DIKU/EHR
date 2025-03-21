@@ -13,6 +13,28 @@ def create(
     log_system_metrics: bool = False,
     test_cfg_file: str = None,
 ) -> "command":  # noqa: F821
+    """
+    Create the pipeline defined in corebehrt.azure.pipelines.{name} using the
+    given computes and configurations.
+
+    If test_cfg_file is given, each job type specified in the file is
+    evaluated post-run.
+
+    :param name: Name of module defining pipeline.
+    :param data_path: Path to MEDS data asset input.
+    :param computes: Dictionary mapping >component_name> => <compute>. The dict must
+        contain "default" as well.
+    :param config_paths: Dictionary mapping <component_name> => <path_to_config>. If
+        a component is not set, the path <component_dir>/<component_name> will be
+        used instead.
+    :param register_output: A mapping <component_name>.<output_name> => <asset_name> for
+        any outputs, which should be registered as assets.
+    :param log_system_metrics: If True, metrics are logged for all components.
+    :param test_cfg_file: Optional path to test configuration file - if set, job types
+        configured in the file will be evaluated after they have run.
+
+    :return: A pipeline (Azure command) to be run.
+    """
     check_azure()
 
     assert (
@@ -56,8 +78,6 @@ def create(
 
     # Create pipeline command
     pipeline = pipeline_module.create(component_creator)
-    #    config_paths, computes, register_output, log_system_metrics, test_cfg_file
-    # )
 
     # Prepare pipeline inputs - currently only data
     data_path = map_azure_path(data_path)
@@ -67,4 +87,7 @@ def create(
 
 
 def run(pipeline: "command", experiment: str) -> None:  # noqa: F821
+    """
+    Run the given pipeline command in the given experiment.
+    """
     return job.run(pipeline, experiment)

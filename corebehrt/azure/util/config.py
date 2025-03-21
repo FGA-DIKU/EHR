@@ -11,6 +11,16 @@ AZURE_CONFIG_FOLDER = ".azure_job_configs"
 def config_path(
     cfg_name: str, is_job: bool = False, default_folder: str = "corebehrt/configs/"
 ) -> str:
+    """
+    Create the default path to the configuration file.
+
+    :param cfg_name: name of file
+    :param is_job: Boolean indicating whether the path is local (=False) or on
+        the cluster (=True)
+    :param default_folder: Folder to look for cfg_name (if is_job=False)
+
+    :return: Path to config.
+    """
     return (
         f"{AZURE_CONFIG_FOLDER}/{cfg_name}.yaml"
         if is_job
@@ -22,7 +32,13 @@ def load_config(
     path: str = None, job_name: str = None, default_folder: str = "corebehrt/configs/"
 ) -> dict:
     """
-    Load the config from the given path.
+    Load the local config from the given path.
+
+    :param path: If given, load from this path.
+    :param job_name: If path is not given, load from <default_folder>/<job_name>.yaml
+    :param default_folder: Config folder if path is not given.
+
+    :return: dict
     """
     path = path or config_path(cfg_name=job_name, default_folder=default_folder)
     with open(path, "r") as cfg_file:
@@ -48,6 +64,10 @@ def save_config(cfg_name: str, cfg: dict) -> None:
 def load_job_config(cfg_name: str) -> "Config":  # noqa: F821
     """
     Load the config on the cluster
+
+    :param cfg_name: Name of the configuration file to load.
+
+    :return: CoreBEHRT config object.
     """
     from corebehrt.modules.setup.config import load_config as cb_load_config
 
@@ -72,7 +92,8 @@ def save_job_config(cfg_name: str, cfg: "Config") -> str:  # noqa: F821
 
 def cleanup_configs():
     """
-    Removes the temporary config folder
+    Removes the temporary local config folder
+    To be called after job submission.
     """
     shutil.rmtree(AZURE_CONFIG_FOLDER, ignore_errors=True)
 
@@ -147,6 +168,11 @@ def prepare_job_command_args(
     :param args: Job args configuration.
     :param _type: "inputs" or "outputs"
     :param register_output: Register output mapping for _type="outputs"
+    :param require_path: If True, paths must be set for non-optional arguments,
+        or an exception will be raised. <require_path> is always false for
+        outputs, and is only true for inputs, if the job is setup as a
+        pipeline command (in which case the pipeline construction sets the
+        paths before job submission).
 
     :return: Tuple with input/output dictionary and argument part of command.
     """
@@ -175,6 +201,7 @@ def prepare_job_command_args(
 
         # Update command
         if optional and not require_path:
+            # Optional pipeline inputs.
             cmd += " $[[--" + arg + " ${{" + _type + "." + arg + "}}]]"
         else:
             cmd += " --" + arg + " ${{" + _type + "." + arg + "}}"

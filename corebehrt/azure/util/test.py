@@ -4,10 +4,13 @@ import logging
 import time
 
 
-def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
+def evaluate_run(run_id: str, job_type: str, test_cfg_file: str):
     """
-    If given a MLFlow Run object, evaluates the run according
-    to the given job_name and test configuration file.
+    Ealuates the run according to the given job_type and test configuration file.
+
+    :param run_id: ID of the run to evaluate.
+    :param job_type: Type of the current job.
+    :param test_cfg_file: Path to test configuration file.
     """
 
     logger = logging.getLogger("test")
@@ -35,9 +38,9 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
     on_fail = cfg.get("on_fail")
 
     # Get sub-config for this job
-    if not (cfg := cfg.get(job_name, False)):
+    if not (cfg := cfg.get(job_type, False)):
         logger.warning(
-            f"No sub-config found for {job_name} - no evaluation will be performed for {job_name}"
+            f"No sub-config found for {job_type} - no evaluation will be performed for {job_type}"
         )
         return
 
@@ -67,6 +70,9 @@ def evaluate_run(run_id: str, job_name: str, test_cfg_file: str):  # noqa: F821
 
 
 def perform_time_test(run, max_value: int) -> int:
+    """
+    Test that run time is not greater than the threshold.
+    """
     end_time = run.info.end_time or int(time.time() * 1000)
     run_time = (end_time - run.info.start_time) // 1000
     return log_test_result(
@@ -77,33 +83,48 @@ def perform_time_test(run, max_value: int) -> int:
 
 
 def perform_metric_test(run, metric_cfg: dict) -> bool:
-
+    """
+    Test that the given metric satisfies the min/max constraints.
+    """
+    # Check that type is set
     if not (metric := metric_cfg.get("type", False)):
         return log_test_result("Metric", False, "Metric type missing!")
 
-    min_value = metric_cfg.get("min")
-    max_value = metric_cfg.get("max")
-
+    # Check that metric exists
     if metric not in run.data.metrics:
         return log_test_result(metric, False, "Metric not found in run!")
 
+    # Get metric and thresholds
     metric_value = run.data.metrics.get(metric)
+    min_value = metric_cfg.get("min")
+    max_value = metric_cfg.get("max")
 
     min_ok = True
     max_ok = True
     if min_value:
         min_ok = log_test_result(
-            f"{metric} [minimum]", metric_value >= min_value, f"{metric}>{min_value}"
+            f"{metric} [minimum]",
+            metric_value >= min_value,
+            f"{metric_value}>{min_value}",
         )
     if max_value:
         max_ok = log_test_result(
-            f"{metric} [maximum]", metric_value <= max_value, f"{metric}<{max_value}"
+            f"{metric} [maximum]",
+            metric_value <= max_value,
+            f"{metric_value}<{max_value}",
         )
 
     return min_ok and max_ok
 
 
 def log_test_result(test_name: str, ok: bool, msg: str = "") -> int:
+    """
+    Helper for logging result of a test.
+
+    :param test_name: Name of the test
+    :param ok: Result of the test.
+    :param msg: Additional message.
+    """
     logger = logging.getLogger("test")
 
     if ok:

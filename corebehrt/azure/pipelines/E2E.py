@@ -1,11 +1,14 @@
-from corebehrt.azure.util import check_azure
-
-
 def create(component: callable):
-    check_azure()
+    """
+    Define the E2E pipeline.
+
+    Param component(job_type, name=None) is a constructor for components
+    which takes arguments job_type (type of job) and optional argument
+    name (name of component if different from type of job).
+    """
     from azure.ai.ml import dsl, Input
 
-    @dsl.pipeline(description="Full E2E CoreBEHRT pipeline")
+    @dsl.pipeline(name="E2E", description="Full E2E CoreBEHRT pipeline")
     def pipeline(data: Input) -> dict:
         create_data = component(
             "create_data",
