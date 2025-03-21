@@ -193,7 +193,7 @@ class EHRTrainer:
             self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
-                max_norm=self.args.gradient_clip.get("max_norm", 1.0),
+                max_norm=self.args.get("gradient_clip", {}).get("max_norm", 1.0),
             )
 
     def _train_step(self, batch: dict):
