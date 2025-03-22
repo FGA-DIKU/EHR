@@ -1,9 +1,9 @@
 from contextlib import contextmanager
-from corebehrt.azure.util import get_current_run
 import time
 
 MLFLOW_AVAILABLE = False
 MLFLOW_CLIENT = None
+CURRENT_RUN = None
 
 try:
     # Try to import mlflow and set availability flag
@@ -25,6 +25,14 @@ def is_mlflow_available() -> bool:
     return MLFLOW_AVAILABLE
 
 
+def get_current_run():
+    """
+    Get the current run object, if available.
+    """
+    global CURRENT_RUN
+    return CURRENT_RUN
+
+
 def start_run(name: str = None, nested: bool = False, log_system_metrics: bool = False):
     """
     Starts an mlflow run. Used in the Azure wrapper and should
@@ -34,8 +42,9 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
     :param nested: If the run should be nested.
     :param log_system_metrics: If enabled, log system metrics (CPU/GPU/mem).
     """
+    global CURRENT_RUN
     if is_mlflow_available():
-        return mlflow.start_run(
+        run = mlflow.start_run(
             run_name=name, nested=nested, log_system_metrics=log_system_metrics
         )
     else:
@@ -45,7 +54,12 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
         def dummy_cm():
             yield None
 
-        return dummy_cm()
+        run = dummy_cm()
+
+    if not nested:
+        CURRENT_RUN = run
+
+    return run
 
 
 def end_run():

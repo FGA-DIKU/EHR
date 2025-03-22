@@ -1,19 +1,10 @@
 logging:
   level: INFO
-  path: ./outputs/logs
+  path: ./logs
 
 paths:
-  ### Inputs
-  features: ./outputs/features
-  initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
-  outcomes: ./outputs/outcomes/
-  exposure: TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
-  outcome: TEST_OUTCOME.csv # Outcome
-  # exclude_pids: # optional, if provided, exclude these pids from the cohort
-  
-  ### Outputs
-  cohort: ./outputs/cohort # Data directory
-
+  exposure: TEST_CENSOR.csv
+  outcome: TEST_OUTCOME.csv
 
 
 selection:
