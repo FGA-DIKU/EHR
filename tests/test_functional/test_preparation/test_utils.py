@@ -16,7 +16,7 @@ from corebehrt.functional.preparation.utils import (
     aggregate_rows,
 )
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, CONCEPT_COL
+from corebehrt.constants.data import PID_COL, CONCEPT_COL, TIMESTAMP_COL, VALUE_COL
 
 
 class TestBackgroundFunctions(unittest.TestCase):
@@ -173,8 +173,8 @@ class TestAggregate(unittest.TestCase):
     def setUp(self):
         self.df = pd.DataFrame(
             {
-                "subject_id": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3],
-                "code": [
+                PID_COL: [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3],
+                CONCEPT_COL: [
                     "DOB",
                     "GENDER//MALE",
                     "LAB_1",
@@ -192,7 +192,7 @@ class TestAggregate(unittest.TestCase):
                     "LAB_1",
                     "LAB_3",
                 ],
-                "time": [
+                TIMESTAMP_COL: [
                     datetime(1999, 5, 1),
                     NaT,
                     datetime(2000, 5, 1),
@@ -234,8 +234,8 @@ class TestAggregate(unittest.TestCase):
     def test_agg_rows_first(self):
         first_expected_result = pd.DataFrame(
             {
-                "subject_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
-                "code": [
+                PID_COL: [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
+                CONCEPT_COL: [
                     "DOB",
                     "LAB_1",
                     "LAB_1",
@@ -249,7 +249,7 @@ class TestAggregate(unittest.TestCase):
                     "GENDER//MALE",
                     "GENDER//MALE",
                 ],
-                "time": [
+                TIMESTAMP_COL: [
                     datetime(1999, 5, 1),
                     datetime(2000, 5, 1),
                     datetime(2000, 5, 2),
@@ -263,7 +263,7 @@ class TestAggregate(unittest.TestCase):
                     NaT,
                     NaT,
                 ],
-                "numeric_value": [
+                VALUE_COL: [
                     np.nan,
                     0.1,
                     0.5,
@@ -281,9 +281,9 @@ class TestAggregate(unittest.TestCase):
         )
         first_result = aggregate_rows(
             self.df,
-            cols=["subject_id", "code", "time"],
+            cols=[PID_COL, CONCEPT_COL, TIMESTAMP_COL],
             agg_type="first",
-            keep_nans=["time"],
+            keep_nans=[TIMESTAMP_COL],
         )
 
         assert_frame_equal(first_result, first_expected_result)
@@ -291,8 +291,8 @@ class TestAggregate(unittest.TestCase):
     def test_agg_rows_mean(self):
         mean_expected_result = pd.DataFrame(
             {
-                "subject_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
-                "code": [
+                PID_COL: [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
+                CONCEPT_COL: [
                     "DOB",
                     "LAB_1",
                     "LAB_1",
@@ -306,7 +306,7 @@ class TestAggregate(unittest.TestCase):
                     "GENDER//MALE",
                     "GENDER//MALE",
                 ],
-                "time": [
+                TIMESTAMP_COL: [
                     datetime(1999, 5, 1),
                     datetime(2000, 5, 1),
                     datetime(2000, 5, 2),
@@ -320,7 +320,7 @@ class TestAggregate(unittest.TestCase):
                     NaT,
                     NaT,
                 ],
-                "numeric_value": [
+                VALUE_COL: [
                     np.nan,
                     np.average([0.10, 0.20, 0.40]),
                     0.5,
@@ -339,10 +339,12 @@ class TestAggregate(unittest.TestCase):
 
         mean_result = aggregate_rows(
             self.df,
-            cols=["subject_id", "code", "time"],
+            cols=[PID_COL, CONCEPT_COL, TIMESTAMP_COL],
             agg_type="mean",
-            keep_nans=["time"],
+            keep_nans=[TIMESTAMP_COL],
         )
         assert_frame_equal(mean_result, mean_expected_result)
+
+
 if __name__ == "__main__":
     unittest.main()

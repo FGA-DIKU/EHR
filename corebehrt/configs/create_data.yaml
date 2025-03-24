@@ -16,6 +16,7 @@ features:
     value_creator_kwargs:
       num_bins: 100
   agg_func: 'first'
+  agg_window: 25 # expand aggreation window to aggreate over x hours
 
 tokenizer:
   sep_tokens: true

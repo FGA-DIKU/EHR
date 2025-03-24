@@ -72,7 +72,9 @@ def create_and_save_features(cfg) -> None:
                 shard_path,
             ).load()
             concepts = handle_aggregations(
-                concepts, cfg.get("features", {}).get("agg_func", None)
+                concepts,
+                agg_type=cfg.get("features", {}).get("agg_func", None),
+                agg_window=cfg.get("features", {}).get("agg_window", None),
             )
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
@@ -89,33 +91,42 @@ def create_and_save_features(cfg) -> None:
     combined_patient_info.to_parquet(patient_info_path, index=False)
 
 
-def print_removed_rows(original_df, aggregated_df, cols):
-    # Merge the original and aggregated DataFrames to find the removed rows
-    merged_df = original_df.merge(aggregated_df, on=cols, how="left", indicator=True)
-    removed_rows = merged_df[merged_df["_merge"] == "left_only"]
-
-    # Print some of the removed rows
-    print("Some of the rows that have been removed:")
-    print(removed_rows.head())
-
-
-
-
 def handle_aggregations(
-    concepts: pd.DataFrame, agg_type: str = None
+    concepts: pd.DataFrame, agg_type: str = None, agg_window: int = None
 ) -> pd.DataFrame:
     """
     Performs aggregation based on PID, TIMESTAMP, and CONCEPT columns if agg_type is provided.
     Keeps NaN values in the timestamps columns to preseve BG codes.
+    If agg_window is provided, aggregates values within the specified time window.
     """
     if agg_type:
-        aggregated_concepts = aggregate_rows(
-            concepts,
-            cols=[PID_COL, TIMESTAMP_COL, CONCEPT_COL],
-            agg_type=agg_type,
-            keep_nans=[TIMESTAMP_COL],
-        )
-        return aggregated_concepts
+        if agg_window:
+            # Create a new column for the time window grouping
+            concepts[TIMESTAMP_COL] = pd.to_datetime(concepts[TIMESTAMP_COL])
+            min_time = concepts[TIMESTAMP_COL].min()
+            normalized_timestamps = (
+                concepts[TIMESTAMP_COL] - min_time
+            ).dt.total_seconds()
+            normalized_timestamps = normalized_timestamps.fillna(-1)
+            concepts["TIME_GROUP"] = (
+                normalized_timestamps // (agg_window * 3600)
+            ).astype(int)
+
+            aggregated_concepts = aggregate_rows(
+                concepts,
+                cols=[PID_COL, "TIME_GROUP", CONCEPT_COL],
+                agg_type=agg_type,
+                keep_nans=[TIMESTAMP_COL],
+            )
+            return aggregated_concepts.drop(columns=["TIME_GROUP"])
+        else:
+            aggregated_concepts = aggregate_rows(
+                concepts,
+                cols=[PID_COL, TIMESTAMP_COL, CONCEPT_COL],
+                agg_type=agg_type,
+                keep_nans=[TIMESTAMP_COL],
+            )
+            return aggregated_concepts
     return concepts
 
 
