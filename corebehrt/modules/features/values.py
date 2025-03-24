@@ -9,15 +9,22 @@ class ValueCreator:
 
     @staticmethod
     def bin_results(concepts: pd.DataFrame, num_bins=100) -> pd.DataFrame:
+        if concepts.empty:
+            # Return empty DataFrame with same columns plus the expected new ones
+            return concepts.assign(
+                index=pd.Series(dtype="int64"),
+                order=pd.Series(dtype="int64"),
+                code=pd.Series(dtype="object"),
+            )
         concepts["binned_value"] = ValueCreator.bin(
             concepts["numeric_value"], num_bins=num_bins
         )
 
         # Add index + order
         concepts["index"] = concepts.index
+        concepts.loc[:, "order"] = 0
         values = concepts.dropna(subset=["binned_value"]).copy()
         values.loc[:, "code"] = values["binned_value"]
-        concepts.loc[:, "order"] = 0
         values.loc[:, "order"] = 1
         concatted = pd.concat([concepts, values])
         return concatted.drop(columns=["numeric_value", "binned_value"], axis=1)
