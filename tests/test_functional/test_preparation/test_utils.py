@@ -1,6 +1,10 @@
 import unittest
 
 import pandas as pd
+import numpy as np
+from datetime import datetime
+from pandas.testing import assert_frame_equal
+from pandas import NaT
 
 # Assuming these functions are in the same module, or adjust the import accordingly:
 from corebehrt.functional.preparation.utils import (
@@ -9,6 +13,7 @@ from corebehrt.functional.preparation.utils import (
     get_background_tokens,
     get_non_priority_tokens,
     subset_patient_data,
+    aggregate_rows,
 )
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import PID_COL, CONCEPT_COL
@@ -164,5 +169,180 @@ class TestBackgroundFunctions(unittest.TestCase):
         self.assertEqual(new_patient.pid, 1)
 
 
+class TestAggregate(unittest.TestCase):
+    def setUp(self):
+        self.df = pd.DataFrame(
+            {
+                "subject_id": [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3],
+                "code": [
+                    "DOB",
+                    "GENDER//MALE",
+                    "LAB_1",
+                    "LAB_1",
+                    "LAB_1",
+                    "LAB_1",
+                    "LAB_1",
+                    "DOB",
+                    "GENDER//MALE",
+                    "LAB_2",
+                    "LAB_1",
+                    "LAB_2",
+                    "DOB",
+                    "GENDER//MALE",
+                    "LAB_1",
+                    "LAB_3",
+                ],
+                "time": [
+                    datetime(1999, 5, 1),
+                    NaT,
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 2),
+                    datetime(1994, 9, 3),
+                    NaT,
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1932, 11, 5),
+                    NaT,
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                ],
+                "numeric_value": [
+                    np.nan,
+                    np.nan,
+                    0.10,
+                    0.20,
+                    np.nan,
+                    0.40,
+                    0.50,
+                    np.nan,
+                    np.nan,
+                    0.60,
+                    0.70,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                    0.9,
+                    1.0,
+                ],
+            }
+        )
+
+    def test_agg_rows_first(self):
+        first_expected_result = pd.DataFrame(
+            {
+                "subject_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
+                "code": [
+                    "DOB",
+                    "LAB_1",
+                    "LAB_1",
+                    "DOB",
+                    "LAB_2",
+                    "LAB_1",
+                    "DOB",
+                    "LAB_1",
+                    "LAB_3",
+                    "GENDER//MALE",
+                    "GENDER//MALE",
+                    "GENDER//MALE",
+                ],
+                "time": [
+                    datetime(1999, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 2),
+                    datetime(1994, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1932, 11, 5),
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                    NaT,
+                    NaT,
+                    NaT,
+                ],
+                "numeric_value": [
+                    np.nan,
+                    0.1,
+                    0.5,
+                    np.nan,
+                    0.6,
+                    0.7,
+                    np.nan,
+                    0.9,
+                    1,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ],
+            }
+        )
+        first_result = aggregate_rows(
+            self.df,
+            cols=["subject_id", "code", "time"],
+            agg_type="first",
+            keep_nans=["time"],
+        )
+
+        assert_frame_equal(first_result, first_expected_result)
+
+    def test_agg_rows_mean(self):
+        mean_expected_result = pd.DataFrame(
+            {
+                "subject_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 1, 2, 3],
+                "code": [
+                    "DOB",
+                    "LAB_1",
+                    "LAB_1",
+                    "DOB",
+                    "LAB_2",
+                    "LAB_1",
+                    "DOB",
+                    "LAB_1",
+                    "LAB_3",
+                    "GENDER//MALE",
+                    "GENDER//MALE",
+                    "GENDER//MALE",
+                ],
+                "time": [
+                    datetime(1999, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 2),
+                    datetime(1994, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1932, 11, 5),
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                    NaT,
+                    NaT,
+                    NaT,
+                ],
+                "numeric_value": [
+                    np.nan,
+                    np.average([0.10, 0.20, 0.40]),
+                    0.5,
+                    np.nan,
+                    0.6,
+                    0.7,
+                    np.nan,
+                    0.9,
+                    1,
+                    np.nan,
+                    np.nan,
+                    np.nan,
+                ],
+            }
+        )
+
+        mean_result = aggregate_rows(
+            self.df,
+            cols=["subject_id", "code", "time"],
+            agg_type="mean",
+            keep_nans=["time"],
+        )
+        assert_frame_equal(mean_result, mean_expected_result)
 if __name__ == "__main__":
     unittest.main()

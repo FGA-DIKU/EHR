@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import CONCEPT_COL
+from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL
 import re
 
 
@@ -80,3 +80,24 @@ def is_valid_regex(pattern):
         return True
     except re.error:
         return False
+
+
+def aggregate_rows(df, cols, agg_type, keep_nans=[]):
+    """
+    Aggregate rows in a DataFrame by the specified columns using the given aggregation type,
+    excluding rows with NaN values in the specified columns and then concatenating them back.
+
+    Args:
+        df: DataFrame to aggregate.
+        cols: List of column names to group by.
+        agg_type: Aggregation type (e.g., 'first', 'sum', 'mean', etc.).
+        keep_nans: List of column names where NaN values should be kept and concatenated back.
+
+    Returns:
+        Aggregated DataFrame with specified NaN rows concatenated back.
+    """
+    nan_rows = df[df[keep_nans].isna().any(axis=1)]
+    non_nan_rows = df.dropna(subset=keep_nans)
+    aggregated_df = non_nan_rows.groupby(cols, sort=False).agg(agg_type).reset_index()
+    concatted_df = pd.concat([aggregated_df, nan_rows], ignore_index=True)
+    return concatted_df

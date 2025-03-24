@@ -5,12 +5,19 @@ import pandas as pd
 import pyarrow as pa
 import torch
 
-from corebehrt.constants.data import FEATURES_SCHEMA, PID_COL, TOKENIZED_SCHEMA
+from corebehrt.constants.data import (
+    FEATURES_SCHEMA,
+    PID_COL,
+    TOKENIZED_SCHEMA,
+    CONCEPT_COL,
+    TIMESTAMP_COL,
+)
 from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
+from corebehrt.functional.preparation.utils import aggregate_rows
 
 
 def load_tokenize_and_save(
@@ -64,6 +71,9 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
+            concepts = handle_aggregations(
+                concepts, cfg.get("features", {}).get("agg_func", None)
+            )
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
             feature_creator = FeatureCreator(exclude_regex=exclude_regex)
@@ -77,6 +87,36 @@ def create_and_save_features(cfg) -> None:
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
+
+
+def print_removed_rows(original_df, aggregated_df, cols):
+    # Merge the original and aggregated DataFrames to find the removed rows
+    merged_df = original_df.merge(aggregated_df, on=cols, how="left", indicator=True)
+    removed_rows = merged_df[merged_df["_merge"] == "left_only"]
+
+    # Print some of the removed rows
+    print("Some of the rows that have been removed:")
+    print(removed_rows.head())
+
+
+
+
+def handle_aggregations(
+    concepts: pd.DataFrame, agg_type: str = None
+) -> pd.DataFrame:
+    """
+    Performs aggregation based on PID, TIMESTAMP, and CONCEPT columns if agg_type is provided.
+    Keeps NaN values in the timestamps columns to preseve BG codes.
+    """
+    if agg_type:
+        aggregated_concepts = aggregate_rows(
+            concepts,
+            cols=[PID_COL, TIMESTAMP_COL, CONCEPT_COL],
+            agg_type=agg_type,
+            keep_nans=[TIMESTAMP_COL],
+        )
+        return aggregated_concepts
+    return concepts
 
 
 def handle_numeric_values(

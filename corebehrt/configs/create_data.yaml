@@ -15,6 +15,7 @@ features:
   values:
     value_creator_kwargs:
       num_bins: 100
+  agg_func: 'first'
 
 tokenizer:
   sep_tokens: true
