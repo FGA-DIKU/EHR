@@ -4,7 +4,7 @@ from typing import List
 import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL
+from corebehrt.constants.data import CONCEPT_COL
 import re
 
 
