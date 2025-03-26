@@ -74,7 +74,7 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
     return PatientData(**data)
 
 
-def is_valid_regex(pattern):
+def is_valid_regex(pattern: str) -> bool:
     try:
         re.compile(pattern)
         return True
