@@ -1,10 +1,6 @@
 import unittest
 
 import pandas as pd
-import numpy as np
-from datetime import datetime
-from pandas.testing import assert_frame_equal
-from pandas import NaT
 
 # Assuming these functions are in the same module, or adjust the import accordingly:
 from corebehrt.functional.preparation.utils import (
@@ -15,7 +11,7 @@ from corebehrt.functional.preparation.utils import (
     subset_patient_data,
 )
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, CONCEPT_COL, TIMESTAMP_COL, VALUE_COL
+from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 
 class TestBackgroundFunctions(unittest.TestCase):
@@ -166,6 +162,7 @@ class TestBackgroundFunctions(unittest.TestCase):
         # Non-list fields unchanged
         self.assertEqual(new_patient.outcome, 0)
         self.assertEqual(new_patient.pid, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

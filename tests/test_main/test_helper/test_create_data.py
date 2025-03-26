@@ -4,6 +4,7 @@ from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL, PID_COL, VALUE_
 from corebehrt.main.helper.create_data import handle_aggregations
 import numpy as np
 
+
 class TestHandleAggregations(unittest.TestCase):
     def setUp(self):
         # Sample data for testing

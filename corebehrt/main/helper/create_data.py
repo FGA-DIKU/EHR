@@ -18,6 +18,7 @@ from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
 
+
 def load_tokenize_and_save(
     features_path: str,
     tokenizer: EHRTokenizer,
@@ -131,13 +132,23 @@ def handle_aggregations(
             normalized_timestamps // (agg_window * 3600)
         ).astype(int)
 
-        aggregated_df = non_nan_rows.groupby([PID_COL, 'TIME_GROUP', CONCEPT_COL]).agg(agg_type).reset_index()
-        aggregated_df = aggregated_df.drop(columns='TIME_GROUP')
+        aggregated_df = (
+            non_nan_rows.groupby([PID_COL, "TIME_GROUP", CONCEPT_COL])
+            .agg(agg_type)
+            .reset_index()
+        )
+        aggregated_df = aggregated_df.drop(columns="TIME_GROUP")
     else:
-        aggregated_df = non_nan_rows.groupby([PID_COL, TIMESTAMP_COL, CONCEPT_COL]).agg(agg_type).reset_index()
+        aggregated_df = (
+            non_nan_rows.groupby([PID_COL, TIMESTAMP_COL, CONCEPT_COL])
+            .agg(agg_type)
+            .reset_index()
+        )
 
     # Concatenate aggregated rows with NaN rows and non-matching rows
-    concatted_df = pd.concat([aggregated_df, nan_rows, non_matching_rows], ignore_index=True)
+    concatted_df = pd.concat(
+        [aggregated_df, nan_rows, non_matching_rows], ignore_index=True
+    )
     return concatted_df
 
 
