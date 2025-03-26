@@ -5,7 +5,13 @@ import pandas as pd
 import pyarrow as pa
 import torch
 
-from corebehrt.constants.data import FEATURES_SCHEMA, PID_COL, TOKENIZED_SCHEMA
+from corebehrt.constants.data import (
+    FEATURES_SCHEMA,
+    PID_COL,
+    TOKENIZED_SCHEMA,
+    CONCEPT_COL,
+    TIMESTAMP_COL,
+)
 from corebehrt.functional.features.exclude import exclude_incorrect_event_ages
 from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
@@ -64,6 +70,14 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
+            agg_kwargs = cfg.get("features", {}).get("agg_kwargs", {})
+            if agg_kwargs:
+                concepts = handle_aggregations(
+                    concepts,
+                    agg_type=agg_kwargs.get("agg_type", None),
+                    agg_window=agg_kwargs.get("agg_window", None),
+                    regex=agg_kwargs.get("regex", None),
+                )
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
             feature_creator = FeatureCreator(exclude_regex=exclude_regex)
@@ -77,6 +91,65 @@ def create_and_save_features(cfg) -> None:
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
+
+
+def handle_aggregations(
+    concepts: pd.DataFrame,
+    agg_type: str = None,
+    agg_window: int = None,
+    regex: str = ".*",
+) -> pd.DataFrame:
+    """
+    Aggregates rows in the DataFrame based on PID, TIMESTAMP, and CONCEPT columns.
+    Filters rows based on the provided regex before aggregation and concatenates excluded rows back after aggregation.
+    Keeps NaN values in TIMESTAMP column to preserve background codes.
+    Optionally aggregates values within a specified time window.
+
+    Args:
+        concepts: DataFrame to aggregate.
+        agg_type: Aggregation type (e.g., 'first', 'sum', 'mean', etc.). If None, no aggregation is performed.
+        agg_window: Time window in hours for aggregation. If None, no time window aggregation is performed.
+        regex: Regular expression to filter rows based on the CONCEPT_COL before aggregation.
+
+    Returns:
+        Aggregated DataFrame with specified rows.
+    """
+    if agg_type is None:
+        return concepts
+
+    matching_rows = concepts[concepts[CONCEPT_COL].astype(str).str.match(regex)]
+    non_matching_rows = concepts[~concepts[CONCEPT_COL].astype(str).str.match(regex)]
+    nan_rows = matching_rows[matching_rows[[TIMESTAMP_COL]].isna().any(axis=1)]
+    non_nan_rows = matching_rows.dropna(subset=[TIMESTAMP_COL])
+
+    if agg_window:
+        min_time = non_nan_rows[TIMESTAMP_COL].min()
+        normalized_timestamps = (
+            non_nan_rows[TIMESTAMP_COL] - min_time
+        ).dt.total_seconds()
+        normalized_timestamps = normalized_timestamps.fillna(-1)
+        non_nan_rows["TIME_GROUP"] = (
+            normalized_timestamps // (agg_window * 3600)
+        ).astype(int)
+
+        aggregated_df = (
+            non_nan_rows.groupby([PID_COL, "TIME_GROUP", CONCEPT_COL])
+            .agg(agg_type)
+            .reset_index()
+        )
+        aggregated_df = aggregated_df.drop(columns="TIME_GROUP")
+    else:
+        aggregated_df = (
+            non_nan_rows.groupby([PID_COL, TIMESTAMP_COL, CONCEPT_COL])
+            .agg(agg_type)
+            .reset_index()
+        )
+
+    # Concatenate aggregated rows with NaN rows and non-matching rows
+    concatted_df = pd.concat(
+        [aggregated_df, nan_rows, non_matching_rows], ignore_index=True
+    )
+    return concatted_df
 
 
 def handle_numeric_values(
