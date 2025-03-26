@@ -56,8 +56,8 @@ class EHRTrainer:
             accumulate_logits,
             last_epoch,
         )
-        self._set_default_args(args)
         self.logger = logger
+        self._set_default_args(args)
         self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
         self.metrics = (
