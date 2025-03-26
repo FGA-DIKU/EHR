@@ -21,6 +21,7 @@ class EHRTokenizer:
         cutoffs=None,
         sep_tokens: bool = True,
         cls_token: bool = True,
+        code_mapping: dict = None,
     ):
         if vocabulary is None:
             self.new_vocab = True
@@ -40,6 +41,7 @@ class EHRTokenizer:
         self.cutoffs = cutoffs
         self.sep_tokens = sep_tokens
         self.cls_token = cls_token
+        self.code_mapping = code_mapping
 
     def check_cutoff(self, cutoffs) -> None:
         if not isinstance(cutoffs, dict):
@@ -51,6 +53,12 @@ class EHRTokenizer:
         """
         !We assume that features are sorted by PID and abspos and PID is the index.
         """
+        # Apply code mapping if provided
+        if self.code_mapping is not None:
+            features["code"] = features["code"].map(
+                lambda x: self.code_mapping.get(x, x)
+            )
+
         # Apply cutoffs if needed before updating vocabulary
         if self.cutoffs:
             features["code"] = limit_concept_length_partition(

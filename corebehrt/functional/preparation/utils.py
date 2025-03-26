@@ -5,6 +5,7 @@ import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import CONCEPT_COL
+import re
 
 
 def get_background_length(patients: List[PatientData], vocabulary) -> int:
@@ -71,3 +72,11 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
 
     # Recreate a new PatientData from the updated dictionary
     return PatientData(**data)
+
+
+def is_valid_regex(pattern):
+    try:
+        re.compile(pattern)
+        return True
+    except re.error:
+        return False

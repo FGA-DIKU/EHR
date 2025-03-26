@@ -22,9 +22,9 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 
 | **Category**   | **Parameter**                | **Default Value** | **Possible Values**                     | **Description** |
 |--------------|-----------------------------|----------------|----------------------------------|----------------|
-| **Loader**   | `concept_types`              | No default value. Must be specified by user | `["diagnose", "medication", "procedure", "labtest"]` | The types of concepts extracted from EHR data. |
-|              | `include_values`             | No default value. specified by user   | `["labtest", "medication_dose"]` | Specifies which numerical values should be included in processing |
-| **Features** | `background_vars`            | `["GENDER"]`   | `["GENDER", "AGE", "ETHNICITY"]` | Background variables (demographic data) considered. |
+| **Loader**   | `concept_types`              | No default value, Specified by user   | `["diagnose", "medication", "procedure", "labtest"]` | The types of concepts extracted from EHR data. |
+|              | `include_values`             | No default value, Specified by user   | `["labtest", "medication_dose"]` | Specifies which numerical values should be included in processing |
+| **Features** | `background_vars`            | No default value, Specified by user     | `["GENDER", "AGE", "ETHNICITY"]` | Background variables (demographic data) considered. |
 |              | `origin_point`               | `2020-01-26`   | `Any valid date` | The reference timestamp for data analysis. |
 | **Values**   | `value_type`                 | `binned`       | `["binned", "normalized", "raw"]` | The method of processing numerical values (categorization, normalization, or raw values). |
 |              | `normalize.func`             | `min_max_normalize_results` | `["min_max_normalize_results", "z_score_normalize"]` | The function used for normalizing numerical values. |

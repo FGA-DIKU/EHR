@@ -7,7 +7,8 @@ paths:
   features: ./outputs/features
   tokenized: ./outputs/tokenized
   cohort: ./outputs/cohort # path to cohort directory
-  outcome: ./outputs/outcomes/TEST_OUTCOME.csv
+  outcomes: ./outputs/outcomes
+  outcome: TEST_OUTCOME.csv
 
 ## OUTPUTS
   prepared_data: ./outputs/finetuning/processed_data/ # Save model/outputs to this folder

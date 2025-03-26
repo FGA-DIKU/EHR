@@ -2,19 +2,14 @@ import logging
 import os
 from datetime import datetime
 from os.path import join
-from typing import Tuple
-from tqdm import tqdm
-from corebehrt.modules.monitoring.logger import TqdmToLogger
+from typing import Tuple, List
 
 import pandas as pd
 import torch
+from tqdm import tqdm
 
 from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
-from corebehrt.constants.paths import (
-    INDEX_DATES_FILE,
-    OUTCOMES_FILE,
-    PID_FILE,
-)
+from corebehrt.constants.paths import INDEX_DATES_FILE, OUTCOMES_FILE, PID_FILE
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
 from corebehrt.functional.io_operations.load import load_vocabulary
@@ -24,7 +19,6 @@ from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
 )
-from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.functional.preparation.truncate import (
     truncate_patient,
     truncate_patient_df,
@@ -34,10 +28,12 @@ from corebehrt.functional.preparation.utils import (
     get_background_length_pd,
     get_non_priority_tokens,
 )
-from corebehrt.functional.utils.time import get_abspos_from_origin_point
+from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
-from corebehrt.modules.preparation.dataset import PatientDataset
-from corebehrt.modules.setup.config import Config, load_config
+from corebehrt.modules.features.loader import ShardLoader
+from corebehrt.modules.monitoring.logger import TqdmToLogger
+from corebehrt.modules.preparation.dataset import PatientDataset, PatientData
+from corebehrt.modules.setup.config import Config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -60,12 +56,7 @@ class DatasetPreparer:
             join(paths_cfg.cohort, INDEX_DATES_FILE), parse_dates=[TIMESTAMP_COL]
         )
         index_dates[PID_COL] = index_dates[PID_COL].astype(int)
-        origin_point = load_config(
-            join(paths_cfg.features, "data_config.yaml")
-        ).features.origin_point
-        index_dates[ABSPOS_COL] = get_abspos_from_origin_point(
-            index_dates[TIMESTAMP_COL], datetime(**origin_point)
-        )
+        index_dates[ABSPOS_COL] = get_hours_since_epoch(index_dates[TIMESTAMP_COL])
 
         # Load tokenized data
         loader = ShardLoader(
@@ -103,15 +94,14 @@ class DatasetPreparer:
         logger.info("Assigning outcomes")
         data = data.assign_outcomes(binary_outcomes)
 
-        censor_dates = pd.Series(
-            index_dates[ABSPOS_COL] + self.cfg.outcome.n_hours_censoring,
-            index=index_dates[PID_COL],
+        censor_dates = (
+            index_dates.set_index(PID_COL)[ABSPOS_COL]
+            + self.cfg.outcome.n_hours_censoring
         )
-
+        self._validate_censoring(data.patients, censor_dates, logger)
         data.patients = data.process_in_parallel(
             censor_patient, censor_dates=censor_dates
         )
-
         background_length = get_background_length(data, vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")
@@ -238,11 +228,37 @@ class DatasetPreparer:
 
     def _cutoff_data(self, df: pd.DataFrame, cutoff_date: dict) -> pd.DataFrame:
         """Cutoff data after a given date."""
-        origin_point = load_config(
-            join(self.cfg.paths.features, "data_config.yaml")
-        ).features.origin_point
-        cutoff_abspos = get_abspos_from_origin_point(
-            datetime(**cutoff_date), datetime(**origin_point)
-        )
+        cutoff_abspos = get_hours_since_epoch(datetime(**cutoff_date))
         df = df[df[ABSPOS_COL] <= cutoff_abspos]
         return df
+
+    @staticmethod
+    def _validate_censoring(
+        patients: List["PatientData"], censor_dates: pd.Series, logger: logging.Logger
+    ) -> None:
+        """Validate censoring dates and log basic statistics.
+
+        Args:
+            patients: List of patient data objects
+            censor_dates: Series with censoring dates indexed by patient ID
+            logger: Logger instance
+        """
+        patient_pids = set(p.pid for p in patients)
+        censor_pids = set(censor_dates.index)
+
+        missing_censor_dates = patient_pids - censor_pids
+        if missing_censor_dates:
+            logger.error(
+                f"Missing censor dates for {len(missing_censor_dates)} patients"
+            )
+            raise ValueError("Some patients are missing censor dates")
+
+        logger.info(f"Censoring validated for {len(patient_pids)} patients")
+
+        # Check for NaN values in censor dates
+        nan_censor_dates = censor_dates.isna().sum()
+        if nan_censor_dates > 0:
+            logger.error(f"Found {nan_censor_dates} NaN values in censor dates")
+            raise ValueError("NaN values detected in censor dates")
+
+        logger.info(f"Censoring validated for {len(patient_pids)} patients")

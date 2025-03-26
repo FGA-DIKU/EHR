@@ -5,7 +5,7 @@ import pandas as pd
 from corebehrt.constants.paths import DATA_CFG, OUTCOMES_CFG
 from corebehrt.main.create_outcomes import main_data
 
-from .base import TestMainScript
+from tests.test_main.base import TestMainScript
 
 
 class TestCreateOutcomes(TestMainScript):
@@ -26,7 +26,7 @@ class TestCreateOutcomes(TestMainScript):
                     "TEST_OUTCOME": {
                         "type": ["code"],
                         "match": [["D10", "D02"]],
-                        "exclude": ["D30"],
+                        "exclude": ["157141000119108"],
                         "match_how": "startswith",
                         "case_sensitive": True,
                     },

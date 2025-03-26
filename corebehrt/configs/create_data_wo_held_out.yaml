@@ -8,10 +8,6 @@ paths:
   features: ./outputs/features_wo_held_out
   
 features:
-  origin_point:
-    year: 2020
-    month: 1
-    day: 26
   values:
     value_creator_kwargs:
       num_bins: 100

@@ -63,6 +63,56 @@ class TestCreators(unittest.TestCase):
         ]
         self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
 
+    def test_all_nan_values(self):
+        """Test that the bin_results method handles cases where all numeric values are NaN."""
+        # Create a DataFrame with only NaN values in numeric_value
+        nan_df = pd.DataFrame(
+            {
+                "code": ["LAB_NAN1", "LAB_NAN2", "LAB_NAN3"],
+                "numeric_value": [float("nan"), float("nan"), float("nan")],
+                "time": [pd.Timestamp.now()] * 3,
+                "subject_id": ["1", "2", "3"],
+            }
+        )
+
+        # This should not raise an error
+        try:
+            binned_values = ValueCreator.bin_results(nan_df, num_bins=100)
+            self.assertIsInstance(binned_values, pd.DataFrame)
+        except ValueError as e:
+            self.fail(f"bin_results raised ValueError with all-NaN input: {e}")
+
+    def test_empty_dataframe(self):
+        """Test that the bin_results method handles empty DataFrames correctly."""
+        # Create an empty DataFrame with only headers
+        empty_df = pd.DataFrame(columns=["code", "numeric_value", "time", "subject_id"])
+
+        # This should not raise an error
+        try:
+            binned_values = ValueCreator.bin_results(empty_df, num_bins=100)
+            self.assertIsInstance(binned_values, pd.DataFrame)
+        except ValueError as e:
+            self.fail(f"bin_results raised ValueError with empty DataFrame: {e}")
+
+    def test_single_row_nan(self):
+        """Test that the bin_results method handles a single row with NaN."""
+        # Create a DataFrame with a single row containing NaN
+        single_nan_df = pd.DataFrame(
+            {
+                "code": ["LAB_SINGLE"],
+                "numeric_value": [float("nan")],
+                "time": [pd.Timestamp.now()],
+                "subject_id": ["1"],
+            }
+        )
+
+        # This should not raise an error
+        try:
+            binned_values = ValueCreator.bin_results(single_nan_df, num_bins=100)
+            self.assertIsInstance(binned_values, pd.DataFrame)
+        except ValueError as e:
+            self.fail(f"bin_results raised ValueError with single NaN value: {e}")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,24 +1,29 @@
 from datetime import datetime
-from typing import List, Union
+from typing import Union
 
 import pandas as pd
 
 
-def get_abspos_from_origin_point(
-    timestamps: Union[pd.Series, List[datetime], datetime], origin_point: datetime
-) -> Union[pd.Series, List[float], datetime]:
-    """Get the absolute position in hours from the origin point"""
+def get_hours_since_epoch(
+    timestamps: Union[pd.Series, datetime],
+) -> Union[pd.Series, float]:
     if isinstance(timestamps, pd.Series):
         if len(timestamps) == 0:
-            return pd.Series([])
-        return (timestamps - origin_point).dt.total_seconds() / 60 / 60
-    elif isinstance(timestamps, list):
-        return [
-            (timestamp - origin_point).total_seconds() / 60 / 60
-            for timestamp in timestamps
-        ]
+            return pd.Series([], dtype=float)
+        # Convert timestamps to UTC (timezone-aware)
+        timestamps = pd.to_datetime(
+            timestamps, utc=True
+        )  # ensure consistency across dataset
+        # Remove the timezone information to get a timezone-naive series, necessary for the next step
+        timestamps = timestamps.dt.tz_localize(None)
+        # Cast to microsecond precision
+        timestamps = timestamps.astype("datetime64[us]")
+        # Convert microseconds to hours
+        hours = (timestamps.astype("int64") // 10**6) / 3600
+        return hours
+
     elif isinstance(timestamps, datetime):
-        return (timestamps - origin_point).total_seconds() / 60 / 60
+        return get_hours_since_epoch(pd.Series([timestamps])).iloc[0]
     else:
         raise TypeError(
             "Invalid type for timestamps, only pd.Series, list, and datetime are supported."

@@ -18,12 +18,7 @@ data:
     masking_ratio: .8 # Ratio of tokens to mask for masked language modeling
     replace_ratio: .1 # Ratio of masked tokens replaced with random tokens
     ignore_special_tokens: true # Ignore special tokens when processing data
-  truncation_len: 20 # Maximum sequence length after truncation
-  min_len: 2 # Minimum sequence length required for a valid sample
-  cutoff_date:
-    year: 2020
-    month: 1
-    day: 1
+
 
 # Training arguments
 trainer_args:
@@ -38,17 +33,22 @@ trainer_args:
   early_stopping: null # false/null: disable early stopping - Set a number (e.g., 15) to stop training after that many epochs without improvement.
 
 
-model:  
-  hidden_size: 96  # Dimensionality of hidden layers. Must be divisible by num_attention_heads.  
-  num_hidden_layers: 3  # Number of transformer encoder layers. More layers improve learning depth but increase computation time.  
-  num_attention_heads: 3  # Number of attention heads per layer. Must evenly divide hidden_size.  
-  intermediate_size: 64  # Size of the feedforward layer in each transformer block.Typically 4×hidden_size, but smaller here for efficiency.  
-  type_vocab_size: 1024  # Number of token type embeddings (e.g., for distinguishing input segments). Default is 2 for models like BERT; larger values support more segment types.  
-  embedding_dropout: 0.1  # Dropout rate for embeddings to prevent overfitting / Common values: 0.1 (BERT, GPT-2).  
-  max_position_embeddings: 512  # Maximum sequence length the model can process.
-
-
 # Optimizer settings  
+model:
+  hidden_size: 96  # Dimensionality of hidden layers. Must be divisible by num_attention_heads. 
+  num_hidden_layers: 3     # Number of transformer encoder layers. More layers improve learning depth but increase computation time. 
+  num_attention_heads: 3    # Number of attention heads per layer. Must evenly divide hidden_size.  
+  intermediate_size: 64    # Size of the feedforward layer in each transformer block.Typically 4×hidden_size, but smaller here for efficiency.  
+  type_vocab_size: 1024   # Number of token type embeddings (e.g., for distinguishing input segments). Default is 2 for models like BERT; larger values support more segment types.  
+  embedding_dropout: 0.1     # Dropout rate for embeddings to prevent overfitting / Common values: 0.1 (BERT, GPT-2).  
+  max_position_embeddings: 512 # the longest sequence length we will use this model with
+
+
+  age_scale: 1e-2 # 100 -> 1
+  abspos_scale: 1e-5 # 400k -> 4
+  age_shift: -50 # center around 0
+  abspos_shift: -90_000 # 0 will be around 2015
+  
 optimizer:
   lr: 5e-4   # Learning rate for training
   eps: 1e-6  # Small epsilon value to prevent division by zero in Adam optimizer

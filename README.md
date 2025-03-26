@@ -20,6 +20,7 @@ COREBEHRT helps researchers and data scientists preprocess EHR data, train model
   - [Getting Started](#getting-started)
     - [Virtual Environment Setup](#virtual-environment-setup)
   - [Pipeline](#pipeline)
+    - [Converting to MEDS](#converting-to-meds)
     - [1. Create Data](#1-create-data)
     - [2. Pretrain](#2-pretrain)
     - [3. Create Outcomes](#3-create-outcomes)
@@ -66,7 +67,11 @@ source .venv/bin/activate
 
 ## Pipeline
 
+<<<<<<< HEAD
 ![COREBEHRT Overview](docs/COREBEHRT_overview_dark.jpg){width=800}
+=======
+![COREBEHRT Overview](docs/COREBEHRT_overview_dark.jpg)
+>>>>>>> origin/main
 
 Below is a high-level description of the steps in the COREBEHRT pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
 The pipeline can be run from the root directory by executing the following commands:
@@ -81,16 +86,23 @@ The pipeline can be run from the root directory by executing the following comma
 (.venv) python -m corebehrt.main.finetune_cv
 ```
 
+### Converting to MEDS
+
+Before using COREBEHRT, you need to convert your raw healthcare data into the [MEDS (Medical-Event-Data-Standard) format](https://github.com/Medical-Event-Data-Standard/meds) format. We provide a companion tool [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to help with this conversion:
+
+- Converts source data (e.g., hospital EHR dumps, registry data) into MEDS
+- Performs code normalization and standardization
+- Provides configuration options for handling different data sources
+- Includes validation to ensure data quality
+
 ### 1. Create Data
 
-- **Goal**: Convert **formatted EHR data** into **tokenized features** suitable for model training.
+- **Goal**: Convert **MEDS** into **tokenized features** suitable for model training.
 - **Key Tasks**:
   - **Vocabulary Mapping**: Translates raw medical concepts (e.g., diagnoses, procedures) into numerical tokens.
   - **Temporal Alignment**: Converts timestamps into relative positions (e.g., hours or days from an index date).
   - **Incorporate Background Variables**: Incorporates static features such as age, gender, or other demographics.
 - **Efficient Output**: Produces a structured parquet format that can be rapidly loaded in subsequent steps.
-
-If you need a starting point for raw EHR data formatting, consider using the [EHR_PREPROCESS](https://github.com/kirilklein/ehr_preprocess.git) repository to generate pre-cleaned CSV files.
 
 ### 2. Pretrain
 

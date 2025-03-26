@@ -1,10 +1,8 @@
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
 
 from corebehrt.functional.features.normalize import normalize_segments_series
-from corebehrt.functional.utils.time import get_abspos_from_origin_point
+from corebehrt.functional.utils.time import get_hours_since_epoch
 import uuid
 import warnings
 from corebehrt.constants.data import (
@@ -22,18 +20,15 @@ from corebehrt.constants.data import (
 )
 
 
-def create_abspos(concepts: pd.DataFrame, origin_point: datetime) -> pd.DataFrame:
+def create_abspos(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign absolute position in hours since origin point to each row in concepts.
     Parameters:
         concepts: concepts with 'TIMESTAMP' column.
-        origin_point: The origin point for calculating absolute position.
     Returns:
         concepts with a new 'abspos' column
     """
-    concepts[ABSPOS_COL] = get_abspos_from_origin_point(
-        concepts[TIMESTAMP_COL], origin_point
-    )
+    concepts[ABSPOS_COL] = get_hours_since_epoch(concepts[TIMESTAMP_COL])
     return concepts
 
 
@@ -125,8 +120,8 @@ def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
         df with 'index' and 'order' columns.
     """
     if "index" in df.columns and "order" in df.columns:
-        df["index"] = df["index"].fillna(0)
-        df["order"] = df["order"].fillna(0)
+        df.loc[:, "index"] = df["index"].fillna(0)
+        df.loc[:, "order"] = df["order"].fillna(0)
     return df
 
 
