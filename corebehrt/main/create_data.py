@@ -87,8 +87,9 @@ def main_data(config_path):
     if os.path.exists(os.path.join(features_path, "held_out")):
         logger.info("Tokenizing held_out")
         load_tokenize_and_save(features_path, tokenizer, tokenized_path, "held_out")
-        torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
         logger.info("Finished tokenizing")
+    logger.info("Saving vocabulary")
+    torch.save(tokenizer.vocabulary, join(tokenized_path, "vocabulary.pt"))
 
 
 if __name__ == "__main__":
