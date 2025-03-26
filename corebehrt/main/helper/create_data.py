@@ -17,8 +17,6 @@ from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
-from corebehrt.functional.preparation.utils import aggregate_rows
-
 
 def load_tokenize_and_save(
     features_path: str,
@@ -124,12 +122,17 @@ def handle_aggregations(
     non_nan_rows = matching_rows.dropna(subset=[TIMESTAMP_COL])
 
     if agg_window:
-        # Create a new column for the time window grouping
-        non_nan_rows[TIMESTAMP_COL] = pd.to_datetime(non_nan_rows[TIMESTAMP_COL])
         min_time = non_nan_rows[TIMESTAMP_COL].min()
-        normalized_timestamps = (non_nan_rows[TIMESTAMP_COL] - min_time).dt.total_seconds()
-        non_nan_rows["TIME_GROUP"] = (normalized_timestamps // (agg_window * 3600)).astype(int)
-        aggregated_df = non_nan_rows.groupby([PID_COL, "TIME_GROUP", CONCEPT_COL]).agg(agg_type).reset_index()
+        normalized_timestamps = (
+            non_nan_rows[TIMESTAMP_COL] - min_time
+        ).dt.total_seconds()
+        normalized_timestamps = normalized_timestamps.fillna(-1)
+        non_nan_rows["TIME_GROUP"] = (
+            normalized_timestamps // (agg_window * 3600)
+        ).astype(int)
+
+        aggregated_df = non_nan_rows.groupby([PID_COL, 'TIME_GROUP', CONCEPT_COL]).agg(agg_type).reset_index()
+        aggregated_df = aggregated_df.drop(columns='TIME_GROUP')
     else:
         aggregated_df = non_nan_rows.groupby([PID_COL, TIMESTAMP_COL, CONCEPT_COL]).agg(agg_type).reset_index()
 

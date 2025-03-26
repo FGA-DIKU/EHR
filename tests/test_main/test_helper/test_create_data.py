@@ -63,6 +63,7 @@ class TestHandleAggregations(unittest.TestCase):
 
     def test_aggregation_with_window(self):
         result = handle_aggregations(self.df, agg_type="first", agg_window=25)
+        print(result)
         expected_data = {
             PID_COL: [1, 2, 2],
             CONCEPT_COL: ["A", "B", "B"],

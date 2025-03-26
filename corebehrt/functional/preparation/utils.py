@@ -80,15 +80,3 @@ def is_valid_regex(pattern: str) -> bool:
         return True
     except re.error:
         return False
-
-
-def aggregate_rows(
-    df: pd.DataFrame, cols: list, agg_type: str
-) -> pd.DataFrame:
-    """
-    Aggregate rows in a DataFrame by the specified columns using the given aggregation type.
-    Returns:
-        Aggregated DataFrame with specified NaN rows concatenated back.
-    """
-    aggregated_df = df.groupby(cols, sort=False).agg(agg_type).reset_index()
-    return aggregated_df
