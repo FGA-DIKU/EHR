@@ -63,7 +63,6 @@ class TestHandleAggregations(unittest.TestCase):
 
     def test_aggregation_with_window(self):
         result = handle_aggregations(self.df, agg_type="first", agg_window=25)
-        print(result)
         expected_data = {
             PID_COL: [1, 2, 2],
             CONCEPT_COL: ["A", "B", "B"],
@@ -83,7 +82,6 @@ class TestHandleAggregations(unittest.TestCase):
         result_w_regex = handle_aggregations(
             self.df_w_prefix, agg_type="first", regex="^LAB.*"
         )
-        print(result_w_regex)
         result_wo_regex = handle_aggregations(
             self.df_w_prefix, agg_type="first", regex=".*"
         )
