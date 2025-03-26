@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 from corebehrt.constants.data import CONCEPT_COL, TIMESTAMP_COL, PID_COL, VALUE_COL
 from corebehrt.main.helper.create_data import handle_aggregations
-
+import numpy as np
 
 class TestHandleAggregations(unittest.TestCase):
     def setUp(self):
@@ -22,7 +22,25 @@ class TestHandleAggregations(unittest.TestCase):
             CONCEPT_COL: ["A", "A", "A", "B", "B", "B"],
             VALUE_COL: [10, 20, 30, 40, 50, 60],
         }
+
+        self.data_w_prefix = {
+            PID_COL: [1, 1, 1, 1, 1, 1],
+            TIMESTAMP_COL: pd.to_datetime(
+                [
+                    "2023-01-01 00:00:00",
+                    "2023-01-01 00:00:00",
+                    "2023-01-01 00:00:00",
+                    "2023-01-01 00:00:00",
+                    "2023-01-01 00:00:00",
+                    "2023-01-01 00:00:00",
+                ]
+            ),
+            CONCEPT_COL: ["LAB_A", "LAB_A", "LAB_A", "D_B", "D_B", "D_B"],
+            VALUE_COL: [10, 20, 30, np.nan, np.nan, np.nan],
+        }
+
         self.df = pd.DataFrame(self.data)
+        self.df_w_prefix = pd.DataFrame(self.data_w_prefix)
 
     def test_aggregation_without_window(self):
         result = handle_aggregations(self.df, agg_type="first")
@@ -59,6 +77,17 @@ class TestHandleAggregations(unittest.TestCase):
     def test_no_aggregation(self):
         result = handle_aggregations(self.df)
         pd.testing.assert_frame_equal(result, self.df)
+
+    def test_aggregation_with_prefix(self):
+        result_w_regex = handle_aggregations(
+            self.df_w_prefix, agg_type="first", regex="^LAB.*"
+        )
+        print(result_w_regex)
+        result_wo_regex = handle_aggregations(
+            self.df_w_prefix, agg_type="first", regex=".*"
+        )
+        self.assertEqual(len(result_w_regex), 4)
+        self.assertEqual(len(result_wo_regex), 2)
 
 
 if __name__ == "__main__":

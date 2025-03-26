@@ -71,11 +71,14 @@ def create_and_save_features(cfg) -> None:
             concepts = FormattedDataLoader(
                 shard_path,
             ).load()
-            concepts = handle_aggregations(
-                concepts,
-                agg_type=cfg.get("features", {}).get("agg_func", None),
-                agg_window=cfg.get("features", {}).get("agg_window", None),
-            )
+            agg_kwargs = cfg.get("features", {}).get("agg_kwargs", {})
+            if agg_kwargs:
+                concepts = handle_aggregations(
+                    concepts,
+                    agg_type=agg_kwargs.get("agg_type", None),
+                    agg_window=agg_kwargs.get("agg_window", None),
+                    regex=agg_kwargs.get("regex", None),
+                )
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
             feature_creator = FeatureCreator(exclude_regex=exclude_regex)
@@ -92,42 +95,47 @@ def create_and_save_features(cfg) -> None:
 
 
 def handle_aggregations(
-    concepts: pd.DataFrame, agg_type: str = None, agg_window: int = None
+    concepts: pd.DataFrame,
+    agg_type: str = None,
+    agg_window: int = None,
+    regex: str = ".*",
 ) -> pd.DataFrame:
     """
-    Performs aggregation based on PID, TIMESTAMP, and CONCEPT columns if agg_type is provided.
-    Keeps NaN values in the timestamps columns to preseve BG codes.
-    If agg_window is provided, aggregates values within the specified time window.
-    """
-    if agg_type:
-        if agg_window:
-            # Create a new column for the time window grouping
-            concepts[TIMESTAMP_COL] = pd.to_datetime(concepts[TIMESTAMP_COL])
-            min_time = concepts[TIMESTAMP_COL].min()
-            normalized_timestamps = (
-                concepts[TIMESTAMP_COL] - min_time
-            ).dt.total_seconds()
-            normalized_timestamps = normalized_timestamps.fillna(-1)
-            concepts["TIME_GROUP"] = (
-                normalized_timestamps // (agg_window * 3600)
-            ).astype(int)
+    Aggregates rows in the DataFrame based on PID, TIMESTAMP, and CONCEPT columns.
+    Filters rows based on the provided regex before aggregation and concatenates excluded rows back after aggregation.
+    Keeps NaN values in TIMESTAMP column to preserve background codes.
+    Optionally aggregates values within a specified time window.
 
-            aggregated_concepts = aggregate_rows(
-                concepts,
-                cols=[PID_COL, "TIME_GROUP", CONCEPT_COL],
-                agg_type=agg_type,
-                keep_nans=[TIMESTAMP_COL],
-            )
-            return aggregated_concepts.drop(columns=["TIME_GROUP"])
-        else:
-            aggregated_concepts = aggregate_rows(
-                concepts,
-                cols=[PID_COL, TIMESTAMP_COL, CONCEPT_COL],
-                agg_type=agg_type,
-                keep_nans=[TIMESTAMP_COL],
-            )
-            return aggregated_concepts
-    return concepts
+    Args:
+        concepts: DataFrame to aggregate.
+        agg_type: Aggregation type (e.g., 'first', 'sum', 'mean', etc.). If None, no aggregation is performed.
+        agg_window: Time window in hours for aggregation. If None, no time window aggregation is performed.
+        regex: Regular expression to filter rows based on the CONCEPT_COL before aggregation.
+
+    Returns:
+        Aggregated DataFrame with specified rows.
+    """
+    if agg_type is None:
+        return concepts
+
+    matching_rows = concepts[concepts[CONCEPT_COL].astype(str).str.match(regex)]
+    non_matching_rows = concepts[~concepts[CONCEPT_COL].astype(str).str.match(regex)]
+    nan_rows = matching_rows[matching_rows[[TIMESTAMP_COL]].isna().any(axis=1)]
+    non_nan_rows = matching_rows.dropna(subset=[TIMESTAMP_COL])
+
+    if agg_window:
+        # Create a new column for the time window grouping
+        non_nan_rows[TIMESTAMP_COL] = pd.to_datetime(non_nan_rows[TIMESTAMP_COL])
+        min_time = non_nan_rows[TIMESTAMP_COL].min()
+        normalized_timestamps = (non_nan_rows[TIMESTAMP_COL] - min_time).dt.total_seconds()
+        non_nan_rows["TIME_GROUP"] = (normalized_timestamps // (agg_window * 3600)).astype(int)
+        aggregated_df = non_nan_rows.groupby([PID_COL, "TIME_GROUP", CONCEPT_COL]).agg(agg_type).reset_index()
+    else:
+        aggregated_df = non_nan_rows.groupby([PID_COL, TIMESTAMP_COL, CONCEPT_COL]).agg(agg_type).reset_index()
+
+    # Concatenate aggregated rows with NaN rows and non-matching rows
+    concatted_df = pd.concat([aggregated_df, nan_rows, non_matching_rows], ignore_index=True)
+    return concatted_df
 
 
 def handle_numeric_values(
