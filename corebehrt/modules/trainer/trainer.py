@@ -111,6 +111,10 @@ class EHRTrainer:
             self.already_unfrozen = False
 
         self.unfreeze_on_plateau = self.args.get("unfreeze_on_plateau", False)
+        self.unfreeze_at_epoch = self.args.get("unfreeze_at_epoch", None)
+
+        if self.unfreeze_at_epoch is not None:
+            self.log(f"Model will be unfrozen at epoch {self.unfreeze_at_epoch}")
 
     def _set_default_args(self, args):
         default_args = {
@@ -118,6 +122,7 @@ class EHRTrainer:
             "collate_fn": dynamic_padding,
         }
         self.args = {**default_args, **args}
+        self.log(f"Trainer args: {self.args}")
         if not (self.args["effective_batch_size"] % self.args["batch_size"] == 0):
             raise ValueError("effective_batch_size must be a multiple of batch_size")
 
@@ -169,6 +174,8 @@ class EHRTrainer:
                 break
 
     def _train_epoch(self, epoch: int, dataloader: DataLoader) -> None:
+        self._check_unfreeze_at_epoch(epoch)
+
         train_loop = get_tqdm(dataloader)
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
@@ -520,6 +527,24 @@ class EHRTrainer:
             self.args.get("plateau_threshold", 0.01),
         ):
             self.log("Performance plateau detected! Unfreezing all layers of the model")
+            self.model = unfreeze_all_layers(self.model)
+
+            # Mark as unfrozen to avoid repeated unfreezing
+            self.already_unfrozen = True
+
+            # Optionally reset early stopping counter after unfreezing
+            if self.args.get("reset_patience_after_unfreeze", True):
+                self.early_stopping_counter = 0
+                self.log("Reset early stopping counter after unfreezing")
+
+    def _check_unfreeze_at_epoch(self, epoch: int):
+        """Check if we should unfreeze all layers based on current epoch."""
+        if (
+            self.unfreeze_at_epoch is not None
+            and epoch >= self.unfreeze_at_epoch
+            and not getattr(self, "already_unfrozen", False)
+        ):
+            self.log(f"Reached epoch {epoch}! Unfreezing all layers of the model")
             self.model = unfreeze_all_layers(self.model)
 
             # Mark as unfrozen to avoid repeated unfreezing
