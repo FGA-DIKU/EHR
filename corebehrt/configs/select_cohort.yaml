@@ -6,15 +6,14 @@ logging:
 
 paths:
   ### Inputs
-  features: ./outputs/features
+  features: ./outputs/features   # Path to preprocessed feature files
   initial_pids: ./outputs/tokenized/pids_tuning.pt # _optional_ Initial patients to select from [list of pids] 
   exposure: ./outputs/outcomes/TEST_CENSOR.csv # _optional_ Path to exposure data; defaults to outcome if not specified.For multiple exposures, create a joint exposure file.
   outcome: ./outputs/outcomes/TEST_OUTCOME.csv  #Path to the outcome labels used for cohort selection.  
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
-  cohort: ./outputs/cohort # Directory where the selected cohort is saved
-
+  cohort: ./outputs/cohort # Directory where the final selected cohort data will be stored. 
 selection:
   exclude_prior_outcomes: true # Exclude patients who had the outcome before the index date.
   exposed_only: false # If true, only include patients who have an exposure event.
