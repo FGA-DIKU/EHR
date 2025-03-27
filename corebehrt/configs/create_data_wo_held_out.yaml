@@ -1,24 +1,26 @@
 logging:
-  level: INFO
-  path: ./outputs/logs
+  level: INFO  # Defines the logging level (INFO, DEBUG, ERROR, etc.)
+  path: ./outputs/logs # Specifies the directory where log files will be stored
 
 paths:
-  data: ./example_data/example_MEDS_data_wo_held_out
-  tokenized: ./outputs/tokenized_wo_held_out
-  features: ./outputs/features_wo_held_out
+  data: ./example_data/example_MEDS_data_wo_held_out   # Path to raw EHR data
+  tokenized: ./outputs/tokenized_wo_held_out   # Path to store tokenized patient records
+  features: ./outputs/features_wo_held_out     # Path to save extracted features for modeling
   
 features:
+# Configuration for processing numerical values in the dataset
   values:
-    value_creator_kwargs:
-      num_bins: 100
+   #value_type: binned # Defines how numerical values are processed.
+    value_creator_kwargs:   # Parameters for creating features from numerical values
+      num_bins: 100   # Number of bins to discretize continuous values
 
 tokenizer:
-  sep_tokens: true
-  cls_token: true
+  sep_tokens: true    # Whether to insert separator tokens between events
+  cls_token: true    # Whether to include a [CLS] token at the beginning of sequences
   cutoffs:
-   D: 3 # diagnosis
-   M: 4 # medication
+   D: 3 #Truncate diagnosis codes starting with 'D' to 3 characters (e.g., D123456 -> D12)
+   M: 4 # Truncate medication codes starting with 'M' to 4 characters
 
 excluder:
-  min_age: -1
-  max_age: 120
+  min_age: -1   # Minimum age threshold for including a patient (-1 means no minimum)
+  max_age: 120   # Maximum age threshold for including a patient
