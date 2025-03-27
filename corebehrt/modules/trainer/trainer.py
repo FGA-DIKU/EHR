@@ -174,8 +174,9 @@ class EHRTrainer:
                 break
 
     def _train_epoch(self, epoch: int, dataloader: DataLoader) -> None:
-        self._check_unfreeze_at_epoch(epoch)
-
+        if self._should_unfreeze_at_epoch(epoch):
+            self._unfreeze_model(f"Reached epoch {epoch}!")
+        
         train_loop = get_tqdm(dataloader)
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
@@ -262,7 +263,9 @@ class EHRTrainer:
             self.stopping_metric, val_loss
         )  # get the metric we monitor. Same as early stopping
 
-        self._check_unfreeze_on_plateau(current_metric_value)
+        if self._should_unfreeze_on_plateau(current_metric_value):
+            self._unfreeze_model("Performance plateau detected!")
+        
         if self._should_stop_early(
             epoch, current_metric_value, val_loss, epoch_loss, val_metrics, test_metrics
         ):
@@ -511,46 +514,38 @@ class EHRTrainer:
             else:
                 setattr(self, key, value)
 
-    def _check_unfreeze_on_plateau(self, current_metric_value):
-        """Check if we should unfreeze all layers based on plateau detection."""
-        # Skip if either feature is disabled or we've already unfrozen or if we don't have a best metric value
+    def _should_unfreeze_at_epoch(self, epoch: int) -> bool:
+        """Determine if we should unfreeze all layers based on current epoch."""
+        return (
+            self.unfreeze_at_epoch is not None
+            and epoch >= self.unfreeze_at_epoch
+            and not getattr(self, "already_unfrozen", False)
+        )
+
+    def _should_unfreeze_on_plateau(self, current_metric_value: float) -> bool:
+        """Determine if we should unfreeze all layers based on plateau detection."""
         if (
             not self.unfreeze_on_plateau
             or getattr(self, "already_unfrozen", False)
             or self.best_metric_value is None
         ):
-            return
+            return False
 
-        if is_plateau(
+        return is_plateau(
             self.best_metric_value,
             current_metric_value,
             self.args.get("plateau_threshold", 0.01),
-        ):
-            self.log("Performance plateau detected! Unfreezing all layers of the model")
-            self.model = unfreeze_all_layers(self.model)
+        )
 
-            # Mark as unfrozen to avoid repeated unfreezing
-            self.already_unfrozen = True
-
-            # Optionally reset early stopping counter after unfreezing
-            if self.args.get("reset_patience_after_unfreeze", True):
-                self.early_stopping_counter = 0
-                self.log("Reset early stopping counter after unfreezing")
-
-    def _check_unfreeze_at_epoch(self, epoch: int):
-        """Check if we should unfreeze all layers based on current epoch."""
-        if (
-            self.unfreeze_at_epoch is not None
-            and epoch >= self.unfreeze_at_epoch
-            and not getattr(self, "already_unfrozen", False)
-        ):
-            self.log(f"Reached epoch {epoch}! Unfreezing all layers of the model")
-            self.model = unfreeze_all_layers(self.model)
-
-            # Mark as unfrozen to avoid repeated unfreezing
-            self.already_unfrozen = True
-
-            # Optionally reset early stopping counter after unfreezing
-            if self.args.get("reset_patience_after_unfreeze", True):
-                self.early_stopping_counter = 0
-                self.log("Reset early stopping counter after unfreezing")
+    def _unfreeze_model(self, reason: str):
+        """Unfreeze all layers and handle related state updates."""
+        self.log(f"{reason} Unfreezing all layers of the model")
+        self.model = unfreeze_all_layers(self.model)
+        
+        # Mark as unfrozen to avoid repeated unfreezing
+        self.already_unfrozen = True
+        
+        # Optionally reset early stopping counter after unfreezing
+        if self.args.get("reset_patience_after_unfreeze", True):
+            self.early_stopping_counter = 0
+            self.log("Reset early stopping counter after unfreezing")
