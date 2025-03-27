@@ -1,24 +1,90 @@
+"""
+This provides logging functionality for the model.
+Inspired by:
+https://lightning.ai/docs/pytorch/1.6.2/_modules/pytorch_lightning/utilities/model_summary.html#ModelSummary
+"""
+
 import logging
+from collections import OrderedDict
+from typing import List, Tuple
+
+import numpy as np
+import torch.nn as nn
 
 logger = logging.getLogger(__name__)
 
+PARAMETER_NUM_UNITS = ["", "K", "M", "B", "T"]
 
-def log_number_of_trainable_parameters(model):
-    """Prints a minimal summary of which model components are frozen/trainable."""
-    # Track parameter status by major component
-    embedding_params = 0
-    embedding_trainable = 0
 
-    # Collect encoder layer information
-    encoder_layers = {}
+def get_human_readable_count(number: int) -> str:
+    """Formats parameter counts with K, M, B, T suffixes.
 
-    head_params = 0
-    head_trainable = 0
+    Args:
+        number: Number to format
 
+    Returns:
+        Formatted string like '1.2K' or '34.5M'
+    """
+    assert number >= 0
+    labels = PARAMETER_NUM_UNITS
+    num_digits = int(np.floor(np.log10(number)) + 1 if number > 0 else 1)
+    num_groups = int(np.ceil(num_digits / 3))
+    num_groups = min(num_groups, len(labels))
+    shift = -3 * (num_groups - 1)
+    number = number * (10**shift)
+    index = num_groups - 1
+    if index < 1 or number >= 100:
+        return f"{int(number):,d}{labels[index]}"
+    return f"{number:,.1f}{labels[index]}"
+
+
+def format_summary_table(
+    headers: List[str], rows: List[List[str]], footer_rows: List[Tuple[str, str]]
+) -> str:
+    """Creates a formatted table string with headers, rows and footer.
+
+    Args:
+        headers: Column header strings
+        rows: Table row data
+        footer_rows: Footer rows as (label, value) pairs
+
+    Returns:
+        Formatted table string
+    """
+    # Get column widths
+    col_widths = [max(len(str(x)) for x in col) for col in zip(*([headers] + rows))]
+
+    # Format string for each column
+    row_format = " | ".join(f"{{:<{width}}}" for width in col_widths)
+
+    # Create table string
+    lines = [
+        row_format.format(*headers),
+        "-" * (sum(col_widths) + 3 * (len(col_widths) - 1)),
+    ]
+    lines.extend(row_format.format(*row) for row in rows)
+    lines.append("-" * (sum(col_widths) + 3 * (len(col_widths) - 1)))
+
+    # Add footer
+    footer_width = max(len(label) for label, _ in footer_rows)
+    footer_format = f"{{:<{footer_width}}} {{}}"
+    lines.extend(footer_format.format(label, value) for label, value in footer_rows)
+
+    return "\n".join(lines)
+
+
+def log_number_of_trainable_parameters(model: nn.Module) -> None:
+    """Enhanced parameter logging with detailed breakdown and formatted table.
+
+    Args:
+        model: The model to analyze
+    """
+    # Track parameters by component
+    components = OrderedDict()
     total_params = 0
     total_trainable = 0
 
-    # Count parameters by major component
+    # Collect parameter stats
     for name, param in model.named_parameters():
         num_params = param.numel()
         total_params += num_params
@@ -28,57 +94,57 @@ def log_number_of_trainable_parameters(model):
 
         # Categorize by component
         if name.startswith("embeddings"):
-            embedding_params += num_params
-            if is_trainable:
-                embedding_trainable += num_params
+            component = "embeddings"
         elif name.startswith("cls"):
-            head_params += num_params
-            if is_trainable:
-                head_trainable += num_params
+            component = "classification_head"
         elif name.startswith("layers."):
-            # Extract layer number
-            parts = name.split(".")
-            if len(parts) >= 2:
-                layer_idx = int(parts[1])
-                if layer_idx not in encoder_layers:
-                    encoder_layers[layer_idx] = {"trainable": 0, "total": 0}
-
-                encoder_layers[layer_idx]["total"] += num_params
-                if is_trainable:
-                    encoder_layers[layer_idx]["trainable"] += num_params
-
-    # Print the concise summary
-    logger.info("-" * 50)
-
-    # Embedding status
-    if embedding_params > 0:
-        if embedding_trainable > 0:
-            emb_status = f"TRAINABLE ({embedding_trainable/embedding_params*100:.1f}%)"
+            layer_idx = int(name.split(".")[1])
+            component = f"encoder_layer_{layer_idx}"
         else:
-            emb_status = "FROZEN"
-        logger.info(f"Embeddings: {emb_status}")
+            component = "other"
 
-    # Encoder layers status
-    if encoder_layers:
-        num_encoder_layers = len(encoder_layers)
-        trainable_layers = sum(
-            1 for _, stats in encoder_layers.items() if stats["trainable"] > 0
+        if component not in components:
+            components[component] = {"trainable": 0, "total": 0}
+        components[component]["total"] += num_params
+        if is_trainable:
+            components[component]["trainable"] += num_params
+
+    # Prepare table data
+    headers = ["Component", "Parameters", "Trainable", "Status"]
+    rows = []
+
+    for name, stats in components.items():
+        trainable_pct = (
+            stats["trainable"] / stats["total"] * 100 if stats["total"] > 0 else 0
         )
-        logger.info(
-            f"Encoder: {trainable_layers}/{num_encoder_layers} layers TRAINABLE"
+        status = "TRAINABLE" if stats["trainable"] > 0 else "FROZEN"
+        rows.append(
+            [
+                name,
+                get_human_readable_count(stats["total"]),
+                f"{trainable_pct:.1f}%",
+                status,
+            ]
         )
 
-    # Classification head status
-    if head_params > 0:
-        if head_trainable > 0:
-            head_status = f"TRAINABLE ({head_trainable/head_params*100:.1f}%)"
-        else:
-            head_status = "FROZEN"
-        logger.info(f"Classification head: {head_status}")
+    # Prepare footer statistics
+    footer_rows = [
+        (
+            "Trainable params:",
+            f"{get_human_readable_count(total_trainable)} ({total_trainable/total_params*100:.1f}%)",
+        ),
+        (
+            "Non-trainable params:",
+            get_human_readable_count(total_params - total_trainable),
+        ),
+        ("Total params:", get_human_readable_count(total_params)),
+        (
+            "Model size (MB):",
+            f"{(total_params * 4) / (1024*1024):.2f}",
+        ),  # Assuming float32
+    ]
 
-    # Overall stats
-    logger.info("-" * 50)
-    logger.info(
-        f"Total: {total_trainable/total_params*100:.1f}% trainable ({total_trainable:,}/{total_params:,} parameters)"
-    )
-    logger.info("-" * 50 + "\n")
+    # Log the formatted table
+    logger.info("\nModel Parameter Summary:\n")
+    logger.info(format_summary_table(headers, rows, footer_rows))
+    logger.info("\n")
