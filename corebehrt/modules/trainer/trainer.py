@@ -176,7 +176,7 @@ class EHRTrainer:
     def _train_epoch(self, epoch: int, dataloader: DataLoader) -> None:
         if self._should_unfreeze_at_epoch(epoch):
             self._unfreeze_model(f"Reached epoch {epoch}!")
-        
+
         train_loop = get_tqdm(dataloader)
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
@@ -265,7 +265,7 @@ class EHRTrainer:
 
         if self._should_unfreeze_on_plateau(current_metric_value):
             self._unfreeze_model("Performance plateau detected!")
-        
+
         if self._should_stop_early(
             epoch, current_metric_value, val_loss, epoch_loss, val_metrics, test_metrics
         ):
@@ -541,10 +541,10 @@ class EHRTrainer:
         """Unfreeze all layers and handle related state updates."""
         self.log(f"{reason} Unfreezing all layers of the model")
         self.model = unfreeze_all_layers(self.model)
-        
+
         # Mark as unfrozen to avoid repeated unfreezing
         self.already_unfrozen = True
-        
+
         # Optionally reset early stopping counter after unfreezing
         if self.args.get("reset_patience_after_unfreeze", True):
             self.early_stopping_counter = 0
