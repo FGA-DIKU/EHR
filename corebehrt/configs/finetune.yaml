@@ -40,7 +40,7 @@ trainer_args:
   shuffle: true     # Enables shuffling of training data before each epoch to improve model generalization.
   checkpoint_frequency: 1
   early_stopping: 20     # false/null: disable early stopping - Set a number (e.g., 15) to stop training after that many epochs without improvement.
-  stopping_criterion: roc_auc
+  stopping_criterion: roc_auc  # Metric to monitor for early stopping
 
 optimizer:
   lr: 5e-4 # Learning rate for the optimizer

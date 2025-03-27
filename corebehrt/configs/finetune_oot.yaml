@@ -36,42 +36,39 @@ outcome: # we will convert outcomes to binary based on whether at least one outc
   n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)  
 
 trainer_args:
-  sampler: true
+  sampler: true         # Whether to use a sampler for balancing classes or weighting
   sample_weight_function:
-    _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
-  batch_size: 128
-  val_batch_size: 128
-  effective_batch_size: 128
-  epochs: 1
-  info: true
-  gradient_clip: 
-    clip_value: 1.0
-  shuffle: true
-  checkpoint_frequency: 1
-  early_stopping: 20
-  stopping_criterion: roc_auc
+    _target_: corebehrt.evaluation.utils.inverse_sqrt    # Function to compute sample weights (inverse square root of frequency)
+  batch_size: 128         # Batch size for training
+  val_batch_size: 128     # Batch size for validation
+  effective_batch_size: 128   # Batch size after gradient accumulation (used for memory efficiency)
+  epochs: 1       # Number of training epochs
+  info: true      #Print training progress/info
+  gradient_clip:    
+    clip_value: 1.0   # Clip gradients to prevent exploding values
+  shuffle: true     # Shuffle training data before each epoch
+  checkpoint_frequency: 1   # Save model checkpoint every N epochs
+  early_stopping: 20        # Stop training if no improvement after N epochs
+  stopping_criterion: roc_auc   # Metric to monitor for early stopping
   
 optimizer:
-  lr: 5e-4
-  eps: 1e-6
+  lr: 5e-4 # Learning rate for the optimizer
+  eps: 1e-6  # Small epsilon value to prevent division by zero in Adam optimizer
 
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
-  num_warmup_steps: 10
-  num_training_steps: 100
+  num_warmup_steps: 10 # Number of warmup steps (gradually increases learning rate at the beginning)
+  num_training_steps: 100  #Total number of training steps
 
-metrics:
+
+metrics:     # List of evaluation metrics for model performance monitoring
   accuracy:
-    _target_: corebehrt.modules.monitoring.metrics.Accuracy
-    threshold: 0.6
+    _target_: corebehrt.modules.monitoring.metrics.Accuracy 
+    threshold: 0.6    # Classification threshold for accuracy
   roc_auc:
-    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
+    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC   # Area under the Receiver Operating Characteristic curve
 
   pr_auc:
-    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
+    _target_: corebehrt.modules.monitoring.metrics.PR_AUC    # Area under the Precision-Recall curve
   precentage_positives:
-    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives
-
-  
-
- 
+    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives   # Percentage of positive predictions
