@@ -5,7 +5,9 @@ import torch
 import yaml
 from torch.utils.data import DataLoader, Dataset
 
+from corebehrt import azure
 from corebehrt.functional.trainer.collate import dynamic_padding
+from corebehrt.functional.trainer.log import log_number_of_trainable_parameters
 from corebehrt.modules.monitoring.logger import get_tqdm
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_avg_metrics,
@@ -14,7 +16,8 @@ from corebehrt.modules.monitoring.metric_aggregation import (
     save_predictions,
 )
 from corebehrt.modules.setup.config import Config, instantiate_class
-from corebehrt import azure
+from corebehrt.modules.trainer.freezing import freeze_bottom_layers, unfreeze_all_layers
+from corebehrt.modules.trainer.utils import is_plateau
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -53,8 +56,8 @@ class EHRTrainer:
             accumulate_logits,
             last_epoch,
         )
-        self._set_default_args(args)
         self.logger = logger
+        self._set_default_args(args)
         self.run_folder = run_folder or cfg.paths.model
         self.log("Initialize metrics")
         self.metrics = (
@@ -63,6 +66,8 @@ class EHRTrainer:
         self.scaler = torch.GradScaler(device=self.device.type)
 
         self._initialize_early_stopping()
+        self._initialize_freezing()
+        log_number_of_trainable_parameters(self.model)
 
     def _initialize_basic_attributes(
         self,
@@ -95,17 +100,34 @@ class EHRTrainer:
         self.accumulate_logits = accumulate_logits
         self.continue_epoch = last_epoch + 1 if last_epoch is not None else 0
 
+        self.already_unfrozen = False
+
+    def _initialize_freezing(self):
+        self.already_unfrozen = True
+        if self.args.get("n_layers_to_freeze", 0) > 0:
+            self.model = freeze_bottom_layers(
+                self.model, self.args.get("n_layers_to_freeze", 0)
+            )
+            self.already_unfrozen = False
+
+        self.unfreeze_on_plateau = self.args.get("unfreeze_on_plateau", False)
+        self.unfreeze_at_epoch = self.args.get("unfreeze_at_epoch", None)
+
+        if self.unfreeze_at_epoch is not None:
+            self.log(f"Model will be unfrozen at epoch {self.unfreeze_at_epoch}")
+
     def _set_default_args(self, args):
         default_args = {
             "save_every_k_steps": float("inf"),
             "collate_fn": dynamic_padding,
         }
         self.args = {**default_args, **args}
+        self.log(f"Trainer args: {self.args}")
         if not (self.args["effective_batch_size"] % self.args["batch_size"] == 0):
             raise ValueError("effective_batch_size must be a multiple of batch_size")
 
     def _initialize_early_stopping(self):
-        early_stopping = self.cfg.trainer_args.get("early_stopping", False)
+        early_stopping = self.args.get("early_stopping", False)
         self.early_stopping = True if early_stopping else False
         self.early_stopping_patience = (
             early_stopping if early_stopping else 1000
@@ -114,11 +136,27 @@ class EHRTrainer:
             0  # Counter to keep track of epochs since last best val loss
         )
         self.stop_training = False
+
         # Get the metric to use for early stopping from the config
-        self.stopping_metric = self.cfg.trainer_args.get("stopping_metric", "val_loss")
-        self.log(
-            f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} and metric {self.stopping_metric}"
+        self.stopping_metric = self.args.get("stopping_criterion", "val_loss")
+
+        # Check if the specified metric is available in our metrics
+        metric_exists = (
+            self.stopping_metric == "val_loss" or self.stopping_metric in self.metrics
         )
+        if not metric_exists:
+            self.log(
+                f"WARNING: Specified stopping metric '{self.stopping_metric}' is not available in metrics. Falling back to 'val_loss'."
+            )
+            self.log("Available metrics:")
+            for metric in self.metrics:
+                self.log(f"- {metric}")
+            self.stopping_metric = "val_loss"
+
+        self.log(
+            f"Early stopping: {self.early_stopping} with patience {self.early_stopping_patience} using metric '{self.stopping_metric}'"
+        )
+        self.best_metric_value = None
 
     def train(self, **kwargs):
         self.log(f"Torch version {torch.__version__}")
@@ -136,6 +174,9 @@ class EHRTrainer:
                 break
 
     def _train_epoch(self, epoch: int, dataloader: DataLoader) -> None:
+        if self._should_unfreeze_at_epoch(epoch):
+            self._unfreeze_model(f"Reached epoch {epoch}!")
+
         train_loop = get_tqdm(dataloader)
         train_loop.set_description(f"Train {epoch}")
         epoch_loss = []
@@ -158,11 +199,11 @@ class EHRTrainer:
 
     def _clip_gradients(self):
         # Then clip them if needed
-        if self.cfg.trainer_args.get("gradient_clip", False):
+        if self.args.get("gradient_clip", False):
             self.scaler.unscale_(self.optimizer)
             torch.nn.utils.clip_grad_norm_(
                 self.model.parameters(),
-                max_norm=self.cfg.trainer_args.gradient_clip.get("max_norm", 1.0),
+                max_norm=self.args.get("gradient_clip", {}).get("max_norm", 1.0),
             )
 
     def _train_step(self, batch: dict):
@@ -213,15 +254,24 @@ class EHRTrainer:
                 final_step_loss=epoch_loss[-1],
                 best_model=True,
             )
+
+        self._self_log_results(
+            epoch, val_loss, val_metrics, epoch_loss, len(train_loop)
+        )
+
+        current_metric_value = val_metrics.get(
+            self.stopping_metric, val_loss
+        )  # get the metric we monitor. Same as early stopping
+
+        if self._should_unfreeze_on_plateau(current_metric_value):
+            self._unfreeze_model("Performance plateau detected!")
+
         if self._should_stop_early(
-            epoch, val_loss, epoch_loss, val_metrics, test_metrics
+            epoch, current_metric_value, val_loss, epoch_loss, val_metrics, test_metrics
         ):
             return
         self._save_checkpoint_conditionally(
             epoch, epoch_loss, val_loss, val_metrics, test_metrics
-        )
-        self._self_log_results(
-            epoch, val_loss, val_metrics, epoch_loss, len(train_loop)
         )
 
     def _save_checkpoint_conditionally(
@@ -267,6 +317,7 @@ class EHRTrainer:
     def _should_stop_early(
         self,
         epoch,
+        current_metric_value: float,
         val_loss: float,
         epoch_loss: float,
         val_metrics: dict,
@@ -275,7 +326,6 @@ class EHRTrainer:
         if not self.early_stopping:
             return False
         # Get the current value of the metric
-        current_metric_value = val_metrics.get(self.stopping_metric, val_loss)
         self._initialize_best_metric_value(current_metric_value)
         if self._is_improvement(current_metric_value):
             self.best_metric_value = current_metric_value
@@ -300,6 +350,8 @@ class EHRTrainer:
 
     def _is_improvement(self, current_metric_value):
         """Returns True if the current metric value is an improvement over the best metric value"""
+        if self.best_metric_value is None:
+            return True
         if self.stopping_metric == "val_loss":
             return current_metric_value < self.best_metric_value
         else:
@@ -461,3 +513,39 @@ class EHRTrainer:
                 self.args = {**self.args, **value}
             else:
                 setattr(self, key, value)
+
+    def _should_unfreeze_at_epoch(self, epoch: int) -> bool:
+        """Determine if we should unfreeze all layers based on current epoch."""
+        return (
+            self.unfreeze_at_epoch is not None
+            and epoch >= self.unfreeze_at_epoch
+            and not getattr(self, "already_unfrozen", False)
+        )
+
+    def _should_unfreeze_on_plateau(self, current_metric_value: float) -> bool:
+        """Determine if we should unfreeze all layers based on plateau detection."""
+        if (
+            not self.unfreeze_on_plateau
+            or getattr(self, "already_unfrozen", False)
+            or self.best_metric_value is None
+        ):
+            return False
+
+        return is_plateau(
+            self.best_metric_value,
+            current_metric_value,
+            self.args.get("plateau_threshold", 0.01),
+        )
+
+    def _unfreeze_model(self, reason: str):
+        """Unfreeze all layers and handle related state updates."""
+        self.log(f"{reason} Unfreezing all layers of the model")
+        self.model = unfreeze_all_layers(self.model)
+
+        # Mark as unfrozen to avoid repeated unfreezing
+        self.already_unfrozen = True
+
+        # Optionally reset early stopping counter after unfreezing
+        if self.args.get("reset_patience_after_unfreeze", True):
+            self.early_stopping_counter = 0
+            self.log("Reset early stopping counter after unfreezing")
