@@ -13,7 +13,8 @@ paths:
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
-  cohort: ./outputs/cohort # Directory where the final selected cohort data will be stored. 
+  cohort: ./outputs/cohort # Directory where the selected cohort is saved
+
 selection:
   exclude_prior_outcomes: true # Exclude patients who had the outcome before the index date.
   exposed_only: false # If true, only include patients who have an exposure event.
