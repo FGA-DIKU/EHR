@@ -7,7 +7,6 @@ import torch
 
 from corebehrt.constants.paths import (
     FOLDS_FILE,
-    PROCESSED_DATA_DIR,
     PREPARED_ALL_PATIENTS,
     FINETUNE_CFG
 )
@@ -44,7 +43,7 @@ def main_evaluate(config_path):
     test_data = PatientDataset(loaded_data)
     test_dataset = BinaryOutcomeDataset(test_data.patients)
     test_pids = test_data.get_pids()
-    folds = torch.load(join(cfg.paths.model_path, PROCESSED_DATA_DIR, FOLDS_FILE))
+    folds = torch.load(join(cfg.paths.processed_data, FOLDS_FILE))
     check_for_overlap(folds, test_pids, logger)
     
     # Save predictions
