@@ -9,20 +9,9 @@ paths:
 
 test_batch_size: 128
 
-metrics:
-  accuracy:
-    _target_: corebehrt.modules.monitoring.metrics.Accuracy
-    threshold: 0.6
-  balanced_accuracy:
-    _target_: corebehrt.modules.monitoring.metrics.Balanced_Accuracy
-  precision:
-    _target_: corebehrt.modules.monitoring.metrics.Precision
-  recall:
-    _target_: corebehrt.modules.monitoring.metrics.Recall
-  roc_auc:
-    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
-  pr_auc:
-    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
+# metrics:
+#   roc_auc: sklearn.metrics.roc_auc_score
+  # pr_auc: corebehrt.functional.evaluation.metrics.PR_AUC
 
 save_info: 
   sequence_length: corebehrt.main.helper.evaluate_finetune.get_sequence_length

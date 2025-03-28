@@ -18,6 +18,7 @@ def add_parser(subparsers) -> None:
             "select_cohort",
             "finetune_cv",
             "prepare_training_data",
+            "evaluate_finetune",
         },
         help="Job to run.",
     )

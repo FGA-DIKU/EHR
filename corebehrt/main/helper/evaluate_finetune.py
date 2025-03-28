@@ -16,8 +16,6 @@ def evaluate_fold(
     test_data: BinaryOutcomeDataset,
     logger,
     fold: int,
-    return_preds: bool,
-    metrics: dict = {},
 ) -> None:
     fold_folder = join(finetune_folder, f"fold_{fold}")
 
@@ -33,22 +31,10 @@ def evaluate_fold(
         args=finetune_cfg.trainer_args,
         cfg=finetune_cfg,
     )
-    logits_tensor, targets_tensor = evaluater.inference_loop()
+    logits_tensor, targets_tensor = evaluater.inference_loop()    
+    probas = torch.sigmoid(logits_tensor).numpy()
 
-    # Compute metrics
-    logger.info(f"Computing metrics for fold {fold}")
-    computed_metrics = {}
-    for name, func in metrics.items():
-        v = func(outputs, batch)
-        logger.info(f"{name}: {v}")
-        computed_metrics[name] = v
-
-    if return_preds:
-        probas = torch.sigmoid(logits_tensor).numpy()
-        return probas, computed_metrics
-    else:
-        return None, computed_metrics
-
+    return probas
 
 def get_sequence_length(dataset:BinaryOutcomeDataset) -> List[int]:
     lengths = [len(patient.concepts) for patient in dataset.patients]
