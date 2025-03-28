@@ -44,7 +44,7 @@ class DatasetPreparer:
         self.cfg = cfg
         self.processed_dir = cfg.paths.prepared_data
 
-    def prepare_finetune_data(self) -> PatientDataset:
+    def prepare_finetune_data(self, mode="tuning") -> PatientDataset:
         outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
         data_cfg = self.cfg.data
@@ -61,7 +61,7 @@ class DatasetPreparer:
         # Load tokenized data
         loader = ShardLoader(
             data_dir=paths_cfg.tokenized,
-            splits=["features_tuning"],
+            splits=[f"features_{mode}"],
             patient_info_path=None,
         )
         patient_list = []

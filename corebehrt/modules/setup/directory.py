@@ -13,6 +13,7 @@ from corebehrt.constants.paths import (
     PRETRAIN_CFG,
     PREPARE_PRETRAIN_CFG,
     PREPARE_FINETUNE_CFG,
+    PREPARE_HELD_OUT_CFG
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
@@ -71,6 +72,7 @@ class DirectoryPreparer:
                 "tokenized": DATA_CFG,
                 "prepare_pretrain": PREPARE_PRETRAIN_CFG,
                 "prepare_finetune": PREPARE_FINETUNE_CFG,
+                "prepare_held_out": PREPARE_HELD_OUT_CFG,
                 "outcomes": OUTCOMES_CFG,
                 "model": PRETRAIN_CFG,
                 "cohort": COHORT_CFG,
@@ -394,6 +396,27 @@ class DirectoryPreparer:
         if "tokenized" not in self.cfg.paths:
             logger.info("Tokenized dir not in config. Adding from pretrain config.")
             self.cfg.paths.tokenized = data_cfg.paths.tokenized
+
+    def setup_prepare_held_out(self) -> None:
+        """
+        Validates path config and sets up directories for preparing pretrain data.
+        """
+        self.setup_logging("prepare pretrain data")
+        self.check_directory("features")
+        self.check_directory("tokenized")
+        self.check_directory("cohort")
+
+        # If "outcome" is set, check that it exists.
+        if outcome := self.cfg.paths.get("outcome", False):
+            # If "outcomes" is also set, use as prefix
+            if outcomes := self.cfg.paths.get("outcomes", False):
+                self.cfg.paths.outcome = join(outcomes, outcome)
+
+            self.check_file("outcome")
+
+        self.create_directory("prepared_data", clear=True)
+        self.write_config("prepared_data", name=PREPARE_HELD_OUT_CFG)
+        self.write_config("prepared_data", source="features", name=DATA_CFG)
 
     #
     # Directory naming generators
