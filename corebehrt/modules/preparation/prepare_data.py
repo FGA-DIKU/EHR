@@ -70,6 +70,8 @@ class DatasetPreparer:
         ):
             if pids is not None:
                 df = filter_df_by_pids(df, pids)
+            if data_cfg.get("cutoff_date"):
+                df = self._cutoff_data(df, data_cfg.cutoff_date)
             # !TODO: if index date is the same for all patients, then we can censor here.
             self._check_sorted(df)
             batch_patient_list = dataframe_to_patient_list(df)
