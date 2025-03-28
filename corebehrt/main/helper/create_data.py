@@ -39,7 +39,7 @@ def load_tokenize_and_save(
     torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt"))  # save pids as ints
 
 
-def create_and_save_features(cfg) -> None:
+def create_and_save_features(cfg, splits=["train", "tuning", "held_out"]) -> None:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch

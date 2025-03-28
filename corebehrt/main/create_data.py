@@ -53,7 +53,7 @@ def main_data(config_path):
         logger.info("Reusing existing features")
     else:
         logger.info("Create and process features")
-        create_and_save_features(cfg)
+        create_and_save_features(cfg,  splits=["train", "tuning"] if cfg.get("exclude_held_out", False) else ["train", "tuning", "held_out"])
         logger.info("Finished feature creation and processing")
 
     logger.info("Tokenizing")
