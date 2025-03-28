@@ -418,6 +418,19 @@ class DirectoryPreparer:
         self.write_config("prepared_data", name=PREPARE_HELD_OUT_CFG)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
 
+    def setup_evaluate(self) -> None:
+        """
+        Validates path config and sets up directories for finetune.
+        """
+        # Setup logging
+        self.setup_logging("evaluate")
+
+        # Validate and create directories
+        self.check_directory("test_data_dir")
+        self.check_directory("model_path")
+
+        if "predictions" in self.cfg.paths:
+            self.create_directory("predictions", clear=True)
     #
     # Directory naming generators
     #
