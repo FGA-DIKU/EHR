@@ -12,7 +12,7 @@ from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset
 
 def evaluate_fold(
     finetune_folder: str,
-    finetune_cfg: dict,
+    cfg: dict,
     test_data: BinaryOutcomeDataset,
     logger,
     fold: int,
@@ -20,16 +20,17 @@ def evaluate_fold(
     fold_folder = join(finetune_folder, f"fold_{fold}")
 
     # Load model
-    modelmanager_trained = ModelManager(finetune_cfg, fold)
+    modelmanager_trained = ModelManager(cfg, fold)
     checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
     model = modelmanager_trained.initialize_finetune_model(checkpoint)
-    
+    print(f"Model loaded from {fold_folder}")
+
     # Run inference
     evaluater = EHREvaluator(
         model=model,
         test_dataset=test_data,  # test only after training
-        args=finetune_cfg.trainer_args,
-        cfg=finetune_cfg,
+        args=cfg.trainer_args,
+        cfg=cfg,
     )
     logits_tensor, targets_tensor = evaluater.inference_loop()    
     probas = torch.sigmoid(logits_tensor).numpy()

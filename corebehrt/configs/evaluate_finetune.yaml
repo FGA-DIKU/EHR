@@ -1,8 +1,8 @@
 env: local
 
 paths:
-  model_path: "./outputs/finetuning"
-  processed_data: "./outputs/finetuning/processed_data"
+  model: "./outputs/finetuning"
+  folds_dir: "./outputs/finetuning/processed_data"
   test_data_dir: "./outputs/held_out/processed_data" 
   run_name: "evaluate"
 

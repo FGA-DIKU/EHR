@@ -33,9 +33,12 @@ def main_evaluate(config_path):
     # Logger
     logger = logging.getLogger("evaluate")
 
-    # Setup finetune config and metrics
-    finetune_cfg = load_config(join(cfg.paths.model_path, FINETUNE_CFG))
-    finetune_cfg.trainer_args.test_batch_size = cfg.get("test_batch_size", 128)
+    # Setup config and metrics
+    cfg.trainer_args = {}
+    cfg.trainer_args.test_batch_size = cfg.get("test_batch_size", 128)
+    cfg.trainer_args.effective_batch_size = cfg.get("test_batch_size", 128)
+    cfg.trainer_args.batch_size = cfg.get("test_batch_size", 128)
+    cfg.paths.restart_model = cfg.paths.model
     # metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()} if cfg.metrics else {}
 
     # Load data
@@ -43,7 +46,7 @@ def main_evaluate(config_path):
     test_data = PatientDataset(loaded_data)
     test_dataset = BinaryOutcomeDataset(test_data.patients)
     test_pids = test_data.get_pids()
-    folds = torch.load(join(cfg.paths.processed_data, FOLDS_FILE))
+    folds = torch.load(join(cfg.paths.folds_dir, FOLDS_FILE))
     check_for_overlap(folds, test_pids, logger)
     
     # Save predictions
@@ -59,8 +62,8 @@ def main_evaluate(config_path):
     all_metrics = []
     for n_fold, fold in enumerate(folds, start=1):
         probas = evaluate_fold(
-            finetune_folder=cfg.paths.model_path,
-            finetune_cfg=finetune_cfg,
+            finetune_folder=cfg.paths.model,
+            cfg=cfg,
             test_data=test_dataset,
             logger=logger,
             fold=n_fold,

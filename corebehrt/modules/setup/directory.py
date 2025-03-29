@@ -427,8 +427,8 @@ class DirectoryPreparer:
 
         # Validate and create directories
         self.check_directory("test_data_dir")
-        self.check_directory("model_path")
-        self.check_directory("processed_data")
+        self.check_directory("model")
+        self.check_directory("folds_dir")
 
         if "predictions" in self.cfg.paths:
             self.create_directory("predictions", clear=True)
