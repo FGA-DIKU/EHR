@@ -69,6 +69,8 @@ def main_evaluate(config_path):
             fold=n_fold,
         )
         combined_df[f'fold_{n_fold}_probas'] = probas
+
+    combined_df.to_csv(join(cfg.paths.predictions, "predictions.csv"), index=False)
     
     # # Get average metrics
     # average_metrics = {key: sum(d[key] for d in all_metrics) / len(all_metrics) for key in all_metrics[0]}

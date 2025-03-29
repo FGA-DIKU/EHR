@@ -2,8 +2,8 @@ from corebehrt.azure.util import job
 
 INPUTS = {
     "test_data_dir": {"type": "uri_folder"},
-    "model_path": {"type": "uri_folder"},
-    "processed_data": {"type": "uri_folder"},
+    "model": {"type": "uri_folder"},
+    "folds_dir": {"type": "uri_folder"},
 }
 OUTPUTS = {"predictions": {"type": "uri_folder"}}
 
