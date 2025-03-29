@@ -35,9 +35,9 @@ def main_evaluate(config_path):
 
     # Setup config and metrics
     cfg.trainer_args = {}
-    cfg.trainer_args.test_batch_size = cfg.get("test_batch_size", 128)
-    cfg.trainer_args.effective_batch_size = cfg.get("test_batch_size", 128)
-    cfg.trainer_args.batch_size = cfg.get("test_batch_size", 128)
+    batch_size_value = cfg.get("test_batch_size", 128)
+    for key in ['test_batch_size', 'effective_batch_size', 'batch_size']:
+        cfg.trainer_args[key] = batch_size_value
     cfg.paths.restart_model = cfg.paths.model
     # metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()} if cfg.metrics else {}
 
