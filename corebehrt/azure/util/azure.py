@@ -21,7 +21,6 @@ def is_azure_available() -> bool:
 
     :return: True if available, otherwise False.
     """
-    global AZURE_AVAILABLE
     return AZURE_AVAILABLE
 
 

@@ -22,7 +22,6 @@ def is_mlflow_available() -> bool:
     """
     Checks if mlflow module is available.
     """
-    global MLFLOW_AVAILABLE
     return MLFLOW_AVAILABLE
 
 
@@ -179,7 +178,6 @@ def log_batch(*args, **kwargs):
     :param metrics: metrics list
     """
     if is_mlflow_available():
-        global MLFLOW_CLIENT
         run, _ = get_run_and_prefix()
         MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
 
