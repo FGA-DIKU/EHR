@@ -71,7 +71,7 @@ def get_run_and_prefix() -> tuple:
         run = mlflow.active_run()
         prefix = ""
         while (parent := mlflow.get_parent_run(run.info.run_id)) is not None:
-            prefix += run.info.run_name + "."
+            prefix += run.info.run_name + "/"
             run = parent
         return run, prefix
 
