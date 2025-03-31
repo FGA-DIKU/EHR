@@ -3,9 +3,11 @@ from os.path import join
 from typing import List
 
 import torch
+from peft import PeftModel
 
 from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
+from corebehrt.constants.paths import LORA_DIR
 from corebehrt.constants.train import DEFAULT_VAL_SPLIT
 from corebehrt.functional.features.split import get_n_splits_cv_pids
 from corebehrt.functional.trainer.setup import replace_steps_with_epochs
@@ -101,6 +103,16 @@ def finetune_fold(
     checkpoint = modelmanager.load_checkpoint()
     model = modelmanager.initialize_finetune_model(checkpoint)
 
+    if cfg.trainer_args.get("lora", False):
+        logger.info("Applying LoRA")
+        model = apply_lora(model, cfg.trainer_args.lora_config)
+        for name, module in model.named_modules():
+            print(f"{name}")
+            if "attn" in name:
+                print(module)
+            if "embedding" in name:
+                print(module)
+        model.print_trainable_parameters()
     outcomes = train_data.get_outcomes()  # needed for sampler/ can be made optional
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
         model, outcomes
@@ -125,16 +137,58 @@ def finetune_fold(
     )
     trainer.train()
 
-    logger.info("Load best finetuned model to compute test scores")
-    modelmanager_trained = ModelManager(cfg, fold)
-    checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
-    model = modelmanager_trained.initialize_finetune_model(checkpoint)
+    model = load_best_model(model, cfg, fold, logger, fold_folder)
     trainer.model = model
     trainer.test_dataset = test_dataset
 
     if len(test_data) > 0:
         test_loss, test_metrics = trainer._evaluate(epoch, mode="test")
         log_best_metrics(test_loss, test_metrics, "test")
+
+
+def load_best_model(
+    model: torch.nn.Module, cfg: dict, fold: int, logger, fold_folder: str
+) -> torch.nn.Module:
+    """Load the best model based on configuration."""
+    logger.info("Load best finetuned model to compute test scores")
+
+    if cfg.trainer_args.get("lora", False):
+        return load_best_lora_model(model, fold_folder, logger)
+    else:
+        return load_best_base_model(cfg, fold, logger)
+
+
+def load_best_lora_model(
+    model: torch.nn.Module, fold_folder: str, logger
+) -> torch.nn.Module:
+    """Load the best LoRA model from saved adapter weights."""
+    from peft import PeftModel
+
+    logger.info("Loading LoRA adapter weights")
+    return PeftModel.from_pretrained(
+        model, join(fold_folder, LORA_DIR), is_trainable=True
+    )
+
+
+def load_best_base_model(cfg: dict, fold: int, logger) -> torch.nn.Module:
+    """Load the best base model from saved checkpoint."""
+    logger.info("Loading model from checkpoint")
+    modelmanager_trained = ModelManager(cfg, fold)
+    checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
+    return modelmanager_trained.initialize_finetune_model(checkpoint)
+
+
+def apply_lora(model: torch.nn.Module, lora_config: dict) -> torch.nn.Module:
+    from peft import LoraConfig, get_peft_model
+
+    # loftq_config = LoftQConfig(loftq_bits=4, ...)           # set 4bit quantization
+    lora_config = LoraConfig(
+        inference_mode=False,
+        target_modules=["Wqkv", "Wo", "Wi", "concept_embeddings", "segment_embeddings"],
+        exclude_modules=["cls"],
+        **lora_config,
+    )
+    return get_peft_model(model, lora_config)
 
 
 def log_best_metrics(loss: float, metrics: dict, split: str) -> None:

@@ -31,3 +31,5 @@ PATIENTS_INFO_FORMAT = "patients_info.*"
 
 CSV_EXT = ".csv"
 PARQUET_EXT = ".parquet"
+
+LORA_DIR = "lora"
