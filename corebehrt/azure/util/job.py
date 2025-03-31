@@ -9,6 +9,7 @@ from corebehrt.azure.util.config import (
     prepare_job_command_args,
     parse_args,
     save_config,
+    to_yaml_str,
     cleanup_configs,
 )
 from corebehrt.azure.util.test import evaluate_run
@@ -99,6 +100,9 @@ def setup(
     if test_cfg_file:
         cmd += f" --test {test_cfg_file}"
 
+    # Description = config as yaml in code block
+    description = "```\n" + to_yaml_str(config) + "```"
+
     # Create job
     from azure.ai.ml import command
 
@@ -110,6 +114,7 @@ def setup(
         outputs=output_values,
         environment="CoreBEHRT@latest",
         compute=compute,
+        description=description,
         name=f"{job}_{ts}",
     )
 
