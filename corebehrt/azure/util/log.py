@@ -33,7 +33,6 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
     :param nested: If the run should be nested.
     :param log_system_metrics: If enabled, log system metrics (CPU/GPU/mem).
     """
-    global CURRENT_RUN
     if is_mlflow_available():
         run = mlflow.start_run(
             run_name=name, nested=nested, log_system_metrics=log_system_metrics
