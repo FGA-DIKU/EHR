@@ -45,7 +45,7 @@ def create_and_save_features(cfg, splits=["train", "tuning", "held_out"]) -> Non
     Returns a list of lists of pids for each batch
     """
     combined_patient_info = pd.DataFrame()
-    for split_name in ["train", "tuning", "held_out"]:
+    for split_name in splits:
         path_name = f"{cfg.paths.data}/{split_name}"
         if not os.path.exists(path_name):
             if split_name == "held_out":
