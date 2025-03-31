@@ -3,7 +3,6 @@ import time
 
 MLFLOW_AVAILABLE = False
 MLFLOW_CLIENT = None
-CURRENT_RUN = None
 
 try:
     # Try to import mlflow and set availability flag
@@ -23,14 +22,6 @@ def is_mlflow_available() -> bool:
     """
     global MLFLOW_AVAILABLE
     return MLFLOW_AVAILABLE
-
-
-def get_current_run():
-    """
-    Get the current run object, if available.
-    """
-    global CURRENT_RUN
-    return CURRENT_RUN
 
 
 def start_run(name: str = None, nested: bool = False, log_system_metrics: bool = False):
@@ -55,9 +46,6 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
             yield None
 
         run = dummy_cm()
-
-    if not nested:
-        CURRENT_RUN = run
 
     return run
 
@@ -164,7 +152,7 @@ def log_batch(*args, **kwargs):
     """
     if is_mlflow_available():
         global MLFLOW_CLIENT
-        run = get_current_run()
+        run = mlflow.active_run()
         MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
 
 
