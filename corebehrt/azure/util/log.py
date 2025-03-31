@@ -69,10 +69,10 @@ def get_run_and_prefix() -> tuple:
     """
     if MLFLOW_CHILD_RUNS == "prefix":
         run = mlflow.active_run()
-        prefix = run.info.run_name + "."
+        prefix = ""
         while (parent := mlflow.get_parent_run(run.info.run_id)) is not None:
-            run = parent
             prefix += run.info.run_name + "."
+            run = parent
         return run, prefix
 
     elif MLFLOW_CHILD_RUNS == "run":
@@ -172,7 +172,7 @@ def log_figure(key: str, *args, **kwargs):
         mlflow.log_figure(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_batch(key: str, *args, **kwargs):
+def log_batch(*args, **kwargs):
     """
     Log a batch of metrics
 
@@ -180,13 +180,14 @@ def log_batch(key: str, *args, **kwargs):
     """
     if is_mlflow_available():
         global MLFLOW_CLIENT
-        run, prefix = get_run_and_prefix()
-        MLFLOW_CLIENT.log_batch(prefix + key, *args, run_id=run.info.run_id, **kwargs)
+        run, _ = get_run_and_prefix()
+        MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
 
 
 def metric(name, value, step):
     if is_mlflow_available():
         timestamp = int(time.time() * 1000)
-        return Metric(name, value, timestamp, step)
+        _, prefix = get_run_and_prefix()
+        return Metric(prefix + name, value, timestamp, step)
     else:
         return (name, value)
