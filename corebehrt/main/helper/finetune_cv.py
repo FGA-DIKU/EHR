@@ -105,6 +105,9 @@ def finetune_fold(
 
     if cfg.trainer_args.get("lora", False):
         logger.info("Applying LoRA")
+        os.environ["TORCH_COMPILE_BACKEND"] = (
+            "eager"  # Force eager backend, compilation is not supported for lora
+        )
         model = apply_lora(model, cfg.trainer_args.lora_config)
         model.print_trainable_parameters()
     outcomes = train_data.get_outcomes()  # needed for sampler/ can be made optional
