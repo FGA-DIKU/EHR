@@ -3,7 +3,7 @@ from os.path import join
 from typing import List
 
 import torch
-from peft import PeftModel
+from peft import LoraConfig, PeftModel, get_peft_model
 
 from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
@@ -172,9 +172,6 @@ def load_best_base_model(cfg: dict, fold: int, logger) -> torch.nn.Module:
 
 
 def apply_lora(model: torch.nn.Module, lora_config: dict) -> torch.nn.Module:
-    from peft import LoraConfig, get_peft_model
-
-    # loftq_config = LoftQConfig(loftq_bits=4, ...)           # set 4bit quantization
     lora_config = LoraConfig(
         target_modules=["Wqkv", "Wo", "Wi", "concept_embeddings", "segment_embeddings"],
         exclude_modules=["cls"],
