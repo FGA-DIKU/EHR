@@ -106,12 +106,6 @@ def finetune_fold(
     if cfg.trainer_args.get("lora", False):
         logger.info("Applying LoRA")
         model = apply_lora(model, cfg.trainer_args.lora_config)
-        for name, module in model.named_modules():
-            print(f"{name}")
-            if "attn" in name:
-                print(module)
-            if "embedding" in name:
-                print(module)
         model.print_trainable_parameters()
     outcomes = train_data.get_outcomes()  # needed for sampler/ can be made optional
     optimizer, sampler, scheduler, cfg = modelmanager.initialize_training_components(
@@ -137,7 +131,9 @@ def finetune_fold(
     )
     trainer.train()
 
-    model = load_best_model(model, cfg, fold, logger, fold_folder)
+    initial_model = modelmanager.initialize_finetune_model(checkpoint)
+    model = load_best_model(initial_model, cfg, fold, logger, fold_folder)
+
     trainer.model = model
     trainer.test_dataset = test_dataset
 
@@ -147,26 +143,23 @@ def finetune_fold(
 
 
 def load_best_model(
-    model: torch.nn.Module, cfg: dict, fold: int, logger, fold_folder: str
+    initial_model: torch.nn.Module, cfg: dict, fold: int, logger, fold_folder: str
 ) -> torch.nn.Module:
     """Load the best model based on configuration."""
     logger.info("Load best finetuned model to compute test scores")
-
     if cfg.trainer_args.get("lora", False):
-        return load_best_lora_model(model, fold_folder, logger)
+        return load_best_lora_model(initial_model, fold_folder, logger)
     else:
         return load_best_base_model(cfg, fold, logger)
 
 
 def load_best_lora_model(
-    model: torch.nn.Module, fold_folder: str, logger
+    initial_model: torch.nn.Module, fold_folder: str, logger
 ) -> torch.nn.Module:
     """Load the best LoRA model from saved adapter weights."""
-    from peft import PeftModel
-
     logger.info("Loading LoRA adapter weights")
     return PeftModel.from_pretrained(
-        model, join(fold_folder, LORA_DIR), is_trainable=True
+        initial_model, join(fold_folder, LORA_DIR), is_trainable=True
     )
 
 
@@ -183,7 +176,6 @@ def apply_lora(model: torch.nn.Module, lora_config: dict) -> torch.nn.Module:
 
     # loftq_config = LoftQConfig(loftq_bits=4, ...)           # set 4bit quantization
     lora_config = LoraConfig(
-        inference_mode=False,
         target_modules=["Wqkv", "Wo", "Wi", "concept_embeddings", "segment_embeddings"],
         exclude_modules=["cls"],
         **lora_config,
