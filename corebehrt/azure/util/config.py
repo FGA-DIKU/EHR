@@ -61,6 +61,13 @@ def save_config(cfg_name: str, cfg: dict) -> None:
         yaml.dump(cfg, cfg_file)
 
 
+def to_yaml_str(cfg: dict) -> None:
+    """
+    Convert the given config to a nicely formatted yaml string
+    """
+    return yaml.dump(cfg)
+
+
 def load_job_config(cfg_name: str) -> "Config":  # noqa: F821
     """
     Load the config on the cluster

@@ -3,7 +3,8 @@ import time
 
 MLFLOW_AVAILABLE = False
 MLFLOW_CLIENT = None
-CURRENT_RUN = None
+
+MLFLOW_CHILD_RUNS = "prefix"
 
 try:
     # Try to import mlflow and set availability flag
@@ -21,16 +22,7 @@ def is_mlflow_available() -> bool:
     """
     Checks if mlflow module is available.
     """
-    global MLFLOW_AVAILABLE
     return MLFLOW_AVAILABLE
-
-
-def get_current_run():
-    """
-    Get the current run object, if available.
-    """
-    global CURRENT_RUN
-    return CURRENT_RUN
 
 
 def start_run(name: str = None, nested: bool = False, log_system_metrics: bool = False):
@@ -42,7 +34,6 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
     :param nested: If the run should be nested.
     :param log_system_metrics: If enabled, log system metrics (CPU/GPU/mem).
     """
-    global CURRENT_RUN
     if is_mlflow_available():
         run = mlflow.start_run(
             run_name=name, nested=nested, log_system_metrics=log_system_metrics
@@ -56,9 +47,6 @@ def start_run(name: str = None, nested: bool = False, log_system_metrics: bool =
 
         run = dummy_cm()
 
-    if not nested:
-        CURRENT_RUN = run
-
     return run
 
 
@@ -69,6 +57,27 @@ def end_run():
     """
     if is_mlflow_available():
         mlflow.end_run()
+
+
+def get_run_and_prefix() -> tuple:
+    """
+    Get the run used for logging and a prefix.
+    Depending on MLFLOW_CHILD_RUNS:
+    - "prefix": returns the top-level job and a non-empty prefix
+    - "job": returns the nested job and an empty prefix
+    """
+    if MLFLOW_CHILD_RUNS == "prefix":
+        run = mlflow.active_run()
+        prefix = ""
+        while (parent := mlflow.get_parent_run(run.info.run_id)) is not None:
+            prefix += run.info.run_name + "/"
+            run = parent
+        return run, prefix
+
+    elif MLFLOW_CHILD_RUNS == "run":
+        return mlflow.active_run(), ""
+    else:
+        raise ValueError("MLFLOW_CHILD_RUNS must be set to 'prefix' or 'job'")
 
 
 def setup_metrics_dir(name: str):
@@ -87,7 +96,7 @@ def setup_metrics_dir(name: str):
 #
 
 
-def log_metric(*args, **kwargs):
+def log_metric(key: str, *args, **kwargs):
     """
     Logs a metric to the job (if mlflow is available).
     Parameters are the same as for mlflow.log_metric.
@@ -99,10 +108,11 @@ def log_metric(*args, **kwargs):
     :param step: Step for the metric (used for plotting graphs).
     """
     if is_mlflow_available():
-        mlflow.log_metric(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_metric(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_metrics(*args, **kwargs):
+def log_metrics(key: str, *args, **kwargs):
     """
     Log multiple metrics
 
@@ -110,10 +120,11 @@ def log_metrics(*args, **kwargs):
     :param step: Step for the metric (used for plotting graphs).
     """
     if is_mlflow_available():
-        mlflow.log_metrics(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_metrics(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_param(*args, **kwargs):
+def log_param(key: str, *args, **kwargs):
     """
     Log a parameter
 
@@ -121,20 +132,22 @@ def log_param(*args, **kwargs):
     :param value: Value of the param.
     """
     if is_mlflow_available():
-        mlflow.log_param(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_param(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_params(*args, **kwargs):
+def log_params(key: str, *args, **kwargs):
     """
     Log multiple parameters.
 
     :param params: dict of parameters.
     """
     if is_mlflow_available():
-        mlflow.log_params(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_params(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_image(*args, **kwargs):
+def log_image(key: str, *args, **kwargs):
     """
     Log an image
 
@@ -142,10 +155,11 @@ def log_image(*args, **kwargs):
     :param artifact_file: filename to save image under.
     """
     if is_mlflow_available():
-        mlflow.log_image(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_image(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_figure(*args, **kwargs):
+def log_figure(key: str, *args, **kwargs):
     """
     Log a figure (e.g. matplotlib)
 
@@ -153,7 +167,8 @@ def log_figure(*args, **kwargs):
     :param artifact_file: filename to save image under.
     """
     if is_mlflow_available():
-        mlflow.log_figure(*args, **kwargs)
+        run, prefix = get_run_and_prefix()
+        mlflow.log_figure(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
 def log_batch(*args, **kwargs):
@@ -163,14 +178,14 @@ def log_batch(*args, **kwargs):
     :param metrics: metrics list
     """
     if is_mlflow_available():
-        global MLFLOW_CLIENT
-        run = get_current_run()
+        run, _ = get_run_and_prefix()
         MLFLOW_CLIENT.log_batch(*args, run_id=run.info.run_id, **kwargs)
 
 
 def metric(name, value, step):
     if is_mlflow_available():
         timestamp = int(time.time() * 1000)
-        return Metric(name, value, timestamp, step)
+        _, prefix = get_run_and_prefix()
+        return Metric(prefix + name, value, timestamp, step)
     else:
         return (name, value)
