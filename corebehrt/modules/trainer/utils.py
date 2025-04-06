@@ -10,7 +10,7 @@ def get_sampler(cfg, outcomes: List[int]):
     sample_weight: float. Adjusts the number of samples in the positive class.
     If sampler is false, no sampler is used.
     If sample_weight_function is not defined, the default is inverse_sqrt.
-    Other option is effective_n_samples from the paper https://arxiv.org/pdf/1901.05555 
+    Other option is effective_n_samples from the paper https://arxiv.org/pdf/1901.05555
     """
 
     def _inverse_sqrt(x):
@@ -21,15 +21,18 @@ def get_sampler(cfg, outcomes: List[int]):
         beta = (len(outcomes) - 1) / len(outcomes)
         n0 = labels.value_counts()[0]
         n1 = labels.value_counts()[1]
-        E0 = (1 - (beta ** n0)) / (1 - beta)
-        E1 = (1 - (beta ** n1)) / (1 - beta)
+        E0 = (1 - (beta**n0)) / (1 - beta)
+        E1 = (1 - (beta**n1)) / (1 - beta)
         probs = [E0 / (E0 + E1), E1 / (E0 + E1)]
         weights = [probs[label] / labels.value_counts()[label] for label in labels]
         return weights
 
     if cfg.trainer_args.get("sampler", None):
         _, counts = np.unique(np.array(outcomes), return_counts=True)
-        if cfg.trainer_args.get("sample_weight_function", None) == "effective_n_samples":
+        if (
+            cfg.trainer_args.get("sample_weight_function", None)
+            == "effective_n_samples"
+        ):
             label_weight = _effective_n_samples(outcomes)
         else:
             label_weight = _inverse_sqrt(counts)
@@ -41,24 +44,25 @@ def get_sampler(cfg, outcomes: List[int]):
     else:
         return None
 
+
 def get_pos_weight(cfg, outcomes):
     """Get positive weight for loss function."""
-    pos_weight = cfg.trainer_args.get('pos_weight', None)
+    pos_weight = cfg.trainer_args.get("pos_weight", None)
     if pos_weight is None or len(outcomes) == 0:
         return None
-    if pos_weight == 'sqrt':
+    if pos_weight == "sqrt":
         outcomes_series = pd.Series(outcomes)
         num_pos = (outcomes_series == 1).sum()
         num_neg = (outcomes_series == 0).sum()
         return np.sqrt(num_neg / num_pos)
-    elif pos_weight == 'effective_n_samples':
+    elif pos_weight == "effective_n_samples":
         labels = pd.Series(outcomes).astype(int)
-        beta = (len(outcomes)-1)/(len(outcomes))
+        beta = (len(outcomes) - 1) / (len(outcomes))
         n0 = labels.value_counts()[0]
         n1 = labels.value_counts()[1]
-        alpha_0 = (1-beta)/(1-beta**n0)
-        alpha_1 = (1-beta)/(1-beta**n1)
-        pos_weight = alpha_1/alpha_0
+        alpha_0 = (1 - beta) / (1 - beta**n0)
+        alpha_1 = (1 - beta) / (1 - beta**n1)
+        pos_weight = alpha_1 / alpha_0
         return pos_weight
     elif isinstance(pos_weight, (int, float)):
         return pos_weight

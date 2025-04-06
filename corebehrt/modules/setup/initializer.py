@@ -55,7 +55,7 @@ class Initializer:
         if self.checkpoint:
             logger.info("Loading model from checkpoint")
             pos_weight = get_pos_weight(self.cfg, outcomes)
-            add_config = {**self.cfg.model, 'pos_weight': pos_weight}
+            add_config = {**self.cfg.model, "pos_weight": pos_weight}
             model = self.loader.load_model(
                 CorebehrtForFineTuning,
                 checkpoint=self.checkpoint,
