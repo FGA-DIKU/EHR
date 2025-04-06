@@ -26,8 +26,8 @@ outcome: # we will convert outcomes to binary based on whether at least one outc
 
 trainer_args:
   sampler: true
-  sample_weight_function:
-    _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
+  sample_weight_function: effective_n_samples # function to calculate sample weights
+  pos_weight: effective_n_samples
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128
