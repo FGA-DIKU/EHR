@@ -93,7 +93,7 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         else:
             pos_weight = None
 
-        self.loss_fct = nn.BCEWithLogitsLoss()
+        self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
     def forward(self, batch: dict):
