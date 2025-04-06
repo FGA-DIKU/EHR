@@ -10,9 +10,7 @@ from corebehrt.functional.features.creators import (
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.setup.checks import check_features_columns
-from corebehrt.functional.preparation.filter import filter_rows_by_regex
-from corebehrt.constants.data import CONCEPT_COL, PID_COL
-from corebehrt.functional.preparation.utils import is_valid_regex
+from corebehrt.constants.data import PID_COL
 
 
 class FeatureCreator:
@@ -21,21 +19,11 @@ class FeatureCreator:
     We create background, death, age, absolute position, and segments features.
     """
 
-    def __init__(self, exclude_regex: str = None):
-        if exclude_regex is not None and not is_valid_regex(exclude_regex):
-            raise ValueError(f"Invalid regex: {exclude_regex}")
-        self.exclude_regex = exclude_regex
-
     def __call__(
         self,
         concepts: pd.DataFrame,
     ) -> pd.DataFrame:
         check_features_columns(concepts)
-        if self.exclude_regex is not None:
-            concepts = filter_rows_by_regex(
-                concepts, col=CONCEPT_COL, regex=self.exclude_regex
-            )
-            concepts = concepts.copy()  # to avoid SettingWithCopyWarning
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)

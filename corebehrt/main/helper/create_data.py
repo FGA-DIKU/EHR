@@ -17,6 +17,8 @@ from corebehrt.modules.features.features import FeatureCreator
 from corebehrt.modules.features.loader import FormattedDataLoader
 from corebehrt.modules.features.tokenizer import EHRTokenizer
 from corebehrt.modules.features.values import ValueCreator
+from corebehrt.functional.preparation.utils import is_valid_regex
+from corebehrt.functional.preparation.filter import filter_rows_by_regex
 
 
 def load_tokenize_and_save(
@@ -45,13 +47,13 @@ def load_tokenize_and_save(
     torch.save(set(pids), join(tokenized_path, f"pids_{split}.pt"))  # save pids as ints
 
 
-def create_and_save_features(cfg) -> None:
+def create_and_save_features(cfg, splits) -> None:
     """
     Creates features and saves them to disk.
     Returns a list of lists of pids for each batch
     """
     combined_patient_info = pd.DataFrame()
-    for split_name in ["train", "tuning", "held_out"]:
+    for split_name in splits:
         path_name = f"{cfg.paths.data}/{split_name}"
         if not os.path.exists(path_name):
             if split_name == "held_out":
@@ -78,9 +80,12 @@ def create_and_save_features(cfg) -> None:
                     agg_window=agg_kwargs.get("agg_window", None),
                     regex=agg_kwargs.get("regex", None),
                 )
+            concepts = exclude_concepts(
+                concepts,
+                cfg.get("features", {}).get("exclude_regex", None),
+            )
             concepts = handle_numeric_values(concepts, cfg.get("features"))
-            exclude_regex = cfg.get("features", {}).get("exclude_regex", None)
-            feature_creator = FeatureCreator(exclude_regex=exclude_regex)
+            feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
@@ -91,6 +96,15 @@ def create_and_save_features(cfg) -> None:
             )
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
+
+
+def exclude_concepts(concepts, exclude_regex):
+    if exclude_regex is not None:
+        if not is_valid_regex(exclude_regex):
+            raise ValueError(f"Invalid regex: {exclude_regex}")
+        concepts = filter_rows_by_regex(concepts, col=CONCEPT_COL, regex=exclude_regex)
+        concepts = concepts.copy()  # to avoid SettingWithCopyWarning
+    return concepts
 
 
 def handle_aggregations(
