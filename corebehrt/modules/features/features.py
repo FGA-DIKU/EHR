@@ -10,14 +10,15 @@ from corebehrt.functional.features.creators import (
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.setup.checks import check_features_columns
-from corebehrt.functional.preparation.filter import filter_rows_by_regex
 from corebehrt.constants.data import PID_COL
+
 
 class FeatureCreator:
     """
     A class to create features from patient information and concepts DataFrames.
     We create background, death, age, absolute position, and segments features.
     """
+
     def __call__(
         self,
         concepts: pd.DataFrame,
