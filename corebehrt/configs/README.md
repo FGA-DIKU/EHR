@@ -34,6 +34,42 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 | **Split Ratios** | `pretrain`               | `0.72`         | `0 - 1` | The proportion of data allocated for model pretraining. |
 |              | `finetune`                   | `0.18`         | `0 - 1` | The proportion of data allocated for model fine-tuning. |
 
+
+# 🔧 Configuration Hyperparameters
+
+| **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Description**                                                  |
+|--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|------------------------------------------------------------------|
+| `logging`    | `level`                                        | `INFO`                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`     | Logging level that controls verbosity of output logs.            |
+|              | `path`                                         | `./outputs/logs`          | *(any valid path)*                                  | Directory where log files will be stored.                        |
+| `paths`      | `data`                                         | `./example_data/...`      | *(any valid path)*                                  | Path to the raw EHR input data.                                  |
+|              | `tokenized`                                    | `./outputs/tokenized`     | *(any valid path)*                                  | Directory to store tokenized patient records.                    |
+|              | `features`                                     | `./outputs/features`      | *(any valid path)*                                  | Directory to save extracted features.                            |
+|              | `code_mapping` *(optional)*                    | *(not set)*               | *(any valid path to .pt file)*                      | Optional path to save/load code mapping.                         |
+|              | `vocabulary` *(optional)*                      | *(not set)*               | *(any valid path)*                                  | Optional path to the vocabulary folder.                          |
+| `features`   | `exclude_regex`                                | `^(?:LAB).*`              | any valid regex                                     | Regex pattern to exclude specific feature types.                 |
+|              | `values.value_creator_kwargs.num_bins`         | `100`                     | any positive integer                                | Number of bins for discretizing numeric feature values.          |
+| `tokenizer`  | `sep_tokens`                                   | `true`                    | `true`, `false`                                     | Whether to include separator tokens between events.              |
+|              | `cls_token`                                    | `true`                    | `true`, `false`                                     | Whether to include a classification token at the beginning.      |
+| `excluder`   | `min_age`                                      | `-1`                      | any integer                                         | Minimum age for patients to be included.                         |
+|              | `max_age`                                      | `120`                     | any integer                                         | Maximum age for patients to be included.                         |
+
+
+| **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Required?**      | **Description**                                                  |
+|--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|--------------------|------------------------------------------------------------------|
+| `logging`    | `level`                                        | `INFO`                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`     | ✅ Yes             | Logging level that controls verbosity of output logs.            |
+|              | `path`                                         | `./outputs/logs`          | *(any valid path)*                                  | ✅ Yes             | Directory where log files will be stored.                        |
+| `paths`      | `data`                                         | `./example_data/...`      | *(any valid path)*                                  | ✅ Yes             | Path to the raw EHR input data.                                  |
+|              | `tokenized`                                    | `./outputs/tokenized`     | *(any valid path)*                                  | ✅ Yes             | Directory to store tokenized patient records.                    |
+|              | `features`                                     | `./outputs/features`      | *(any valid path)*                                  | ✅ Yes             | Directory to save extracted features.                            |
+|              | `code_mapping` *(optional)*                    | *(not set)*               | *(any valid path to .pt file)*                      | ❌ No              | Optional path to save/load code mapping.                         |
+|              | `vocabulary` *(optional)*                      | *(not set)*               | *(any valid path)*                                  | ❌ No              | Optional path to the vocabulary folder.                          |
+| `features`   | `exclude_regex`                                | `^(?:LAB).*`              | any valid regex                                     | ❌ No              | Regex pattern to exclude specific feature types.                 |
+|              | `values.value_creator_kwargs.num_bins`         | `100`                     | any positive integer                                | ⚠️ If labs         | Number of bins for discretizing numeric feature values.          |
+| `tokenizer`  | `sep_tokens`                                   | `true`                    | `true`, `false`                                     | ❌ No              | Whether to include separator tokens between events.              |
+|              | `cls_token`                                    | `true`                    | `true`, `false`                                     | ❌ No              | Whether to include a classification token at the beginning.      |
+| `excluder`   | `min_age`                                      | `-1`                      | any integer                                         | ❌ No              | Minimum age for patients to be included.                         |
+|              | `max_age`                                      | `120`                     | any integer                                         | ❌ No              | Maximum age for patients to be included.                         |
+
 ---
 
 ## 📌 **Next Steps**
@@ -43,6 +79,28 @@ Now we need to refine **default values and possible values** for each parameter.
 (For shared parameters, refer to [Common Hyperparameters](#common-hyperparameters-shared-across-all-stages))_
 
 ---
+---
+
+### **Prepare Training Data**
+
+This step **converts tokenized sequences and structured data** into pretraining- or fine-tuning-ready formats.
+
+#### Key Functions:
+- Reads tokenized sequences and extracted features.
+- Applies dataset filtering based on minimum length and configuration.
+- Converts inputs to the required format for model training.
+- Creates training/validation splits according to specified ratios.
+- Stores the prepared dataset to the appropriate output directory.
+
+#### Usage Examples:
+```bash
+# For pretraining
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_pretrain.yaml
+
+# For fine-tuning
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_finetune.yaml
+
+---------
 
 ### **Pretrain**
 This step **trains a transformer-based model** on **EHR sequences** using **masked language modeling (MLM)** to learn meaningful patient data representations.  
@@ -276,6 +334,7 @@ This phase **fine-tunes** the pretrained model on specific clinical outcomes and
 | **Metrics**       | `accuracy._target_`                | `corebehrt.modules.monitoring.metrics.Accuracy` |
 |                   | `accuracy.threshold`              | `Configured threshold` |
 |                   | `roc_auc._target_`                | `corebehrt.modules.monitoring.metrics.ROC_AUC` |
+
 |                   | `pr_auc._target_`                 | `corebehrt.modules.monitoring.metrics.PR_AUC` |
 |                   | `precision._target_`              | `corebehrt.modules.monitoring.metrics.Precision` |
 |                   | `recall._target_`                 | `corebehrt.modules.monitoring.metrics.Recall` |
