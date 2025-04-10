@@ -21,22 +21,6 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 
 #  Configuration Hyperparameters for the `create data` stage
 
-| **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Description**                                                  |
-|--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|------------------------------------------------------------------|
-| `logging`    | `level`                                        | `INFO`                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`     | Logging level that controls verbosity of output logs.            |
-|              | `path`                                         | `./outputs/logs`          | *(any valid path)*                                  | Directory where log files will be stored.                        |
-| `paths`      | `data`                                         | `./example_data/...`      | *(any valid path)*                                  | Path to the raw EHR input data.                                  |
-|              | `tokenized`                                    | `./outputs/tokenized`     | *(any valid path)*                                  | Directory to store tokenized patient records.                    |
-|              | `features`                                     | `./outputs/features`      | *(any valid path)*                                  | Directory to save extracted features.                            |
-|              | `code_mapping` *(optional)*                    | *(not set)*               | *(any valid path to .pt file)*                      | Optional path to save/load code mapping.                         |
-|              | `vocabulary` *(optional)*                      | *(not set)*               | *(any valid path)*                                  | Optional path to the vocabulary folder.                          |
-| `features`   | `exclude_regex`                                | `^(?:LAB).*`              | any valid regex                                     | Regex pattern to exclude specific feature types.                 |
-|              | `values.value_creator_kwargs.num_bins`         | `100`                     | any positive integer                                | Number of bins for discretizing numeric feature values.          |
-| `tokenizer`  | `sep_tokens`                                   | `true`                    | `true`, `false`                                     | Whether to include separator tokens between events.              |
-|              | `cls_token`                                    | `true`                    | `true`, `false`                                     | Whether to include a classification token at the beginning.      |
-| `excluder`   | `min_age`                                      | `-1`                      | any integer                                         | Minimum age for patients to be included.                         |
-|              | `max_age`                                      | `120`                     | any integer                                         | Maximum age for patients to be included.                         |
-
 
 | **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Required?**      | **Description**                                                  |
 |--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|--------------------|------------------------------------------------------------------|
