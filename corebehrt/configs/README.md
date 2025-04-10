@@ -5,23 +5,11 @@ In the following sections, each configuration file is explained in detail.
 
 # Create Data
 
-This step **loads and processes raw EHR data**, extracts key clinical concepts, tokenizes records, and prepares structured inputs for modeling.
+Below is a detailed breakdown of all configurable parameters used during the `create data` stage in CoreBEHRT.
 
-## Key Functions
-- Loads and processes **raw EHR data**, extracting **diagnoses, medications, procedures, and lab tests**.
-- Defines **data paths** for raw data, tokenized sequences, and extracted features.
-- Tokenizes **patient records** into structured sequences for modeling.
-- Extracts **background variables** and sets a **reference timestamp**.
-- Configures **value processing**, including:
-  - **Binning** values into categories.
-  - **Normalization** for feature scaling.
-  - **Handling missing values**.
-- Splits the dataset into: **pretrain, finetune, and test sets**.
 
 
 #  Configuration Hyperparameters for the `create data` stage
-
-# 🔧 Configuration Hyperparameters
 
 | **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Required?**      | **Description**                                                  |
 |--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|--------------------|------------------------------------------------------------------|
