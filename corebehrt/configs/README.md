@@ -18,24 +18,8 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
   - **Handling missing values**.
 - Splits the dataset into: **pretrain, finetune, and test sets**.
 
-## Hyperparameters for the `create data` stage
 
-| **Category**   | **Parameter**                | **Default Value** | **Possible Values**                     | **Description** |
-|--------------|-----------------------------|----------------|----------------------------------|----------------|
-| **Loader**   | `concept_types`              | No default value, Specified by user   | `["diagnose", "medication", "procedure", "labtest"]` | The types of concepts extracted from EHR data. |
-|              | `include_values`             | No default value, Specified by user   | `["labtest", "medication_dose"]` | Specifies which numerical values should be included in processing |
-| **Features** | `background_vars`            | No default value, Specified by user     | `["GENDER", "AGE", "ETHNICITY"]` | Background variables (demographic data) considered. |
-|              | `origin_point`               | `2020-01-26`   | `Any valid date` | The reference timestamp for data analysis. |
-| **Values**   | `value_type`                 | `binned`       | `["binned", "normalized", "raw"]` | The method of processing numerical values (categorization, normalization, or raw values). |
-|              | `normalize.func`             | `min_max_normalize_results` | `["min_max_normalize_results", "z_score_normalize"]` | The function used for normalizing numerical values. |
-|              | `normalize.kwargs.min_count` | `3`            | `Any positive integer` | Minimum count required for normalization to be applied. |
-| **Excluder** | `min_age`                    | `-1`           | `Any integer` | The minimum patient age to be included in the model. |
-|              | `max_age`                    | `120`          | `Any integer` | The maximum patient age to be included in the model. |
-| **Split Ratios** | `pretrain`               | `0.72`         | `0 - 1` | The proportion of data allocated for model pretraining. |
-|              | `finetune`                   | `0.18`         | `0 - 1` | The proportion of data allocated for model fine-tuning. |
-
-
-# 🔧 Configuration Hyperparameters
+#  Configuration Hyperparameters for the `create data` stage
 
 | **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Description**                                                  |
 |--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|------------------------------------------------------------------|
@@ -56,19 +40,19 @@ This step **loads and processes raw EHR data**, extracts key clinical concepts, 
 
 | **Category** | **Parameter**                                  | **Default**               | **Possible Values**                                 | **Required?**      | **Description**                                                  |
 |--------------|------------------------------------------------|---------------------------|-----------------------------------------------------|--------------------|------------------------------------------------------------------|
-| `logging`    | `level`                                        | `INFO`                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`     | ✅ Yes             | Logging level that controls verbosity of output logs.            |
-|              | `path`                                         | `./outputs/logs`          | *(any valid path)*                                  | ✅ Yes             | Directory where log files will be stored.                        |
-| `paths`      | `data`                                         | `./example_data/...`      | *(any valid path)*                                  | ✅ Yes             | Path to the raw EHR input data.                                  |
-|              | `tokenized`                                    | `./outputs/tokenized`     | *(any valid path)*                                  | ✅ Yes             | Directory to store tokenized patient records.                    |
-|              | `features`                                     | `./outputs/features`      | *(any valid path)*                                  | ✅ Yes             | Directory to save extracted features.                            |
-|              | `code_mapping` *(optional)*                    | *(not set)*               | *(any valid path to .pt file)*                      | ❌ No              | Optional path to save/load code mapping.                         |
-|              | `vocabulary` *(optional)*                      | *(not set)*               | *(any valid path)*                                  | ❌ No              | Optional path to the vocabulary folder.                          |
-| `features`   | `exclude_regex`                                | `^(?:LAB).*`              | any valid regex                                     | ❌ No              | Regex pattern to exclude specific feature types.                 |
-|              | `values.value_creator_kwargs.num_bins`         | `100`                     | any positive integer                                | ⚠️ If labs         | Number of bins for discretizing numeric feature values.          |
-| `tokenizer`  | `sep_tokens`                                   | `true`                    | `true`, `false`                                     | ❌ No              | Whether to include separator tokens between events.              |
-|              | `cls_token`                                    | `true`                    | `true`, `false`                                     | ❌ No              | Whether to include a classification token at the beginning.      |
-| `excluder`   | `min_age`                                      | `-1`                      | any integer                                         | ❌ No              | Minimum age for patients to be included.                         |
-|              | `max_age`                                      | `120`                     | any integer                                         | ❌ No              | Maximum age for patients to be included.                         |
+| `logging`    | `level`                                        | `INFO`                    | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`     |    Yes             | Logging level that controls verbosity of output logs.            |
+|              | `path`                                         | `./outputs/logs`          | *(any valid path)*                                  |    Yes             | Directory where log files will be stored.                        |
+| `paths`      | `data`                                         | `./example_data/...`      | *(any valid path)*                                  | Yes             | Path to the raw EHR input data.                                  |
+|              | `tokenized`                                    | `./outputs/tokenized`     | *(any valid path)*                                  | Yes             | Directory to store tokenized patient records.                    |
+|              | `features`                                     | `./outputs/features`      | *(any valid path)*                                  |Yes             | Directory to save extracted features.                            |
+|              | `code_mapping`                                 | *(not set)*               | *(any valid path to .pt file)*                      | No              | Optional path to save/load code mapping.                         |
+|              | `vocabulary`                                   | *(not set)*               | *(any valid path)*                                  |  No              | Optional path to the vocabulary folder.                          |
+| `features`   | `exclude_regex`                                | `^(?:LAB).*`              | any valid regex                                     | No              | Regex pattern to exclude specific feature types.                 |
+|              | `values.value_creator_kwargs.num_bins`         | `100`                     | any positive integer                                |  If labs         | Number of bins for discretizing numeric feature values.          |
+| `tokenizer`  | `sep_tokens`                                   | `true`                    | `true`, `false`                                     | No              | Whether to include separator tokens between events.              |
+|              | `cls_token`                                    | `true`                    | `true`, `false`                                     |  No              | Whether to include a classification token at the beginning.      |
+| `excluder`   | `min_age`                                      | `-1`                      | any integer                                         | No              | Minimum age for patients to be included.                         |
+|              | `max_age`                                      | `120`                     | any integer                                         |  No              | Maximum age for patients to be included.                         |
 
 ---
 
