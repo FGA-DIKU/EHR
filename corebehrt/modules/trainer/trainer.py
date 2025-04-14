@@ -1,4 +1,5 @@
 import os
+from os.path import join
 from collections import namedtuple
 
 import torch
@@ -18,6 +19,7 @@ from corebehrt.modules.monitoring.metric_aggregation import (
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt.modules.trainer.freezing import freeze_bottom_layers, unfreeze_all_layers
 from corebehrt.modules.trainer.utils import is_plateau
+from corebehrt.constants.paths import LORA_DIR
 
 yaml.add_representer(Config, lambda dumper, data: data.yaml_repr(dumper))
 
@@ -506,6 +508,8 @@ class EHRTrainer:
             },
             checkpoint_name,
         )
+        if self.args.get("lora", False):
+            self.model.save_pretrained(join(self.run_folder, LORA_DIR))
 
     def _update_attributes(self, **kwargs):
         for key, value in kwargs.items():

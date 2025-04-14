@@ -31,7 +31,7 @@ trainer_args:
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128
-  epochs: 1
+  epochs: 2
   info: true
   gradient_clip: 
     clip_value: 1.0
@@ -46,6 +46,12 @@ trainer_args:
   unfreeze_at_epoch: 2 # if unfrezze_on_plateau is true, whichever condition is met first
   plateau_threshold: 0.01 
   reset_patience_after_unfreeze: true # reset early stopping counter after unfreezing
+
+  lora: true
+  lora_config:
+    r: 8
+    lora_alpha: 16
+    lora_dropout: 0.1
 
   
 optimizer:
