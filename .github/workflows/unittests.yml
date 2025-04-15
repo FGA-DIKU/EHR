@@ -1,27 +1,37 @@
-name: 'Unittests'
+name: Run Tests and Generate Coverage Badge
 
 on:
-    workflow_dispatch:
-    pull_request:
-
-permissions:
-  contents: read
-  pull-requests: read
+  workflow_dispatch:
+  pull_request:
 
 jobs:
-    tests:
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-            - name: Setup dependencies.
-              run: |
-                python -m venv .venv
-                source .venv/bin/activate
-                pip install -r requirements.txt
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-            - name: Running tests
-              run: |
-                source .venv/bin/activate
-                python -m unittest discover -s tests
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install coverage coverage-badge
+
+      - name: Run Tests with Coverage
+        run: |
+          coverage run -m unittest discover
+          coverage report
+
+      - name: Generate Coverage Badge
+        run: |
+          coverage-badge -o coverage.svg -f
+
+      - name: Upload Coverage Badge
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-badge
+          path: coverage.svg
