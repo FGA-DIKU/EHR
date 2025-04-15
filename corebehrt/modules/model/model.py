@@ -88,8 +88,12 @@ class CorebehrtForPretraining(CorebehrtEncoder):
 class CorebehrtForFineTuning(CorebehrtEncoder):
     def __init__(self, config):
         super().__init__(config)
+        if config.pos_weight:
+            pos_weight = torch.tensor(config.pos_weight)
+        else:
+            pos_weight = None
 
-        self.loss_fct = nn.BCEWithLogitsLoss()
+        self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
     def forward(self, batch: dict):

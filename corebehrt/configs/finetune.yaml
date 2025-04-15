@@ -25,9 +25,10 @@ outcome: # we will convert outcomes to binary based on whether at least one outc
   n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)
 
 trainer_args:
-  sampler: true
-  sample_weight_function:
-    _target_: corebehrt.evaluation.utils.inverse_sqrt # function to calculate sample weights
+  sampler_function: 
+    _target_: corebehrt.modules.trainer.utils.Sampling.effective_n_samples # function to calculate sample weights. Possible options: inverse_sqrt and effective_n_samples
+  loss_weight_function: 
+    _target_: corebehrt.modules.trainer.utils.PositiveWeight.effective_n_samples # function to calculate positive weights. Possible options: sqrt and effective_n_samples
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128

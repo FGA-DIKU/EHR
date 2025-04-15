@@ -89,12 +89,12 @@ class ModelManager:
 
         return ModelLoader(checkpoint_path).load_checkpoint()
 
-    def initialize_finetune_model(self, checkpoint):
+    def initialize_finetune_model(self, checkpoint, outcomes):
         logger.info("Initializing model")
         self.initializer = Initializer(
             self.cfg, checkpoint=checkpoint, model_path=self.checkpoint_model_path
         )
-        model = self.initializer.initialize_finetune_model()
+        model = self.initializer.initialize_finetune_model(outcomes)
         return model
 
     def initialize_training_components(self, model, outcomes):
