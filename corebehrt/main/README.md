@@ -209,7 +209,7 @@ Our pipeline simulates a real-world deployment scenario by distinguishing the da
 
 **Example Configuration:**
 
-![COREBEHRT Overview](docs/COREBEHRT_simulated_prospective.jpg)
+![COREBEHRT simulated prospective study](../../docs/COREBEHRT_simulated_prospective.jpg)
 
 With this example config we fine-tune the model using data available up to 01/01/2020, predicting outcomes from 01/01/2020-01/01/2021. To avoid data leakage, the follow-up period for the outcomes is defined as 3-12 months after the cutoff date. Additionally all patients with outcomes prior to this index_data are removed. 
 For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
