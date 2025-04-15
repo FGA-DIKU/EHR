@@ -19,7 +19,7 @@ jobs:
         cache: 'pip' # caching pip dependencies
     - name: Install dependencies
       run: |
-        pip install black>=25.1.0
-    - name: Run black
+        pip install ruff==0.11.5
+    - name: Run ruff
       run: |
         ruff format --check corebehrt tests
