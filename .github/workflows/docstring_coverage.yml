@@ -1,0 +1,35 @@
+name: Docstring Coverage Badge
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+jobs:
+  docstr-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install docstr-coverage
+        run: |
+          pip install docstr-coverage
+
+      - name: Generate Docstring Coverage Badge
+        run: |
+          # Adjust the path as needed; here we run on the entire repository.
+          docstr-coverage . --badge=docstr-coverage.svg
+
+      - name: Upload Docstring Coverage Badge Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docstr-coverage-badge
+          path: docstr-coverage.svg
