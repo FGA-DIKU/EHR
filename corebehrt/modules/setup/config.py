@@ -99,8 +99,15 @@ def instantiate_class(instantiate_config, **extra_kwargs):
     return instance
 
 
-def instantiate_function(func_path: str):
-    """Initializes a function or a class static method from a path string."""
+def instantiate_function(instantiate_config, **extra_kwargs):
+    """
+    Initializes a function or a class static method from a config object.
+    The config must include a '_target_' key specifying the full path to the function.
+    """
+    if "_target_" not in instantiate_config:
+        raise ValueError("The configuration must include a '_target_' key.")
+
+    func_path = instantiate_config["_target_"]
     parts = func_path.rsplit(
         ".", 2
     )  # Split into module, submodule (optional), and function/method
@@ -125,11 +132,17 @@ def instantiate_function(func_path: str):
         raise ValueError(
             "Function path must be in the format 'module.submodule.function', 'module.Class.method', or 'module.function'"
         )
+
     func = getattr(target, func_name, None)
     if func is None or not callable(func):
         raise ValueError(f"{func_name} is not a callable function in {target}")
 
-    return func
+    # Merge config kwargs with extra kwargs
+    kwargs = {k: v for k, v in instantiate_config.items() if k != "_target_"}
+    kwargs.update(extra_kwargs)
+
+    # If the function accepts arguments, pass them
+    return lambda *args, **kwargs_: func(*args, **{**kwargs, **kwargs_})
 
 
 def load_config(config_file):
