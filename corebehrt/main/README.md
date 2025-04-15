@@ -208,11 +208,13 @@ Our pipeline simulates a real-world deployment scenario by distinguishing the da
    The follow-up window is defined by the `n_hours_start_follow_up` and `n_hours_end_follow_up` parameters. For example, with a 1 year follow-up window, the model will predict outcomes in the period from January 1, 2020 to January 1, 2021 for train patients and from January 1, 2021 to January 1, 2022 for test patients.
 
 **Example Configuration:**
-
-![COREBEHRT simulated prospective study](../../docs/COREBEHRT_simulated_prospective.jpg)
-
 With this example config we fine-tune the model using data available up to 01/01/2020, predicting outcomes from 01/01/2020-01/01/2021. To avoid data leakage, the follow-up period for the outcomes is defined as 3-12 months after the cutoff date. Additionally all patients with outcomes prior to this index_data are removed. 
 For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
+
+<div align="center">
+  <img src="../../docs/COREBEHRT_simulated_prospective.jpg" alt="COREBEHRT simulated prospective study">
+</div>
+
 
 In select cohort:
 
