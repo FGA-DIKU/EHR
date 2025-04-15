@@ -30,6 +30,17 @@ jobs:
         run: |
           coverage-badge -o coverage.svg -f
 
+      - name: Commit Coverage Badge
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add coverage.svg
+          git diff --cached --quiet || git commit -m "Update coverage badge"
+      - name: Push Coverage Badge
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Coverage Badge
         uses: actions/upload-artifact@v4
         with:
