@@ -209,17 +209,21 @@ Our pipeline simulates a real-world deployment scenario by distinguishing the da
 
 **Example Configuration:**
 
-With this example config we fine-tune the model using data available up to 01/01/2020, predicting outcomes from 01/01/2020-01/01/2021. For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
+![COREBEHRT Overview](docs/COREBEHRT_simulated_prospective.jpg)
+
+With this example config we fine-tune the model using data available up to 01/01/2020, predicting outcomes from 01/01/2020-01/01/2021. To avoid data leakage, the follow-up period for the outcomes is defined as 3-12 months after the cutoff date. Additionally all patients with outcomes prior to this index_data are removed. 
+For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
 
 In select cohort:
 
 - **Absolute Index Date:** January 1, 2020  
 - **test_shift_hours:** 365 * 24 (1 year)
+- **exclude_prior_outcomes** true
 
 Fine-tuning configuration (outcome):
 
 - **n_hours_censoring:** 0 (censor outcomes occurring within 24 hours before the index date)  
-- **n_hours_start_follow_up:** 0
+- **n_hours_start_follow_up:** 90 * 24 (3 months)
 - **n_hours_end_follow_up:** 365 * 24 (1 year)
 
 **Process Overview:**
@@ -257,13 +261,19 @@ Example **absolute index date** for test data:
   - Training/Validation: Retain the original index date (e.g., January 1, 2020).
   - Test: The index date is shifted (e.g., to January 1, 2021), simulating that predictions are made on data from a later time period.
 Example Configuration:
+- All patients with prior outcomes are excluded
 
 ```yaml
-absolute:
-  year: 2020
-  month: 1
-  day: 1
-test_shift_hours: 365 * 24
+selection:
+  exclude_prior_outcomes: true
+
+index_date: 
+  absolute:
+    date: 
+      year: 2020
+      month: 1
+      day: 1
+    test_shift_hours: 365 * 24
 ```
 
 #### Step 3: Train Model with Temporal Constraints
@@ -273,7 +283,7 @@ For example, set:
 
 ```yaml
 n_hours_censoring: 0 
-n_hours_start_follow_up: 0   
+n_hours_start_follow_up: 90 * 24 
 n_hours_end_follow_up: 365 * 24    
 ```
 
