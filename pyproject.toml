@@ -43,10 +43,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "flake8",
-    "docstr-coverage",
     "ruff",
+    "docstr-coverage",
+    "coverage",
 ]
 
 [project.urls]
