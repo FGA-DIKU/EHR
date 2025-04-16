@@ -1,10 +1,7 @@
-name: Run Tests and Generate Dynamic Coverage Badge
+name: Unittest
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - '**'
   pull_request:
 
 jobs:
@@ -24,31 +21,28 @@ jobs:
           pip install -r requirements.txt
           pip install coverage
 
-      - name: Run Tests with Coverage
+      - name: "Run Tests and Generate Coverage Report"
         run: |
-          # Run tests and generate a terminal report
           coverage run --omit=_remote_module_non_scriptable.py -m unittest discover
-          coverage report
-
-      - name: Get Coverage Percentage
-        id: get_coverage
+          coverage report > coverage.txt
+      
+      - name: "Extract Total Coverage"
+        id: extract
         run: |
-          # Extract the overall coverage percentage from the coverage report
-          # This assumes your report contains a TOTAL line, e.g.:
-          # TOTAL    100    0   100%
-          COVERAGE=$(coverage report | grep "TOTAL" | awk '{print $4}' | sed 's/%//')
-          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
-          echo "Coverage is ${COVERAGE}%"
+          total=$(grep TOTAL coverage.txt | awk '{print $4}' | sed 's/%//')
+          echo "Total coverage: $total%"
+          echo "total=$total" >> $GITHUB_OUTPUT
 
       - name: Create Dynamic Coverage Badge via Gist
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}       # Your secret token with the gist scope
           gistID: b02ecb317ea24a8ced5e72ae96e1c0c3                  # Fill in your gist id here
-          filename: coverage.json                 # Use coverage.svg if you prefer SVG mode
+          filename: covbadge.json
           label: Coverage
-          message: "${{ steps.get_coverage.outputs.coverage }}%"
-          valColorRange: "${{ steps.get_coverage.outputs.coverage }}"
-          maxColorRange: 100
+          message: "${{ steps.extract.outputs.total }}%"
+          valColorRange: "${{ steps.extract.outputs.total }}"
           minColorRange: 0
-          style: flat
+          maxColorRange: 100
+
+
