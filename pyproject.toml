@@ -46,6 +46,7 @@ dev = [
     "black",
     "flake8",
     "coverage",
+    "ruff",
     "pytest"
 ]
 
