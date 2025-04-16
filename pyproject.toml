@@ -45,7 +45,7 @@ dependencies = [
 dev = [
     "black",
     "flake8",
-    "docstr-coverage"
+    "docstr-coverage",
     "ruff",
 ]
 
