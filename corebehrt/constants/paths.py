@@ -10,6 +10,7 @@ PRETRAIN_CFG = "pretrain_config.yaml"
 PREPARE_PRETRAIN_CFG = "prepare_pretrain.yaml"
 FINETUNE_CFG = "finetune_config.yaml"
 PREPARE_FINETUNE_CFG = "prepare_finetune.yaml"
+EVALUATE_CFG = "evaluate_finetune.yaml"
 
 ### Files ###
 VOCABULARY_FILE = "vocabulary.pt"

@@ -13,6 +13,7 @@ from corebehrt.constants.paths import (
     PRETRAIN_CFG,
     PREPARE_PRETRAIN_CFG,
     PREPARE_FINETUNE_CFG,
+    EVALUATE_CFG
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
@@ -74,6 +75,7 @@ class DirectoryPreparer:
                 "outcomes": OUTCOMES_CFG,
                 "model": PRETRAIN_CFG,
                 "cohort": COHORT_CFG,
+                "evaluate_finetune": EVALUATE_CFG,
             }[directory]
 
         path = self.check_path(directory, use_root=True)
@@ -351,7 +353,7 @@ class DirectoryPreparer:
                     "index_date must specify either 'absolute' or 'relative' configuration"
                 )
 
-    def setup_prepare_finetune(self) -> None:
+    def setup_prepare_finetune(self, name=None) -> None:
         """
         Validates path config and sets up directories for preparing pretrain data.
         """
@@ -369,7 +371,11 @@ class DirectoryPreparer:
             self.check_file("outcome")
 
         self.create_directory("prepared_data", clear=True)
-        self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)
+        if name is None:
+            self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)
+        else:
+            # If name is given, use it as config name
+            self.write_config("prepared_data", name=name)
         self.write_config("prepared_data", source="features", name=DATA_CFG)
 
     def setup_finetune(self) -> None:
@@ -394,6 +400,21 @@ class DirectoryPreparer:
         if "tokenized" not in self.cfg.paths:
             logger.info("Tokenized dir not in config. Adding from pretrain config.")
             self.cfg.paths.tokenized = data_cfg.paths.tokenized
+
+    def setup_evaluate(self) -> None:
+        """
+        Validates path config and sets up directories for finetune.
+        """
+        # Setup logging
+        self.setup_logging("evaluate")
+
+        # Validate and create directories
+        self.check_directory("test_data_dir")
+        self.check_directory("model")
+        self.check_directory("folds_dir")
+        self.create_directory("predictions", clear=True)
+        self.write_config("predictions", name=EVALUATE_CFG)
+        self.write_config("predictions", source="model", name=FINETUNE_CFG)
 
     #
     # Directory naming generators

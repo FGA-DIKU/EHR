@@ -62,7 +62,8 @@ def main_prepare_data(config_path):
             torch.save(test_pids, join(cfg.paths.prepared_data, TEST_PIDS_FILE))
     
     elif cfg.data.type == "test":
-        DirectoryPreparer(cfg).setup_prepare_finetune()
+        config_name = os.path.basename(config_path)
+        DirectoryPreparer(cfg).setup_prepare_finetune(name=config_name)
         logger = logging.getLogger("prepare test data")
         logger.info("Preparing test data")
         # Prepare data
