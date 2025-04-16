@@ -25,7 +25,7 @@ jobs:
         id: extract
         run: |
           # Adjust path below to where your source code lives
-          DOC_COV=$(docstr-coverage corebehrt -p | awk '{print int($1)}')
+          DOC_COV=$(docstr-coverage corebehrt -p --skip-magic --skip-init | awk '{print int($1)}')
           echo "Docstring coverage: ${DOC_COV}%"
           echo "doccov=${DOC_COV}" >> $GITHUB_OUTPUT
 

@@ -45,7 +45,8 @@ dependencies = [
 dev = [
     "black",
     "flake8",
-    "pytest"
+    "pytest",
+    "docstr-coverage"
 ]
 
 [project.urls]
