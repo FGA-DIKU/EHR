@@ -7,7 +7,11 @@ Thank you for considering contributing to our project! Please follow the guideli
 ## Code Style & Quality
 
 - **Formatting:** Use **ruff** for code formatting.
+  - Run `ruff format corebehrt tests` to format the code.
 - **Linting:** Use **ruff** for code quality checks.
+  - Run `ruff check corebehrt tests --select E9,F63,F7,F82,E711,E712,E713,E714,E721,F401,F402,F405,F811,F821,F822,F823,F841,F901` to check linting.
+- **Docstrings:** Use **docstr-coverage** to check docstring coverage.
+  - Run `docstr-coverage corebehrt --skip-magic --skip-init` to check docstring coverage.
 - **Typing:** Add type hints for function parameters and return values.
 - **Structure:**  
   - Follow the project directory structure.  
