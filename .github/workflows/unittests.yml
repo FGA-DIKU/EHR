@@ -1,11 +1,12 @@
-name: Run Tests and Generate Coverage Badge
+name: 'Unittests'
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - '**'
-  pull_request:
+    workflow_dispatch:
+    pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
 
 
 jobs:
@@ -34,22 +35,18 @@ jobs:
         run: |
           coverage-badge -o coverage.svg -f
 
-      - name: Commit Coverage Badge
+      - name: Generate HTML Coverage Report
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add coverage.svg
-          # Only commit if there are changes
-          git diff --cached --quiet || git commit -m "Update coverage badge"
-
-      - name: Push Coverage Badge to Current Branch
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          branch: "${{ github.head_ref || github.ref_name }}"
-          github_token: ${{ secrets.ACTION_SECRET }}
+          coverage html
 
       - name: Upload Coverage Badge Artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-badge
           path: coverage.svg
+
+      - name: Upload HTML Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-coverage-report
+          path: htmlcov/
