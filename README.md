@@ -4,7 +4,7 @@
 [![Unittests](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml)
 [![Formatting using black](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/format.yml)
 [![Lint using flake8](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/lint.yml)
-[![Docstring Coverage](docstr-coverage.svg)](https://github.com/HunterMcGushion/docstr_coverage)
+![Doc Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kirilklein/b02ecb317ea24a8ced5e72ae96e1c0c3/raw/docstr-coverage.json)
 
 > **A framework for processing and analyzing Electronic Health Records (EHR) data using BERT-based models.**
 
