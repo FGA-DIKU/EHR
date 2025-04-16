@@ -11,7 +11,6 @@ def get_last_checkpoint_epoch(checkpoint_folder: str) -> int:
     pattern = re.compile(r"checkpoint_epoch(\d+)_end\.pt$")
     max_epoch = None
     for filename in os.listdir(checkpoint_folder):
-
         match = pattern.match(filename)
         if match:
             epoch = int(match.group(1))

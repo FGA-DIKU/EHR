@@ -221,7 +221,6 @@ class DatasetPreparer:
         """Verify abspos sorting within each sampled patient"""
         sample_patients = df[PID_COL].unique()[:n_patients]
         for pid in sample_patients:
-
             patient_df = df[df[PID_COL] == pid]
             if not patient_df[ABSPOS_COL].is_monotonic_increasing:
                 raise ValueError(f"Patient {pid} has unsorted abspos values")

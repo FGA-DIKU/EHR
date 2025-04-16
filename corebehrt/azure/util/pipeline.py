@@ -37,9 +37,9 @@ def create(
     """
     check_azure()
 
-    assert (
-        config_paths is not None or config_dir is not None
-    ), "Either config_paths or config_dir must be set"
+    assert config_paths is not None or config_dir is not None, (
+        "Either config_paths or config_dir must be set"
+    )
 
     config_paths = config_paths or {}
     register_output = register_output or {}
