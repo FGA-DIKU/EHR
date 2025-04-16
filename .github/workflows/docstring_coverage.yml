@@ -1,14 +1,11 @@
-name: Docstring Coverage Badge
+name: Docstring Coverage
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - '**'
   pull_request:
 
 jobs:
-  docstr-coverage:
+  doc-coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -19,17 +16,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install docstr-coverage
+      - name: Install Dependencies
         run: |
+          pip install -r requirements.txt
           pip install docstr-coverage
 
-      - name: Generate Docstring Coverage Badge
+      - name: Run docstring coverage check
+        id: extract
         run: |
-          # Adjust the path as needed; here we run on the entire repository.
-          docstr-coverage . --badge=docstr-coverage.svg
+          # Adjust path below to where your source code lives
+          DOC_COV=$(docstr-coverage corebehrt -p | awk '{print int($1)}')
+          echo "Docstring coverage: ${DOC_COV}%"
+          echo "doccov=${DOC_COV}" >> $GITHUB_OUTPUT
 
-      - name: Upload Docstring Coverage Badge Artifact
-        uses: actions/upload-artifact@v4
+      - name: Create Dynamic Docstring Coverage Badge via Gist
+        uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          name: docstr-coverage-badge
-          path: docstr-coverage.svg
+          auth: ${{ secrets.GIST_SECRET }}       # Your secret token with the gist scope
+          gistID: b02ecb317ea24a8ced5e72ae96e1c0c3                  # Fill in your gist id here
+          filename: docstr-coverage.json
+          label: Doc Coverage
+          message: "${{ steps.extract.outputs.doccov }}%"
+          valColorRange: "${{ steps.extract.outputs.doccov }}"
+          minColorRange: 40
+          maxColorRange: 100
