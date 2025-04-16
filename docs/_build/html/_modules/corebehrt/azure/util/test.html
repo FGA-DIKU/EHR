@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>corebehrt.azure.util.test &mdash; CoreBEHRT v2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=aa039f9c"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            CoreBEHRT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../source/modules.html">corebehrt</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">CoreBEHRT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">corebehrt.azure.util.test</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for corebehrt.azure.util.test</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">corebehrt.azure.util.config</span> <span class="kn">import</span> <span class="n">load_config</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<div class="viewcode-block" id="evaluate_run">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.test.evaluate_run">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluate_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">job_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">test_cfg_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ealuates the run according to the given job_type and test configuration file.</span>
+
+<span class="sd">    :param run_id: ID of the run to evaluate.</span>
+<span class="sd">    :param job_type: Type of the current job.</span>
+<span class="sd">    :param test_cfg_file: Path to test configuration file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Evaluating run using config file </span><span class="si">{</span><span class="n">test_cfg_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1">## Setup</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">mlflow</span>
+
+        <span class="n">run</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not load run with ID </span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">! Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Check that cfg file exists</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="n">test_cfg_file</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+            <span class="s2">&quot;Could not load test configuration file - no evaluation will be performed&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Read &#39;on_fail&#39; from top level config</span>
+    <span class="n">on_fail</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;on_fail&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Get sub-config for this job</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">cfg</span> <span class="o">:=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">job_type</span><span class="p">,</span> <span class="kc">False</span><span class="p">)):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;No sub-config found for </span><span class="si">{</span><span class="n">job_type</span><span class="si">}</span><span class="s2"> - no evaluation will be performed for </span><span class="si">{</span><span class="n">job_type</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="c1">## Test evaluation</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Run time</span>
+    <span class="k">if</span> <span class="n">max_run_time</span> <span class="o">:=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max_run_time&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">perform_time_test</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="n">max_run_time</span><span class="p">))</span>
+
+    <span class="c1"># Metrics test</span>
+    <span class="n">metrics</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;metrics&quot;</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="n">children</span> <span class="o">=</span> <span class="n">get_children</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">metric_cfg</span> <span class="ow">in</span> <span class="n">metrics</span><span class="p">:</span>
+        <span class="n">relevant_run</span> <span class="o">=</span> <span class="n">children</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;child&quot;</span><span class="p">),</span> <span class="n">run</span><span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">perform_metric_test</span><span class="p">(</span><span class="n">relevant_run</span><span class="p">,</span> <span class="n">metric_cfg</span><span class="p">))</span>
+
+    <span class="c1">## Finish</span>
+    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;All tests passed!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;One or more tests failed!&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">on_fail</span> <span class="o">==</span> <span class="s2">&quot;raise&quot;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="perform_time_test">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.test.perform_time_test">[docs]</a>
+<span class="k">def</span> <span class="nf">perform_time_test</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">max_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that run time is not greater than the threshold.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">end_time</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">end_time</span> <span class="ow">or</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
+    <span class="n">run_time</span> <span class="o">=</span> <span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">start_time</span><span class="p">)</span> <span class="o">//</span> <span class="mi">1000</span>
+    <span class="k">return</span> <span class="n">log_test_result</span><span class="p">(</span>
+        <span class="s2">&quot;Run time&quot;</span><span class="p">,</span>
+        <span class="n">run_time</span> <span class="o">&lt;=</span> <span class="n">max_value</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Actual run time: </span><span class="si">{</span><span class="n">run_time</span><span class="si">}</span><span class="s2">, threshold: </span><span class="si">{</span><span class="n">max_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="perform_metric_test">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.test.perform_metric_test">[docs]</a>
+<span class="k">def</span> <span class="nf">perform_metric_test</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">metric_cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that the given metric satisfies the min/max constraints.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check that type is set</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">metric</span> <span class="o">:=</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">log_test_result</span><span class="p">(</span><span class="s2">&quot;Metric&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Metric type missing!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Check that metric exists</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">metrics</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">log_test_result</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Metric not found in run!&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Get metric and thresholds</span>
+    <span class="n">metric_value</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+    <span class="n">min_value</span> <span class="o">=</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;min&quot;</span><span class="p">)</span>
+    <span class="n">max_value</span> <span class="o">=</span> <span class="n">metric_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;max&quot;</span><span class="p">)</span>
+
+    <span class="n">min_ok</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">max_ok</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">min_value</span><span class="p">:</span>
+        <span class="n">min_ok</span> <span class="o">=</span> <span class="n">log_test_result</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2"> [minimum]&quot;</span><span class="p">,</span>
+            <span class="n">metric_value</span> <span class="o">&gt;=</span> <span class="n">min_value</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric_value</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="n">min_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">max_value</span><span class="p">:</span>
+        <span class="n">max_ok</span> <span class="o">=</span> <span class="n">log_test_result</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2"> [maximum]&quot;</span><span class="p">,</span>
+            <span class="n">metric_value</span> <span class="o">&lt;=</span> <span class="n">max_value</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">metric_value</span><span class="si">}</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">max_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">min_ok</span> <span class="ow">and</span> <span class="n">max_ok</span></div>
+
+
+
+<div class="viewcode-block" id="log_test_result">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.test.log_test_result">[docs]</a>
+<span class="k">def</span> <span class="nf">log_test_result</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ok</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper for logging result of a test.</span>
+
+<span class="sd">    :param test_name: Name of the test</span>
+<span class="sd">    :param ok: Result of the test.</span>
+<span class="sd">    :param msg: Additional message.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">ok</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2"> test passed. &quot;</span> <span class="o">+</span> <span class="n">msg</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">test_name</span><span class="si">}</span><span class="s2"> test failed. &quot;</span> <span class="o">+</span> <span class="n">msg</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ok</span></div>
+
+
+
+<div class="viewcode-block" id="get_children">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.test.get_children">[docs]</a>
+<span class="k">def</span> <span class="nf">get_children</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>  <span class="c1"># noqa: F821</span>
+    <span class="kn">import</span> <span class="nn">mlflow</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;tags.mlflow.parentRunId = &#39;</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">filter_string</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">r</span><span class="p">[</span><span class="s2">&quot;tags.mlflow.runName&quot;</span><span class="p">]:</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_run</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">run_id</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kiril Klein, Mikkel Odgaard, Maria Montgomery, Stephan Lorenzen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

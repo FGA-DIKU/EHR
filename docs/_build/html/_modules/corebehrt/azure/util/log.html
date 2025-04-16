@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>corebehrt.azure.util.log &mdash; CoreBEHRT v2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=aa039f9c"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            CoreBEHRT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../source/modules.html">corebehrt</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">CoreBEHRT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">corebehrt.azure.util.log</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for corebehrt.azure.util.log</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">MLFLOW_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">MLFLOW_CLIENT</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">MLFLOW_CHILD_RUNS</span> <span class="o">=</span> <span class="s2">&quot;prefix&quot;</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Try to import mlflow and set availability flag</span>
+    <span class="kn">import</span> <span class="nn">mlflow</span>
+    <span class="kn">from</span> <span class="nn">mlflow.tracking</span> <span class="kn">import</span> <span class="n">MlflowClient</span>
+    <span class="kn">from</span> <span class="nn">mlflow.entities</span> <span class="kn">import</span> <span class="n">Metric</span>
+
+    <span class="n">MLFLOW_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">MLFLOW_CLIENT</span> <span class="o">=</span> <span class="n">MlflowClient</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="is_mlflow_available">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.is_mlflow_available">[docs]</a>
+<span class="k">def</span> <span class="nf">is_mlflow_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Checks if mlflow module is available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">MLFLOW_AVAILABLE</span></div>
+
+
+
+<div class="viewcode-block" id="start_run">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.start_run">[docs]</a>
+<span class="k">def</span> <span class="nf">start_run</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nested</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">log_system_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Starts an mlflow run. Used in the Azure wrapper and should</span>
+<span class="sd">    not in general be used elsewhere.</span>
+
+<span class="sd">    :param name: Name of run</span>
+<span class="sd">    :param nested: If the run should be nested.</span>
+<span class="sd">    :param log_system_metrics: If enabled, log system metrics (CPU/GPU/mem).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span>
+            <span class="n">run_name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="n">nested</span><span class="p">,</span> <span class="n">log_system_metrics</span><span class="o">=</span><span class="n">log_system_metrics</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Return a dummpy context manager so as to not raise an</span>
+        <span class="c1"># error if mlflow is not available</span>
+        <span class="nd">@contextmanager</span>
+        <span class="k">def</span> <span class="nf">dummy_cm</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="kc">None</span>
+
+        <span class="n">run</span> <span class="o">=</span> <span class="n">dummy_cm</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">run</span></div>
+
+
+
+<div class="viewcode-block" id="end_run">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.end_run">[docs]</a>
+<span class="k">def</span> <span class="nf">end_run</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Ends an mlflow run. Used in the Azure wrapper and should</span>
+<span class="sd">    not in general be used elsewhere.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">end_run</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_run_and_prefix">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.get_run_and_prefix">[docs]</a>
+<span class="k">def</span> <span class="nf">get_run_and_prefix</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the run used for logging and a prefix.</span>
+<span class="sd">    Depending on MLFLOW_CHILD_RUNS:</span>
+<span class="sd">    - &quot;prefix&quot;: returns the top-level job and a non-empty prefix</span>
+<span class="sd">    - &quot;job&quot;: returns the nested job and an empty prefix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">MLFLOW_CHILD_RUNS</span> <span class="o">==</span> <span class="s2">&quot;prefix&quot;</span><span class="p">:</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">()</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">parent</span> <span class="o">:=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_parent_run</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">+=</span> <span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_name</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span>
+            <span class="n">run</span> <span class="o">=</span> <span class="n">parent</span>
+        <span class="k">return</span> <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span>
+
+    <span class="k">elif</span> <span class="n">MLFLOW_CHILD_RUNS</span> <span class="o">==</span> <span class="s2">&quot;run&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">active_run</span><span class="p">(),</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;MLFLOW_CHILD_RUNS must be set to &#39;prefix&#39; or &#39;job&#39;&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="setup_metrics_dir">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.setup_metrics_dir">[docs]</a>
+<span class="k">def</span> <span class="nf">setup_metrics_dir</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Shorthand for starting a sub-run where metrics will be logged.</span>
+<span class="sd">    Use as context manager.</span>
+
+<span class="sd">    :param name: Name of azure &quot;sub-dir&quot;/metrics pane.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">start_run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#</span>
+<span class="c1"># Simple wrapper functions below. Review full args at:</span>
+<span class="c1"># https://www.mlflow.org/docs/latest/python_api/mlflow.html</span>
+<span class="c1">#</span>
+
+
+<div class="viewcode-block" id="log_metric">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_metric">[docs]</a>
+<span class="k">def</span> <span class="nf">log_metric</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Logs a metric to the job (if mlflow is available).</span>
+<span class="sd">    Parameters are the same as for mlflow.log_metric.</span>
+
+<span class="sd">    Important parameters:</span>
+
+<span class="sd">    :param key: Name of the metric.</span>
+<span class="sd">    :param value: Value of the metric.</span>
+<span class="sd">    :param step: Step for the metric (used for plotting graphs).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metric</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_metrics">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_metrics">[docs]</a>
+<span class="k">def</span> <span class="nf">log_metrics</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log multiple metrics</span>
+
+<span class="sd">    :param metrics: dict of metrics.</span>
+<span class="sd">    :param step: Step for the metric (used for plotting graphs).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_metrics</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_param">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_param">[docs]</a>
+<span class="k">def</span> <span class="nf">log_param</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log a parameter</span>
+
+<span class="sd">    :param key: Name of the param.</span>
+<span class="sd">    :param value: Value of the param.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_params">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_params">[docs]</a>
+<span class="k">def</span> <span class="nf">log_params</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log multiple parameters.</span>
+
+<span class="sd">    :param params: dict of parameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_params</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_image">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_image">[docs]</a>
+<span class="k">def</span> <span class="nf">log_image</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log an image</span>
+
+<span class="sd">    :param image: e.g. numpy array or PIL image.</span>
+<span class="sd">    :param artifact_file: filename to save image under.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_image</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_figure">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_figure">[docs]</a>
+<span class="k">def</span> <span class="nf">log_figure</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log a figure (e.g. matplotlib)</span>
+
+<span class="sd">    :param figure: e.g. matplotlib figure.</span>
+<span class="sd">    :param artifact_file: filename to save image under.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_figure</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="log_batch">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.log_batch">[docs]</a>
+<span class="k">def</span> <span class="nf">log_batch</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Log a batch of metrics</span>
+
+<span class="sd">    :param metrics: metrics list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">run</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="n">MLFLOW_CLIENT</span><span class="o">.</span><span class="n">log_batch</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">run_id</span><span class="o">=</span><span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="metric">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.log.metric">[docs]</a>
+<span class="k">def</span> <span class="nf">metric</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">step</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">is_mlflow_available</span><span class="p">():</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">prefix</span> <span class="o">=</span> <span class="n">get_run_and_prefix</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Metric</span><span class="p">(</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">step</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kiril Klein, Mikkel Odgaard, Maria Montgomery, Stephan Lorenzen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

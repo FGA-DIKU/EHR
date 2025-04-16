@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>corebehrt.azure.util.job &mdash; CoreBEHRT v2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=aa039f9c"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            CoreBEHRT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../source/modules.html">corebehrt</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">CoreBEHRT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">corebehrt.azure.util.job</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for corebehrt.azure.util.job</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">uuid</span> <span class="kn">import</span> <span class="n">uuid4</span>
+
+<span class="kn">from</span> <span class="nn">corebehrt.azure.util</span> <span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">check_azure</span><span class="p">,</span> <span class="n">ml_client</span>
+<span class="kn">from</span> <span class="nn">corebehrt.azure.util.suppress</span> <span class="kn">import</span> <span class="n">suppress_warnings</span>
+<span class="kn">from</span> <span class="nn">corebehrt.azure.util.config</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">prepare_config</span><span class="p">,</span>
+    <span class="n">prepare_job_command_args</span><span class="p">,</span>
+    <span class="n">parse_args</span><span class="p">,</span>
+    <span class="n">save_config</span><span class="p">,</span>
+    <span class="n">to_yaml_str</span><span class="p">,</span>
+    <span class="n">cleanup_configs</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">corebehrt.azure.util.test</span> <span class="kn">import</span> <span class="n">evaluate_run</span>
+
+
+<div class="viewcode-block" id="create">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.job.create">[docs]</a>
+<span class="k">def</span> <span class="nf">create</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">compute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">register_output</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="n">log_system_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">test_cfg_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">as_component</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;command&quot;</span><span class="p">:</span>  <span class="c1"># noqa: F821</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates the Azure command/job object. Job input/output</span>
+<span class="sd">    configuration is loaded from the components module.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Load component</span>
+    <span class="n">component</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;corebehrt.azure.components.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">setup</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">INPUTS</span><span class="p">,</span>
+        <span class="n">outputs</span><span class="o">=</span><span class="n">component</span><span class="o">.</span><span class="n">OUTPUTS</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+        <span class="n">compute</span><span class="o">=</span><span class="n">compute</span><span class="p">,</span>
+        <span class="n">register_output</span><span class="o">=</span><span class="n">register_output</span><span class="p">,</span>
+        <span class="n">log_system_metrics</span><span class="o">=</span><span class="n">log_system_metrics</span><span class="p">,</span>
+        <span class="n">test_cfg_file</span><span class="o">=</span><span class="n">test_cfg_file</span><span class="p">,</span>
+        <span class="n">as_component</span><span class="o">=</span><span class="n">as_component</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="setup">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.job.setup">[docs]</a>
+<span class="k">def</span> <span class="nf">setup</span><span class="p">(</span>
+    <span class="n">job</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">outputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">compute</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">register_output</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="n">log_system_metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">test_cfg_file</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">as_component</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sets up the Azure job.</span>
+
+<span class="sd">    :param job: Name of job.</span>
+<span class="sd">    :param inputs: argument configuration for input directories, i.e. a mapping</span>
+<span class="sd">        to configuration elements, typically in the paths sub-config.</span>
+<span class="sd">    :param outputs: argument configuration for output directories.</span>
+<span class="sd">    :param config: The config for the current job.</span>
+<span class="sd">    :param compute: The azure compute to use for the job.</span>
+<span class="sd">    :register_output: A mapping from output id to name, if the output should be</span>
+<span class="sd">        registered as a data asset.</span>
+<span class="sd">    :log_system_metrics: If true, logs GPU/CPU/mem usage</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check_azure</span><span class="p">()</span>
+
+    <span class="c1"># Prepare command</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;python -m corebehrt.azure.components.</span><span class="si">{</span><span class="n">job</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Make sure config is read-able -&gt; save it in the root folder.</span>
+    <span class="n">cfg_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">job</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">save_config</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+    <span class="c1"># Prepare input and output paths</span>
+    <span class="n">input_values</span><span class="p">,</span> <span class="n">input_cmds</span> <span class="o">=</span> <span class="n">prepare_job_command_args</span><span class="p">(</span>
+        <span class="n">config</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="n">require_path</span><span class="o">=</span><span class="ow">not</span> <span class="n">as_component</span>
+    <span class="p">)</span>
+    <span class="n">output_values</span><span class="p">,</span> <span class="n">output_cmds</span> <span class="o">=</span> <span class="n">prepare_job_command_args</span><span class="p">(</span>
+        <span class="n">config</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="s2">&quot;outputs&quot;</span><span class="p">,</span> <span class="n">register_output</span><span class="o">=</span><span class="n">register_output</span><span class="p">,</span> <span class="n">require_path</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Add input and output arguments to cmd.</span>
+    <span class="n">cmd</span> <span class="o">+=</span> <span class="n">input_cmds</span> <span class="o">+</span> <span class="n">output_cmds</span>
+
+    <span class="c1"># Add config name to cmd</span>
+    <span class="n">cmd</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; --config </span><span class="si">{</span><span class="n">cfg_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Add log_system_metrics if set</span>
+    <span class="k">if</span> <span class="n">log_system_metrics</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; --log_system_metrics&quot;</span>
+
+    <span class="c1"># Add test argument if test_cfg_file is set</span>
+    <span class="k">if</span> <span class="n">test_cfg_file</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; --test </span><span class="si">{</span><span class="n">test_cfg_file</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Description = config as yaml in code block</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">&quot;```</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">to_yaml_str</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;```&quot;</span>
+
+    <span class="c1"># Create job</span>
+    <span class="kn">from</span> <span class="nn">azure.ai.ml</span> <span class="kn">import</span> <span class="n">command</span>
+
+    <span class="n">ts</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">-%H%M%S&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">command</span><span class="p">(</span>
+        <span class="n">code</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
+        <span class="n">command</span><span class="o">=</span><span class="n">cmd</span><span class="p">,</span>
+        <span class="n">inputs</span><span class="o">=</span><span class="n">input_values</span><span class="p">,</span>
+        <span class="n">outputs</span><span class="o">=</span><span class="n">output_values</span><span class="p">,</span>
+        <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;CoreBEHRT@latest&quot;</span><span class="p">,</span>
+        <span class="n">compute</span><span class="o">=</span><span class="n">compute</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">job</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="run">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.job.run">[docs]</a>
+<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="n">job</span><span class="p">,</span> <span class="n">experiment</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Starts the given job in the given experiment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check_azure</span><span class="p">()</span>
+
+    <span class="k">with</span> <span class="n">suppress_warnings</span><span class="p">():</span>
+        <span class="n">ml_client</span><span class="p">()</span><span class="o">.</span><span class="n">create_or_update</span><span class="p">(</span><span class="n">job</span><span class="p">,</span> <span class="n">experiment_name</span><span class="o">=</span><span class="n">experiment</span><span class="p">)</span>
+
+    <span class="n">cleanup_configs</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="run_main">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.job.run_main">[docs]</a>
+<span class="k">def</span> <span class="nf">run_main</span><span class="p">(</span>
+    <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">main</span><span class="p">:</span> <span class="nb">callable</span><span class="p">,</span>
+    <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">outputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Implements a wrapper for running CoreBEHRT scrips on the cluster.</span>
+<span class="sd">    Prepares input and outputs, sets up logging on Azure using MLFlow</span>
+<span class="sd">    (if available), and finally calls the main script.</span>
+
+<span class="sd">    :param job_name: Name of job</span>
+<span class="sd">    :param main: The main callable.</span>
+<span class="sd">    :param inputs: inputs configuration.</span>
+<span class="sd">    :param outputs: outputs configuration.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Parse command line args</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="n">inputs</span> <span class="o">|</span> <span class="n">outputs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="n">log_system_metrics</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_system_metrics&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">run_id</span>
+        <span class="n">cfg_path</span> <span class="o">=</span> <span class="n">prepare_config</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">outputs</span><span class="p">)</span>
+        <span class="n">main</span><span class="p">(</span><span class="n">cfg_path</span><span class="p">)</span>
+
+    <span class="c1"># Evaluate run if test param is given</span>
+    <span class="k">if</span> <span class="n">test_cfg_file</span> <span class="o">:=</span> <span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">evaluate_run</span><span class="p">(</span><span class="n">run_id</span><span class="p">,</span> <span class="n">job_name</span><span class="p">,</span> <span class="n">test_cfg_file</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kiril Klein, Mikkel Odgaard, Maria Montgomery, Stephan Lorenzen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

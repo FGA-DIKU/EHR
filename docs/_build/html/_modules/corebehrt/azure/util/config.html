@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>corebehrt.azure.util.config &mdash; CoreBEHRT v2.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=aa039f9c"></script>
+      <script src="../../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            CoreBEHRT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../usage/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../source/modules.html">corebehrt</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">CoreBEHRT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">corebehrt.azure.util.config</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for corebehrt.azure.util.config</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">argparse</span>
+<span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">join</span><span class="p">,</span> <span class="n">dirname</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">makedirs</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">import</span> <span class="nn">yaml</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+
+<span class="n">AZURE_CONFIG_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;.azure_job_configs&quot;</span>
+
+
+<div class="viewcode-block" id="config_path">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.config_path">[docs]</a>
+<span class="k">def</span> <span class="nf">config_path</span><span class="p">(</span>
+    <span class="n">cfg_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_job</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">default_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;corebehrt/configs/&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create the default path to the configuration file.</span>
+
+<span class="sd">    :param cfg_name: name of file</span>
+<span class="sd">    :param is_job: Boolean indicating whether the path is local (=False) or on</span>
+<span class="sd">        the cluster (=True)</span>
+<span class="sd">    :param default_folder: Folder to look for cfg_name (if is_job=False)</span>
+
+<span class="sd">    :return: Path to config.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AZURE_CONFIG_FOLDER</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">cfg_name</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+        <span class="k">if</span> <span class="n">is_job</span>
+        <span class="k">else</span> <span class="n">join</span><span class="p">(</span><span class="n">default_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cfg_name</span><span class="si">}</span><span class="s2">.yaml&quot;</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_config">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.load_config">[docs]</a>
+<span class="k">def</span> <span class="nf">load_config</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">job_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">default_folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;corebehrt/configs/&quot;</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the local config from the given path.</span>
+
+<span class="sd">    :param path: If given, load from this path.</span>
+<span class="sd">    :param job_name: If path is not given, load from &lt;default_folder&gt;/&lt;job_name&gt;.yaml</span>
+<span class="sd">    :param default_folder: Config folder if path is not given.</span>
+
+<span class="sd">    :return: dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">config_path</span><span class="p">(</span><span class="n">cfg_name</span><span class="o">=</span><span class="n">job_name</span><span class="p">,</span> <span class="n">default_folder</span><span class="o">=</span><span class="n">default_folder</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">cfg_file</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">cfg_file</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="save_config">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.save_config">[docs]</a>
+<span class="k">def</span> <span class="nf">save_config</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save the prepared config before starting the job</span>
+
+<span class="sd">    :param cfg_name: Name of config file.</span>
+<span class="sd">    :param cfg: Dictionary to be saved.</span>
+
+<span class="sd">    :return: Path to the saved config</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Make sure config is read-able -&gt; save it in the root folder.</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">config_path</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">,</span> <span class="n">is_job</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">makedirs</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">cfg_file</span><span class="p">:</span>
+        <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">cfg_file</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="to_yaml_str">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.to_yaml_str">[docs]</a>
+<span class="k">def</span> <span class="nf">to_yaml_str</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert the given config to a nicely formatted yaml string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="load_job_config">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.load_job_config">[docs]</a>
+<span class="k">def</span> <span class="nf">load_job_config</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Config&quot;</span><span class="p">:</span>  <span class="c1"># noqa: F821</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load the config on the cluster</span>
+
+<span class="sd">    :param cfg_name: Name of the configuration file to load.</span>
+
+<span class="sd">    :return: CoreBEHRT config object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">corebehrt.modules.setup.config</span> <span class="kn">import</span> <span class="n">load_config</span> <span class="k">as</span> <span class="n">cb_load_config</span>
+
+    <span class="c1"># Read the config file</span>
+    <span class="k">return</span> <span class="n">cb_load_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">,</span> <span class="n">is_job</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="save_job_config">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.save_job_config">[docs]</a>
+<span class="k">def</span> <span class="nf">save_job_config</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="s2">&quot;Config&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>  <span class="c1"># noqa: F821</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Save the config on the cluster</span>
+
+<span class="sd">    :param job_name: Name of job.</span>
+<span class="sd">    :param cfg: CoreBEHRT config object to be saved.</span>
+
+<span class="sd">    :return: Path to the saved config</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">config_path</span><span class="p">(</span><span class="n">cfg_name</span><span class="p">,</span> <span class="n">is_job</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">makedirs</span><span class="p">(</span><span class="n">dirname</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cfg</span><span class="o">.</span><span class="n">save_to_yaml</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">path</span></div>
+
+
+
+<div class="viewcode-block" id="cleanup_configs">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.cleanup_configs">[docs]</a>
+<span class="k">def</span> <span class="nf">cleanup_configs</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Removes the temporary local config folder</span>
+<span class="sd">    To be called after job submission.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">AZURE_CONFIG_FOLDER</span><span class="p">,</span> <span class="n">ignore_errors</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_config">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.prepare_config">[docs]</a>
+<span class="k">def</span> <span class="nf">prepare_config</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">inputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepares the config on the cluster by substituing any input/output directories</span>
+<span class="sd">    passed as arguments in the job setup configuration file:</span>
+<span class="sd">    -&gt; The file is loaded.</span>
+<span class="sd">    -&gt; Arguments are read from the cmd-line</span>
+<span class="sd">    -&gt; Arguments are substituted into the configuration.</span>
+<span class="sd">    -&gt; The file is re-written.</span>
+
+<span class="sd">    :param cfg_path: Path to the configuration file</span>
+<span class="sd">    :param args: parsed arguments.</span>
+<span class="sd">    :param inputs: input argument configuration/mapping.</span>
+<span class="sd">    :param outputs: output argument configuration/mapping.</span>
+
+<span class="sd">    :return: Path to the config on the cluster</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Read the config file</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_job_config</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">])</span>
+
+    <span class="c1"># Update input arguments in config file</span>
+    <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">arg_cfg</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inputs</span> <span class="o">|</span> <span class="n">outputs</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">args</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">arg_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optional&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing argument &#39;</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+        <span class="n">_cfg</span> <span class="o">=</span> <span class="n">cfg</span>
+        <span class="n">cfg_path</span> <span class="o">=</span> <span class="n">arg_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;paths.</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">cfg_path</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">_cfg</span><span class="p">[</span><span class="n">step</span><span class="p">]</span> <span class="o">=</span> <span class="n">_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>  <span class="c1"># If it does not exists/is null</span>
+            <span class="n">_cfg</span> <span class="o">=</span> <span class="n">_cfg</span><span class="p">[</span><span class="n">step</span><span class="p">]</span>
+        <span class="n">_cfg</span><span class="p">[</span><span class="n">cfg_path</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+
+    <span class="c1"># Overwrite config file</span>
+    <span class="k">return</span> <span class="n">save_job_config</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;config&quot;</span><span class="p">],</span> <span class="n">cfg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_args">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.parse_args">[docs]</a>
+<span class="k">def</span> <span class="nf">parse_args</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parses the arguments from the command line</span>
+
+<span class="sd">    :param parse_args: The argument configuration mapping for inputs and outputs.</span>
+
+<span class="sd">    :return: A dictionary mapping keys from args to the values passed to the</span>
+<span class="sd">        command line.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;--</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--log_system_metrics&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--config&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--test&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">vars</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="prepare_job_command_args">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.prepare_job_command_args">[docs]</a>
+<span class="k">def</span> <span class="nf">prepare_job_command_args</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">register_output</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="n">require_path</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prepare the input/output dictionary and construct the input/output</span>
+<span class="sd">    part of the job command string.</span>
+
+<span class="sd">    :param config: Configuration dictionary.</span>
+<span class="sd">    :param args: Job args configuration.</span>
+<span class="sd">    :param _type: &quot;inputs&quot; or &quot;outputs&quot;</span>
+<span class="sd">    :param register_output: Register output mapping for _type=&quot;outputs&quot;</span>
+<span class="sd">    :param require_path: If True, paths must be set for non-optional arguments,</span>
+<span class="sd">        or an exception will be raised. &lt;require_path&gt; is always false for</span>
+<span class="sd">        outputs, and is only true for inputs, if the job is setup as a</span>
+<span class="sd">        pipeline command (in which case the pipeline construction sets the</span>
+<span class="sd">        paths before job submission).</span>
+
+<span class="sd">    :return: Tuple with input/output dictionary and argument part of command.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">_type</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;inputs&quot;</span><span class="p">,</span> <span class="s2">&quot;outputs&quot;</span><span class="p">)</span>
+    <span class="n">require_path</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s2">&quot;outputs&quot;</span> <span class="k">else</span> <span class="n">require_path</span>
+
+    <span class="kn">from</span> <span class="nn">azure.ai.ml</span> <span class="kn">import</span> <span class="n">Input</span><span class="p">,</span> <span class="n">Output</span>
+
+    <span class="n">job_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">azure_arg_cls</span> <span class="o">=</span> <span class="n">Input</span> <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s2">&quot;inputs&quot;</span> <span class="k">else</span> <span class="n">Output</span>
+    <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">arg_cfg</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">get_path_from_cfg</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">arg</span><span class="p">,</span> <span class="n">arg_cfg</span><span class="p">)</span>
+        <span class="n">optional</span> <span class="o">=</span> <span class="n">arg_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;optional&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">require_path</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">optional</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing required path: </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Set input/output</span>
+        <span class="n">job_args</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span> <span class="o">=</span> <span class="n">azure_arg_cls</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">=</span><span class="n">value</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">arg_cfg</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">],</span> <span class="n">optional</span><span class="o">=</span><span class="n">optional</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Update command</span>
+        <span class="k">if</span> <span class="n">optional</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">require_path</span><span class="p">:</span>
+            <span class="c1"># Optional pipeline inputs.</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; $[[--&quot;</span> <span class="o">+</span> <span class="n">arg</span> <span class="o">+</span> <span class="s2">&quot; ${{&quot;</span> <span class="o">+</span> <span class="n">_type</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">arg</span> <span class="o">+</span> <span class="s2">&quot;}}]]&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="s2">&quot; --&quot;</span> <span class="o">+</span> <span class="n">arg</span> <span class="o">+</span> <span class="s2">&quot; ${{&quot;</span> <span class="o">+</span> <span class="n">_type</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">arg</span> <span class="o">+</span> <span class="s2">&quot;}}&quot;</span>
+
+        <span class="c1"># Must we register the output?</span>
+        <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s2">&quot;outputs&quot;</span> <span class="ow">and</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">register_output</span><span class="p">:</span>
+            <span class="n">job_args</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">register_output</span><span class="p">[</span><span class="n">arg</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">job_args</span><span class="p">,</span> <span class="n">cmd</span></div>
+
+
+
+<div class="viewcode-block" id="get_path_from_cfg">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.get_path_from_cfg">[docs]</a>
+<span class="k">def</span> <span class="nf">get_path_from_cfg</span><span class="p">(</span><span class="n">cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arg_cfg</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper for reading a config value from config (cfg), given</span>
+<span class="sd">    the argument name (arg) and configuration (arg_cfg)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="n">arg_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;paths.</span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="c1"># Traverse config path</span>
+    <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+        <span class="c1"># Check if present</span>
+        <span class="k">if</span> <span class="n">cfg</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">step</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cfg</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># Next step</span>
+        <span class="n">cfg</span> <span class="o">=</span> <span class="n">cfg</span><span class="p">[</span><span class="n">step</span><span class="p">]</span>
+
+    <span class="c1"># Map resulting value</span>
+    <span class="k">return</span> <span class="n">map_azure_path</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="map_azure_path">
+<a class="viewcode-back" href="../../../../source/corebehrt.azure.util.html#corebehrt.azure.util.config.map_azure_path">[docs]</a>
+<span class="k">def</span> <span class="nf">map_azure_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Maps the given path to the correct format. Expect format of input path is:</span>
+
+<span class="sd">        azureml:* =&gt; Already Azure path, return as is.</span>
+<span class="sd">        {researher-data,sp-data}:&lt;path&gt; =&gt; map to path on given data storage.</span>
+<span class="sd">        {asset_name}:{asset_version} =&gt; map to Azure asset.</span>
+<span class="sd">        * =&gt; assumed local path, return as is.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">path</span> <span class="ow">or</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;azureml:&quot;</span><span class="p">):</span>
+        <span class="c1"># Nothing to do.</span>
+        <span class="k">return</span> <span class="n">path</span>
+
+    <span class="n">dstore</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">dstore</span> <span class="o">=</span> <span class="n">dstore</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dstore</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;researcher_data&quot;</span><span class="p">,</span> <span class="s2">&quot;sp_data&quot;</span><span class="p">):</span>
+        <span class="c1"># Assumed to be path on datastore, format: &lt;dstore&gt;:&lt;tail&gt;</span>
+        <span class="k">return</span> <span class="n">join</span><span class="p">(</span><span class="s2">&quot;azureml://datastores&quot;</span><span class="p">,</span> <span class="n">dstore</span><span class="p">,</span> <span class="s2">&quot;paths&quot;</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Assumed to be an asset, format &lt;asset_name&gt;:&lt;asset_version&gt;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;azureml:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Kiril Klein, Mikkel Odgaard, Maria Montgomery, Stephan Lorenzen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
