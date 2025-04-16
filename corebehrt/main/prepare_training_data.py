@@ -18,6 +18,7 @@ from corebehrt.functional.io_operations.save import save_pids_splits
 
 CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
 from corebehrt.constants.paths import FOLDS_FILE, TEST_PIDS_FILE
+from corebehrt.modules.preparation.dataset import PatientDataset
 
 
 def main_prepare_data(config_path):
@@ -49,7 +50,7 @@ def main_prepare_data(config_path):
         logger = logging.getLogger("prepare finetune data")
         logger.info("Preparing finetune data")
         # Prepare data
-        _ = DatasetPreparer(cfg).prepare_finetune_data()
+        _ = DatasetPreparer(cfg).prepare_finetune_data(mode="tuning")
 
         # Save splits from cohort selection
         folds_path = get_splits_path(cfg.paths)
@@ -59,6 +60,19 @@ def main_prepare_data(config_path):
         if os.path.exists(test_pids_file):
             test_pids = torch.load(test_pids_file)
             torch.save(test_pids, join(cfg.paths.prepared_data, TEST_PIDS_FILE))
+    
+    elif cfg.data.type == "test":
+        DirectoryPreparer(cfg).setup_prepare_finetune()
+        logger = logging.getLogger("prepare test data")
+        logger.info("Preparing test data")
+        # Prepare data
+        combined_data = []
+        for mode in cfg.data.get("test_modes", ["held_out"]):
+            data = DatasetPreparer(cfg).prepare_finetune_data(mode=mode)
+            combined_data.append(data)
+
+        combined_patient_data = PatientDataset.combine_datasets(combined_data)
+        combined_patient_data.save(cfg.paths.prepared_data)
 
     else:
         raise ValueError(f"Unsupported data type: {cfg.data.type}")

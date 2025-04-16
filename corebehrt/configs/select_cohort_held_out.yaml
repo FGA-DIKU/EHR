@@ -5,14 +5,14 @@ logging:
 paths:
   ### Inputs
   features: ./outputs/features
-  initial_pids: ./outputs/tokenized/pids_tuning.pt # Initial patients to select from [list of pids] (optional)
+  initial_pids: ./outputs/tokenized/pids_held_out.pt # Initial patients to select from [list of pids] (optional)
   outcomes: ./outputs/outcomes/
   exposure: TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
   outcome: TEST_OUTCOME.csv # Outcome
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
-  cohort: ./outputs/cohort/finetune/ # Data directory
+  cohort: ./outputs/cohort/held_out # Data directory
 
 
 
@@ -36,5 +36,4 @@ index_date: # if not provided we can use exposures to get the index dates
     n_hours_from_exposure: -24 # negative means before exposure, 0 by default
 
 cv_folds: 1 # can be set to 1 if only a simple train/val split is needed
-val_ratio: 0.1 # only used if cv_folds is set to 1
-test_ratio: 0.1 # can be set to 1 for test set creation only
+test_ratio: 1 # can be set to 1 for test set creation only

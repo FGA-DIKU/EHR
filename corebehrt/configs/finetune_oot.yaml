@@ -5,9 +5,9 @@ logging:
 paths:
 ## INPUTS
   prepared_data: ./outputs/finetuning/processed_data/
-  test_pids: ./outputs/cohort_absolute/test_pids.pt # path to file with pids to use for test set
+  test_pids: ./outputs/cohort/absolute/test_pids.pt # path to file with pids to use for test set
   pretrain_model: ./outputs/pretraining
-  cohort: ./outputs/cohort
+  cohort: ./outputs/cohort/absolute/ 
   # restart_model: ... # Use for restarting from checkpoint
   
 
