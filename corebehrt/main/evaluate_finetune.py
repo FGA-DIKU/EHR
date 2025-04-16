@@ -1,8 +1,7 @@
 import logging
 import os
 from os.path import join
-
-# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+import pandas as pd
 import torch
 
 from corebehrt.constants.paths import (
@@ -11,7 +10,7 @@ from corebehrt.constants.paths import (
     FINETUNE_CFG
 )
 from corebehrt.functional.setup.args import get_args
-from corebehrt.main.helper.evaluate_finetune import evaluate_fold
+from corebehrt.main.helper.evaluate_finetune import inference_fold, compute_metrics
 from corebehrt.main.helper.finetune_cv import check_for_overlap
 from corebehrt.modules.monitoring.metric_aggregation import (
     compute_and_save_scores_mean_std,
@@ -20,7 +19,6 @@ from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientD
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.config import instantiate_function
-import pandas as pd
 
 CONFIG_PATH = "./corebehrt/configs/finetune_evaluate.yaml"
 
@@ -33,13 +31,12 @@ def main_evaluate(config_path):
     # Logger
     logger = logging.getLogger("evaluate")
 
-    # Setup config and metrics
+    # Setup config
     cfg.trainer_args = {}
     batch_size_value = cfg.get("test_batch_size", 128)
     for key in ['test_batch_size', 'effective_batch_size', 'batch_size']:
         cfg.trainer_args[key] = batch_size_value
     cfg.paths.restart_model = cfg.paths.model
-    # metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()} if cfg.metrics else {}
 
     # Load data
     loaded_data = torch.load(join(cfg.paths.test_data_dir, PREPARED_ALL_PATIENTS), weights_only=False)
@@ -48,20 +45,21 @@ def main_evaluate(config_path):
     test_pids = test_data.get_pids()
     folds = torch.load(join(cfg.paths.folds_dir, FOLDS_FILE), weights_only=False)
     check_for_overlap(folds, test_pids, logger)
-    
-    # Save predictions
+    targets = test_data.get_outcomes()
+
+    # Get predictions
     combined_df = pd.DataFrame({
         'pid': test_pids,
-        'target': test_data.get_outcomes(),
+        'target': targets,
     })
     if cfg.get("save_info", False):
         for k, v in cfg.save_info.items():
             func = instantiate_function(v)
             combined_df[k] = func(test_dataset)
 
-    all_metrics = []
+    all_probas   = []
     for n_fold, fold in enumerate(folds, start=1):
-        probas = evaluate_fold(
+        probas = inference_fold(
             finetune_folder=cfg.paths.model,
             cfg=cfg,
             test_data=test_dataset,
@@ -69,14 +67,11 @@ def main_evaluate(config_path):
             fold=n_fold,
         )
         combined_df[f'fold_{n_fold}_probas'] = probas
+        all_probas.append(probas)
 
+    # Save combined predictions and metrics if specified
     combined_df.to_csv(join(cfg.paths.predictions, "predictions.csv"), index=False)
-    
-    # # Get average metrics
-    # average_metrics = {key: sum(d[key] for d in all_metrics) / len(all_metrics) for key in all_metrics[0]}
-    # logger.info(f"Average metrics:")
-    # for key, value in average_metrics.items():
-    #     logger.info(f"{key}: {value}")
+    compute_metrics(cfg, targets, all_probas, logger)
 
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)

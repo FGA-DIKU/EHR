@@ -63,12 +63,12 @@ class BaseMetric:
     def __init__(self, threshold=0.5) -> None:
         self.threshold = threshold
 
-    def _return_probas_and_targrets(self, outputs, batch):
+    def _return_probas_and_targets(self, outputs, batch):
         probas = torch.sigmoid(outputs.logits)
         return probas.cpu(), batch["target"].cpu()
 
     def _return_predictions_and_targets(self, outputs, batch):
-        probas, targets = self._return_probas_and_targrets(outputs, batch)
+        probas, targets = self._return_probas_and_targets(outputs, batch)
         predictions = (probas > self.threshold).long().view(-1)
         return predictions, targets
 
@@ -120,7 +120,7 @@ class Recall(BaseMetric):
 
 class ROC_AUC(BaseMetric):
     def __call__(self, outputs, batch):
-        probas, targets = self._return_probas_and_targrets(outputs, batch)
+        probas, targets = self._return_probas_and_targets(outputs, batch)
         try:
             return roc_auc_score(targets, probas)
         except:
@@ -130,7 +130,7 @@ class ROC_AUC(BaseMetric):
 
 class PR_AUC(BaseMetric):
     def __call__(self, outputs, batch):
-        probas, targets = self._return_probas_and_targrets(outputs, batch)
+        probas, targets = self._return_probas_and_targets(outputs, batch)
         try:
             return average_precision_score(targets, probas)
         except:
@@ -164,7 +164,7 @@ class Percentage_Positives(BaseMetric):
 
 class Mean_Probability(BaseMetric):
     def __call__(self, outputs, batch):
-        probas, _ = self._return_probas_and_targrets(outputs, batch)
+        probas, _ = self._return_probas_and_targets(outputs, batch)
         return probas.mean().item()
 
 

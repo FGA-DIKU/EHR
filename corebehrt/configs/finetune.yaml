@@ -13,7 +13,7 @@ paths:
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 evaluate: false # evaluate best model on test sets
-
+  
 model:
   cls:
     _target_: ehr2vec.model.heads.ClassifierGRU

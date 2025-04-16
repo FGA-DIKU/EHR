@@ -10,9 +10,11 @@ paths:
 
 test_batch_size: 128
 
-# metrics:
-#   roc_auc: sklearn.metrics.roc_auc_score
-  # pr_auc: corebehrt.functional.evaluation.metrics.PR_AUC
+metrics:
+  roc_auc: 
+    _target_: corebehrt.functional.utils.metrics.ROC_AUC
+  pr_auc: 
+    _target_: corebehrt.functional.utils.metrics.PR_AUC
 
 save_info: 
   sequence_length: 
