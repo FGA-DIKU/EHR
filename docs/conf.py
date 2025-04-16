@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -24,6 +28,14 @@ extensions = [
     'sphinx.ext.intersphinx',    # Link to other project's documentation
 ]
 
+# Add to conf.py
+autodoc_mock_imports = [
+    'azure',
+    'numpy',
+    'pandas',
+    'torch',
+    # Add any other external dependencies that might cause import errors
+]
 # Intersphinx configuration
 intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),

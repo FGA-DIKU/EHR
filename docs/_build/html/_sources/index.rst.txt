@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to CoreBEHRT
-===================
+================================================================================
 
 CoreBEHRT is a powerful tool for processing Electronic Health Records (EHR) data using BERT-based models.
 
@@ -12,38 +12,12 @@ CoreBEHRT is a powerful tool for processing Electronic Health Records (EHR) data
    This project is under active development.
 
 Quick Links
-----------
-* :ref:`installation`
-* :ref:`quickstart`
-* :ref:`api-reference`
+================================================================================
+* :doc:`usage/installation`
 
 .. toctree::
    :maxdepth: 2
    :caption: Getting Started
 
    usage/installation
-   usage/quickstart
-   usage/configuration
-
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guide
-
-   user_guide/data_preparation
-   user_guide/training
-   user_guide/evaluation
-   user_guide/inference
-
-.. toctree::
-   :maxdepth: 2
-   :caption: API Reference
-
-   code/modules
-   code/functional
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Development
-
-   contributing
-   changelog
+   source/modules
