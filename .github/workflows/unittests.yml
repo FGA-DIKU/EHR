@@ -21,7 +21,11 @@ jobs:
           pip install -r requirements.txt
           pip install coverage
 
-      - name: "Run Tests and Generate Coverage Report"
+      - name: "Run Unit Tests"
+        run: |
+          python -m unittest discover
+
+      - name: "Run Coverage and Generate Report"
         run: |
           coverage run --omit=_remote_module_non_scriptable.py -m unittest discover
           coverage report > coverage.txt
