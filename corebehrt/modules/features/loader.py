@@ -111,9 +111,12 @@ class ShardLoader:
                 shard_path = os.path.join(path_name, shard)
                 df = self.read_file(shard_path)
                 if patients_info is not None:
-                    yield df, patients_info[
-                        patients_info[PID_COL].isin(df[PID_COL].unique())
-                    ]
+                    yield (
+                        df,
+                        patients_info[
+                            patients_info[PID_COL].isin(df[PID_COL].unique())
+                        ],
+                    )
                 else:
                     yield df, None
 

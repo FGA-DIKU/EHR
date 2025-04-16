@@ -10,7 +10,6 @@ from corebehrt.functional.io_operations.save import save_pids_splits
 
 
 class TestSaveFunctions(unittest.TestCase):
-
     def setUp(self):
         # Create a temporary directory
         self.test_dir = tempfile.mkdtemp()

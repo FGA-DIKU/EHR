@@ -6,8 +6,8 @@ Thank you for considering contributing to our project! Please follow the guideli
 
 ## Code Style & Quality
 
-- **Formatting:** Use **Black** (`≥25.1.0`) for code formatting.
-- **Linting:** Use **Flake8** for code quality checks.
+- **Formatting:** Use **ruff** for code formatting.
+- **Linting:** Use **ruff** for code quality checks.
 - **Typing:** Add type hints for function parameters and return values.
 - **Structure:**  
   - Follow the project directory structure.  
@@ -25,14 +25,21 @@ Thank you for considering contributing to our project! Please follow the guideli
   python -m unittest discover -s tests
   ```
 
+   You can generate a coverage report by running:
+
+   ```bash
+   coverage run -m unittest discover -s tests
+   coverage report
+   ```
+
 ## Pull Request Process
 
 1. Fork the repository and create a feature branch (`git checkout -b feature/amazing-feature`)
 2. Make your changes and ensure formatting and linting pass:
 
    ```bash
-   black corebehrt tests
-   flake8 corebehrt tests --select=E9,F63,F7,F82,U100,E711,E712,E713,E714,E721,F401,F402,F405,F811,F821,F822,F823,F831,F841,F901,
+   ruff format --check corebehrt tests
+   ruff check corebehrt tests --select E9,F63,F7,F82,E711,E712,E713,E714,E721,F401,F402,F405,F811,F821,F822,F823,F841,F901
    ```
 
 3. Commit using conventional commit messages:

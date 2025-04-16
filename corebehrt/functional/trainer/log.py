@@ -131,7 +131,7 @@ def log_number_of_trainable_parameters(model: nn.Module) -> None:
     footer_rows = [
         (
             "Trainable params:",
-            f"{get_human_readable_count(total_trainable)} ({total_trainable/total_params*100:.1f}%)",
+            f"{get_human_readable_count(total_trainable)} ({total_trainable / total_params * 100:.1f}%)",
         ),
         (
             "Non-trainable params:",
@@ -140,7 +140,7 @@ def log_number_of_trainable_parameters(model: nn.Module) -> None:
         ("Total params:", get_human_readable_count(total_params)),
         (
             "Model size (MB):",
-            f"{(total_params * 4) / (1024*1024):.2f}",
+            f"{(total_params * 4) / (1024 * 1024):.2f}",
         ),  # Assuming float32
     ]
 
