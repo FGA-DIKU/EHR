@@ -10,6 +10,8 @@ paths:
 
 test_batch_size: 128
 
+return_embeddings: True
+
 metrics:
   roc_auc: 
     _target_: corebehrt.functional.utils.metrics.ROC_AUC

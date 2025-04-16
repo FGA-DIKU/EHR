@@ -13,7 +13,7 @@ from corebehrt.constants.paths import (
     PRETRAIN_CFG,
     PREPARE_PRETRAIN_CFG,
     PREPARE_FINETUNE_CFG,
-    EVALUATE_CFG
+    EVALUATE_CFG,
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config

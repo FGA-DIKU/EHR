@@ -3,6 +3,7 @@ import yaml
 import json
 from os.path import join
 
+
 class Config(dict):
     """Config class that allows for dot notation."""
 
@@ -137,6 +138,7 @@ def instantiate_function(instantiate_config, **extra_kwargs):
     kwargs.update(extra_kwargs)
 
     return lambda *args, **kwargs_: func(*args, **{**kwargs, **kwargs_})
+
 
 def load_config(config_file):
     """Loads a yaml config file."""

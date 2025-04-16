@@ -4,11 +4,7 @@ from os.path import join
 import pandas as pd
 import torch
 
-from corebehrt.constants.paths import (
-    FOLDS_FILE,
-    PREPARED_ALL_PATIENTS,
-    FINETUNE_CFG
-)
+from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS, FINETUNE_CFG
 from corebehrt.functional.setup.args import get_args
 from corebehrt.main.helper.evaluate_finetune import inference_fold, compute_metrics
 from corebehrt.main.helper.finetune_cv import check_for_overlap
@@ -34,12 +30,14 @@ def main_evaluate(config_path):
     # Setup config
     cfg.trainer_args = {}
     batch_size_value = cfg.get("test_batch_size", 128)
-    for key in ['test_batch_size', 'effective_batch_size', 'batch_size']:
+    for key in ["test_batch_size", "effective_batch_size", "batch_size"]:
         cfg.trainer_args[key] = batch_size_value
     cfg.paths.restart_model = cfg.paths.model
 
     # Load data
-    loaded_data = torch.load(join(cfg.paths.test_data_dir, PREPARED_ALL_PATIENTS), weights_only=False)
+    loaded_data = torch.load(
+        join(cfg.paths.test_data_dir, PREPARED_ALL_PATIENTS), weights_only=False
+    )
     test_data = PatientDataset(loaded_data)
     test_dataset = BinaryOutcomeDataset(test_data.patients)
     test_pids = test_data.get_pids()
@@ -48,30 +46,40 @@ def main_evaluate(config_path):
     targets = test_data.get_outcomes()
 
     # Get predictions
-    combined_df = pd.DataFrame({
-        'pid': test_pids,
-        'target': targets,
-    })
+    combined_df = pd.DataFrame(
+        {
+            "pid": test_pids,
+            "target": targets,
+        }
+    )
     if cfg.get("save_info", False):
         for k, v in cfg.save_info.items():
             func = instantiate_function(v)
             combined_df[k] = func(test_dataset)
 
-    all_probas   = []
+    all_probas = []
     for n_fold, fold in enumerate(folds, start=1):
-        probas = inference_fold(
+        probas, embeddings = inference_fold(
             finetune_folder=cfg.paths.model,
             cfg=cfg,
             test_data=test_dataset,
             logger=logger,
             fold=n_fold,
         )
-        combined_df[f'fold_{n_fold}_probas'] = probas
+        combined_df[f"fold_{n_fold}_probas"] = probas
         all_probas.append(probas)
+
+        # Save embeddings if specified
+        if embeddings is not None:
+            save_emb_path = join(cfg.paths.predictions, "embeddings", f"fold_{n_fold}")
+            os.makedirs(save_emb_path, exist_ok=True)
+            torch.save(embeddings, join(save_emb_path, "embeddings.pt"))
+            torch.save(test_pids, join(save_emb_path, "pids.pt"))
 
     # Save combined predictions and metrics if specified
     combined_df.to_csv(join(cfg.paths.predictions, "predictions.csv"), index=False)
     compute_metrics(cfg, targets, all_probas, logger)
+
 
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)

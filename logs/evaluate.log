@@ -959,3 +959,567 @@ Model size (MB):      2.18
 2025-04-16 16:21:02,799 - evaluate - INFO - Average metrics:
 2025-04-16 16:21:02,799 - evaluate - INFO - roc_auc: 0.4702
 2025-04-16 16:21:02,799 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 17:45:31,591 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 17:45:31,602 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 17:45:31,602 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 17:45:31,602 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 17:45:31,610 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 17:45:31,610 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 17:45:31,644 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 17:45:31,645 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 17:45:31,645 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 17:45:31,645 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 17:45:31,858 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 17:45:31,860 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 17:45:31,860 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 17:45:31,865 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 17:45:31,865 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 17:45:31,878 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 17:45:31,879 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 17:45:31,879 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 17:45:31,879 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 17:45:32,034 - evaluate - INFO - Average metrics:
+2025-04-16 17:45:32,034 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 17:45:32,034 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 17:46:58,324 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 17:46:58,332 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 17:46:58,332 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 17:46:58,332 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 17:46:58,336 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 17:46:58,336 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 17:46:58,350 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 17:46:58,351 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 17:46:58,351 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 17:46:58,351 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 17:46:58,516 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 17:46:58,516 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 17:46:58,516 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 17:46:58,521 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 17:46:58,521 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 17:46:58,534 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 17:46:58,534 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 17:46:58,534 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 17:46:58,534 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 17:46:58,690 - evaluate - INFO - Average metrics:
+2025-04-16 17:46:58,690 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 17:46:58,690 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 18:02:29,655 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 18:02:29,668 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:02:29,668 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:02:29,668 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:02:29,675 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:02:29,675 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:02:29,709 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:02:29,710 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:02:29,710 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:02:29,710 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:02:58,039 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:02:58,046 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:02:58,046 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:02:58,046 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:02:58,051 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:02:58,051 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:02:58,064 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:02:58,065 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:02:58,065 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:02:58,065 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:02:58,267 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 18:02:58,268 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:02:58,268 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:02:58,274 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:02:58,274 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:02:58,289 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:02:58,289 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:02:58,290 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:02:58,290 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:02:58,454 - evaluate - INFO - Average metrics:
+2025-04-16 18:02:58,454 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 18:02:58,454 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 18:04:23,527 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 18:04:23,535 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:04:23,535 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:04:23,535 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:04:23,540 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:04:23,540 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:04:23,554 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:04:23,554 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:04:23,554 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:04:23,554 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:05:42,552 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:05:42,558 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:05:42,558 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:05:42,558 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:05:42,560 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:05:42,560 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:05:42,572 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:05:42,573 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:05:42,573 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:05:42,573 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:09:58,805 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:09:58,811 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:09:58,811 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:09:58,811 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:09:58,816 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:09:58,816 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:09:58,829 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:09:58,829 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:09:58,829 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:09:58,829 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:13:31,482 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:13:31,489 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:13:31,489 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:13:31,489 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:13:31,490 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:13:31,490 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:13:31,503 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:13:31,503 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:13:31,503 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:13:31,503 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:13:31,691 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 18:13:31,692 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:13:31,692 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:13:31,702 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:13:31,702 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:13:31,716 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:13:31,717 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:13:31,717 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:13:31,717 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:13:31,895 - evaluate - INFO - Average metrics:
+2025-04-16 18:13:31,895 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 18:13:31,895 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 18:16:24,062 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 18:16:24,069 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:16:24,069 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:16:24,069 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:16:24,070 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:16:24,070 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:16:24,083 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:16:24,084 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:16:24,084 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:16:24,084 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:16:39,599 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:16:39,606 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:16:39,606 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:16:39,606 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:16:39,607 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:16:39,607 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:16:39,621 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:16:39,621 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:16:39,621 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:16:39,622 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:16:56,156 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:16:56,162 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:16:56,162 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:16:56,162 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:16:56,164 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:16:56,164 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:16:56,177 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:16:56,177 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:16:56,177 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:16:56,177 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:16:56,366 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 18:16:56,366 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:16:56,366 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:16:56,369 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:16:56,369 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:16:56,383 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:16:56,383 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:16:56,383 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:16:56,383 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:16:56,553 - evaluate - INFO - Average metrics:
+2025-04-16 18:16:56,553 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 18:16:56,553 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 18:23:20,566 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 18:23:20,577 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:23:20,577 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:23:20,577 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:23:20,585 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:23:20,585 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:23:20,619 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:23:20,620 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:23:20,620 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:23:20,620 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:23:20,846 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 18:23:20,846 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:23:20,846 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:23:20,850 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:23:20,850 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:23:20,864 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:23:20,865 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:23:20,866 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:23:20,866 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:23:21,042 - evaluate - INFO - Average metrics:
+2025-04-16 18:23:21,042 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 18:23:21,042 - evaluate - INFO - pr_auc: 0.0828
+2025-04-16 18:23:53,278 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 4 will be deleted.
+2025-04-16 18:23:53,284 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:23:53,284 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:23:53,284 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:23:53,285 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:23:53,285 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:23:53,299 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:23:53,299 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:23:53,299 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:23:53,299 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:24:05,912 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:24:05,919 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:24:05,919 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:24:05,919 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:24:05,924 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:24:05,924 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:24:05,937 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:24:05,938 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:24:05,938 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:24:05,938 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:24:17,131 - corebehrt.modules.setup.directory - WARNING - Directory './outputs/testing/held_out/predictions' is not empty. 2 will be deleted.
+2025-04-16 18:24:17,137 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_1
+2025-04-16 18:24:17,138 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:24:17,138 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_1/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:24:17,139 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:24:17,139 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:24:17,152 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:24:17,152 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:24:17,152 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:24:17,152 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:24:17,345 - corebehrt.modules.setup.manager - INFO - Checkpoint model path: ./outputs/finetuning/fold_2
+2025-04-16 18:24:17,345 - corebehrt.modules.setup.loader - INFO - No checkpoint provided. Loading last checkpoint.
+2025-04-16 18:24:17,345 - corebehrt.modules.setup.loader - INFO - Loading checkpoint from ./outputs/finetuning/fold_2/checkpoints/checkpoint_epoch999_end.pt
+2025-04-16 18:24:17,352 - corebehrt.modules.setup.manager - INFO - Initializing model
+2025-04-16 18:24:17,352 - corebehrt.modules.setup.initializer - INFO - Loading model from checkpoint
+2025-04-16 18:24:17,378 - corebehrt.modules.setup.loader - WARNING - missing state dict keys: []
+2025-04-16 18:24:17,379 - corebehrt.functional.trainer.log - INFO - 
+Model Parameter Summary:
+
+2025-04-16 18:24:17,379 - corebehrt.functional.trainer.log - INFO - Component           | Parameters | Trainable | Status   
+--------------------------------------------------------
+embeddings          | 292K       | 100.0%    | TRAINABLE
+encoder_layer_0     | 55.4K      | 100.0%    | TRAINABLE
+encoder_layer_1     | 55.5K      | 100.0%    | TRAINABLE
+encoder_layer_2     | 55.5K      | 100.0%    | TRAINABLE
+other               | 96         | 100.0%    | TRAINABLE
+classification_head | 112K       | 100.0%    | TRAINABLE
+--------------------------------------------------------
+Trainable params:     571K (100.0%)
+Non-trainable params: 0
+Total params:         571K
+Model size (MB):      2.18
+2025-04-16 18:24:17,379 - corebehrt.functional.trainer.log - INFO - 
+
+2025-04-16 18:24:17,556 - evaluate - INFO - Average metrics:
+2025-04-16 18:24:17,556 - evaluate - INFO - roc_auc: 0.4702
+2025-04-16 18:24:17,556 - evaluate - INFO - pr_auc: 0.0828

@@ -3,6 +3,7 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 
+
 def ROC_AUC(y_true, y_pred):
     """
     Calculate the ROC AUC score.
@@ -15,6 +16,7 @@ def ROC_AUC(y_true, y_pred):
     float: ROC AUC score.
     """
     return roc_auc_score(y_true, y_pred)
+
 
 def PR_AUC(y_true, y_pred):
     """

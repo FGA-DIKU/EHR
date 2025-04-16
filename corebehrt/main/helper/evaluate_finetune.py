@@ -2,12 +2,13 @@ import os
 from os.path import join
 from typing import List
 import torch
-import pandas as pd 
+import pandas as pd
 
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.inference import EHRInferenceRunner
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset
 from corebehrt.modules.setup.config import instantiate_function
+
 
 def inference_fold(
     finetune_folder: str,
@@ -25,28 +26,33 @@ def inference_fold(
     print(f"Model loaded from {fold_folder}")
 
     # Run inference
+    return_embeddings = cfg.get("return_embeddings", False)
     evaluater = EHRInferenceRunner(
         model=model,
         test_dataset=test_data,  # test only after training
         args=cfg.trainer_args,
         cfg=cfg,
     )
-    logits_tensor, targets_tensor = evaluater.inference_loop()    
+    logits_tensor, targets_tensor, embeddings_tensor = evaluater.inference_loop(
+        return_embeddings=return_embeddings
+    )
     probas = torch.sigmoid(logits_tensor).numpy()
-    
-    return probas
 
-def get_sequence_length(dataset:BinaryOutcomeDataset) -> List[int]:
+    return probas, embeddings_tensor
+
+
+def get_sequence_length(dataset: BinaryOutcomeDataset) -> List[int]:
     lengths = [len(patient.concepts) for patient in dataset.patients]
     return lengths
+
 
 def compute_metrics(cfg, targets, all_probas, logger):
     """
     Computes and saves metrics for each fold and the average metrics.
     """
-    if not hasattr(cfg, 'metrics') and cfg.metrics:
-        return 
-    
+    if not hasattr(cfg, "metrics") and cfg.metrics:
+        return
+
     metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()}
     fold_metrics_list = []
 

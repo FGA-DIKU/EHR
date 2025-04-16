@@ -8,9 +8,16 @@ class FineTuneHead(torch.nn.Module):
         self.pool = BiGRU(hidden_size)
 
     def forward(
-        self, hidden_states: torch.Tensor, attention_mask: torch.Tensor
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        return_embedding: bool = False,
     ) -> torch.Tensor:
-        return self.pool(hidden_states, attention_mask=attention_mask)
+        return self.pool(
+            hidden_states,
+            attention_mask=attention_mask,
+            return_embedding=return_embedding,
+        )
 
 
 class BiGRU(torch.nn.Module):
@@ -25,7 +32,10 @@ class BiGRU(torch.nn.Module):
         self.classifier = torch.nn.Linear(classifier_input_size, 1)
 
     def forward(
-        self, hidden_states: torch.Tensor, attention_mask: torch.Tensor
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        return_embedding: bool = False,
     ) -> torch.Tensor:
         lengths = attention_mask.sum(dim=1).cpu()
         packed = torch.nn.utils.rnn.pack_padded_sequence(
@@ -47,5 +57,7 @@ class BiGRU(torch.nn.Module):
             :, 0, self.hidden_size :
         ]  # First output from the backward pass
         x = torch.cat((forward_output, backward_output), dim=-1)
+        if return_embedding:
+            return x
         x = self.classifier(x)
         return x

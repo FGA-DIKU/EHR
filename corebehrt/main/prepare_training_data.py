@@ -60,7 +60,7 @@ def main_prepare_data(config_path):
         if os.path.exists(test_pids_file):
             test_pids = torch.load(test_pids_file)
             torch.save(test_pids, join(cfg.paths.prepared_data, TEST_PIDS_FILE))
-    
+
     elif cfg.data.type == "test":
         config_name = os.path.basename(config_path)
         DirectoryPreparer(cfg).setup_prepare_finetune(name=config_name)
