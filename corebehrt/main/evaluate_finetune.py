@@ -73,7 +73,8 @@ def main_evaluate(config_path):
         if embeddings is not None:
             save_emb_path = join(cfg.paths.predictions, "embeddings", f"fold_{n_fold}")
             os.makedirs(save_emb_path, exist_ok=True)
-            torch.save(embeddings, join(save_emb_path, "embeddings.pt"))
+            torch.save(embeddings[0], join(save_emb_path, "embeddings.pt"))
+            torch.save(embeddings[1], join(save_emb_path, "cls_embeddings.pt"))
             torch.save(test_pids, join(save_emb_path, "pids.pt"))
 
     # Save combined predictions and metrics if specified
