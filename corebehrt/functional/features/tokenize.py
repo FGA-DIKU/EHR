@@ -29,9 +29,9 @@ def add_special_tokens_partition(
         cls_rows = df.groupby(PID_COL).first()
         # Create [CLS] rows
         cls_rows[CONCEPT_COL] = CLS_TOKEN
-        cls_rows[
-            ABSPOS_COL
-        ] -= SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position to come before earliest event
+        cls_rows[ABSPOS_COL] -= (
+            SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position to come before earliest event
+        )
         cls_rows[SEGMENT_COL] = 0
         special_rows.append(cls_rows)
 
@@ -44,9 +44,9 @@ def add_special_tokens_partition(
         )
         sep_rows = df[segment_changes].copy()
         sep_rows[CONCEPT_COL] = SEP_TOKEN
-        sep_rows[
-            ABSPOS_COL
-        ] += SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position slightly
+        sep_rows[ABSPOS_COL] += (
+            SPECIAL_TOKEN_ABSPOS_ADJUSTMENT  # Adjust position slightly
+        )
         special_rows.append(sep_rows)
 
     # Combine all rows and sort by 'PID' and 'abspos'

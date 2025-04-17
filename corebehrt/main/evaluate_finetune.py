@@ -2,7 +2,7 @@ import logging
 from os.path import join
 import pandas as pd
 import torch
-import os 
+import os
 
 from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS
 from corebehrt.functional.setup.args import get_args
@@ -13,7 +13,7 @@ from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.modules.setup.config import instantiate_function
 
-CONFIG_PATH = "./corebehrt/configs/finetune_evaluate.yaml"
+CONFIG_PATH = "./corebehrt/configs/evaluate_finetune.yaml"
 
 
 def main_evaluate(config_path):

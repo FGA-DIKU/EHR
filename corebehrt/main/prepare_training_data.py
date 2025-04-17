@@ -20,6 +20,7 @@ from corebehrt.modules.preparation.dataset import PatientDataset
 
 CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
 
+
 def main_prepare_data(config_path):
     cfg = load_config(config_path)
 
