@@ -28,7 +28,7 @@ class CorebehrtEncoder(ModernBertModel):
             abspos_shift=getattr(config, "abspos_shift", TIME2VEC_ABSPOS_SHIFT),
         )
 
-    def forward(self, batch: dict):
+    def forward(self, batch: dict, return_embeddings=False):
         attention_mask = torch.ones_like(batch["concept"])
 
         inputs_embeds = self.embeddings(
@@ -37,6 +37,9 @@ class CorebehrtEncoder(ModernBertModel):
             age=batch["age"],
             abspos=batch["abspos"],
         )
+
+        if return_embeddings:
+            return inputs_embeds
 
         return super().forward(
             inputs_embeds=inputs_embeds, attention_mask=attention_mask
@@ -96,7 +99,10 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
-    def forward(self, batch: dict):
+    def forward(self, batch: dict, return_embeddings=False):
+        if return_embeddings:
+            return super().forward(batch, return_embeddings=True)
+            
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state

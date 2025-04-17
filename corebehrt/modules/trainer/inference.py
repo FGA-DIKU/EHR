@@ -29,17 +29,15 @@ class EHRInferenceRunner(EHRTrainer):
                     outputs = self.model(batch)
 
                 if return_embeddings:
-                    last_hidden_state = outputs.last_hidden_state                    
-                    attention_mask = batch["attention_mask"]
-
-                    # Get embedding from transformer
-                    mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size())  # Shape: [batch_size, sequence_length, hidden_state]
-                    sum_embeddings = torch.sum(last_hidden_state * mask_expanded, dim=1)  # Sum over sequence_length
-                    sum_mask = torch.clamp(mask_expanded.sum(dim=1), min=1e-9)  # Avoid division by zero
-                    mean_embedding = sum_embeddings / sum_mask  # Shape: [batch_size, hidden_state]
-                    embeddings_list.append(mean_embedding.cpu())
+                    # Get embeddings from model
+                    with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                        embeddings = self.model(batch, return_embeddings=True)
+                    pooled_embedding = embeddings.mean(dim=1)
+                    embeddings_list.append(pooled_embedding.cpu())
 
                     # Get embeddings from head
+                    last_hidden_state = outputs.last_hidden_state                    
+                    attention_mask = batch["attention_mask"]
                     with torch.no_grad():
                         head_embedding = bi_gru(
                             last_hidden_state,
