@@ -2,7 +2,6 @@ from corebehrt.modules.trainer.trainer import EHRTrainer
 from corebehrt.modules.monitoring.logger import get_tqdm
 import torch
 
-
 class EHRInferenceRunner(EHRTrainer):
     def inference_loop(self, return_embeddings=False) -> tuple:
         if self.test_dataset is None:
@@ -11,17 +10,12 @@ class EHRInferenceRunner(EHRTrainer):
         dataloader = self.get_dataloader(self.test_dataset, mode="test")
         self.model.eval()
         loop = get_tqdm(dataloader)
-        loop.set_description("Running inference")
+        loop.set_description("Running inference with embeddings" if return_embeddings else "Running inference")
 
-        logits_list = []
-        targets_list = []
+        logits, targets = [], []
         if return_embeddings:
-            bi_gru = self.model.cls
-            bi_gru.eval()
-            ehr_embeddings_list = []
-            head_embeddings_list = []
-            model_embeddings_list = []
-            loop.set_description("Running inference with embeddings")
+            self.model.cls.eval()
+            ehr_embs, model_embs, head_embs = [], [], []
 
         with torch.no_grad():
             for batch in loop:
@@ -30,44 +24,45 @@ class EHRInferenceRunner(EHRTrainer):
                     outputs = self.model(batch)
 
                 if return_embeddings:
-                    # Get embeddings from ehr_embeddings
-                    with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
-                        embeddings = self.model(batch, return_embeddings=True)
-                    pooled_embedding = embeddings.mean(dim=1)
-                    ehr_embeddings_list.append(pooled_embedding.cpu())
+                    ehr, model, head = self.extract_embeddings(batch, outputs)
+                    ehr_embs.append(ehr.cpu())
+                    model_embs.append(model.cpu())
+                    head_embs.append(head.cpu())
 
-                    # Get embeddings from model
-                    last_hidden_state = outputs.last_hidden_state                    
-                    attention_mask = batch["attention_mask"]
+                logits.append(outputs.logits.float().cpu())
+                targets.append(batch["target"].cpu())
 
-                    mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size())  # Shape: [batch_size, sequence_length, hidden_state]
-                    sum_embeddings = torch.sum(last_hidden_state * mask_expanded, dim=1)  # Sum over sequence_length
-                    sum_mask = torch.clamp(mask_expanded.sum(dim=1), min=1e-9)  # Avoid division by zero
-                    mean_embedding = sum_embeddings / sum_mask
-                    model_embeddings_list.append(mean_embedding.cpu())
+        logits_tensor = torch.cat(logits, dim=0).squeeze()
+        targets_tensor = torch.cat(targets, dim=0).squeeze()
 
-                    with torch.no_grad():
-                        head_embedding = bi_gru(
-                            last_hidden_state,
-                            attention_mask=attention_mask,
-                            return_embedding=True,
-                        )
-                        head_embeddings_list.append(head_embedding.cpu())
+        embeddings = (
+            [
+                torch.cat(ehr_embs, dim=0).squeeze(),
+                torch.cat(model_embs, dim=0).squeeze(),
+                torch.cat(head_embs, dim=0).squeeze(),
+            ]
+            if return_embeddings else None
+        )
 
-                logits_list.append(
-                    outputs.logits.float().cpu()
-                )  # .float to convert to float32 (from bfloat16)
-                targets_list.append(batch["target"].cpu())
+        return logits_tensor, targets_tensor, embeddings
 
-        logits_tensor = torch.cat(logits_list, dim=0).squeeze()
-        targets_tensor = torch.cat(targets_list, dim=0).squeeze()
+    def extract_embeddings(self, batch, outputs):
+        ehr_embedding = self._get_ehr_embedding(batch)
+        model_embedding = self._mean_pool(outputs.last_hidden_state, batch["attention_mask"])
+        head_embedding = self.model.cls(
+            outputs.last_hidden_state,
+            attention_mask=batch["attention_mask"],
+            return_embedding=True,
+        )
+        return ehr_embedding, model_embedding, head_embedding
 
-        if return_embeddings:
-            ehr_embeddings_tensor = torch.cat(ehr_embeddings_list, dim=0).squeeze()
-            head_embeddings_tensor = torch.cat(head_embeddings_list, dim=0).squeeze()
-            model_embeddings_tensor = torch.cat(model_embeddings_list, dim=0).squeeze()
-            embeddings_list = [ehr_embeddings_tensor, model_embeddings_tensor, head_embeddings_tensor]
-        else:
-            embeddings_list = None
+    def _get_ehr_embedding(self, batch):
+        with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+            ehr_output = self.model(batch, return_embeddings=True)
+        return ehr_output.mean(dim=1)
 
-        return logits_tensor, targets_tensor, embeddings_list
+    def _mean_pool(self, hidden_state, attention_mask):
+        mask = attention_mask.unsqueeze(-1).expand(hidden_state.size())
+        summed = torch.sum(hidden_state * mask, dim=1)
+        count = torch.clamp(mask.sum(dim=1), min=1e-9)
+        return summed / count
