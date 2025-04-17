@@ -2,6 +2,7 @@ import logging
 from os.path import join
 import pandas as pd
 import torch
+import os 
 
 from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS
 from corebehrt.functional.setup.args import get_args
