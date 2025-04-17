@@ -2,6 +2,7 @@ from corebehrt.modules.trainer.trainer import EHRTrainer
 from corebehrt.modules.monitoring.logger import get_tqdm
 import torch
 
+
 class EHRInferenceRunner(EHRTrainer):
     def inference_loop(self, return_embeddings=False) -> tuple:
         if self.test_dataset is None:
@@ -10,7 +11,11 @@ class EHRInferenceRunner(EHRTrainer):
         dataloader = self.get_dataloader(self.test_dataset, mode="test")
         self.model.eval()
         loop = get_tqdm(dataloader)
-        loop.set_description("Running inference with embeddings" if return_embeddings else "Running inference")
+        loop.set_description(
+            "Running inference with embeddings"
+            if return_embeddings
+            else "Running inference"
+        )
 
         logits, targets = [], []
         if return_embeddings:
@@ -41,14 +46,17 @@ class EHRInferenceRunner(EHRTrainer):
                 torch.cat(model_embs, dim=0).squeeze(),
                 torch.cat(head_embs, dim=0).squeeze(),
             ]
-            if return_embeddings else None
+            if return_embeddings
+            else None
         )
 
         return logits_tensor, targets_tensor, embeddings
 
     def extract_embeddings(self, batch, outputs):
         ehr_embedding = self._get_ehr_embedding(batch)
-        model_embedding = self._mean_pool(outputs.last_hidden_state, batch["attention_mask"])
+        model_embedding = self._mean_pool(
+            outputs.last_hidden_state, batch["attention_mask"]
+        )
         head_embedding = self.model.cls(
             outputs.last_hidden_state,
             attention_mask=batch["attention_mask"],

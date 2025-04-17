@@ -102,7 +102,7 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
     def forward(self, batch: dict, return_embeddings=False):
         if return_embeddings:
             return super().forward(batch, return_embeddings=True)
-            
+
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state

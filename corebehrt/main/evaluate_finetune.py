@@ -75,7 +75,7 @@ def main_evaluate(config_path):
             os.makedirs(save_emb_path, exist_ok=True)
             torch.save(embeddings[0], join(save_emb_path, "ehr_embeddings.pt"))
             torch.save(embeddings[1], join(save_emb_path, "BERT_embeddings.pt"))
-            torch.save(embeddings[1], join(save_emb_path, "cls_embeddings.pt"))
+            torch.save(embeddings[2], join(save_emb_path, "cls_embeddings.pt"))
             torch.save(test_pids, join(save_emb_path, "pids.pt"))
 
     # Save combined predictions and metrics if specified
