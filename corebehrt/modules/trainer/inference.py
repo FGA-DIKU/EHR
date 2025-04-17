@@ -18,8 +18,9 @@ class EHRInferenceRunner(EHRTrainer):
         if return_embeddings:
             bi_gru = self.model.cls
             bi_gru.eval()
-            embeddings_list = []
+            ehr_embeddings_list = []
             head_embeddings_list = []
+            model_embeddings_list = []
             loop.set_description("Running inference with embeddings")
 
         with torch.no_grad():
@@ -29,15 +30,22 @@ class EHRInferenceRunner(EHRTrainer):
                     outputs = self.model(batch)
 
                 if return_embeddings:
-                    # Get embeddings from model
+                    # Get embeddings from ehr_embeddings
                     with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
                         embeddings = self.model(batch, return_embeddings=True)
                     pooled_embedding = embeddings.mean(dim=1)
-                    embeddings_list.append(pooled_embedding.cpu())
+                    ehr_embeddings_list.append(pooled_embedding.cpu())
 
-                    # Get embeddings from head
+                    # Get embeddings from model
                     last_hidden_state = outputs.last_hidden_state                    
                     attention_mask = batch["attention_mask"]
+
+                    mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size())  # Shape: [batch_size, sequence_length, hidden_state]
+                    sum_embeddings = torch.sum(last_hidden_state * mask_expanded, dim=1)  # Sum over sequence_length
+                    sum_mask = torch.clamp(mask_expanded.sum(dim=1), min=1e-9)  # Avoid division by zero
+                    mean_embedding = sum_embeddings / sum_mask
+                    model_embeddings_list.append(mean_embedding.cpu())
+
                     with torch.no_grad():
                         head_embedding = bi_gru(
                             last_hidden_state,
@@ -55,9 +63,11 @@ class EHRInferenceRunner(EHRTrainer):
         targets_tensor = torch.cat(targets_list, dim=0).squeeze()
 
         if return_embeddings:
-            embeddings_tensor = torch.cat(embeddings_list, dim=0).squeeze()
+            ehr_embeddings_tensor = torch.cat(ehr_embeddings_list, dim=0).squeeze()
             head_embeddings_tensor = torch.cat(head_embeddings_list, dim=0).squeeze()
+            model_embeddings_tensor = torch.cat(model_embeddings_list, dim=0).squeeze()
+            embeddings_list = [ehr_embeddings_tensor, model_embeddings_tensor, head_embeddings_tensor]
         else:
-            embeddings_tensor = None
+            embeddings_list = None
 
-        return logits_tensor, targets_tensor, [embeddings_tensor, head_embeddings_tensor]
+        return logits_tensor, targets_tensor, embeddings_list
