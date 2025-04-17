@@ -1,16 +1,12 @@
 import logging
-import os
 from os.path import join
 import pandas as pd
 import torch
 
-from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS, FINETUNE_CFG
+from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS
 from corebehrt.functional.setup.args import get_args
 from corebehrt.main.helper.evaluate_finetune import inference_fold, compute_metrics
 from corebehrt.main.helper.finetune_cv import check_for_overlap
-from corebehrt.modules.monitoring.metric_aggregation import (
-    compute_and_save_scores_mean_std,
-)
 from corebehrt.modules.preparation.dataset import BinaryOutcomeDataset, PatientDataset
 from corebehrt.modules.setup.config import load_config
 from corebehrt.modules.setup.directory import DirectoryPreparer

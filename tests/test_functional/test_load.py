@@ -22,8 +22,8 @@ class TestLoadPIDs(unittest.TestCase):
 
         self.split_path = self.temp_dir.name
         self.mode_files = [
-            os.path.join(self.split_path, f"pids_train.pt"),
-            os.path.join(self.split_path, f"pids_test.pt"),
+            os.path.join(self.split_path, "pids_train.pt"),
+            os.path.join(self.split_path, "pids_test.pt"),
         ]
         torch.save([1, 2, 3], self.mode_files[0])
         torch.save([4, 2, 3, 100], self.mode_files[1])

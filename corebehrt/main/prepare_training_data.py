@@ -15,11 +15,10 @@ from corebehrt.main.helper.pretrain import (
     get_splits_path,
 )
 from corebehrt.functional.io_operations.save import save_pids_splits
-
-CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
 from corebehrt.constants.paths import FOLDS_FILE, TEST_PIDS_FILE
 from corebehrt.modules.preparation.dataset import PatientDataset
 
+CONFIG_PATH = "./corebehrt/configs/prepare_pretrain.yaml"
 
 def main_prepare_data(config_path):
     cfg = load_config(config_path)
