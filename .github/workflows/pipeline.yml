@@ -70,3 +70,18 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_oot.yaml
+
+            - name: main.select_cohort
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.select_cohort --config_path ./corebehrt/configs/select_cohort_held_out.yaml
+
+            - name: main.prepare_training_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_held_out.yaml
+
+            - name: main.evaluate_finetune
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.evaluate_finetune

@@ -120,6 +120,21 @@ class PatientDataset:
 
         return self
 
+    @staticmethod
+    def combine_datasets(datasets: List["PatientDataset"]) -> "PatientDataset":
+        """Combine multiple PatientDataset objects into one.
+
+        Args:
+            datasets (List[PatientDataset]): List of PatientDataset objects to combine.
+
+        Returns:
+            PatientDataset: A new PatientDataset object with combined patients.
+        """
+        combined_patients = []
+        for dataset in datasets:
+            combined_patients.extend(dataset.patients)
+        return PatientDataset(combined_patients)
+
 
 class MLMDataset(Dataset):
     def __init__(

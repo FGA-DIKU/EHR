@@ -82,6 +82,9 @@ The pipeline can be run from the root directory by executing the following comma
 (.venv) python -m corebehrt.main.select_cohort
 (.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_finetune.yaml
 (.venv) python -m corebehrt.main.finetune_cv
+(.venv) python -m corebehrt.main.select_cohort --config_path corebehrt/configs/select_cohort_held_out.yaml
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_held_out.yaml
+(.venv) python -m corebehrt.main.evaluate_finetune --config_path corebehrt/configs/evaluate_finetune.yaml
 ```
 
 ### Converting to MEDS

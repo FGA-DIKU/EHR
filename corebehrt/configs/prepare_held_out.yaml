@@ -6,17 +6,18 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
-  cohort: ./outputs/cohort/finetune/ # path to cohort directory
+  cohort: ./outputs/cohort/held_out/ # path to cohort directory
   outcomes: ./outputs/outcomes
   outcome: TEST_OUTCOME.csv
 
 ## OUTPUTS
-  prepared_data: ./outputs/finetuning/processed_data/ # Save model/outputs to this folder
+  prepared_data: ./outputs/testing/held_out/processed_data/ # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 
 data:
-  type: "finetune"
+  type: "test"
+  test_modes: ["held_out"] # list with name of features where test data is stored. Only used for test_data
   truncation_len: 30
   min_len: 2 # 0 by default
 

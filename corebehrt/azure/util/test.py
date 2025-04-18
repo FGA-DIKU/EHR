@@ -62,7 +62,7 @@ def evaluate_run(run_id: str, job_type: str, test_cfg_file: str):
     if all(results):
         logger.info("All tests passed!")
     else:
-        msg = f"One or more tests failed!"
+        msg = "One or more tests failed!"
         logger.error(msg)
         print(msg, file=sys.stderr)
         if on_fail == "raise":

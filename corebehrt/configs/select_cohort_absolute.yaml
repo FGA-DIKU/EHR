@@ -11,7 +11,7 @@ paths:
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
   ### Outputs
-  cohort: ./outputs/cohort_absolute # Data directory
+  cohort: ./outputs/cohort/absolute # Data directory
 
 selection:
   exclude_prior_outcomes: true # Exclude patients who had the outcome before index date
