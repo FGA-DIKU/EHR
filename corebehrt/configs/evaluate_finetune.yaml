@@ -1,4 +1,6 @@
-env: local
+logging:
+  level: INFO
+  path: ./outputs/logs
 
 paths:
   model: "./outputs/finetuning"
