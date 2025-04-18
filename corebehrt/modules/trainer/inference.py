@@ -35,7 +35,7 @@ class EHRInferenceRunner(EHRTrainer):
                     model_embs.append(model.cpu())
                     head_embs.append(head.cpu())
                     att_masks.append(att.cpu())
-                    
+
                 logits.append(outputs.logits.float().cpu())
                 targets.append(batch["target"].cpu())
 

@@ -96,7 +96,7 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
-    def forward(self, batch: dict):            
+    def forward(self, batch: dict):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state
