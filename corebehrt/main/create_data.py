@@ -86,8 +86,9 @@ def main_data(config_path):
     )
     tokenizer.freeze_vocabulary()
 
-    logger.info("Tokenizing tuning")
-    load_tokenize_and_save(features_path, tokenizer, tokenized_path, "tuning")
+    if os.path.exists(os.path.join(features_path, "tuning")):
+        logger.info("Tokenizing tuning")
+        load_tokenize_and_save(features_path, tokenizer, tokenized_path, "tuning")
 
     if os.path.exists(os.path.join(features_path, "held_out")):
         logger.info("Tokenizing held_out")

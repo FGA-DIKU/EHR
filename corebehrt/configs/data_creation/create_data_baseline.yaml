@@ -1,0 +1,27 @@
+logging:
+  level: INFO
+  path: ./outputs/logs
+
+paths:
+  data: "researcher_data:AMM/data/20240910/MEDS/v03/data/"
+  tokenized: "researcher_data:AMM/data/20240910/corebehrt_data/mdp/v01/tokenized/"
+  features: "researcher_data:AMM/data/20240910/corebehrt_data/mdp/v01/features/"
+  code_mapping: "researcher_data:BC_recreate/data_20240910/code_mappings/cutoff_dict.pt"
+
+exclude_held_out: true
+
+features:
+  exclude_regex: '^(L/).*'
+  values:
+    value_creator_kwargs:
+      num_bins: 100
+  agg_func: 'first'
+  # agg_window: 25 # expand aggreation window to aggreate over x hours
+
+tokenizer:
+  sep_tokens: true
+  cls_token: true
+
+excluder:
+  min_age: -1
+  max_age: 120
