@@ -49,7 +49,7 @@ def compute_metrics(cfg, targets, all_probas, logger):
     """
     Computes and saves metrics for each fold and the average metrics.
     """
-    if not hasattr(cfg, "metrics") and cfg.metrics:
+    if not hasattr(cfg, "metrics") or not cfg.metrics:
         return
 
     metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()}
