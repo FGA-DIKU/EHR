@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
-from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
+from transformers.models.modernbert.modeling_modernbert import (
+    ModernBertPredictionHead,
+    ModernBertEncoderLayer,
+)
 
 from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_SCALE,
@@ -9,13 +12,28 @@ from corebehrt.constants.model import (
     TIME2VEC_AGE_SCALE,
     TIME2VEC_AGE_SHIFT,
 )
+from corebehrt.constants.data import PAD_TOKEN, DEFAULT_VOCABULARY
 from corebehrt.modules.model.embeddings import EhrEmbeddings
 from corebehrt.modules.model.heads import FineTuneHead
+from corebehrt.modules.model.attention import CausalModernBertAttention
+
+
+class CausalModernBertEncoderLayer(ModernBertEncoderLayer):
+    """
+    This class is a modified version of the ModernBertEncoderLayer class.
+    It allows for a causal attention mechanism.
+    """
+
+    def __init__(self, config, layer_id):
+        super().__init__(config, layer_id)
+        self.attn = CausalModernBertAttention(config=config, layer_id=layer_id)
 
 
 class CorebehrtEncoder(ModernBertModel):
     def __init__(self, config):
         super().__init__(config)
+        # config.is_decoder = True
+        # config.add_cross_attention = False
         self.embeddings = EhrEmbeddings(
             vocab_size=config.vocab_size,
             hidden_size=config.hidden_size,
@@ -27,9 +45,16 @@ class CorebehrtEncoder(ModernBertModel):
             abspos_scale=getattr(config, "abspos_scale", TIME2VEC_ABSPOS_SCALE),
             abspos_shift=getattr(config, "abspos_shift", TIME2VEC_ABSPOS_SHIFT),
         )
+        # Replace the standard encoder layers with causal encoder layers
+        self.layers = nn.ModuleList(
+            [
+                CausalModernBertEncoderLayer(config, layer_id)
+                for layer_id in range(config.num_hidden_layers)
+            ]
+        )
 
     def forward(self, batch: dict):
-        attention_mask = torch.ones_like(batch["concept"])
+        attention_mask = (batch["concept"] != DEFAULT_VOCABULARY[PAD_TOKEN]).float()
 
         inputs_embeds = self.embeddings(
             input_ids=batch["concept"],
