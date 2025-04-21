@@ -9,6 +9,14 @@ SEP_TOKEN = "[SEP]"
 MASK_TOKEN = "[MASK]"
 PAD_TOKEN = "[PAD]"
 
+DEFAULT_VOCABULARY = {
+    PAD_TOKEN: 0,
+    CLS_TOKEN: 1,
+    SEP_TOKEN: 2,
+    UNKNOWN_TOKEN: 3,
+    MASK_TOKEN: 4,
+}
+
 ### Columns ###
 PID_COL = "subject_id"
 TIMESTAMP_COL = "time"
