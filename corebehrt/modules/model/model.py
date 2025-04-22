@@ -1,35 +1,39 @@
+"""
+Module: corebehrt_module
+
+This module defines customized EHR-focused BERT models built on top of ModernBertModel:
+
+- CorebehrtEncoder: replaces token embeddings with temporal EHR embeddings and causal encoder layers.
+- CorebehrtForPretraining: extends the encoder for masked language model pretraining on EHR sequences.
+- CorebehrtForFineTuning: extends the encoder for downstream classification/regression tasks on EHR data.
+"""
+
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
-from transformers.models.modernbert.modeling_modernbert import (
-    ModernBertPredictionHead,
-    ModernBertEncoderLayer,
-)
+from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
 
+from corebehrt.constants.data import DEFAULT_VOCABULARY, PAD_TOKEN
 from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_SCALE,
     TIME2VEC_ABSPOS_SHIFT,
     TIME2VEC_AGE_SCALE,
     TIME2VEC_AGE_SHIFT,
 )
-from corebehrt.constants.data import PAD_TOKEN, DEFAULT_VOCABULARY
 from corebehrt.modules.model.embeddings import EhrEmbeddings
 from corebehrt.modules.model.heads import FineTuneHead
-from corebehrt.modules.model.attention import CausalModernBertAttention
-
-
-class CausalModernBertEncoderLayer(ModernBertEncoderLayer):
-    """
-    This class is a modified version of the ModernBertEncoderLayer class.
-    It allows for a causal attention mechanism.
-    """
-
-    def __init__(self, config, layer_id):
-        super().__init__(config, layer_id)
-        self.attn = CausalModernBertAttention(config=config, layer_id=layer_id)
+from corebehrt.modules.model.layers import CausalModernBertEncoderLayer
 
 
 class CorebehrtEncoder(ModernBertModel):
+    """
+    Encoder backbone for EHR data using ModernBert.
+
+    Attributes:
+        embeddings (EhrEmbeddings): custom embeddings for concepts, segments, age, and absolute position.
+        layers (nn.ModuleList): list of causal encoder layers replacing standard BERT layers.
+    """
+
     def __init__(self, config):
         super().__init__(config)
         # config.is_decoder = True
@@ -54,6 +58,20 @@ class CorebehrtEncoder(ModernBertModel):
         )
 
     def forward(self, batch: dict):
+        """
+        Forward pass building embeddings and attention mask, then calling ModernBertModel.
+
+        Args:
+            batch (dict): must contain:
+                - "concept": Tensor of token indices (B, L)
+                - "segment": Tensor of segment IDs (B, L)
+                - "age": Tensor of patient ages (B, L)
+                - "abspos": Tensor of absolute position values (B, L)
+
+        Returns:
+            BaseModelOutput: output of ModernBertModel with last_hidden_state, etc.
+        """
+        # Build attention mask
         attention_mask = (batch["concept"] != DEFAULT_VOCABULARY[PAD_TOKEN]).float()
 
         inputs_embeds = self.embeddings(
@@ -69,6 +87,12 @@ class CorebehrtEncoder(ModernBertModel):
 
 
 class CorebehrtForPretraining(CorebehrtEncoder):
+    """
+    Masked Language Model head for EHR pretraining.
+
+    Adds a prediction head and linear decoder on top of CorebehrtEncoder.
+    """
+
     def __init__(self, config):
         super().__init__(config)
         self.loss_fct = nn.CrossEntropyLoss()
@@ -82,6 +106,16 @@ class CorebehrtForPretraining(CorebehrtEncoder):
 
     # Inspiration from ModernBertForMaskedLM
     def forward(self, batch: dict):
+        """
+        Forward pass for masked language modeling.
+
+        Args:
+            batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
+                          optional 'target' for labels (B, L).
+
+        Returns:
+            BaseModelOutput: with logits and optional loss/labels if targets provided.
+        """
         outputs = super().forward(batch)
         last_hidden_state = outputs[0]
 
@@ -111,6 +145,12 @@ class CorebehrtForPretraining(CorebehrtEncoder):
 
 
 class CorebehrtForFineTuning(CorebehrtEncoder):
+    """
+    Fine-tuning head for downstream classification on EHR sequences.
+
+    Adds a binary classification head (BCEWithLogits) on top of sequence outputs.
+    """
+
     def __init__(self, config):
         super().__init__(config)
         if config.pos_weight:
@@ -122,6 +162,16 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
     def forward(self, batch: dict):
+        """
+        Forward pass for fine-tuning.
+
+        Args:
+            batch (dict): must contain 'concept', 'segment', 'age', 'abspos', 'attention_mask';
+                          optional 'target' as labels.
+
+        Returns:
+            BaseModelOutput: with logits and optional loss if target provided.
+        """
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state

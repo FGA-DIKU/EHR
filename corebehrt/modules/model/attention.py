@@ -1,11 +1,21 @@
-from transformers.models.modernbert.modeling_modernbert import ModernBertAttention
-from corebehrt.functional.modernbert.attention import (
-    sdpa_attention_forward,
-    flash_attention_forward,
-    eager_attention_forward,
-)
-import torch
+"""
+corebehrt.modules.model.attention
 
+Custom causal attention implementations for ModernBert, allowing standard, SDPA, and FlashAttention variants to enforce causal masking.
+
+Defines:
+  - CausalModernBertAttention: subclass of ModernBertAttention that plugs in masked attention fns.
+  - MODERNBERT_ATTENTION_FUNCTION: mapping from config._attn_implementation to forward routines.
+"""
+
+import torch
+from transformers.models.modernbert.modeling_modernbert import ModernBertAttention
+
+from corebehrt.functional.modernbert.attention import (
+    eager_attention_forward,
+    flash_attention_forward,
+    sdpa_attention_forward,
+)
 
 MODERNBERT_ATTENTION_FUNCTION = {
     "flash_attention_2": flash_attention_forward,
@@ -15,15 +25,31 @@ MODERNBERT_ATTENTION_FUNCTION = {
 
 
 class CausalModernBertAttention(ModernBertAttention):
+    """
+    Attention layer enforcing causal masking within ModernBert.
+
+    Replaces the standard ModernBertAttention forward pass to use custom routines
+    (`sdpa_attention_forward`, `flash_attention_forward`, `eager_attention_forward`) that
+    inject a left-to-right mask and support sliding-window or full-context attention.
+
+    Configuration:
+        config._attn_implementation: selects 'flash_attention_2', 'eager', or 'sdpa'.
+        config.is_causal (bool): whether to apply causal masking.
+        config.local_attention: tuple (left, right) window sizes for local attention.
+    """
+
     def __init__(self, config, layer_id=None):
         super().__init__(config, layer_id)
         # Set this flag to indicate we're using causal attention
-        print(config)
         self.is_causal = config.to_dict().get("is_causal", False)
 
     def forward(
         self, hidden_states, attention_mask=None, output_attentions=False, **kwargs
     ):
+        """
+        This is a modified version of the ModernBertAttention class.
+        We use our custom attention forward functions which use a causal attention mask.
+        """
         qkv = self.Wqkv(hidden_states)
 
         bs = hidden_states.shape[0]
@@ -57,7 +83,8 @@ class CausalModernBertAttention(ModernBertAttention):
         }
         attn_args.update(kwargs)
 
-        # Call the attention function with module as first positional argument
+        # This below is the only change we make to the ModernBertAttention class
+        # We access our custom attention forward functions directly instead of using what's inside modeling_modernbert
         attn_outputs = MODERNBERT_ATTENTION_FUNCTION[self.config._attn_implementation](
             self, **attn_args
         )
