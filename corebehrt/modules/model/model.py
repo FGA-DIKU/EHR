@@ -153,7 +153,7 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
 
     def __init__(self, config):
         super().__init__(config)
-        if config.pos_weight:
+        if getattr(config, "pos_weight", None):
             pos_weight = torch.tensor(config.pos_weight)
         else:
             pos_weight = None
