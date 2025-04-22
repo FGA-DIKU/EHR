@@ -9,7 +9,7 @@ from corebehrt.constants.model import (
     TIME2VEC_AGE_SHIFT,
     TIME2VEC_ABSPOS_SHIFT,
 )
-
+from typing import Optional
 
 class EhrEmbeddings(nn.Module):
     """
@@ -70,12 +70,14 @@ class EhrEmbeddings(nn.Module):
 
     def forward(
         self,
-        input_ids: torch.LongTensor,  # concepts
+        input_ids: torch.LongTensor = None,  # concepts
         segments: torch.LongTensor = None,
         age: torch.Tensor = None,
         abspos: torch.Tensor = None,
         inputs_embeds: torch.Tensor = None,
     ) -> torch.Tensor:
+        if not self._validate_inputs(input_ids, segments, age, abspos, inputs_embeds):
+            raise ValueError("Invalid input arguments")
         if inputs_embeds is not None:
             return inputs_embeds
         embeddings = self.concept_embeddings(input_ids)
@@ -89,6 +91,17 @@ class EhrEmbeddings(nn.Module):
 
         return embeddings
 
+    @torch.jit.script
+    def _validate_inputs(
+        input_ids: Optional[torch.Tensor],
+        segments: Optional[torch.Tensor],
+        age: Optional[torch.Tensor],
+        abspos: Optional[torch.Tensor],
+        inputs_embeds: Optional[torch.Tensor],
+    ) -> bool:
+        if inputs_embeds is not None:
+            return not any(x is not None for x in [input_ids, segments, age, abspos])
+        return all(x is not None for x in [input_ids, segments, age, abspos])
 
 class Time2Vec(torch.nn.Module):
     """Time2Vec embedding layer that combines linear and periodic components.
