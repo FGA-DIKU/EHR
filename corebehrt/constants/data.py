@@ -1,7 +1,7 @@
 SPECIAL_TOKEN_ABSPOS_ADJUSTMENT = (
     1e-3  # used for cls and sep token to ensure correct ordering
 )
-
+IGNORE_LOSS_INDEX = -100
 ### Special tokens ###
 UNKNOWN_TOKEN = "[UNK]"
 CLS_TOKEN = "[CLS]"
