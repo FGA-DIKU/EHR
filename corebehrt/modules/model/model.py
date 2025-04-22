@@ -72,8 +72,10 @@ class CorebehrtEncoder(ModernBertModel):
         Returns:
             BaseModelOutput: output of ModernBertModel with last_hidden_state, etc.
         """
-        # Build attention mask
-        attention_mask = (batch["concept"] != DEFAULT_VOCABULARY[PAD_TOKEN]).float()
+        if "attention_mask" in batch:
+            attention_mask = batch["attention_mask"]
+        else:
+            attention_mask = (batch["concept"] != DEFAULT_VOCABULARY[PAD_TOKEN]).float()
 
         inputs_embeds = self.embeddings(
             input_ids=batch["concept"],

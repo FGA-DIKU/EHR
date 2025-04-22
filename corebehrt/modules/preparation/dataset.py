@@ -166,13 +166,14 @@ class MLMDataset(Dataset):
         patient = self.patients[index]
         concepts = torch.tensor(patient.concepts, dtype=torch.long)
         masked_concepts, target = self.masker.mask_patient_concepts(concepts)
-
+        attention_mask = torch.ones_like(masked_concepts)
         sample = {
             "concept": masked_concepts,
             "target": target,
             "abspos": torch.tensor(patient.abspos, dtype=torch.float),
             "segment": torch.tensor(patient.segments, dtype=torch.long),
             "age": torch.tensor(patient.ages, dtype=torch.float),
+            "attention_mask": attention_mask,
         }
 
         return sample
