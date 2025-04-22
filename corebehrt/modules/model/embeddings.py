@@ -9,7 +9,9 @@ from corebehrt.constants.model import (
     TIME2VEC_AGE_SHIFT,
     TIME2VEC_ABSPOS_SHIFT,
 )
+from corebehrt.constants.data import DEFAULT_VOCABULARY, PAD_TOKEN
 from typing import Optional
+
 
 class EhrEmbeddings(nn.Module):
     """
@@ -38,7 +40,7 @@ class EhrEmbeddings(nn.Module):
         hidden_size: int,
         type_vocab_size: int,
         embedding_dropout: float,
-        pad_token_id: int = 0,
+        pad_token_id: int = DEFAULT_VOCABULARY[PAD_TOKEN],
         age_scale: float = TIME2VEC_AGE_SCALE,
         abspos_scale: float = TIME2VEC_ABSPOS_SCALE,
         age_shift: float = TIME2VEC_AGE_SHIFT,
@@ -102,6 +104,7 @@ class EhrEmbeddings(nn.Module):
         if inputs_embeds is not None:
             return not any(x is not None for x in [input_ids, segments, age, abspos])
         return all(x is not None for x in [input_ids, segments, age, abspos])
+
 
 class Time2Vec(torch.nn.Module):
     """Time2Vec embedding layer that combines linear and periodic components.
