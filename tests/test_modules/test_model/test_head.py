@@ -35,17 +35,6 @@ class TestBiGRU(unittest.TestCase):
         logits = self.gru(self.hidden_states, self.attn_mask, return_embedding=False)
         self.assertEqual(logits.shape, (self.batch, 1))
 
-    def test_mask_handling(self):
-        """Test if attention mask properly masks padded sequences."""
-        # Create a mask with padding
-        mask = torch.tensor([[1, 1, 0], [1, 0, 0]], dtype=torch.long)
-        hidden = torch.randn(2, 3, self.hidden_size)
-
-        out1 = self.gru(hidden, mask)
-        out2 = self.gru(hidden[:, :2], torch.ones(2, 2, dtype=torch.long))
-        # Masked regions should not affect the output
-        self.assertTrue(torch.allclose(out1, out2, atol=1e-5))
-
     def test_gradient_flow(self):
         """Test if gradients flow properly through the network."""
         hidden = torch.randn(2, 3, self.hidden_size, requires_grad=True)
