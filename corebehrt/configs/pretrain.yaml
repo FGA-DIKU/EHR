@@ -44,7 +44,8 @@ model:
   age_shift: -50 # center around 0
   abspos_shift: -90_000 # 0 will be around 2015
   
-  is_causal: true
+  is_causal: false  
+  enable_gqa: true
   
 optimizer:
   lr: 5e-4

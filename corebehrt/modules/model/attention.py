@@ -9,6 +9,7 @@ Defines:
 """
 
 import torch
+from typing import Optional
 from transformers.models.modernbert.modeling_modernbert import ModernBertAttention
 
 from corebehrt.functional.modernbert.attention import (
@@ -41,15 +42,18 @@ class CausalModernBertAttention(ModernBertAttention):
     def __init__(self, config, layer_id=None):
         super().__init__(config, layer_id)
         # Set this flag to indicate we're using causal attention
-        self.is_causal = config.to_dict().get("is_causal", False)
+        self.is_causal = getattr(config, "is_causal", False)
+        self.enable_gqa = getattr(config, "enable_gqa", False)
 
     def forward(
-        self, hidden_states, attention_mask=None, output_attentions=False, **kwargs
-    ):
-        """
-        This is a modified version of the ModernBertAttention class.
-        We use our custom attention forward functions which use a causal attention mask.
-        """
+        self,
+        hidden_states: torch.Tensor,
+        output_attentions: Optional[bool] = False,
+        **kwargs,
+    ) -> torch.Tensor:
+        # here is the only change we make to the ModernBertAttention forward pass:
+        kwargs = self._update_kwargs(kwargs)
+
         qkv = self.Wqkv(hidden_states)
 
         bs = hidden_states.shape[0]
@@ -58,37 +62,34 @@ class CausalModernBertAttention(ModernBertAttention):
         else:
             qkv = qkv.view(bs, -1, 3, self.num_heads, self.head_dim)
 
-        # Create sliding window mask if needed
-        if self.local_attention != (-1, -1):
-            seq_len = hidden_states.shape[1]
-            sliding_window_mask = torch.ones(
-                (bs, 1, seq_len, seq_len), device=hidden_states.device
-            )
-            for i in range(seq_len):
-                start = max(0, i - self.local_attention[0])
-                end = min(seq_len, i + self.local_attention[1] + 1)
-                sliding_window_mask[:, :, i, start:end] = 1
-            kwargs["sliding_window_mask"] = sliding_window_mask
-
-        # Prepare attention function arguments
-        attn_args = {
-            "qkv": qkv,
-            "attention_mask": attention_mask,
-            "rotary_emb": self.rotary_emb,
-            "local_attention": self.local_attention,
-            "bs": bs,
-            "dim": self.all_head_size,
-            "output_attentions": output_attentions,
-            "is_causal": self.is_causal,
-        }
-        attn_args.update(kwargs)
-
-        # This below is the only change we make to the ModernBertAttention class
-        # We access our custom attention forward functions directly instead of using what's inside modeling_modernbert
         attn_outputs = MODERNBERT_ATTENTION_FUNCTION[self.config._attn_implementation](
-            self, **attn_args
+            self,
+            qkv=qkv,
+            rotary_emb=self.rotary_emb,
+            local_attention=self.local_attention,
+            bs=bs,
+            dim=self.all_head_size,
+            output_attentions=output_attentions,
+            **kwargs,
         )
         hidden_states = attn_outputs[0]
         hidden_states = self.out_drop(self.Wo(hidden_states))
 
-        return (hidden_states,) + attn_outputs[1:]
+        return (hidden_states,) + attn_outputs[1:]  # add attentions if outputted
+
+    def _update_kwargs(self, kwargs: dict) -> dict:
+        """
+        Update kwargs with additional parameters needed for attention computation.
+
+        This method allows us to inject additional configuration parameters into the
+        attention functions, such as causal masking and grouped query attention flags.
+
+        Args:
+            kwargs: Dictionary of existing keyword arguments
+
+        Returns:
+            Updated kwargs dictionary with additional attention parameters
+        """
+        kwargs["is_causal"] = self.is_causal
+        kwargs["enable_gqa"] = self.enable_gqa
+        return kwargs

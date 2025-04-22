@@ -41,6 +41,7 @@ def sdpa_attention_forward(
     bs: int,
     dim: int,
     is_causal: bool = True,
+    enable_gqa: bool = False,
     **_kwargs,
 ) -> Tuple[torch.Tensor]:
     # qkv: [batch_size, seqlen, 3, nheads, headdim]
@@ -65,6 +66,7 @@ def sdpa_attention_forward(
             value,
             dropout_p=module.attention_dropout if module.training else 0.0,
             attn_mask=attention_mask,
+            enable_gqa=enable_gqa,
         )
         .transpose(1, 2)
         .contiguous()
