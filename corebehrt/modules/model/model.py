@@ -8,10 +8,15 @@ This module defines customized EHR-focused BERT models built on top of ModernBer
 - CorebehrtForFineTuning: extends the encoder for downstream classification/regression tasks on EHR data.
 """
 
+import logging
+
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
-from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
+from transformers.models.modernbert.modeling_modernbert import (
+    ModernBertPredictionHead,
+    _prepare_4d_attention_mask,
+)
 
 from corebehrt.constants.data import DEFAULT_VOCABULARY, PAD_TOKEN
 from corebehrt.constants.model import (
@@ -20,9 +25,11 @@ from corebehrt.constants.model import (
     TIME2VEC_AGE_SCALE,
     TIME2VEC_AGE_SHIFT,
 )
+from corebehrt.functional.modeling.attention import make_attention_causal
 from corebehrt.modules.model.embeddings import EhrEmbeddings
 from corebehrt.modules.model.heads import FineTuneHead
-from corebehrt.modules.model.layers import CausalModernBertEncoderLayer
+
+logger = logging.getLogger(__name__)
 
 
 class CorebehrtEncoder(ModernBertModel):
@@ -49,13 +56,7 @@ class CorebehrtEncoder(ModernBertModel):
             abspos_scale=getattr(config, "abspos_scale", TIME2VEC_ABSPOS_SCALE),
             abspos_shift=getattr(config, "abspos_shift", TIME2VEC_ABSPOS_SHIFT),
         )
-        # Replace the standard encoder layers with causal encoder layers
-        self.layers = nn.ModuleList(
-            [
-                CausalModernBertEncoderLayer(config, layer_id)
-                for layer_id in range(config.num_hidden_layers)
-            ]
-        )
+        self.is_causal = getattr(config, "is_causal", False)
 
     def forward(self, batch: dict):
         """
@@ -84,6 +85,69 @@ class CorebehrtEncoder(ModernBertModel):
         return super().forward(
             inputs_embeds=inputs_embeds, attention_mask=attention_mask
         )
+
+    def _update_attention_mask(
+        self, attention_mask: torch.Tensor, output_attentions: bool
+    ) -> torch.Tensor:
+        """
+        Updates the attention mask to support causal attention and sliding windows.
+
+        This method overrides ModernBertModel's _update_attention_mask to add causal masking
+        when self.is_causal=True. We need custom handling since torch.nn.functional.scaled_dot_product_attention
+        doesn't support combining causal masking with padding masks.
+
+        The method:
+        1. Handles output_attentions warnings for different attention implementations
+        2. Creates a 4D attention mask from the input padding mask
+        3. Adds sliding window masking based on config.local_attention
+        4. Optionally adds causal masking if self.is_causal=True
+
+        Args:
+            attention_mask: Input padding mask of shape (batch_size, seq_len)
+            output_attentions: Whether to output attention weights
+
+        Returns:
+            Tuple of:
+            - Global attention mask with optional causal masking
+            - Sliding window mask for local attention
+        """
+        if output_attentions:
+            if self.config._attn_implementation == "sdpa":
+                logger.warning_once(
+                    "Outputting attentions is only supported with the 'eager' attention implementation, "
+                    'not with "sdpa". Falling back to `attn_implementation="eager"`.'
+                )
+                self.config._attn_implementation = "eager"
+            elif self.config._attn_implementation != "eager":
+                logger.warning_once(
+                    "Outputting attentions is only supported with the eager attention implementation, "
+                    f'not with {self.config._attn_implementation}. Consider setting `attn_implementation="eager"`.'
+                    " Setting `output_attentions=False`."
+                )
+
+        global_attention_mask = _prepare_4d_attention_mask(attention_mask, self.dtype)
+
+        # Create position indices
+        rows = torch.arange(global_attention_mask.shape[2]).unsqueeze(0)
+        # Calculate distance between positions
+        distance = torch.abs(rows - rows.T)
+
+        # Create sliding window mask (1 for positions within window, 0 outside)
+        window_mask = (
+            (distance <= self.config.local_attention // 2)
+            .unsqueeze(0)
+            .unsqueeze(0)
+            .to(attention_mask.device)
+        )
+        # Combine with existing mask
+        sliding_window_mask = global_attention_mask.masked_fill(
+            window_mask.logical_not(), torch.finfo(self.dtype).min
+        )
+        if self.is_causal:
+            global_attention_mask = make_attention_causal(global_attention_mask)
+            sliding_window_mask = make_attention_causal(sliding_window_mask)
+
+        return global_attention_mask, sliding_window_mask
 
 
 class CorebehrtForPretraining(CorebehrtEncoder):
