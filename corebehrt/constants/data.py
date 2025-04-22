@@ -51,3 +51,11 @@ TOKENIZED_SCHEMA = {**SCHEMA, "code": "int32"}
 TRAIN_KEY = "train"
 VAL_KEY = "val"
 TEST_KEY = "test"
+
+
+CONCEPT_FEAT = "concept"
+AGE_FEAT = "age"
+ABSPOS_FEAT = "abspos"
+SEGMENT_FEAT = "segment"
+ATTENTION_MASK = "attention_mask"
+TARGET = "target"

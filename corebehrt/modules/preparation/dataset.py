@@ -9,6 +9,14 @@ from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from corebehrt.constants.data import (
+    ABSPOS_FEAT,
+    AGE_FEAT,
+    ATTENTION_MASK,
+    CONCEPT_FEAT,
+    SEGMENT_FEAT,
+    TARGET,
+)
 from corebehrt.modules.preparation.mask import ConceptMasker
 
 
@@ -168,12 +176,12 @@ class MLMDataset(Dataset):
         masked_concepts, target = self.masker.mask_patient_concepts(concepts)
         attention_mask = torch.ones_like(masked_concepts)
         sample = {
-            "concept": masked_concepts,
-            "target": target,
-            "abspos": torch.tensor(patient.abspos, dtype=torch.float),
-            "segment": torch.tensor(patient.segments, dtype=torch.long),
-            "age": torch.tensor(patient.ages, dtype=torch.float),
-            "attention_mask": attention_mask,
+            CONCEPT_FEAT: masked_concepts,
+            TARGET: target,
+            ABSPOS_FEAT: torch.tensor(patient.abspos, dtype=torch.float),
+            SEGMENT_FEAT: torch.tensor(patient.segments, dtype=torch.long),
+            AGE_FEAT: torch.tensor(patient.ages, dtype=torch.float),
+            ATTENTION_MASK: attention_mask,
         }
 
         return sample
@@ -197,12 +205,12 @@ class BinaryOutcomeDataset(Dataset):
             len(patient.concepts), dtype=torch.long
         )  # Require attention mask for bi-gru head
         sample = {
-            "concept": torch.tensor(patient.concepts, dtype=torch.long),
-            "abspos": torch.tensor(patient.abspos, dtype=torch.float),
-            "segment": torch.tensor(patient.segments, dtype=torch.long),
-            "age": torch.tensor(patient.ages, dtype=torch.float),
-            "attention_mask": attention_mask,
-            "target": torch.tensor(patient.outcome, dtype=torch.float),
+            CONCEPT_FEAT: torch.tensor(patient.concepts, dtype=torch.long),
+            ABSPOS_FEAT: torch.tensor(patient.abspos, dtype=torch.float),
+            SEGMENT_FEAT: torch.tensor(patient.segments, dtype=torch.long),
+            AGE_FEAT: torch.tensor(patient.ages, dtype=torch.float),
+            ATTENTION_MASK: attention_mask,
+            TARGET: torch.tensor(patient.outcome, dtype=torch.float),
         }
         return sample
 

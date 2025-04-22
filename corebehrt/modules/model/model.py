@@ -18,7 +18,16 @@ from transformers.models.modernbert.modeling_modernbert import (
     _prepare_4d_attention_mask,
 )
 
-from corebehrt.constants.data import DEFAULT_VOCABULARY, PAD_TOKEN
+from corebehrt.constants.data import (
+    DEFAULT_VOCABULARY,
+    PAD_TOKEN,
+    ATTENTION_MASK,
+    CONCEPT_FEAT,
+    SEGMENT_FEAT,
+    AGE_FEAT,
+    ABSPOS_FEAT,
+    TARGET,
+)
 from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_SCALE,
     TIME2VEC_ABSPOS_SHIFT,
@@ -72,16 +81,18 @@ class CorebehrtEncoder(ModernBertModel):
         Returns:
             BaseModelOutput: output of ModernBertModel with last_hidden_state, etc.
         """
-        if "attention_mask" in batch:
-            attention_mask = batch["attention_mask"]
+        if ATTENTION_MASK in batch:
+            attention_mask = batch[ATTENTION_MASK]
         else:
-            attention_mask = (batch["concept"] != DEFAULT_VOCABULARY[PAD_TOKEN]).float()
+            attention_mask = (
+                batch[CONCEPT_FEAT] != DEFAULT_VOCABULARY[PAD_TOKEN]
+            ).float()
 
         inputs_embeds = self.embeddings(
-            input_ids=batch["concept"],
-            segments=batch["segment"],
-            age=batch["age"],
-            abspos=batch["abspos"],
+            input_ids=batch[CONCEPT_FEAT],
+            segments=batch[SEGMENT_FEAT],
+            age=batch[AGE_FEAT],
+            abspos=batch[ABSPOS_FEAT],
         )
 
         return super().forward(
@@ -185,7 +196,7 @@ class CorebehrtForPretraining(CorebehrtEncoder):
         outputs = super().forward(batch)
         last_hidden_state = outputs[0]
 
-        labels = batch.get("target")
+        labels = batch.get(TARGET)
         if self.sparse_prediction and labels is not None:
             # flatten labels and output first
             labels = labels.view(-1)
@@ -241,11 +252,11 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         outputs = super().forward(batch)
 
         sequence_output = outputs[0]  # Last hidden state
-        logits = self.cls(sequence_output, batch["attention_mask"])
+        logits = self.cls(sequence_output, batch[ATTENTION_MASK])
         outputs.logits = logits
 
-        if batch.get("target") is not None:
-            outputs.loss = self.get_loss(logits, batch["target"])
+        if batch.get(TARGET) is not None:
+            outputs.loss = self.get_loss(logits, batch[TARGET])
 
         return outputs
 
