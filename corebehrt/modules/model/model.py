@@ -9,23 +9,21 @@ This module defines customized EHR-focused BERT models built on top of ModernBer
 """
 
 import logging
+from typing import Tuple
 
 import torch
 import torch.nn as nn
 from transformers import ModernBertModel
-from transformers.models.modernbert.modeling_modernbert import (
-    ModernBertPredictionHead,
-    _prepare_4d_attention_mask,
-)
+from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
 
 from corebehrt.constants.data import (
-    DEFAULT_VOCABULARY,
-    PAD_TOKEN,
+    ABSPOS_FEAT,
+    AGE_FEAT,
     ATTENTION_MASK,
     CONCEPT_FEAT,
+    DEFAULT_VOCABULARY,
+    PAD_TOKEN,
     SEGMENT_FEAT,
-    AGE_FEAT,
-    ABSPOS_FEAT,
     TARGET,
 )
 from corebehrt.constants.model import (
@@ -101,60 +99,16 @@ class CorebehrtEncoder(ModernBertModel):
 
     def _update_attention_mask(
         self, attention_mask: torch.Tensor, output_attentions: bool
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Updates the attention mask to support causal attention and sliding windows.
-
-        This method overrides ModernBertModel's _update_attention_mask to add causal masking
-        when self.is_causal=True. We need custom handling since torch.nn.functional.scaled_dot_product_attention
-        doesn't support combining causal masking with padding masks.
-
-        The method:
-        1. Handles output_attentions warnings for different attention implementations
-        2. Creates a 4D attention mask from the input padding mask
-        3. Adds sliding window masking based on config.local_attention
-        4. Optionally adds causal masking if self.is_causal=True
-
-        Args:
-            attention_mask: Input padding mask of shape (batch_size, seq_len)
-            output_attentions: Whether to output attention weights
-
+        Calls super()._update_attention_mask and adds causal masking if self.is_causal=True.
         Returns:
             Tuple of:
-            - Global attention mask with optional causal masking
+            - Global attention mask
             - Sliding window mask for local attention
         """
-        if output_attentions:
-            if self.config._attn_implementation == "sdpa":
-                logger.warning_once(
-                    "Outputting attentions is only supported with the 'eager' attention implementation, "
-                    'not with "sdpa". Falling back to `attn_implementation="eager"`.'
-                )
-                self.config._attn_implementation = "eager"
-            elif self.config._attn_implementation != "eager":
-                logger.warning_once(
-                    "Outputting attentions is only supported with the eager attention implementation, "
-                    f'not with {self.config._attn_implementation}. Consider setting `attn_implementation="eager"`.'
-                    " Setting `output_attentions=False`."
-                )
-
-        global_attention_mask = _prepare_4d_attention_mask(attention_mask, self.dtype)
-
-        # Create position indices
-        rows = torch.arange(global_attention_mask.shape[2]).unsqueeze(0)
-        # Calculate distance between positions
-        distance = torch.abs(rows - rows.T)
-
-        # Create sliding window mask (1 for positions within window, 0 outside)
-        window_mask = (
-            (distance <= self.config.local_attention // 2)
-            .unsqueeze(0)
-            .unsqueeze(0)
-            .to(attention_mask.device)
-        )
-        # Combine with existing mask
-        sliding_window_mask = global_attention_mask.masked_fill(
-            window_mask.logical_not(), torch.finfo(self.dtype).min
+        global_attention_mask, sliding_window_mask = super()._update_attention_mask(
+            attention_mask, output_attentions
         )
         if self.is_causal:
             global_attention_mask = make_attention_causal(global_attention_mask)
