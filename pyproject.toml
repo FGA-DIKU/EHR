@@ -41,6 +41,9 @@ dependencies = [
     "transformers>=4.48.0"
 ]
 
+[tool.setuptools.packages.find]
+include = ["corebehrt", "corebehrt.*"]
+
 [project.optional-dependencies]
 dev = [
     "ruff",
@@ -52,3 +55,4 @@ dev = [
 Homepage = "https://github.com/FGA-DIKU/EHR"
 Source = "https://github.com/FGA-DIKU/EHR"
 Tracker = "https://github.com/FGA-DIKU/EHR/issues"
+

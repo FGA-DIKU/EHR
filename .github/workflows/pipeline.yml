@@ -40,6 +40,11 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.pretrain
+              
+            - name: main.pretrain_causal
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.pretrain --config_path ./corebehrt/configs/pretrain_causal.yaml
             
             - name: main.create_outcomes
               run: |

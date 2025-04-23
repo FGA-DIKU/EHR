@@ -1,13 +1,21 @@
 SPECIAL_TOKEN_ABSPOS_ADJUSTMENT = (
     1e-3  # used for cls and sep token to ensure correct ordering
 )
-
+IGNORE_LOSS_INDEX = -100
 ### Special tokens ###
 UNKNOWN_TOKEN = "[UNK]"
 CLS_TOKEN = "[CLS]"
 SEP_TOKEN = "[SEP]"
 MASK_TOKEN = "[MASK]"
 PAD_TOKEN = "[PAD]"
+
+DEFAULT_VOCABULARY = {
+    PAD_TOKEN: 0,
+    CLS_TOKEN: 1,
+    SEP_TOKEN: 2,
+    UNKNOWN_TOKEN: 3,
+    MASK_TOKEN: 4,
+}
 
 ### Columns ###
 PID_COL = "subject_id"
@@ -43,3 +51,11 @@ TOKENIZED_SCHEMA = {**SCHEMA, "code": "int32"}
 TRAIN_KEY = "train"
 VAL_KEY = "val"
 TEST_KEY = "test"
+
+
+CONCEPT_FEAT = "concept"
+AGE_FEAT = "age"
+ABSPOS_FEAT = "abspos"
+SEGMENT_FEAT = "segment"
+ATTENTION_MASK = "attention_mask"
+TARGET = "target"

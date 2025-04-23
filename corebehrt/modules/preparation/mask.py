@@ -1,5 +1,8 @@
-import torch
 from typing import Tuple
+
+import torch
+
+from corebehrt.constants.data import IGNORE_LOSS_INDEX
 
 
 class ConceptMasker:
@@ -43,7 +46,9 @@ class ConceptMasker:
 
         # Get MLM mask
         selected_indices = torch.bernoulli(probability_vector).bool()
-        target[~selected_indices] = -100  # Ignore loss for non-selected tokens
+        target[~selected_indices] = (
+            IGNORE_LOSS_INDEX  # Ignore loss for non-selected tokens
+        )
 
         # Replace with [MASK]
         indices_mask = (

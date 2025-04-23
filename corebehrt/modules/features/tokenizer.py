@@ -1,12 +1,6 @@
 import pandas as pd
 
-from corebehrt.constants.data import (
-    CLS_TOKEN,
-    MASK_TOKEN,
-    PAD_TOKEN,
-    SEP_TOKEN,
-    UNKNOWN_TOKEN,
-)
+from corebehrt.constants.data import DEFAULT_VOCABULARY
 from corebehrt.functional.features.tokenize import (
     add_special_tokens_partition,
     limit_concept_length_partition,
@@ -25,13 +19,7 @@ class EHRTokenizer:
     ):
         if vocabulary is None:
             self.new_vocab = True
-            self.vocabulary = {
-                PAD_TOKEN: 0,
-                CLS_TOKEN: 1,
-                SEP_TOKEN: 2,
-                UNKNOWN_TOKEN: 3,
-                MASK_TOKEN: 4,
-            }
+            self.vocabulary = DEFAULT_VOCABULARY
         else:
             self.new_vocab = False
             self.vocabulary = vocabulary
