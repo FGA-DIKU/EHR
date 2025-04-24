@@ -23,6 +23,12 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.create_data
 
+            - name: Sync pipeline outputs
+              uses: ./.github/actions/sync_artifact
+              with:
+                direction: "upload"
+                path: "./outputs"
+
             - name: main.create_data
               run: |
                 source .venv/bin/activate

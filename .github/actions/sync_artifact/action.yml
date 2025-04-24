@@ -1,0 +1,30 @@
+# .github/actions/sync-artifact/action.yml
+name: "Sync pipeline outputs"
+
+description: "Uploads or downloads the shared ./outputs/ artifact for the pipeline."
+
+inputs:
+  direction:
+    description: 'Set to "download" or "upload"'
+    required: true
+  path:
+    description: 'Filesystem path to the outputs directory'
+    required: false
+    default: './outputs'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download pipeline outputs
+      if: ${{ inputs.direction == 'download' }}
+      uses: actions/download-artifact@v3
+      with:
+        name: pipeline-outputs
+        path: ${{ inputs.path }}
+
+    - name: Upload pipeline outputs
+      if: ${{ inputs.direction == 'upload' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: pipeline-outputs
+        path: ${{ inputs.path }}
