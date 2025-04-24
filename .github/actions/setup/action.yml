@@ -1,5 +1,5 @@
 name: "Setup Python + virtual environment"
-description: "Sets up Python and pip cache, creates a fresh venv, and installs deps quickly."
+description: "Sets up Python and caches venv for faster execution"
 
 runs:
   using: "composite"
@@ -9,15 +9,23 @@ runs:
         python-version: "3.10"
         cache: pip
 
+    - name: Cache virtual environment
+      uses: actions/cache@v3
+      id: venv-cache
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-python-3.10-${{ hashFiles('requirements.txt') }}
+
     - name: Create & activate venv
       shell: bash
+      if: steps.venv-cache.outputs.cache-hit != 'true'
       run: |
         python -m venv .venv
-        echo ".venv/bin" >> $GITHUB_PATH
         source .venv/bin/activate
-
-    - name: Install dependencies
-      shell: bash
-      run: |
         pip install --upgrade pip
         pip install -r requirements.txt
+
+    - name: Set environment path
+      shell: bash
+      run: |
+        echo ".venv/bin" >> $GITHUB_PATH
