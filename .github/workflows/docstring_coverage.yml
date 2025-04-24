@@ -9,6 +9,7 @@ on:
 
 jobs:
   doc-coverage:
+    name: Docstring Coverage
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -26,28 +27,33 @@ jobs:
 
       - name: Run docstring coverage check
         id: extract
-        continue-on-error: true  # Move continue-on-error to step level
+        continue-on-error: true  # Move to step level
         run: |
-          # Adjust path below to where your source code lives
           DOC_COV=$(docstr-coverage corebehrt -p --skip-magic --skip-init | awk '{print int($1)}')
           echo "Docstring coverage: ${DOC_COV}%"
           echo "doccov=${DOC_COV}" >> $GITHUB_OUTPUT
 
-      - name: Create Dynamic Docstring Coverage Badge via Gist
-        if: success() || failure()  # Run even if previous step failed
+      - name: Create Dynamic Coverage Badge
+        if: always()  # Always try to create badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: b02ecb317ea24a8ced5e72ae96e1c0c3
           filename: docstr-coverage.json
           label: Docstr Coverage
-          message: "${{ steps.extract.outputs.doccov || '0' }}%"  # Fallback to '0' if extract failed
-          valColorRange: "${{ steps.extract.outputs.doccov || '0' }}"  # Fallback to '0' if extract failed
+          message: "${{ steps.extract.outputs.doccov || '0' }}%"
+          valColorRange: "${{ steps.extract.outputs.doccov || '0' }}"
           minColorRange: 40
           maxColorRange: 100
 
-      - name: Warning on failure
-        if: failure()
+      - name: Report Status
+        if: always()  # Always report status
+        shell: bash
         run: |
-          echo "::warning::Docstring coverage check failed but this is non-blocking"
-          exit 0  # Exit with success even on failure
+          if [[ "${{ steps.extract.outputs.doccov }}" != "" ]]; then
+            echo "✅ Docstring coverage check completed successfully"
+            exit 0
+          else
+            echo "⚠️ Docstring coverage check failed but continuing"
+            exit 0
+          fi
