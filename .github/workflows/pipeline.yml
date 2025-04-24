@@ -24,12 +24,18 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.create_data
 
-            - name: Sync pipeline outputs
-              uses: ./.github/actions/sync_artifact
+            - name: Upload outputs
+              uses: actions/upload-artifact@v3
               with:
-                direction: "upload"
+                name: pipeline-outputs
                 path: "./outputs"
 
+            - name: Download outputs
+              uses: actions/download-artifact@v3
+              with:
+                name: pipeline-outputs
+                path: "./outputs"
+                
             - name: main.create_data
               run: |
                 source .venv/bin/activate
@@ -40,6 +46,7 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_pretrain.yaml
 
+            
             - name: main.pretrain
               run: |
                 source .venv/bin/activate
