@@ -165,7 +165,7 @@ jobs:
                 path: "./outputs"
 
     finetune_cv_simple:
-        needs: prepare_finetune
+        needs: [prepare_finetune, pretrain]
         runs-on: "ubuntu-latest"
         steps:
             - name: Checkout
@@ -178,6 +178,12 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                 name: prepare_finetune_outputs
+                path: "./outputs"
+
+            - name: Download outputs pretrain
+              uses: actions/download-artifact@v4
+              with:
+                name: pretrain_outputs
                 path: "./outputs"
 
             - name: main.finetune_cv
@@ -208,7 +214,7 @@ jobs:
                 
 
     finetune_cv_oot:
-        needs: prepare_finetune
+        needs: [prepare_finetune, pretrain]
         runs-on: "ubuntu-latest"
         steps:
             - name: Checkout
@@ -221,6 +227,12 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                 name: prepare_finetune_outputs
+                path: "./outputs"
+
+            - name: Download outputs pretrain
+              uses: actions/download-artifact@v4
+              with:
+                name: pretrain_outputs
                 path: "./outputs"
             
             - name: main.select_cohort_absolute
