@@ -10,58 +10,144 @@ permissions:
   actions: write
 
 jobs:
-    tests:
+    create_data:
         runs-on: "ubuntu-latest"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
 
-            - name: Setup + dependencies.
+            - name: Setup + dependencies
               uses: ./.github/actions/setup
 
             - name: main.create_data
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.create_data
-
+            
             - name: Upload outputs
               uses: actions/upload-artifact@v4
               with:
-                name: pipeline-outputs
+                name: create_data_outputs 
                 path: "./outputs"
+
+    prepare_training:
+        needs: create_data
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
 
             - name: Download outputs
               uses: actions/download-artifact@v4
               with:
-                name: pipeline-outputs
+                name: create_data_outputs
                 path: "./outputs"
-                
-            - name: main.create_data
-              run: |
-                source .venv/bin/activate
-                python -m corebehrt.main.create_data --config_path ./corebehrt/configs/create_data_wo_held_out.yaml
-            
+
             - name: main.prepare_training_data
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_pretrain.yaml
 
-            
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: prepare_pt_outputs
+                path: "./outputs"
+
+    pretrain:
+        needs: prepare_training
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: prepare_pt_outputs
+                path: "./outputs"
+
             - name: main.pretrain
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.pretrain
-              
+
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: pretrain_outputs
+                path: "./outputs"
+
+    pretrain_causal:
+        needs: prepare_training
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: prepare_pt_outputs
+                path: "./outputs"
+
             - name: main.pretrain_causal
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.pretrain --config_path ./corebehrt/configs/pretrain_causal.yaml
+
+    create_outcomes:
+        needs: create_data
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: create_data_outputs
+                path: "./outputs"
             
             - name: main.create_outcomes
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.create_outcomes
-            
+
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: create_outcomes_outputs
+                path: "./outputs"
+
+    prepare_finetune:
+        needs: create_outcomes
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: create_outcomes_outputs
+                path: "./outputs"
+
             - name: main.select_cohort
               run: |
                 source .venv/bin/activate
@@ -72,11 +158,61 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_finetune.yaml
 
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: prepare_finetune_outputs
+                path: "./outputs"
+
+    finetune_cv_simple:
+        needs: [prepare_finetune, pretrain]
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: prepare_finetune_outputs
+                path: "./outputs"
+
+            - name: Download outputs pretrain
+              uses: actions/download-artifact@v4
+              with:
+                name: pretrain_outputs
+                path: "./outputs"
+
             - name: main.finetune_cv
               run: |
                 source .venv/bin/activate
-                python -m corebehrt.main.finetune_cv
+                python -m corebehrt.main.finetune_cv                
 
+    finetune_cv_oot:
+        needs: [prepare_finetune, pretrain]
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: prepare_finetune_outputs
+                path: "./outputs"
+
+            - name: Download outputs pretrain
+              uses: actions/download-artifact@v4
+              with:
+                name: pretrain_outputs
+                path: "./outputs"
+            
             - name: main.select_cohort_absolute
               run: |
                 source .venv/bin/activate
@@ -87,16 +223,31 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_oot.yaml
 
-            - name: main.select_cohort
+    finetune_held_out:
+        needs: create_outcomes
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: checkout
+              uses: actions/checkout@v4
+
+            - name: setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: create_outcomes_outputs
+                path: "./outputs"
+            - name: main.select_cohort_held_out
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.select_cohort --config_path ./corebehrt/configs/select_cohort_held_out.yaml
 
-            - name: main.prepare_training_data
+            - name: main.prepare_training_data_held_out
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_held_out.yaml
-
+                
             - name: main.evaluate_finetune
               run: |
                 source .venv/bin/activate
