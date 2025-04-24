@@ -191,11 +191,6 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv                
             
-            - name: main.evaluate_finetune
-              run: |
-                source .venv/bin/activate
-                python -m corebehrt.main.evaluate_finetune
-            
             - name: Upload outputs
               uses: actions/upload-artifact@v4
               with:
