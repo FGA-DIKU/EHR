@@ -16,7 +16,7 @@ from corebehrt.modules.trainer.utils import (
 class TestComputeLabels(unittest.TestCase):
     def test_empty_list(self):
         outcomes = []
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(ValueError):
             _ = compute_labels(outcomes)
 
     def test_balanced_classes(self):
