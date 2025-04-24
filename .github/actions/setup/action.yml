@@ -1,15 +1,37 @@
-name: "Setup"
-description: "Install python + deps"
+name: "Setup Python + cache deps"
+description: "Creates (or restores) a venv and installs dependencies only when needed."
 runs:
   using: "composite"
   steps:
+    # 1) Set up Python runtime and pip cache
     - uses: actions/setup-python@v4
       with:
         python-version: "3.10"
         cache: pip
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install -r requirements.txt
+
+    # 2) Restore existing venv (if any)
+    - name: Restore venv
+      uses: actions/cache@v3
+      id: venv-cache
+      with:
+        path: .venv
+        key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+
+    # 3) Create venv and install if missing or updated
+    - name: Create/Update venv
       shell: bash
+      run: |
+        if [ ! -d ".venv" ]; then
+          python -m venv .venv
+        fi
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+
+    # 4) Verify activation (optional)
+    - name: Verify venv
+      shell: bash
+      run: |
+        source .venv/bin/activate
+        python --version
+        pip list
