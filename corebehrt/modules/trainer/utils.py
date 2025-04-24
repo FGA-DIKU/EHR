@@ -25,7 +25,7 @@ def compute_labels(outcomes: List[int]) -> Dict[int, int]:
     """Compute the labels for the outcomes."""
     labels = pd.Series(outcomes)
     counts = labels.value_counts()
-    print(f"Class counts:\n{labels.to_string()}")
+    print(f"Class counts:\n{counts.to_string()}")
 
     if len(counts) < 2:
         raise ValueError(
