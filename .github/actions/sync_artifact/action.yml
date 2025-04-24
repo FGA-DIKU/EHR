@@ -1,4 +1,3 @@
-# .github/actions/sync-artifact/action.yml
 name: "Sync pipeline outputs"
 
 description: "Uploads or downloads the shared ./outputs/ artifact for the pipeline."
