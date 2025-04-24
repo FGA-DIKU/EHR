@@ -195,6 +195,12 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.evaluate_finetune
+            
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: finetune_cv_outputs
+                path: "./outputs"
 
     finetune_cv_oot:
         needs: [prepare_finetune, pretrain]
@@ -228,6 +234,7 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_oot.yaml
 
+
     finetune_held_out:
         needs: create_outcomes
         runs-on: "ubuntu-latest"
@@ -243,6 +250,7 @@ jobs:
               with:
                 name: create_outcomes_outputs
                 path: "./outputs"
+
             - name: main.select_cohort_held_out
               run: |
                 source .venv/bin/activate
@@ -252,4 +260,39 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_held_out.yaml
+
+            - name: Upload outputs
+              uses: actions/upload-artifact@v4
+              with:
+                name: finetune_held_out_outputs
+                path: "./outputs"
+
+    evaluate_finetune:
+        needs: [finetune_held_out, finetune_cv_simple]
+        runs-on: "ubuntu-latest"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies
+              uses: ./.github/actions/setup
+
+            - name: Download outputs
+              uses: actions/download-artifact@v4
+              with:
+                name: finetune_cv_outputs
+                path: "./outputs"
+
+            - name: Download outputs finetune_held_out
+              uses: actions/download-artifact@v4
+              with:
+                name: finetune_held_out_outputs
+                path: "./outputs"
+
+            - name: main.evaluate_finetune
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.evaluate_finetune
+
+          
                 
