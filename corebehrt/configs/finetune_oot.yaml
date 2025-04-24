@@ -18,9 +18,7 @@ paths:
 evaluate: true # evaluate best model on test sets
 
 model:
-  cls:
-    _target_: ehr2vec.model.heads.ClassifierGRU
-    bidirectional: true
+  cls: default
 
 data:
   test_split: 0.3 # only used if predefined_folds is false and test_pids is not provided
