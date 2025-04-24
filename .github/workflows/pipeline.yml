@@ -12,7 +12,10 @@ jobs:
     tests:
         runs-on: "ubuntu-latest"
         steps:
-            - name: Setup Checkout + dependencies.
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup + dependencies.
               uses: ./.github/actions/setup
 
             - name: main.create_data
