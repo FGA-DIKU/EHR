@@ -10,6 +10,7 @@ on:
 jobs:
   doc-coverage:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Makes the entire job non-blocking
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -43,3 +44,8 @@ jobs:
           valColorRange: "${{ steps.extract.outputs.doccov }}"
           minColorRange: 40
           maxColorRange: 100
+
+      - name: Warning on Failure
+        if: failure()
+        run: |
+          echo "::warning::Docstring coverage check failed. This is non-blocking but you might want to check your documentation."

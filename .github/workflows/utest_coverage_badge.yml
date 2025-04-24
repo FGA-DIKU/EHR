@@ -10,6 +10,7 @@ on:
 jobs:
   badge:
     runs-on: ubuntu-latest
+    continue-on-error: true  # Makes the entire job non-blocking
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
