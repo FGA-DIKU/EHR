@@ -25,7 +25,7 @@ trainer_args:
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128
-  epochs: 1
+  epochs: 2
   info: true
   gradient_clip: 
     clip_value: 1.0
