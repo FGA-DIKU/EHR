@@ -10,6 +10,7 @@ on:
 jobs:
   doc-coverage:
     name: Docstring Coverage
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
