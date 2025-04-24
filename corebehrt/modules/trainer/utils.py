@@ -1,12 +1,13 @@
-from typing import List
+from typing import Dict, List, Optional
 
 import numpy as np
-from torch.utils.data import WeightedRandomSampler
 import pandas as pd
+from torch.utils.data import WeightedRandomSampler
+
 from corebehrt.modules.setup.config import instantiate_function
 
 
-def get_sampler(cfg, outcomes: List[int]):
+def get_sampler(cfg, outcomes: List[int]) -> Optional[WeightedRandomSampler]:
     """Get sampler for training data.
     If sampler_function is false or undefined, then no sampler is used.
     If sample_weight_function is defined then the function is used to calculate the weights.
@@ -20,27 +21,72 @@ def get_sampler(cfg, outcomes: List[int]):
     return None
 
 
+def compute_labels(outcomes: List[int]) -> Dict[int, int]:
+    """Compute the labels for the outcomes."""
+    labels = pd.Series(outcomes)
+    counts = labels.value_counts()
+    print(f"Class counts:\n{labels.to_string()}")
+
+    if len(counts) < 2:
+        raise ValueError(
+            f"Found only {len(counts)} class(es) in the data. Multi-class sampling/weighting requires at least 2 classes."
+        )
+    return counts
+
+
 class Sampling:
     @staticmethod
-    def inverse_sqrt(x):
-        """Calculate the inverse square root of a value or array."""
-        return 1 / np.sqrt(x)
+    def inverse_sqrt(outcomes: List[int]) -> List[float]:
+        """Calculate the inverse square root of class frequencies.
+
+        Args:
+            outcomes: List of class labels
+
+        Returns:
+            List[float]: Weight for each sample based on inverse square root of class frequency
+
+        Raises:
+            ValueError: If data contains less than 2 classes
+        """
+        labels = compute_labels(outcomes)  # Will raise ValueError if < 2 classes
+        weights = 1 / np.sqrt(labels)
+        # Map weights back to samples
+        return [weights[label] for label in outcomes]
 
     @staticmethod
-    def effective_n_samples(outcomes: List[int]):
-        """Calculate weights using the effective number of samples method from paper https://arxiv.org/pdf/1901.05555."""
-        labels = pd.Series(outcomes)
+    def effective_n_samples(outcomes: List[int]) -> List[float]:
+        """Calculate weights using the effective number of samples method.
+
+        Args:
+            outcomes: List of class labels
+
+        Returns:
+            List[float]: Weight for each sample based on effective number of samples
+
+        Raises:
+            ValueError: If data contains less than 2 classes
+        """
+        labels = compute_labels(outcomes)  # Will raise ValueError if < 2 classes
+        # Calculate beta as per the paper
         beta = (len(outcomes) - 1) / len(outcomes)
-        n0 = labels.value_counts()[0]
-        n1 = labels.value_counts()[1]
-        E0 = (1 - (beta**n0)) / (1 - beta)
-        E1 = (1 - (beta**n1)) / (1 - beta)
-        probs = [E0 / (E0 + E1), E1 / (E0 + E1)]
-        weights = [probs[label] / labels.value_counts()[label] for label in labels]
-        return weights
+
+        # Calculate effective number for each class
+        effective_nums = {
+            label: (1 - (beta**count)) / (1 - beta) for label, count in labels.items()
+        }
+
+        # Calculate class probabilities
+        total_effective = sum(effective_nums.values())
+        class_probs = {
+            label: eff_num / total_effective
+            for label, eff_num in effective_nums.items()
+        }
+
+        # Calculate weights for each sample
+        return [class_probs[outcome] / labels[outcome] for outcome in outcomes]
 
 
-def get_loss_weight(cfg, outcomes: List[int]):
+def get_loss_weight(cfg, outcomes: List[int]) -> Optional[List[float]]:
     """Get weights for weighted loss function.
     If loss_weight_function is false or undefined, then no positive weight is used.
     If loss_weight_function is defined then the function is used to calculate the weights.
@@ -54,24 +100,55 @@ def get_loss_weight(cfg, outcomes: List[int]):
 
 class PositiveWeight:
     @staticmethod
-    def sqrt(outcomes: List[int]):
-        """Calculate the square root of the ratio of negative to positive samples."""
-        outcomes_series = pd.Series(outcomes)
-        num_pos = (outcomes_series == 1).sum()
-        num_neg = (outcomes_series == 0).sum()
+    def sqrt(outcomes: List[int]) -> float:
+        """Calculate the square root of the ratio of negative to positive samples.
+
+        Args:
+            outcomes: List of binary labels (0 or 1)
+
+        Returns:
+            float: Square root of negative to positive ratio
+
+        Raises:
+            ValueError: If data contains less than 2 classes or no positive samples
+        """
+        labels = compute_labels(outcomes)  # Will raise ValueError if < 2 classes
+        num_neg = labels.get(0, 0)
+        num_pos = labels.get(1, 0)
+
+        if num_pos == 0:
+            raise ValueError("No positive samples (class 1) found in the dataset")
+        if num_neg == 0:
+            raise ValueError("No negative samples (class 0) found in the dataset")
+
         return np.sqrt(num_neg / num_pos)
 
     @staticmethod
-    def effective_n_samples(outcomes: List[int]):
-        """Calculate positive weight using the effective number of samples method."""
-        labels = pd.Series(outcomes).astype(int)
-        beta = (len(outcomes) - 1) / (len(outcomes))
-        n0 = labels.value_counts()[0]
-        n1 = labels.value_counts()[1]
+    def effective_n_samples(outcomes: List[int]) -> float:
+        """Calculate positive weight using the effective number of samples method.
+
+        Args:
+            outcomes: List of binary labels (0 or 1)
+
+        Returns:
+            float: Weight ratio based on effective number of samples
+
+        Raises:
+            ValueError: If data contains less than 2 classes or missing classes
+        """
+        labels = compute_labels(outcomes)  # Will raise ValueError if < 2 classes
+        n0 = labels.get(0)
+        n1 = labels.get(1)
+
+        if n0 is None or n1 is None:
+            raise ValueError(
+                "Both classes (0 and 1) must be present for binary classification"
+            )
+
+        beta = (len(outcomes) - 1) / len(outcomes)
         alpha_0 = (1 - beta) / (1 - beta**n0)
         alpha_1 = (1 - beta) / (1 - beta**n1)
-        pos_weight = alpha_1 / alpha_0
-        return pos_weight
+        return alpha_1 / alpha_0
 
 
 def is_plateau(
