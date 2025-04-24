@@ -10,7 +10,6 @@ on:
 jobs:
   doc-coverage:
     runs-on: ubuntu-latest
-    continue-on-error: true  # Makes the entire job non-blocking
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -27,6 +26,7 @@ jobs:
 
       - name: Run docstring coverage check
         id: extract
+        continue-on-error: true  # Move continue-on-error to step level
         run: |
           # Adjust path below to where your source code lives
           DOC_COV=$(docstr-coverage corebehrt -p --skip-magic --skip-init | awk '{print int($1)}')
@@ -34,18 +34,20 @@ jobs:
           echo "doccov=${DOC_COV}" >> $GITHUB_OUTPUT
 
       - name: Create Dynamic Docstring Coverage Badge via Gist
+        if: success() || failure()  # Run even if previous step failed
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.GIST_SECRET }}       # Your secret token with the gist scope
-          gistID: b02ecb317ea24a8ced5e72ae96e1c0c3                  # Fill in your gist id here
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: b02ecb317ea24a8ced5e72ae96e1c0c3
           filename: docstr-coverage.json
           label: Docstr Coverage
-          message: "${{ steps.extract.outputs.doccov }}%"
-          valColorRange: "${{ steps.extract.outputs.doccov }}"
+          message: "${{ steps.extract.outputs.doccov || '0' }}%"  # Fallback to '0' if extract failed
+          valColorRange: "${{ steps.extract.outputs.doccov || '0' }}"  # Fallback to '0' if extract failed
           minColorRange: 40
           maxColorRange: 100
 
-      - name: Warning on Failure
+      - name: Warning on failure
         if: failure()
         run: |
-          echo "::warning::Docstring coverage check failed. This is non-blocking but you might want to check your documentation."
+          echo "::warning::Docstring coverage check failed but this is non-blocking"
+          exit 0  # Exit with success even on failure
