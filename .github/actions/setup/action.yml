@@ -13,6 +13,7 @@ runs:
       shell: bash
       run: |
         python -m venv .venv
+        echo ".venv/bin" >> $GITHUB_PATH
         source .venv/bin/activate
 
     - name: Install dependencies
