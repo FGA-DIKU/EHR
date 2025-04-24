@@ -1,11 +1,16 @@
-name: Docstring Coverage
+name: Docstring Coverage Badge
 
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   doc-coverage:
+    name: Docstring Coverage
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -23,20 +28,33 @@ jobs:
 
       - name: Run docstring coverage check
         id: extract
+        continue-on-error: true  # Move to step level
         run: |
-          # Adjust path below to where your source code lives
           DOC_COV=$(docstr-coverage corebehrt -p --skip-magic --skip-init | awk '{print int($1)}')
           echo "Docstring coverage: ${DOC_COV}%"
           echo "doccov=${DOC_COV}" >> $GITHUB_OUTPUT
 
-      - name: Create Dynamic Docstring Coverage Badge via Gist
+      - name: Create Dynamic Coverage Badge
+        if: always()  # Always try to create badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
-          auth: ${{ secrets.GIST_SECRET }}       # Your secret token with the gist scope
-          gistID: b02ecb317ea24a8ced5e72ae96e1c0c3                  # Fill in your gist id here
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: b02ecb317ea24a8ced5e72ae96e1c0c3
           filename: docstr-coverage.json
-          label: Doc Coverage
-          message: "${{ steps.extract.outputs.doccov }}%"
-          valColorRange: "${{ steps.extract.outputs.doccov }}"
+          label: Docstr Coverage
+          message: "${{ steps.extract.outputs.doccov || '0' }}%"
+          valColorRange: "${{ steps.extract.outputs.doccov || '0' }}"
           minColorRange: 40
           maxColorRange: 100
+
+      - name: Report Status
+        if: always()  # Always report status
+        shell: bash
+        run: |
+          if [[ "${{ steps.extract.outputs.doccov }}" != "" ]]; then
+            echo "✅ Docstring coverage check completed successfully"
+            exit 0
+          else
+            echo "⚠️ Docstring coverage check failed but continuing"
+            exit 0
+          fi

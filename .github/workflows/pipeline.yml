@@ -9,7 +9,7 @@ permissions:
   pull-requests: read
 
 jobs:
-    tests:
+    pipeline_tests:
         runs-on: "ubuntu-latest"
         steps:
             - name: Checkout
