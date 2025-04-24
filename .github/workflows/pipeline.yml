@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
-  actions: read
+  actions: write
 
 jobs:
     tests:
@@ -25,13 +25,13 @@ jobs:
                 python -m corebehrt.main.create_data
 
             - name: Upload outputs
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
                 name: pipeline-outputs
                 path: "./outputs"
 
             - name: Download outputs
-              uses: actions/download-artifact@v3
+              uses: actions/download-artifact@v4
               with:
                 name: pipeline-outputs
                 path: "./outputs"
