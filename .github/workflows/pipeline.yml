@@ -1,8 +1,8 @@
 name: 'Pipeline test'
 
 on:
-    workflow_dispatch:
-    pull_request:
+  workflow_dispatch:
+  pull_request:
 
 permissions:
   contents: read
@@ -10,151 +10,200 @@ permissions:
   actions: write
 
 jobs:
-    data_preparation:
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup + dependencies
-              uses: ./.github/actions/setup
-            - name: Create data and outcomes
-              run: |
-                python -m corebehrt.main.create_data
-                python -m corebehrt.main.create_outcomes
-            - name: Upload outputs
-              uses: actions/upload-artifact@v4
-              with:
-                name: base_data_outputs
-                path: "./outputs"
+  create_data:
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    training_preparation:
-        needs: data_preparation
-        runs-on: "ubuntu-latest"
-        strategy:
-          matrix:
-            config: ['prepare_pretrain', 'prepare_finetune', 'prepare_held_out']
-            include:
-              - config: prepare_pretrain
-                needs_cohort: false
-                output_name: prepare_pt_outputs
-              - config: prepare_finetune
-                needs_cohort: true
-                cohort_config: ''  # default config
-                output_name: prepare_finetune_outputs
-              - config: prepare_held_out
-                needs_cohort: true
-                cohort_config: select_cohort_held_out
-                output_name: prepare_held_out_outputs
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup + dependencies
-              uses: ./.github/actions/setup
-            - name: Download outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: base_data_outputs
-                path: "./outputs"
-            - name: Run cohort selection
-              if: ${{ matrix.needs_cohort }}
-              run: |
-                python -m corebehrt.main.select_cohort ${{ matrix.cohort_config && format('--config_path ./corebehrt/configs/{0}.yaml', matrix.cohort_config) }}
-            - name: Prepare training data
-              run: |
-                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/${{ matrix.config }}.yaml
-            - name: Upload outputs
-              uses: actions/upload-artifact@v4
-              with:
-                name: ${{ matrix.output_name }}
-                path: "./outputs"
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
 
-    pretraining:
-        needs: training_preparation
-        runs-on: "ubuntu-latest"
-        strategy:
-          matrix:
-            config: ['pretrain', 'pretrain_causal']
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup + dependencies
-              uses: ./.github/actions/setup
-            - name: Download outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: prepare_pt_outputs
-                path: "./outputs"
-            - name: Run pretraining
-              run: |
-                python -m corebehrt.main.pretrain ${{ matrix.config != 'pretrain' && format('--config_path ./corebehrt/configs/{0}.yaml', matrix.config) }}
-            - name: Upload outputs
-              if: matrix.config == 'pretrain'  # Only upload the main pretrain outputs
-              uses: actions/upload-artifact@v4
-              with:
-                name: pretrain_outputs
-                path: "./outputs"
+      - name: main.create_data
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.create_data
+      
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: create_data_outputs 
+          path: "./outputs"
 
-    finetuning:
-        needs: [training_preparation, pretraining]
-        runs-on: "ubuntu-latest"
-        strategy:
-          matrix:
-            type: ['simple', 'oot']
-            include:
-              - type: simple
-                output_name: finetune_cv_outputs
-              - type: oot
-                cohort_config: select_cohort_absolute
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup + dependencies
-              uses: ./.github/actions/setup
-            - name: Download outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: prepare_finetune_outputs
-                path: "./outputs"
-            - name: Download pretrain outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: pretrain_outputs
-                path: "./outputs"
-            - name: Run cohort selection
-              if: matrix.type == 'oot'
-              run: |
-                python -m corebehrt.main.select_cohort --config_path ./corebehrt/configs/${{ matrix.cohort_config }}.yaml
-            - name: Run finetuning
-              run: |
-                python -m corebehrt.main.finetune_cv ${{ matrix.type == 'oot' && '--config_path ./corebehrt/configs/finetune_oot.yaml' }}
-            - name: Upload outputs
-              if: matrix.type == 'simple'
-              uses: actions/upload-artifact@v4
-              with:
-                name: ${{ matrix.output_name }}
-                path: "./outputs"
+  create_outcomes:
+    needs: create_data
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    evaluate:
-        needs: [finetuning, training_preparation]
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            - name: Setup + dependencies
-              uses: ./.github/actions/setup
-            - name: Download finetune outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: finetune_cv_outputs
-                path: "./outputs"
-            - name: Download held-out outputs
-              uses: actions/download-artifact@v4
-              with:
-                name: prepare_held_out_outputs
-                path: "./outputs"
-            - name: Evaluate
-              run: |
-                python -m corebehrt.main.evaluate_finetune
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
 
+      - name: Download outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: create_data_outputs
+          path: "./outputs"
+      
+      - name: main.create_outcomes
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.create_outcomes
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: create_outcomes_outputs
+          path: "./outputs"
+
+  prepare_training:
+    needs: [create_data, create_outcomes]
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        config:
+          - {name: "pretrain", config_path: "./corebehrt/configs/prepare_pretrain.yaml", artifact_name: "prepare_pt_outputs"}
+          - {name: "finetune", config_path: "./corebehrt/configs/prepare_finetune.yaml", artifact_name: "prepare_finetune_outputs", run_select_cohort: true}
+          - {name: "held_out", config_path: "./corebehrt/configs/prepare_held_out.yaml", artifact_name: "prepare_held_out_outputs", run_select_cohort: true, cohort_config: "./corebehrt/configs/select_cohort_held_out.yaml"}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
+
+      - name: Download data outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: create_data_outputs
+          path: "./outputs"
           
-                
+      - name: Download outcomes outputs
+        if: matrix.config.run_select_cohort == true
+        uses: actions/download-artifact@v4
+        with:
+          name: create_outcomes_outputs
+          path: "./outputs"
+
+      - name: Select cohort
+        if: matrix.config.run_select_cohort == true
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.select_cohort ${{ matrix.config.cohort_config != '' && format('--config_path {0}', matrix.config.cohort_config) || '' }}
+
+      - name: main.prepare_training_data
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.prepare_training_data --config_path ${{ matrix.config.config_path }}
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.artifact_name }}
+          path: "./outputs"
+
+  pretrain_jobs:
+    needs: prepare_training
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        model: 
+          - {name: "standard", config_path: "", script: "pretrain"}
+          - {name: "causal", config_path: "./corebehrt/configs/pretrain_causal.yaml", script: "pretrain"}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
+
+      - name: Download outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: prepare_pt_outputs
+          path: "./outputs"
+
+      - name: main.${{ matrix.model.script }}
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.${{ matrix.model.script }} ${{ matrix.model.config_path != '' && format('--config_path {0}', matrix.model.config_path) || '' }}
+
+      - name: Upload outputs
+        if: matrix.model.name == 'standard'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pretrain_outputs
+          path: "./outputs"
+
+  finetune_jobs:
+    needs: [prepare_training, pretrain_jobs]
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        finetune:
+          - {name: "cv_simple", config_path: ""}
+          - {name: "cv_oot", config_path: "./corebehrt/configs/finetune_oot.yaml", run_select_cohort: true, cohort_config: "./corebehrt/configs/select_cohort_absolute.yaml"}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
+
+      - name: Download finetune outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: prepare_finetune_outputs
+          path: "./outputs"
+
+      - name: Download pretrain outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: pretrain_outputs
+          path: "./outputs"
+
+      - name: Select cohort absolute
+        if: matrix.finetune.run_select_cohort == true
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.select_cohort --config_path ${{ matrix.finetune.cohort_config }}
+
+      - name: main.finetune_cv
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.finetune_cv ${{ matrix.finetune.config_path != '' && format('--config_path {0}', matrix.finetune.config_path) || '' }}
+      
+      - name: Upload outputs
+        if: matrix.finetune.name == 'cv_simple'
+        uses: actions/upload-artifact@v4
+        with:
+          name: finetune_cv_outputs
+          path: "./outputs"
+
+  evaluate_finetune:
+    needs: [finetune_jobs, prepare_training]
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup + dependencies
+        uses: ./.github/actions/setup
+
+      - name: Download finetune outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: finetune_cv_outputs
+          path: "./outputs"
+
+      - name: Download held out outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: prepare_held_out_outputs
+          path: "./outputs"
+
+      - name: main.evaluate_finetune
+        run: |
+          source .venv/bin/activate
+          python -m corebehrt.main.evaluate_finetune
