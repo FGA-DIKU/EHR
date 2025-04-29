@@ -11,6 +11,10 @@ from corebehrt.constants.data import (
     TIMESTAMP_COL,
     VALUE_COL,
 )
+from corebehrt.functional.cohort_handling.combined_outcomes import (
+    create_empty_results_df,
+    find_matches_within_window,
+)
 from corebehrt.functional.cohort_handling.matching import get_col_booleans
 from corebehrt.functional.preparation.filter import (
     filter_table_by_pids,
@@ -151,29 +155,15 @@ class OutcomeMaker:
         """
         # Handle empty input DataFrame
         if len(concepts_plus) == 0:
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL, ABSPOS_COL])
+            return create_empty_results_df()
 
-        # Get primary events
-        primary_config = combinations["primary"]
-        primary_events = self.match_concepts(
-            concepts_plus,
-            primary_config["type"],
-            primary_config["match"],
-            {k: v for k, v in primary_config.items() if k not in ["type", "match"]},
-        )
-
-        # Get secondary events
-        secondary_config = combinations["secondary"]
-        secondary_events = self.match_concepts(
-            concepts_plus,
-            secondary_config["type"],
-            secondary_config["match"],
-            {k: v for k, v in secondary_config.items() if k not in ["type", "match"]},
-        )
+        # Get primary and secondary events
+        primary_events = self.get_events(concepts_plus, combinations["primary"])
+        secondary_events = self.get_events(concepts_plus, combinations["secondary"])
 
         # Return empty DataFrame if either set of events is empty
         if len(primary_events) == 0 or len(secondary_events) == 0:
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL, ABSPOS_COL])
+            return create_empty_results_df()
 
         # Add absolute positions for time window comparison
         primary_events[ABSPOS_COL] = get_hours_since_epoch(
@@ -183,79 +173,14 @@ class OutcomeMaker:
             secondary_events[TIMESTAMP_COL]
         )
 
-        # Define the time window
-        window_hours = combinations.get(
-            "window_hours", 24
-        )  # Default to 24 hours if not specified
-        direction = combinations.get(
-            "direction", "any"
-        )  # Default to "any" direction if not specified
+        # Find events within the time window
+        return find_matches_within_window(
+            primary_events, secondary_events, combinations
+        )
 
-        # Initialize an empty DataFrame for the results
-        result_rows = []
-
-        # For each patient
-        for pid in primary_events[PID_COL].unique():
-            patient_primary = primary_events[primary_events[PID_COL] == pid]
-            patient_secondary = secondary_events[secondary_events[PID_COL] == pid]
-
-            # Skip if either event type is missing for this patient
-            if len(patient_primary) == 0 or len(patient_secondary) == 0:
-                continue
-
-            # For each primary event for this patient
-            for _, primary_row in patient_primary.iterrows():
-                primary_time = primary_row[ABSPOS_COL]
-
-                # Find secondary events within the time window
-                if direction == "any":
-                    # Secondary can be before or after primary
-                    matches = patient_secondary[
-                        (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-                        & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-                    ]
-                elif direction == "before":
-                    # Secondary must be before primary
-                    matches = patient_secondary[
-                        (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-                        & (patient_secondary[ABSPOS_COL] <= primary_time)
-                    ]
-                elif direction == "after":
-                    # Secondary must be after primary
-                    matches = patient_secondary[
-                        (patient_secondary[ABSPOS_COL] >= primary_time)
-                        & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-                    ]
-                else:
-                    logger.warning(
-                        f"Unknown direction '{direction}', defaulting to 'any'"
-                    )
-                    matches = patient_secondary[
-                        (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-                        & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-                    ]
-
-                # If we found matches, add this primary event to the results
-                if len(matches) > 0:
-                    # By default, use the primary event timestamp
-                    result_row = primary_row.copy()
-
-                    # Optionally, if specified in config, use a specific timestamp
-                    timestamp_source = combinations.get("timestamp_source", "primary")
-                    if timestamp_source == "secondary":
-                        # Use the closest secondary event timestamp
-                        closest_idx = (
-                            (matches[ABSPOS_COL] - primary_time).abs().idxmin()
-                        )
-                        closest_match = matches.loc[closest_idx]
-                        result_row[TIMESTAMP_COL] = closest_match[TIMESTAMP_COL]
-                        result_row[ABSPOS_COL] = closest_match[ABSPOS_COL]
-
-                    result_rows.append(result_row)
-
-        # Convert results to DataFrame
-        if result_rows:
-            return pd.DataFrame(result_rows)
-        else:
-            # Return empty DataFrame with proper columns
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL, ABSPOS_COL])
+    def get_events(self, concepts_plus: pd.DataFrame, config: Dict) -> pd.DataFrame:
+        """Extract events from concepts based on configuration."""
+        extra_params = {k: v for k, v in config.items() if k not in ["type", "match"]}
+        return self.match_concepts(
+            concepts_plus, config["type"], config["match"], extra_params
+        )
