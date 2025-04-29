@@ -92,6 +92,7 @@ def create_empty_results_df():
 
 
 def check_combination_args(args: dict):
+    """Validates arguments for combination outcomes"""
     if PRIMARY not in args:
         raise ValueError(f"{PRIMARY} must be defined in the combinations dictionary")
     if SECONDARY not in args:
@@ -104,10 +105,10 @@ def check_combination_args(args: dict):
     window_hours_min = args.get(WINDOW_HOURS_MIN, None)
     if not isinstance(window_hours_min, (int, float)):
         raise ValueError(
-            f"{WINDOW_HOURS_MIN} must be a float or in got '{window_hours_min}'"
+            f"{WINDOW_HOURS_MIN} must be a float or int got '{window_hours_min}'"
         )
     window_hours_max = args.get(WINDOW_HOURS_MAX, None)
     if not isinstance(window_hours_max, (int, float)):
         raise ValueError(
-            f"{WINDOW_HOURS_MAX} must be a float or in got '{window_hours_max}'"
+            f"{WINDOW_HOURS_MAX} must be a float or int got '{window_hours_max}'"
         )
