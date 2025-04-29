@@ -59,3 +59,11 @@ ABSPOS_FEAT = "abspos"
 SEGMENT_FEAT = "segment"
 ATTENTION_MASK = "attention_mask"
 TARGET = "target"
+
+# combined outcomes
+COMBINATIONS = "combinations"
+TIMESTAMP_SOURCE = "timestamp_source"
+WINDOW_HOURS_MIN = "window_hours_min"
+WINDOW_HOURS_MAX = "window_hours_max"
+PRIMARY = "primary"
+SECONDARY = "secondary"
