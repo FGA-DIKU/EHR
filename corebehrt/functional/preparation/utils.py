@@ -1,5 +1,4 @@
 from dataclasses import asdict, fields
-from functools import lru_cache
 from typing import List
 
 import pandas as pd
