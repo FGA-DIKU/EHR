@@ -1,4 +1,5 @@
 from dataclasses import asdict, fields
+from functools import lru_cache
 from typing import List
 
 import pandas as pd
@@ -80,3 +81,35 @@ def is_valid_regex(pattern: str) -> bool:
         return True
     except re.error:
         return False
+
+
+def get_concept_id_to_delay(concept_pattern_delays: dict, vocab: dict) -> dict:
+    """
+    Resolve regex patterns to specific concept IDs using the vocabulary.
+
+    Args:
+        concept_pattern_delays: Dictionary mapping regex patterns to delay hours
+                               e.g., {"^D": 24}
+        vocab: Vocabulary dictionary mapping concept strings to IDs
+              e.g., {"D_12345": 101, "D_67890": 201}
+
+    Returns:
+        Dictionary mapping concept IDs to their delay values
+        e.g., {101: 24, 201: 48}
+    """
+    concept_id_to_delay = {}
+
+    # Get the inverse vocabulary (id to string)
+    id_to_concept = {id_val: concept for concept, id_val in vocab.items()}
+
+    # Process each pattern
+    for pattern, delay in concept_pattern_delays.items():
+        # Compile pattern (will raise ValueError if invalid)
+        regex = re.compile(pattern)
+
+        # Find all matching concepts in the vocabulary
+        for concept_id, concept_str in id_to_concept.items():
+            if regex.search(concept_str):
+                concept_id_to_delay[concept_id] = delay
+
+    return concept_id_to_delay
