@@ -59,12 +59,7 @@ class OutcomeMaker:
             else:
                 types = attrs["type"]
                 matches = attrs["match"]
-                if types == "patients_info":
-                    timestamps = self.match_patient_info(patients_info, matches)
-                else:
-                    timestamps = self.match_concepts(
-                        concepts_plus, types, matches, attrs
-                    )
+                timestamps = self.match_concepts(concepts_plus, types, matches, attrs)
 
             # Only process if we have data
             if len(timestamps) > 0:
@@ -76,24 +71,6 @@ class OutcomeMaker:
 
             outcome_tables[outcome] = timestamps
         return outcome_tables
-
-    def match_patient_info(
-        self, patients_info: pd.DataFrame, match: str
-    ) -> pd.DataFrame:
-        """Get timestamps of interest from patients_info"""
-        # Handle case when patients_info is empty
-        if len(patients_info) == 0:
-            return create_empty_results_df()
-        # Ensure match column contains timestamps
-        if not pd.api.types.is_datetime64_any_dtype(patients_info[match]):
-            logger.warning(
-                f"Column {match} does not contain timestamps, returning empty DataFrame"
-            )
-            return create_empty_results_df()
-
-        # Rename match column to TIMESTAMP_COL for consistency
-        patients_info = patients_info.rename(columns={match: TIMESTAMP_COL})
-        return patients_info[[PID_COL, TIMESTAMP_COL]].dropna()
 
     def match_concepts(
         self,
