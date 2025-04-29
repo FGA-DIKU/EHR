@@ -2,7 +2,16 @@ import logging
 
 import pandas as pd
 
-from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL, PRIMARY
+from corebehrt.constants.data import (
+    ABSPOS_COL,
+    PID_COL,
+    TIMESTAMP_COL,
+    TIMESTAMP_SOURCE,
+    WINDOW_HOURS_MAX,
+    WINDOW_HOURS_MIN,
+    PRIMARY,
+    SECONDARY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,3 +89,25 @@ def _create_result_row(
 def create_empty_results_df():
     """Create an empty df with columns: PID_COL, TIMESTAMP_COL, ABSPOS_COL"""
     return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL, ABSPOS_COL])
+
+
+def check_combination_args(args: dict):
+    if PRIMARY not in args:
+        raise ValueError(f"{PRIMARY} must be defined in the combinations dictionary")
+    if SECONDARY not in args:
+        raise ValueError(f"{SECONDARY} must be defined in the combinations dictionary")
+    timestamp_source = args.get(TIMESTAMP_SOURCE, None)
+    if timestamp_source not in {PRIMARY, SECONDARY}:
+        logger.warning(
+            f"Invalid timestamp_source '{timestamp_source}', falling back to 'primary'"
+        )
+    window_hours_min = args.get(WINDOW_HOURS_MIN, None)
+    if not isinstance(window_hours_min, (int, float)):
+        raise ValueError(
+            f"{WINDOW_HOURS_MIN} must be a float or in got '{window_hours_min}'"
+        )
+    window_hours_max = args.get(WINDOW_HOURS_MAX, None)
+    if not isinstance(window_hours_max, (int, float)):
+        raise ValueError(
+            f"{WINDOW_HOURS_MAX} must be a float or in got '{window_hours_max}'"
+        )

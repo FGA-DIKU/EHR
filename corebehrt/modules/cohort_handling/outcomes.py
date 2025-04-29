@@ -6,18 +6,19 @@ import pandas as pd
 
 from corebehrt.constants.data import (
     ABSPOS_COL,
+    COMBINATIONS,
     CONCEPT_COL,
     PID_COL,
-    TIMESTAMP_COL,
-    VALUE_COL,
-    TIMESTAMP_SOURCE,
-    WINDOW_HOURS_MAX,
-    WINDOW_HOURS_MIN,
     PRIMARY,
     SECONDARY,
-    COMBINATIONS,
+    TIMESTAMP_COL,
+    TIMESTAMP_SOURCE,
+    VALUE_COL,
+    WINDOW_HOURS_MAX,
+    WINDOW_HOURS_MIN,
 )
 from corebehrt.functional.cohort_handling.combined_outcomes import (
+    check_combination_args,
     create_empty_results_df,
     find_matches_within_window,
 )
@@ -52,7 +53,7 @@ class OutcomeMaker:
         for outcome, attrs in self.outcomes.items():
             # Handle combination outcomes
             if COMBINATIONS in attrs:
-                self._check_combination_args(attrs[COMBINATIONS])
+                check_combination_args(attrs[COMBINATIONS])
                 timestamps = self.match_combinations(concepts_plus, attrs[COMBINATIONS])
             # Handle traditional outcomes
             else:
@@ -82,13 +83,13 @@ class OutcomeMaker:
         """Get timestamps of interest from patients_info"""
         # Handle case when patients_info is empty
         if len(patients_info) == 0:
-            return pd.DataFrame(columns=[PID_COL, match, TIMESTAMP_COL])
+            return create_empty_results_df()
         # Ensure match column contains timestamps
         if not pd.api.types.is_datetime64_any_dtype(patients_info[match]):
             logger.warning(
                 f"Column {match} does not contain timestamps, returning empty DataFrame"
             )
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL])
+            return create_empty_results_df()
 
         # Rename match column to TIMESTAMP_COL for consistency
         patients_info = patients_info.rename(columns={match: TIMESTAMP_COL})
@@ -106,7 +107,7 @@ class OutcomeMaker:
         """
         # Handle empty DataFrame
         if len(concepts_plus) == 0:
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL])
+            return create_empty_results_df()
 
         # Make a copy to avoid modifying the original
         filtered_concepts = concepts_plus.copy()
@@ -125,7 +126,7 @@ class OutcomeMaker:
         )
 
         if len(col_booleans) == 0:
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL])
+            return create_empty_results_df()
 
         mask = np.bitwise_and.reduce(col_booleans)
 
@@ -136,7 +137,7 @@ class OutcomeMaker:
         if len(result) > 0:
             return result.drop(columns=[CONCEPT_COL, VALUE_COL])
         else:
-            return pd.DataFrame(columns=[PID_COL, TIMESTAMP_COL])
+            return create_empty_results_df()
 
     def match_combinations(
         self,
@@ -151,8 +152,9 @@ class OutcomeMaker:
                 Example: {
                     "primary": {"type": ["code"], "match": [["DOD"]]},
                     "secondary": {"type": ["code"], "match": [["DI20"]]},
-                    "window_hours": 24,
-                    "direction": "any" # or "before", "after"
+                    "window_hours_min": 24,
+                    "window_hours_max": 24,
+                    "timestamp_source": "primary" # or "secondary"
                 }
 
         Returns:
@@ -193,29 +195,3 @@ class OutcomeMaker:
         return self.match_concepts(
             concepts_plus, config["type"], config["match"], extra_params
         )
-
-    @staticmethod
-    def _check_combination_args(args: dict):
-        if PRIMARY not in args:
-            raise ValueError(
-                f"{PRIMARY} must be defined in the combinations dictionary"
-            )
-        if SECONDARY not in args:
-            raise ValueError(
-                f"{SECONDARY} must be defined in the combinations dictionary"
-            )
-        timestamp_source = args.get(TIMESTAMP_SOURCE, None)
-        if timestamp_source not in {PRIMARY, SECONDARY}:
-            logger.warning(
-                f"Invalid timestamp_source '{timestamp_source}', falling back to 'primary'"
-            )
-        window_hours_min = args.get(WINDOW_HOURS_MIN, None)
-        if not isinstance(window_hours_min, (int, float)):
-            raise ValueError(
-                f"{WINDOW_HOURS_MIN} must be a float or in got '{window_hours_min}'"
-            )
-        window_hours_max = args.get(WINDOW_HOURS_MAX, None)
-        if not isinstance(window_hours_max, (int, float)):
-            raise ValueError(
-                f"{WINDOW_HOURS_MAX} must be a float or in got '{window_hours_max}'"
-            )
