@@ -99,7 +99,6 @@ class TestOutcomeMaker(unittest.TestCase):
         self.patients_info = pd.DataFrame(
             {
                 PID_COL: [1, 2, 3, 4, 5, 6, 7],
-                "gender": ["M", "F", "M", "F", "M", "F", "M"],
             }
         )
 
@@ -222,7 +221,6 @@ class TestOutcomeMaker(unittest.TestCase):
 
     def test_death_from_mi_combination(self):
         """Test combination outcome for death from myocardial infarction"""
-        # Define outcome for death with MI
         outcomes = {
             "DEATH_FROM_MI": {
                 "combinations": {
@@ -236,8 +234,8 @@ class TestOutcomeMaker(unittest.TestCase):
                         "match": [["DI20"]],
                         "match_how": "startswith",
                     },
-                    "window_hours": 24,  # Look for heart infarct within 24 hours of death
-                    "direction": "before",  # Heart infarct should come before death
+                    "window_hours_min": -24,  # Look for MI up to 24 hours before death
+                    "window_hours_max": 0,  # up until death (not after)
                     "timestamp_source": "primary",  # Use death timestamp
                 }
             }
@@ -279,8 +277,8 @@ class TestOutcomeMaker(unittest.TestCase):
                         "match": [["B01"]],  # Anticoagulant
                         "match_how": "startswith",
                     },
-                    "window_hours": 48,  # Look for anticoagulant within 48 hours
-                    "direction": "any",  # Anticoagulant can be before or after stroke
+                    "window_hours_min": -48,  # Look for anticoagulant up to 48 hours before
+                    "window_hours_max": 48,  # or up to 48 hours after
                     "timestamp_source": "primary",  # Use stroke timestamp
                 }
             }
@@ -327,9 +325,9 @@ class TestOutcomeMaker(unittest.TestCase):
                         "match": [["DI20"]],
                         "match_how": "startswith",
                     },
-                    "window_hours": 24,
-                    "direction": "before",
-                    "timestamp_source": "secondary",  # Use heart infarct timestamp instead
+                    "window_hours_min": -24,  # Look back 24 hours from death
+                    "window_hours_max": 0,  # Up until death (not after)
+                    "timestamp_source": "secondary",  # Use heart infarct timestamp
                 }
             }
         }
@@ -354,47 +352,6 @@ class TestOutcomeMaker(unittest.TestCase):
         )  # DI20 timestamp for patient 4
         self.assertEqual(mi_outcome.iloc[0][TIMESTAMP_COL], expected_timestamp)
 
-    def test_direction_after(self):
-        """Test combination with 'after' direction"""
-        # Define outcome with direction 'after'
-        outcomes = {
-            "ANTICOAGULANT_AFTER_STROKE": {
-                "combinations": {
-                    "primary": {
-                        "type": ["code"],
-                        "match": [["I63"]],  # Stroke
-                        "match_how": "startswith",
-                    },
-                    "secondary": {
-                        "type": ["code"],
-                        "match": [["B01"]],  # Anticoagulant
-                        "match_how": "startswith",
-                    },
-                    "window_hours": 48,
-                    "direction": "after",  # Anticoagulant must be after stroke
-                    "timestamp_source": "primary",
-                }
-            }
-        }
-
-        # Create outcome maker
-        outcome_maker = OutcomeMaker(outcomes)
-
-        # Get outcomes
-        result = outcome_maker(self.concepts_plus, self.patients_info, self.patient_set)
-
-        # Check result
-        self.assertIn("ANTICOAGULANT_AFTER_STROKE", result)
-        after_outcome = result["ANTICOAGULANT_AFTER_STROKE"]
-
-        # Should only include the first stroke for patient 6 (which has anticoagulant after it)
-        self.assertEqual(len(after_outcome), 1)
-        self.assertEqual(after_outcome.iloc[0][PID_COL], 6)
-
-        # Timestamp should match the first stroke
-        expected_timestamp = datetime.datetime(2020, 2, 1, 10, 0)
-        self.assertEqual(after_outcome.iloc[0][TIMESTAMP_COL], expected_timestamp)
-
     def test_empty_result(self):
         """Test handling of combinations that yield no results"""
         # Define outcome with impossible criteria
@@ -411,7 +368,8 @@ class TestOutcomeMaker(unittest.TestCase):
                         "match": [["ANOTHER_NONEXISTENT"]],
                         "match_how": "startswith",
                     },
-                    "window_hours": 24,
+                    "window_hours_min": 24,
+                    "window_hours_max": 24,
                 }
             }
         }
@@ -456,7 +414,8 @@ class TestOutcomeMaker(unittest.TestCase):
                         "match": [["DI20"]],
                         "match_how": "startswith",
                     },
-                    "window_hours": 24,
+                    "window_hours_min": 24,
+                    "window_hours_max": 24,
                 }
             },
         }
