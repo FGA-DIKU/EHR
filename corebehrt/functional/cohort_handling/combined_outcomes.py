@@ -97,17 +97,17 @@ def check_combination_args(args: dict):
         raise ValueError(f"{PRIMARY} must be defined in the combinations dictionary")
     if SECONDARY not in args:
         raise ValueError(f"{SECONDARY} must be defined in the combinations dictionary")
-    timestamp_source = args.get(TIMESTAMP_SOURCE, None)
+    timestamp_source = args.get(TIMESTAMP_SOURCE)
     if timestamp_source not in {PRIMARY, SECONDARY}:
         logger.warning(
             f"Invalid timestamp_source '{timestamp_source}', falling back to 'primary'"
         )
-    window_hours_min = args.get(WINDOW_HOURS_MIN, None)
+    window_hours_min = args.get(WINDOW_HOURS_MIN)
     if not isinstance(window_hours_min, (int, float)):
         raise ValueError(
             f"{WINDOW_HOURS_MIN} must be a float or int got '{window_hours_min}'"
         )
-    window_hours_max = args.get(WINDOW_HOURS_MAX, None)
+    window_hours_max = args.get(WINDOW_HOURS_MAX)
     if not isinstance(window_hours_max, (int, float)):
         raise ValueError(
             f"{WINDOW_HOURS_MAX} must be a float or int got '{window_hours_max}'"
