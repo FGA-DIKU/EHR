@@ -1,20 +1,20 @@
 import logging
-from typing import Dict
 
 import pandas as pd
 
-from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL, PRIMARY
 
 logger = logging.getLogger(__name__)
 
 
 def find_matches_within_window(
-    primary_events: pd.DataFrame, secondary_events: pd.DataFrame, combinations: Dict
+    primary_events: pd.DataFrame,
+    secondary_events: pd.DataFrame,
+    window_hours_min: int | float,
+    window_hours_max: int | float,
+    timestamp_source: str = PRIMARY,
 ) -> pd.DataFrame:
     """Find matches between primary and secondary events within the specified time window."""
-    window_hours = combinations.get("window_hours", 24)  # Default: 24 hours
-    direction = combinations.get("direction", "any")  # Default: "any" direction
-    timestamp_source = combinations.get("timestamp_source", "primary")
 
     result_rows = []
 
@@ -29,8 +29,11 @@ def find_matches_within_window(
 
         # For each primary event for this patient
         for _, primary_row in patient_primary.iterrows():
-            matches = _get_matches_by_direction(
-                primary_row[ABSPOS_COL], patient_secondary, window_hours, direction
+            matches = _get_matches_within_interval(
+                primary_row[ABSPOS_COL],
+                patient_secondary,
+                window_hours_min,
+                window_hours_max,
             )
 
             # If we found matches, add this primary event to the results
@@ -45,37 +48,17 @@ def find_matches_within_window(
         return create_empty_results_df()
 
 
-def _get_matches_by_direction(
+def _get_matches_within_interval(
     primary_time: float,
     patient_secondary: pd.DataFrame,
-    window_hours: int,
-    direction: str,
+    window_hours_min: float | int,
+    window_hours_max: float | int,
 ) -> pd.DataFrame:
     """Get secondary events that match the time window criteria based on direction."""
-    if direction == "any":
-        # Secondary can be before or after primary
-        return patient_secondary[
-            (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-            & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-        ]
-    elif direction == "before":
-        # Secondary must be before primary
-        return patient_secondary[
-            (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-            & (patient_secondary[ABSPOS_COL] <= primary_time)
-        ]
-    elif direction == "after":
-        # Secondary must be after primary
-        return patient_secondary[
-            (patient_secondary[ABSPOS_COL] >= primary_time)
-            & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-        ]
-    else:
-        logger.warning(f"Unknown direction '{direction}', defaulting to 'any'")
-        return patient_secondary[
-            (patient_secondary[ABSPOS_COL] >= primary_time - window_hours)
-            & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours)
-        ]
+    return patient_secondary[
+        (patient_secondary[ABSPOS_COL] >= primary_time + window_hours_min)
+        & (patient_secondary[ABSPOS_COL] <= primary_time + window_hours_max)
+    ]
 
 
 def _create_result_row(
@@ -83,7 +66,6 @@ def _create_result_row(
 ) -> pd.Series:
     """Create a result row based on the primary event and matching secondary events."""
     result_row = primary_row.copy()
-
     if timestamp_source == "secondary":
         # Use the closest secondary event timestamp
         primary_time = primary_row[ABSPOS_COL]

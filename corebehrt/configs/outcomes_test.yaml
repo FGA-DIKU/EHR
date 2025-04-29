@@ -23,12 +23,13 @@ outcomes:
     combinations:
       primary:
         type: [ code ]
-        match: [ [ 'D10' ] ] # Death code
+        match: [ [ 'D10' ] ]
         match_how: startswith
       secondary:
         type: [ code ]
-        match: [ [ 'D02' ] ] # Heart infarct code
+        match: [ [ 'D02', 'D01' ] ]
         match_how: startswith
-      window_hours: 1000 # Look for heart infarct within 72 hours of death
-      direction: "before" # Heart infarct should come before death
-      timestamp_source: "primary" # Use death timestamp as the outcome timestamp
+      # takes occurence of primary and looks for secondary within +-1000 hours
+      window_hours_min: -1000
+      window_hours_max: 1000
+      timestamp_source: "primary" # Optional, falls back to primary if not specified
