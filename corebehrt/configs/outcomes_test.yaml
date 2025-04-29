@@ -8,15 +8,27 @@ paths:
   features: ./outputs/features/
 
 outcomes:
-  TEST_OUTCOME: 
-    type: [code]
-    match: [['D10', 'D02']]
-    exclude: ['157141000119108']
+  TEST_OUTCOME:
+    type: [ code ]
+    match: [ [ 'D10', 'D02' ] ]
+    exclude: [ '157141000119108' ]
     match_how: startswith
     case_sensitive: true
   TEST_CENSOR:
-    type: [code]
-    match: [['M112']]
+    type: [ code ]
+    match: [ [ 'M112' ] ]
     match_how: startswith
     case_sensitive: false
-
+  TEST_COMBINED:
+    combinations:
+      primary:
+        type: [ code ]
+        match: [ [ 'D10' ] ] # Death code
+        match_how: startswith
+      secondary:
+        type: [ code ]
+        match: [ [ 'D02' ] ] # Heart infarct code
+        match_how: startswith
+      window_hours: 1000 # Look for heart infarct within 72 hours of death
+      direction: "before" # Heart infarct should come before death
+      timestamp_source: "primary" # Use death timestamp as the outcome timestamp
