@@ -1,3 +1,11 @@
+"""Functions for filtering and censoring patient data during preparation.
+
+This module provides utilities for:
+- Patient data filtering (by PID, timestamps, sequence length)
+- Censoring patient data (with and without concept-specific delays)
+- DataFrame filtering (by column values, regex patterns)
+"""
+
 from bisect import bisect_right
 from typing import List
 
@@ -46,6 +54,44 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     patient.abspos = patient.abspos[:idx]
     patient.segments = patient.segments[:idx]
     patient.ages = patient.ages[:idx]
+
+    return patient
+
+
+def censor_patient_with_delays(
+    patient: PatientData, censor_dates: pd.Series, concept_id_to_delay: dict = None
+) -> PatientData:
+    """
+    Censor patient data with pattern-based concept-specific delays.
+    Optimized for cases with few distinct delay groups.
+
+    Args:
+        patient: Patient data to censor
+        censor_dates: Series mapping patient IDs to base censor dates
+        concept_id_to_delay: Dictionary mapping concept IDs to their delays in hours
+    """
+    base_censor_date = censor_dates[patient.pid]
+
+    # Initialize keep mask
+    keep_mask = [False] * len(patient.concepts)
+
+    # Process each concept with its appropriate delay
+    for i, (concept, abspos) in enumerate(zip(patient.concepts, patient.abspos)):
+        # Get delay for this concept (0 for unmapped concepts)
+        delay = concept_id_to_delay.get(concept, 0)
+
+        # Calculate effective censor date for this concept
+        effective_censor_date = base_censor_date + delay
+
+        # Keep this concept if it's before or at the effective censor date
+        if abspos <= effective_censor_date:
+            keep_mask[i] = True
+
+    # Apply the mask to all patient attributes
+    patient.concepts = [c for i, c in enumerate(patient.concepts) if keep_mask[i]]
+    patient.abspos = [a for i, a in enumerate(patient.abspos) if keep_mask[i]]
+    patient.segments = [s for i, s in enumerate(patient.segments) if keep_mask[i]]
+    patient.ages = [a for i, a in enumerate(patient.ages) if keep_mask[i]]
 
     return patient
 
