@@ -12,7 +12,7 @@ def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
     Assumes that the table has a column named PID.
     Returns a new table with only the rows that have a PID in pids
     """
-    return df[df[PID_COL].isin(set(pids))]
+    return df[df[PID_COL].isin(pids)]
 
 
 def remove_missing_timestamps(df: pd.DataFrame) -> pd.DataFrame:
