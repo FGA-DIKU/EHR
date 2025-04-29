@@ -91,6 +91,9 @@ class TestCensorPatient(unittest.TestCase):
 
     def test_censor_patient_all_included(self):
         # If censor_date is large, everything is included
+        """
+        Tests that all patient events are retained when the censor date is set beyond all event times.
+        """
         p1 = PatientData(1, [101], [10.0], [1], [50.0])
         censor_dates = {1: 999.0}
         censored = censor_patient(p1, censor_dates)
@@ -100,6 +103,11 @@ class TestCensorPatient(unittest.TestCase):
 class TestCensorPatientWithDelays(unittest.TestCase):
     def test_two_delay_groups_with_unmapped(self):
         # Setup patient with mixed concept types including unmapped concepts
+        """
+        Tests that censor_patient_with_delays correctly censors patient data with multiple delay groups and unmapped concepts.
+        
+        Verifies that only concepts with specified delays and occurring before their adjusted censor dates are retained, while unmapped concepts are excluded.
+        """
         p1 = PatientData(
             pid=1,
             concepts=[101, 202, 999, 201, 998],  # 999, 998 are unmapped
@@ -126,6 +134,11 @@ class TestCensorPatientWithDelays(unittest.TestCase):
 
     def test_all_unmapped(self):
         # Test case where no concepts have specified delays
+        """
+        Tests that censor_patient_with_delays behaves like standard censoring when no concepts have delay mappings.
+        
+        Verifies that only events occurring at or before the censor date are retained when the concept delay mapping is empty.
+        """
         p1 = PatientData(
             pid=1,
             concepts=[101, 102, 103],
@@ -148,6 +161,11 @@ class TestCensorPatientWithDelays(unittest.TestCase):
 
 class TestRegexFilter(unittest.TestCase):
     def setUp(self):
+        """
+        Initializes a sample DataFrame for use in test cases.
+        
+        Creates a DataFrame with subject IDs, codes, and timestamps to be used as test data in the test methods.
+        """
         self.df = pd.DataFrame(
             {
                 "subject_id": [1, 1, 2, 3, 3, 3],

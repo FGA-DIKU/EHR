@@ -168,6 +168,9 @@ class TestBackgroundFunctions(unittest.TestCase):
 class TestConceptDelayMapping(unittest.TestCase):
     def setUp(self):
         # Create a test vocabulary with various concept patterns
+        """
+        Initializes a test vocabulary with concept keys for use in concept delay mapping tests.
+        """
         self.vocab = {
             "D_12345": 101,
             "D_67890": 102,
@@ -179,6 +182,9 @@ class TestConceptDelayMapping(unittest.TestCase):
 
     def test_basic_pattern_matching(self):
         # Test basic prefix matching
+        """
+        Tests that concept IDs are correctly mapped to delays based on prefix regex patterns.
+        """
         concept_delays = {
             "^D_": 24,  # All D_ concepts get 24h delay
             "^LAB_": 48,  # All LAB_ concepts get 48h delay
@@ -196,6 +202,11 @@ class TestConceptDelayMapping(unittest.TestCase):
 
     def test_overlapping_patterns(self):
         # Test when patterns might overlap
+        """
+        Tests that when multiple regex patterns match a concept, the delay from the last matching pattern is used.
+        
+        Verifies that `get_concept_id_to_delay` applies overlapping patterns in order, with later matches overriding earlier ones for the same concept ID.
+        """
         concept_delays = {
             "^D_": 24,
             "5$": 72,  # Ends with 5
@@ -212,6 +223,9 @@ class TestConceptDelayMapping(unittest.TestCase):
 
     def test_no_matches(self):
         # Test when pattern matches nothing
+        """
+        Tests that get_concept_id_to_delay returns an empty dictionary when no vocab keys match the provided regex patterns.
+        """
         concept_delays = {
             "^NONEXISTENT_": 24,
         }
@@ -222,6 +236,12 @@ class TestConceptDelayMapping(unittest.TestCase):
 
     def test_complex_regex(self):
         # Test more complex regex patterns
+        """
+        Tests get_concept_id_to_delay with complex regex patterns for concept keys.
+        
+        Verifies that concept IDs are correctly mapped to delays when concept keys match
+        patterns requiring specific digit counts or uppercase letter sequences.
+        """
         concept_delays = {
             r"^D_\d{5}$": 24,  # Exactly D_ followed by 5 digits
             r"LAB_[A-Z]+$": 48,  # LAB_ followed by uppercase letters
@@ -239,6 +259,9 @@ class TestConceptDelayMapping(unittest.TestCase):
 
     def test_invalid_regex(self):
         # Test handling of invalid regex patterns
+        """
+        Tests that get_concept_id_to_delay raises a re.error when given an invalid regex pattern.
+        """
         concept_delays = {
             "[": 24,  # Invalid regex
         }

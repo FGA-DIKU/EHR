@@ -76,6 +76,15 @@ def subset_patient_data(patient: PatientData, keep_indices: List[int]) -> Patien
 
 
 def is_valid_regex(pattern: str) -> bool:
+    """
+    Checks whether a string is a valid regular expression pattern.
+    
+    Args:
+        pattern: The regex pattern string to validate.
+    
+    Returns:
+        True if the pattern can be compiled as a regular expression, False otherwise.
+    """
     try:
         re.compile(pattern)
         return True
@@ -85,17 +94,14 @@ def is_valid_regex(pattern: str) -> bool:
 
 def get_concept_id_to_delay(concept_pattern_delays: dict, vocab: dict) -> dict:
     """
-    Resolve regex patterns to specific concept IDs using the vocabulary.
-
+    Maps concept IDs to delay values based on regex pattern matches against concept strings.
+    
     Args:
-        concept_pattern_delays: Dictionary mapping regex patterns to delay hours
-                               e.g., {"^D": 24}
-        vocab: Vocabulary dictionary mapping concept strings to IDs
-              e.g., {"D_12345": 101, "D_67890": 201}
-
+        concept_pattern_delays: A dictionary mapping regex patterns to delay values.
+        vocab: A dictionary mapping concept strings to their corresponding IDs.
+    
     Returns:
-        Dictionary mapping concept IDs to their delay values
-        e.g., {101: 24, 201: 48}
+        A dictionary mapping concept IDs to their associated delay values, where each concept ID is included if its concept string matches a provided regex pattern.
     """
     concept_id_to_delay = {}
 

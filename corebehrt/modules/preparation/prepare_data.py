@@ -47,6 +47,17 @@ class DatasetPreparer:
         self.processed_dir = cfg.paths.prepared_data
 
     def prepare_finetune_data(self, mode="tuning") -> PatientDataset:
+        """
+        Prepares and processes patient data for fine-tuning, including censoring, truncation, and outcome assignment.
+        
+        Loads patient data and outcomes, applies cohort and cutoff filtering, assigns binary outcomes, computes and validates censoring dates, applies censoring (optionally with concept-specific delays), excludes short sequences, truncates and normalizes patient records, and saves the processed dataset for downstream modeling.
+        
+        Args:
+            mode: Specifies which data split to use for fine-tuning (default is "tuning").
+        
+        Returns:
+            A PatientDataset object containing the processed and labeled patient data ready for fine-tuning.
+        """
         outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
         data_cfg = self.cfg.data
