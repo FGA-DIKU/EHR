@@ -105,7 +105,7 @@ class TestCensorPatientWithDelays(unittest.TestCase):
         # Setup patient with mixed concept types including unmapped concepts
         """
         Tests that censor_patient_with_delays correctly censors patient data with multiple delay groups and unmapped concepts.
-        
+
         Verifies that only concepts with specified delays and occurring before their adjusted censor dates are retained, while unmapped concepts are excluded.
         """
         p1 = PatientData(
@@ -136,7 +136,7 @@ class TestCensorPatientWithDelays(unittest.TestCase):
         # Test case where no concepts have specified delays
         """
         Tests that censor_patient_with_delays behaves like standard censoring when no concepts have delay mappings.
-        
+
         Verifies that only events occurring at or before the censor date are retained when the concept delay mapping is empty.
         """
         p1 = PatientData(
@@ -163,7 +163,7 @@ class TestRegexFilter(unittest.TestCase):
     def setUp(self):
         """
         Initializes a sample DataFrame for use in test cases.
-        
+
         Creates a DataFrame with subject IDs, codes, and timestamps to be used as test data in the test methods.
         """
         self.df = pd.DataFrame(

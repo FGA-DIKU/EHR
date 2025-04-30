@@ -47,13 +47,13 @@ def exclude_short_sequences(
 def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     """
     Censors a patient's data by truncating all attributes at the censor date.
-    
+
     The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained.
-    
+
     Args:
         patient: The PatientData object to be censored.
         censor_dates: A mapping from patient IDs to their respective censor dates.
-    
+
     Returns:
         The censored PatientData object with truncated attributes.
     """
@@ -75,14 +75,14 @@ def censor_patient_with_delays(
 ) -> PatientData:
     """
     Censors a patient's data using concept-specific delays applied to their censor date.
-    
+
     For each concept in the patient's record, calculates an effective censor date by adding a delay (if specified) to the base censor date for the patient. Retains only those concepts and corresponding attributes whose timestamps are less than or equal to their effective censor dates.
-    
+
     Args:
         patient: The patient data to censor.
         censor_dates: Series mapping patient IDs to their base censor dates.
         concept_id_to_delay: Optional dictionary mapping concept IDs to delay values (in hours). Concepts not present in the dictionary use a delay of 0.
-    
+
     Returns:
         The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates.
     """
@@ -115,15 +115,15 @@ def censor_patient_with_delays(
 def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
     """
     Filters a DataFrame by including or excluding specified values in a given column.
-    
+
     Args:
         column: The column name on which to apply the filter.
         include_values: Values to retain in the column (cannot be used with exclude_values).
         exclude_values: Values to remove from the column (cannot be used with include_values).
-    
+
     Returns:
         A DataFrame filtered according to the specified inclusion or exclusion rule.
-    
+
     Raises:
         ValueError: If both include_values and exclude_values are provided.
     """

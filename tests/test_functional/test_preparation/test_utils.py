@@ -204,7 +204,7 @@ class TestConceptDelayMapping(unittest.TestCase):
         # Test when patterns might overlap
         """
         Tests that when multiple regex patterns match a concept, the delay from the last matching pattern is used.
-        
+
         Verifies that `get_concept_id_to_delay` applies overlapping patterns in order, with later matches overriding earlier ones for the same concept ID.
         """
         concept_delays = {
@@ -238,7 +238,7 @@ class TestConceptDelayMapping(unittest.TestCase):
         # Test more complex regex patterns
         """
         Tests get_concept_id_to_delay with complex regex patterns for concept keys.
-        
+
         Verifies that concept IDs are correctly mapped to delays when concept keys match
         patterns requiring specific digit counts or uppercase letter sequences.
         """
