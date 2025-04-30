@@ -3,15 +3,15 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./example_data/example_MEDS_data_w_labs
+  data: ./example_data/correlated_MEDS_data
   outcomes: ./outputs/outcomes/
   features: ./outputs/features/
 
 outcomes:
   TEST_OUTCOME:
     type: [ code ]
-    match: [ [ 'D10', 'D02' ] ]
-    exclude: [ '157141000119108' ]
+    match: [ [ 'DE11' ] ] # Type 1 diabetes, related to "M/IN01", "M/IN02", "LAB/GL" in correlated data
+    exclude: [ 'D437' ]
     match_how: startswith
     case_sensitive: true
   TEST_CENSOR:
