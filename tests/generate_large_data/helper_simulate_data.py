@@ -4,7 +4,7 @@ Simulate both random and correlated medical data for performance testing and ML 
 
 import os
 import uuid
-from typing import Dict, List, Tuple, Optional
+from typing import List
 import numpy as np
 import pandas as pd
 from tqdm import tqdm

@@ -1,9 +1,6 @@
 from os.path import exists, join
-
 import pandas as pd
-import torch
 
-from corebehrt.constants.paths import DATA_CFG
 from corebehrt.main.finetune_cv import main_finetune
 from corebehrt.main.evaluate_finetune import main_evaluate
 from tests.test_main.base import TestMainScript
