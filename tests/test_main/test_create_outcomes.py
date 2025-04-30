@@ -95,5 +95,5 @@ class TestCreateOutcomes(TestMainScript):
                         expected_row[column],
                         f"Unexpected value at row {idx}, column {column}",
                     )
-        
+
         print("Test create outcomes passed")
