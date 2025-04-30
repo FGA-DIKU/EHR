@@ -54,7 +54,15 @@ CONCEPT_RELATIONSHIPS = {
 
 
 def get_related_concepts(base_concept: str) -> List[str]:
-    """Get all related concepts for a given base concept."""
+    """
+    Returns a list of related concepts for a given base concept by probabilistically sampling each related concept based on predefined probabilities.
+    
+    Args:
+        base_concept: The base concept for which to find related concepts.
+    
+    Returns:
+        A list of related concept strings sampled according to their defined probabilities.
+    """
     related = []
     if base_concept in CONCEPT_RELATIONSHIPS:
         for concept, prob in CONCEPT_RELATIONSHIPS[base_concept][
@@ -73,8 +81,19 @@ def generate_random_concepts_batch(
     n_unique_concepts: int = 1000,
 ) -> pd.DataFrame:
     """
-    Generate completely random medical concepts without any correlations.
-    This is useful for creating baseline data to compare against correlated data.
+    Generates a batch of random medical concept records for patients without correlations.
+    
+    Each patient receives a random number of records, each assigned a random concept ID (optionally with a prefix) and a random timestamp between their birthdate and deathdate (or a default future date if deathdate is missing). Optionally includes a random lab result column.
+    
+    Args:
+        patients_info: DataFrame containing patient demographic information, including PID, BIRTHDATE, and DEATHDATE.
+        mean_records_per_pid: Mean number of records to generate per patient.
+        prefix: Optional prefix to prepend to each concept ID.
+        result_col: If True, adds a RESULT column with random integer values.
+        n_unique_concepts: Number of unique concept IDs to sample from.
+    
+    Returns:
+        DataFrame with columns TIMESTAMP, PID, ADMISSION_ID, CONCEPT, and optionally RESULT.
     """
     # Generate random number of records for each patient
     n_records_per_patient = np.random.exponential(
@@ -137,8 +156,17 @@ def generate_correlated_concepts_batch(
     result_col: bool = False,
 ) -> pd.DataFrame:
     """
-    Generate medical concepts with realistic correlations and relationships.
-    This creates data that better represents real-world medical patterns.
+    Generates a batch of medical concepts with realistic correlations for a set of patients.
+    
+    For each patient, creates a random number of records, assigns concept codes based on predefined base probabilities and related concept relationships, and generates event timestamps between birthdate and deathdate. Optionally includes lab results for lab concepts.
+    
+    Args:
+        patients_info: DataFrame containing patient demographic information, including PID, BIRTHDATE, and DEATHDATE.
+        mean_records_per_pid: Average number of concept records to generate per patient.
+        result_col: If True, includes a RESULT column with values for lab concepts and NaN for others.
+    
+    Returns:
+        DataFrame with columns TIMESTAMP, PID, ADMISSION_ID, CONCEPT, and optionally RESULT, representing correlated medical events for the input patients.
     """
     # Generate random number of records for each patient
     n_records_per_patient = np.random.exponential(
@@ -219,6 +247,18 @@ def generate_correlated_concepts_batch(
 
 def generate_admissions_batch(patients_info, mean_records_per_pid):
     # Generate random number of records for each patient using exponential distribution
+    """
+    Generates admission and discharge event records for a batch of patients.
+    
+    For each patient, simulates a random number of admissions, assigns random admission and discharge timestamps between birthdate and deathdate, and generates unique admission IDs. Returns a DataFrame containing both admission and discharge events, with each event labeled by concept type.
+    
+    Args:
+        patients_info: DataFrame with patient demographic information, including PID, BIRTHDATE, and DEATHDATE.
+        mean_records_per_pid: Mean number of admissions to generate per patient.
+    
+    Returns:
+        DataFrame with columns TIMESTAMP, PID, ADMISSION_ID, and CONCEPT, representing both admission and discharge events.
+    """
     n_records_per_patient = np.random.exponential(
         scale=mean_records_per_pid, size=len(patients_info)
     ).astype(int)
@@ -288,6 +328,17 @@ def generate_admissions_batch(patients_info, mean_records_per_pid):
 
 def generate_patients_info_batch(n_patients):
     # Set a random seed for reproducibility (optional)
+    """
+    Generates a batch of synthetic patient demographic and vital status information.
+    
+    Randomly assigns birthdates, optional deathdates, race, ethnicity, gender, and unique patient IDs for a specified number of patients. Approximately 20% of patients are assigned a deathdate occurring at least 10 years after birth and before 2024; others are considered alive.
+    
+    Args:
+        n_patients: Number of patient records to generate.
+    
+    Returns:
+        A pandas DataFrame with columns: PID, BIRTHDATE, DEATHDATE, RACE, ETHNICITY, GENDER.
+    """
     np.random.seed(42)
 
     # Define the range of birthdates (e.g., between 1940 and 2020)
@@ -349,14 +400,16 @@ def main_write(
     data_type: str = "both",  # "random", "correlated", or "both"
 ):
     """
-    Generate and write simulated data to parquet files.
-
+    Generates and writes simulated patient, concept, and admission data to Parquet files.
+    
+    Creates batches of synthetic medical data according to the specified mode ("random", "correlated", or "both"), optionally including lab test results. Data is written incrementally in Parquet format to the specified directory, with batching to support large datasets.
+    
     Args:
-        n_patients: Number of patients to generate
-        n_concepts: Average number of concepts per patient
-        write_dir: Directory to write output files
-        include_labs: Whether to include lab test data
-        data_type: Type of data to generate ("random", "correlated", or "both")
+        n_patients: Total number of patients to generate.
+        n_concepts: Average number of concepts per patient.
+        write_dir: Output directory for Parquet files.
+        include_labs: If True, includes lab test data in the output.
+        data_type: Type of data to generate ("random", "correlated", or "both").
     """
     os.makedirs(write_dir, exist_ok=True)
     batch_size_patients = min(200_000, n_patients)

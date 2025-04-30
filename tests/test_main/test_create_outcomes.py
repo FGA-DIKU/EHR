@@ -10,6 +10,12 @@ from tests.test_main.base import TestMainScript
 
 class TestCreateOutcomes(TestMainScript):
     def setUp(self):
+        """
+        Sets up the test environment and configuration for outcome generation tests.
+        
+        Initializes a temporary outcomes directory and writes a configuration file specifying
+        paths and outcome definitions for use in subsequent tests.
+        """
         super().setUp()
 
         # Create config file
@@ -60,6 +66,13 @@ class TestCreateOutcomes(TestMainScript):
     def test_create_outcomes(self):
         ### Call create outcomes script
 
+        """
+        Tests that the main_data function generates correct outcome files and configuration copies.
+        
+        This test verifies that outcome CSV files and configuration files are created in the specified
+        output directory, and that the generated outcome files match expected results in both structure
+        and content.
+        """
         main_data(self.config_path)
 
         ### Validate generated files.

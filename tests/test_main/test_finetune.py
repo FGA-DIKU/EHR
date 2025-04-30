@@ -11,6 +11,11 @@ from tests.test_main.base import TestMainScript
 
 class TestFinetune(TestMainScript):
     def setUp(self):
+        """
+        Sets up test directories and configuration for fine-tuning model tests.
+        
+        Initializes paths for processed data, pretrained model, output directories, and predictions. Configures model, training, optimizer, and scheduler parameters for use in fine-tuning tests.
+        """
         super().setUp()
 
         # Paths
@@ -67,6 +72,11 @@ class TestFinetune(TestMainScript):
         )
 
     def setup_eval_config(self):
+        """
+        Configures and sets the evaluation parameters for model testing.
+        
+        Defines evaluation settings including model and data paths, batch size, embedding output, and metrics, then applies the configuration for use in evaluation.
+        """
         eval_config = {
             "paths": {
                 "model": self.model_dir,
@@ -90,6 +100,11 @@ class TestFinetune(TestMainScript):
 
     def test_finetune(self):
         ### Call finetune script
+        """
+        Tests the full fine-tuning and evaluation pipeline for a machine learning model.
+        
+        Runs the fine-tuning process, verifies the creation of expected model and configuration files, executes evaluation, checks for the presence of prediction and embedding outputs, and asserts that evaluation metrics meet minimum performance thresholds.
+        """
         main_finetune(self.config_path)
 
         ### Validate generated files

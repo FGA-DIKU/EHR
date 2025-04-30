@@ -72,7 +72,11 @@ def finetune_fold(
     fold: int,
     test_data: PatientDataset = None,
 ) -> None:
-    """Finetune model on one fold"""
+    """
+    Fine-tunes a model on a single cross-validation fold and evaluates on the test set if provided.
+    
+    Initializes datasets, model, optimizer, and training components for the specified fold. Trains the model, saves patient IDs, manages checkpoints, and, if test data is available, evaluates the best model on the test set and logs the results.
+    """
     if "scheduler" in cfg:
         logger.info("Replacing steps with epochs in scheduler config")
         cfg.scheduler = replace_steps_with_epochs(
