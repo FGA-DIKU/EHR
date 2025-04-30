@@ -1,17 +1,18 @@
+import re
 import unittest
 
 import pandas as pd
 
-# Assuming these functions are in the same module, or adjust the import accordingly:
+from corebehrt.constants.data import CONCEPT_COL, PID_COL
 from corebehrt.functional.preparation.utils import (
     get_background_length,
     get_background_length_pd,
     get_background_tokens,
+    get_concept_id_to_delay,
     get_non_priority_tokens,
     subset_patient_data,
 )
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, CONCEPT_COL
 
 
 class TestBackgroundFunctions(unittest.TestCase):
@@ -162,6 +163,111 @@ class TestBackgroundFunctions(unittest.TestCase):
         # Non-list fields unchanged
         self.assertEqual(new_patient.outcome, 0)
         self.assertEqual(new_patient.pid, 1)
+
+
+class TestConceptDelayMapping(unittest.TestCase):
+    def setUp(self):
+        # Create a test vocabulary with various concept patterns
+        """
+        Initializes a test vocabulary with concept keys for use in concept delay mapping tests.
+        """
+        self.vocab = {
+            "D_12345": 101,
+            "D_67890": 102,
+            "LAB_HB": 201,
+            "LAB_WBC": 202,
+            "MED_123": 301,
+            "BG_TEST": 401,
+        }
+
+    def test_basic_pattern_matching(self):
+        # Test basic prefix matching
+        """
+        Tests that concept IDs are correctly mapped to delays based on prefix regex patterns.
+        """
+        concept_delays = {
+            "^D_": 24,  # All D_ concepts get 24h delay
+            "^LAB_": 48,  # All LAB_ concepts get 48h delay
+        }
+
+        result = get_concept_id_to_delay(concept_delays, self.vocab)
+
+        expected = {
+            101: 24,  # D_12345
+            102: 24,  # D_67890
+            201: 48,  # LAB_HB
+            202: 48,  # LAB_WBC
+        }
+        self.assertEqual(result, expected)
+
+    def test_overlapping_patterns(self):
+        # Test when patterns might overlap
+        """
+        Tests that when multiple regex patterns match a concept, the delay from the last matching pattern is used.
+
+        Verifies that `get_concept_id_to_delay` applies overlapping patterns in order, with later matches overriding earlier ones for the same concept ID.
+        """
+        concept_delays = {
+            "^D_": 24,
+            "5$": 72,  # Ends with 5
+        }
+
+        result = get_concept_id_to_delay(concept_delays, self.vocab)
+
+        # D_12345 matches both patterns, last one wins
+        expected = {
+            101: 72,  # D_12345 (matches both patterns)
+            102: 24,  # D_67890
+        }
+        self.assertEqual(result, expected)
+
+    def test_no_matches(self):
+        # Test when pattern matches nothing
+        """
+        Tests that get_concept_id_to_delay returns an empty dictionary when no vocab keys match the provided regex patterns.
+        """
+        concept_delays = {
+            "^NONEXISTENT_": 24,
+        }
+
+        result = get_concept_id_to_delay(concept_delays, self.vocab)
+
+        self.assertEqual(result, {})
+
+    def test_complex_regex(self):
+        # Test more complex regex patterns
+        """
+        Tests get_concept_id_to_delay with complex regex patterns for concept keys.
+
+        Verifies that concept IDs are correctly mapped to delays when concept keys match
+        patterns requiring specific digit counts or uppercase letter sequences.
+        """
+        concept_delays = {
+            r"^D_\d{5}$": 24,  # Exactly D_ followed by 5 digits
+            r"LAB_[A-Z]+$": 48,  # LAB_ followed by uppercase letters
+        }
+
+        result = get_concept_id_to_delay(concept_delays, self.vocab)
+
+        expected = {
+            101: 24,  # D_12345
+            102: 24,  # D_67890
+            201: 48,  # LAB_HB
+            202: 48,  # LAB_WBC
+        }
+        self.assertEqual(result, expected)
+
+    def test_invalid_regex(self):
+        # Test handling of invalid regex patterns
+        """
+        Tests that get_concept_id_to_delay raises a re.error when given an invalid regex pattern.
+        """
+        concept_delays = {
+            "[": 24,  # Invalid regex
+        }
+
+        with self.assertRaises(re.error):
+            get_concept_id_to_delay(concept_delays, self.vocab)
 
 
 if __name__ == "__main__":

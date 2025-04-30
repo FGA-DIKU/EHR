@@ -4,6 +4,7 @@ from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.functional.preparation.filter import (
     exclude_short_sequences,
     censor_patient,
+    censor_patient_with_delays,
     filter_rows_by_regex,
 )
 import pandas as pd
@@ -90,14 +91,81 @@ class TestCensorPatient(unittest.TestCase):
 
     def test_censor_patient_all_included(self):
         # If censor_date is large, everything is included
+        """
+        Tests that all patient events are retained when the censor date is set beyond all event times.
+        """
         p1 = PatientData(1, [101], [10.0], [1], [50.0])
         censor_dates = {1: 999.0}
         censored = censor_patient(p1, censor_dates)
         self.assertEqual(len(censored.concepts), 1)
 
 
+class TestCensorPatientWithDelays(unittest.TestCase):
+    def test_two_delay_groups_with_unmapped(self):
+        # Setup patient with mixed concept types including unmapped concepts
+        """
+        Tests that censor_patient_with_delays correctly censors patient data with multiple delay groups and unmapped concepts.
+
+        Verifies that only concepts with specified delays and occurring before their adjusted censor dates are retained, while unmapped concepts are excluded.
+        """
+        p1 = PatientData(
+            pid=1,
+            concepts=[101, 202, 999, 201, 998],  # 999, 998 are unmapped
+            abspos=[1.0, 2.0, 2.5, 4.0, 5.0],
+            segments=[0, 0, 1, 1, 1],
+            ages=[30.0, 31.0, 32.0, 33.0, 34.0],
+        )
+
+        # Setup delays: only specify delays for groups 1 and 2
+        concept_delays = {
+            101: 1,  # group 1
+            201: 2,
+            202: 2,  # group 2
+        }
+
+        censor_dates = {1: 2.0}  # base censor date
+
+        censored = censor_patient_with_delays(p1, censor_dates, concept_delays)
+
+        self.assertListEqual(censored.concepts, [101, 202, 201])
+        self.assertListEqual(censored.abspos, [1.0, 2.0, 4.0])
+        self.assertListEqual(censored.segments, [0, 0, 1])
+        self.assertListEqual(censored.ages, [30.0, 31.0, 33.0])
+
+    def test_all_unmapped(self):
+        # Test case where no concepts have specified delays
+        """
+        Tests that censor_patient_with_delays behaves like standard censoring when no concepts have delay mappings.
+
+        Verifies that only events occurring at or before the censor date are retained when the concept delay mapping is empty.
+        """
+        p1 = PatientData(
+            pid=1,
+            concepts=[101, 102, 103],
+            abspos=[1.0, 2.0, 3.0],
+            segments=[0, 0, 1],
+            ages=[30.0, 31.0, 32.0],
+        )
+
+        concept_delays = {}  # empty delay mapping
+        censor_dates = {1: 2.0}
+
+        censored = censor_patient_with_delays(p1, censor_dates, concept_delays)
+
+        # Should behave like standard censoring
+        self.assertListEqual(censored.concepts, [101, 102])
+        self.assertListEqual(censored.abspos, [1.0, 2.0])
+        self.assertListEqual(censored.segments, [0, 0])
+        self.assertListEqual(censored.ages, [30.0, 31.0])
+
+
 class TestRegexFilter(unittest.TestCase):
     def setUp(self):
+        """
+        Initializes a sample DataFrame for use in test cases.
+
+        Creates a DataFrame with subject IDs, codes, and timestamps to be used as test data in the test methods.
+        """
         self.df = pd.DataFrame(
             {
                 "subject_id": [1, 1, 2, 3, 3, 3],

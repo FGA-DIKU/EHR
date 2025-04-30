@@ -18,6 +18,7 @@ from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.functional.preparation.filter import (
     censor_patient,
     exclude_short_sequences,
+    censor_patient_with_delays,
 )
 from corebehrt.functional.preparation.truncate import (
     truncate_patient,
@@ -27,6 +28,7 @@ from corebehrt.functional.preparation.utils import (
     get_background_length,
     get_background_length_pd,
     get_non_priority_tokens,
+    get_concept_id_to_delay,
 )
 from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
@@ -45,6 +47,17 @@ class DatasetPreparer:
         self.processed_dir = cfg.paths.prepared_data
 
     def prepare_finetune_data(self, mode="tuning") -> PatientDataset:
+        """
+        Prepares and processes patient data for fine-tuning, including censoring, truncation, and outcome assignment.
+
+        Loads patient data and outcomes, applies cohort and cutoff filtering, assigns binary outcomes, computes and validates censoring dates, applies censoring (optionally with concept-specific delays), excludes short sequences, truncates and normalizes patient records, and saves the processed dataset for downstream modeling.
+
+        Args:
+            mode: Specifies which data split to use for fine-tuning (default is "tuning").
+
+        Returns:
+            A PatientDataset object containing the processed and labeled patient data ready for fine-tuning.
+        """
         outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
         data_cfg = self.cfg.data
@@ -101,9 +114,19 @@ class DatasetPreparer:
             + self.cfg.outcome.n_hours_censoring
         )
         self._validate_censoring(data.patients, censor_dates, logger)
-        data.patients = data.process_in_parallel(
-            censor_patient, censor_dates=censor_dates
-        )
+        if "concept_pattern_hours_delay" in self.cfg:
+            concept_id_to_delay = get_concept_id_to_delay(
+                self.cfg.concept_pattern_hours_delay, vocab
+            )
+            data.patients = data.process_in_parallel(
+                censor_patient_with_delays,
+                censor_dates=censor_dates,
+                concept_id_to_delay=concept_id_to_delay,
+            )
+        else:
+            data.patients = data.process_in_parallel(
+                censor_patient, censor_dates=censor_dates
+            )
         background_length = get_background_length(data, vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")

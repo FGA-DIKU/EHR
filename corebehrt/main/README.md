@@ -162,7 +162,22 @@ outcome: # we will convert outcomes to binary based on whether at least one outc
   n_hours_censoring: -10 # censor time after index date (negative means before)
   n_hours_start_follow_up: 1 # start follow up (considering outcomes) time after index date (negative means before)
   n_hours_end_follow_up: null # end follow up (considering outcomes) time after index date (negative means before)
+
+# Optional: Pattern-based delayed censoring
+concept_pattern_hours_delay:
+  "^D/": 72  # Delay censoring of diagnosis codes by 72 hours
 ```
+
+#### Delayed Censoring
+
+The `concept_pattern_hours_delay` configuration enables concept-specific censoring delays, which is useful for handling:
+
+1. **Documentation Delays**: Some events (like diagnoses) are typically coded with a time delay after the actual occurrence. By setting a longer censoring window for these codes, we can better account for this real-world documentation lag.
+
+2. **Code-Specific Information Leakage**: Different types of medical codes may have different levels of potential information leakage we can use harsher censoring by setting a negative delay value.
+
+The delays are specified using regex patterns that match against concept strings in the vocabulary.
+This feature helps create more realistic training scenarios by reflecting the actual timing of information availability in clinical settings.
 
 ## 7. Finetune Model
 
@@ -196,7 +211,7 @@ Our pipeline simulates a real-world deployment scenario by distinguishing the da
 ### Out-of-Time Evaluation with Absolute Index Dates
 
 1. **Fixed Reference Date & Censoring:**  
-   All patients are assigned an absolute index date (e.g., January 1, 2020). This date serves as the reference for training, though it isn’t necessarily the last available date since we may censor outcomes relative to it (using the `n_hours_censoring` parameter, however for absolute index dates it makes most sense to set `n_hours_censoring` to 0).
+   All patients are assigned an absolute index date (e.g., January 1, 2020). This date serves as the reference for training, though it isn't necessarily the last available date since we may censor outcomes relative to it (using the `n_hours_censoring` parameter, however for absolute index dates it makes most sense to set `n_hours_censoring` to 0).
 
 2. **Cohort Splitting After Index Date Creation:**  
    Once index dates are computed (and any censoring logic is in place), the cohort is split into training/validation and test sets. This ensures the split reflects the final, fully defined cohort.
@@ -236,7 +251,7 @@ Fine-tuning configuration (outcome):
   - The model is trained using input data available up to January 1, 2020.
   - Outcomes for training/validation are observed from January 1, 2020 to January 1, 2021, while outcomes for testing are observed from January 1, 2021 to January 1, 2022.
 
-This approach ensures that our evaluation mimics prospective deployment, where the model’s training and testing data reflect distinct time periods.
+This approach ensures that our evaluation mimics prospective deployment, where the model's training and testing data reflect distinct time periods.
 
 ### Step-by-Step Process
 

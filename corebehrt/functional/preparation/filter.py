@@ -1,3 +1,11 @@
+"""Functions for filtering and censoring patient data during preparation.
+
+This module provides utilities for:
+- Patient data filtering (by PID, timestamps, sequence length)
+- Censoring patient data (with and without concept-specific delays)
+- DataFrame filtering (by column values, regex patterns)
+"""
+
 from bisect import bisect_right
 from typing import List
 
@@ -37,6 +45,18 @@ def exclude_short_sequences(
 
 
 def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
+    """
+    Censors a patient's data by truncating all attributes at the censor date.
+
+    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained.
+
+    Args:
+        patient: The PatientData object to be censored.
+        censor_dates: A mapping from patient IDs to their respective censor dates.
+
+    Returns:
+        The censored PatientData object with truncated attributes.
+    """
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
     idx = bisect_right(patient.abspos, censor_date)
@@ -50,18 +70,62 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     return patient
 
 
-def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
+def censor_patient_with_delays(
+    patient: PatientData, censor_dates: pd.Series, concept_id_to_delay: dict = None
+) -> PatientData:
     """
-    Filter a DataFrame based on inclusion or exclusion of values in a column.
+    Censors a patient's data using concept-specific delays applied to their censor date.
+
+    For each concept in the patient's record, calculates an effective censor date by adding a delay (if specified) to the base censor date for the patient. Retains only those concepts and corresponding attributes whose timestamps are less than or equal to their effective censor dates.
 
     Args:
-        df: DataFrame to filter.
-        column: Column name to apply the filter on.
-        include_values: List of values to include. Mutually exclusive with exclude_values.
-        exclude_values: List of values to exclude. Mutually exclusive with include_values.
+        patient: The patient data to censor.
+        censor_dates: Series mapping patient IDs to their base censor dates.
+        concept_id_to_delay: Optional dictionary mapping concept IDs to delay values (in hours). Concepts not present in the dictionary use a delay of 0.
 
     Returns:
-        Filtered DataFrame.
+        The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates.
+    """
+    base_censor_date = censor_dates[patient.pid]
+
+    # Initialize keep mask
+    keep_mask = [False] * len(patient.concepts)
+
+    # Process each concept with its appropriate delay
+    for i, (concept, abspos) in enumerate(zip(patient.concepts, patient.abspos)):
+        # Get delay for this concept (0 for unmapped concepts)
+        delay = concept_id_to_delay.get(concept, 0)
+
+        # Calculate effective censor date for this concept
+        effective_censor_date = base_censor_date + delay
+
+        # Keep this concept if it's before or at the effective censor date
+        if abspos <= effective_censor_date:
+            keep_mask[i] = True
+
+    # Apply the mask to all patient attributes
+    patient.concepts = [c for i, c in enumerate(patient.concepts) if keep_mask[i]]
+    patient.abspos = [a for i, a in enumerate(patient.abspos) if keep_mask[i]]
+    patient.segments = [s for i, s in enumerate(patient.segments) if keep_mask[i]]
+    patient.ages = [a for i, a in enumerate(patient.ages) if keep_mask[i]]
+
+    return patient
+
+
+def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
+    """
+    Filters a DataFrame by including or excluding specified values in a given column.
+
+    Args:
+        column: The column name on which to apply the filter.
+        include_values: Values to retain in the column (cannot be used with exclude_values).
+        exclude_values: Values to remove from the column (cannot be used with include_values).
+
+    Returns:
+        A DataFrame filtered according to the specified inclusion or exclusion rule.
+
+    Raises:
+        ValueError: If both include_values and exclude_values are provided.
     """
     if include_values is not None and exclude_values is not None:
         raise ValueError(
