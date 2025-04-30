@@ -72,7 +72,7 @@ class TestCreateOutcomes(TestMainScript):
         self.check_config(join(self.outcomes_dir, OUTCOMES_CFG))
 
         # 2: Check the required outcome/exposure files are created as expected
-        for file_name in ["TEST_CENSOR", "TEST_OUTCOME", "TEST_COMBINED"]:
+        for file_name in ["TEST_OUTCOME", "TEST_CENSOR", "TEST_COMBINED"]:
             path = join(self.outcomes_dir, f"{file_name}.csv")
 
             # Exists:
