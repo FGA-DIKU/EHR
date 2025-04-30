@@ -28,4 +28,4 @@ outcome:
 
 concept_pattern_hours_delay:
   # Diagnosis concepts (matching strings starting with "D")
-  "^D": 72
+  "^D": 72 # censoring delayed by 72 hours
