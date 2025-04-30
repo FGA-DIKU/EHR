@@ -9,17 +9,34 @@ outcomes:
     match_how: startswith
     type:
     - code
+  TEST_COMBINED:
+    combinations:
+      primary:
+        match:
+        - - M8
+        match_how: startswith
+        type:
+        - code
+      secondary:
+        match:
+        - - LAB
+          - D5
+        match_how: startswith
+        type:
+        - code
+      timestamp_source: primary
+      window_hours_max: 100
+      window_hours_min: -100
   TEST_OUTCOME:
     case_sensitive: true
     exclude:
-    - '157141000119108'
+    - D437
     match:
-    - - D10
-      - D02
+    - - DE11
     match_how: startswith
     type:
     - code
 paths:
-  data: ./tests/data/raw
-  features: ./tests/data/features
-  outcomes: ./tests/data/outcomes
+  data: ./example_data/correlated_MEDS_data
+  features: ./outputs/features/
+  outcomes: ./outputs/outcomes/

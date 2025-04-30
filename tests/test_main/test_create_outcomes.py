@@ -18,15 +18,15 @@ class TestCreateOutcomes(TestMainScript):
         self.set_config(
             {
                 "paths": {
-                    "data": "./tests/data/raw",
+                    "data": "./tests/data/raw_with_values",
                     "features": "./tests/data/features",
                     "outcomes": self.outcomes_dir,
                 },
                 "outcomes": {
                     "TEST_OUTCOME": {
                         "type": ["code"],
-                        "match": [["D10", "D02"]],
-                        "exclude": ["157141000119108"],
+                        "match": [["DE11"]],
+                        "exclude": ["D437"],
                         "match_how": "startswith",
                         "case_sensitive": True,
                     },
@@ -35,6 +35,23 @@ class TestCreateOutcomes(TestMainScript):
                         "match": [["M112"]],
                         "match_how": "startswith",
                         "case_sensitive": False,
+                    },
+                    "TEST_COMBINED": {
+                        "combinations": {
+                            "primary": {
+                                "type": ["code"],
+                                "match": [["M8"]],
+                                "match_how": "startswith",
+                            },
+                            "secondary": {
+                                "type": ["code"],
+                                "match": [["LAB", "D5"]],
+                                "match_how": "startswith",
+                            },
+                            "window_hours_min": -100,
+                            "window_hours_max": 100,
+                            "timestamp_source": "primary",
+                        }
                     },
                 },
             }
@@ -55,7 +72,7 @@ class TestCreateOutcomes(TestMainScript):
         self.check_config(join(self.outcomes_dir, OUTCOMES_CFG))
 
         # 2: Check the required outcome/exposure files are created as expected
-        for file_name in ["TEST_CENSOR", "TEST_OUTCOME"]:
+        for file_name in ["TEST_CENSOR", "TEST_OUTCOME", "TEST_COMBINED"]:
             path = join(self.outcomes_dir, f"{file_name}.csv")
 
             # Exists:

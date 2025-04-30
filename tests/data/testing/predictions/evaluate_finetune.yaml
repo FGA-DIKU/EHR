@@ -1,0 +1,19 @@
+logging:
+  level: INFO
+  path: ./outputs/logs
+metrics:
+  pr_auc:
+    _target_: sklearn.metrics.average_precision_score
+  roc_auc:
+    _target_: sklearn.metrics.roc_auc_score
+paths:
+  folds_dir: ./outputs/finetuning/processed_data
+  model: ./outputs/finetuning
+  predictions: ./outputs/testing/held_out/predictions
+  run_name: evaluate
+  test_data_dir: ./outputs/testing/held_out/processed_data
+return_embeddings: true
+save_info:
+  sequence_length:
+    _target_: corebehrt.main.helper.evaluate_finetune.get_sequence_length
+test_batch_size: 128

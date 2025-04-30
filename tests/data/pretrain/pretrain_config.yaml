@@ -18,9 +18,14 @@ metrics:
     _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
     topk: 10
 model:
+  abspos_scale: 1.0e-05
+  abspos_shift: -90000
+  age_scale: 0.01
+  age_shift: -50
   embedding_dropout: 0.1
   hidden_size: 96
   intermediate_size: 64
+  is_causal: false
   max_position_embeddings: 512
   num_attention_heads: 3
   num_hidden_layers: 3
@@ -31,16 +36,15 @@ optimizer:
 paths:
   model: ./outputs/pretraining
   prepared_data: ./outputs/pretraining/processed_data/
-  tokenized: ./outputs/tokenized
 scheduler:
   _target_: transformers.get_linear_schedule_with_warmup
-  num_training_steps: 26
-  num_warmup_steps: 17
+  num_training_steps: 592
+  num_warmup_steps: 395
 trainer_args:
   batch_size: 32
   early_stopping: null
   effective_batch_size: 64
-  epochs: 5
+  epochs: 1
   gradient_clip:
     clip_value: 1.0
   info: true

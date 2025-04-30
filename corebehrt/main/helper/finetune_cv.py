@@ -114,7 +114,7 @@ def finetune_fold(
         val_dataset=val_dataset,
         test_dataset=None,  # test only after training
         args=cfg.trainer_args,
-        metrics=cfg.metrics,
+        metrics=getattr(cfg, "metrics", {}),
         sampler=sampler,
         scheduler=scheduler,
         cfg=cfg,

@@ -1,0 +1,58 @@
+evaluate: false
+logging:
+  level: INFO
+  path: ./outputs/logs
+metrics:
+  accuracy:
+    _target_: corebehrt.modules.monitoring.metrics.Accuracy
+    threshold: 0.6
+  false_negatives:
+    _target_: corebehrt.modules.monitoring.metrics.False_Negatives
+  false_positives:
+    _target_: corebehrt.modules.monitoring.metrics.False_Positives
+  mean_probability:
+    _target_: corebehrt.modules.monitoring.metrics.Mean_Probability
+  pr_auc:
+    _target_: corebehrt.modules.monitoring.metrics.PR_AUC
+  precentage_positives:
+    _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives
+  roc_auc:
+    _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
+  true_negatives:
+    _target_: corebehrt.modules.monitoring.metrics.True_Negatives
+  true_positives:
+    _target_: corebehrt.modules.monitoring.metrics.True_Positives
+model:
+  cls: default
+optimizer:
+  eps: 1.0e-06
+  lr: 0.0005
+paths:
+  model: ./outputs/finetuning
+  prepared_data: ./outputs/finetuning/processed_data/
+  pretrain_model: ./outputs/pretraining
+scheduler:
+  _target_: transformers.get_linear_schedule_with_warmup
+  num_training_steps: 100
+  num_warmup_steps: 10
+trainer_args:
+  batch_size: 128
+  checkpoint_frequency: 1
+  early_stopping: 5
+  effective_batch_size: 128
+  epochs: 30
+  gradient_clip:
+    clip_value: 1.0
+  info: true
+  loss_weight_function:
+    _target_: corebehrt.modules.trainer.utils.PositiveWeight.effective_n_samples
+  n_layers_to_freeze: 1
+  plateau_threshold: 0.01
+  reset_patience_after_unfreeze: true
+  sampler_function:
+    _target_: corebehrt.modules.trainer.utils.Sampling.effective_n_samples
+  shuffle: true
+  stopping_criterion: roc_auc
+  unfreeze_at_epoch: 2
+  unfreeze_on_plateau: true
+  val_batch_size: 128
