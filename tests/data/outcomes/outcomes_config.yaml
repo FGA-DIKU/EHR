@@ -37,6 +37,6 @@ outcomes:
     type:
     - code
 paths:
-  data: ./example_data/correlated_MEDS_data
-  features: ./outputs/features/
-  outcomes: ./outputs/outcomes/
+  data: ./tests/data/raw_with_values
+  features: ./tests/data/features
+  outcomes: ./tests/data/outcomes
