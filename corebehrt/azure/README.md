@@ -96,13 +96,23 @@ python -m corebehrt.azure job create_data CPU-20-LP -e "CBTest" -o features=CBFe
 
 ### Running pipelines
 
-CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. Currently, only the `E2E` pipeline is added, which can be run on different data sets by using:
+CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. The following pipelines are available:
+
+1. **E2E Pipeline**: Complete end-to-end pipeline including pretraining and finetuning
 
 ```bash
 python -m corebehrt.azure pipeline E2E <data> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
 ```
 
-where `<data>` is the Azure path to the raw data, `<default-compute>` is the default compute to use in each step and `<config-dir>` is the path to a directory with configuration files named according to the pipeline components. E2E has the following components:
+1. **Finetune Pipeline**: Pipeline for finetuning a pretrained model
+
+```bash
+python -m corebehrt.azure pipeline finetune <data> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
+```
+
+#### Pipeline Components
+
+**E2E Pipeline Components:**
 
 * `create_data`
 * `create_outcomes`
@@ -112,15 +122,30 @@ where `<data>` is the Azure path to the raw data, `<default-compute>` is the def
 * `pretrain`
 * `finetune_cv`
 
-`<config-dir>` must contain a config file for each of these components. Options `-cp` and `-c` are used to overwrite computes and config paths respectively, for individual components.
+**Finetune Pipeline Components:**
 
-An example of running E2E on the example MEDS data (asset `CoreBEHRT_example_data@latest`):
+* `create_outcomes`
+* `select_cohort`
+* `prepare_finetune`
+* `finetune_cv`
+
+`<config-dir>` must contain a config file for each component in the chosen pipeline. Options `-cp` and `-c` are used to overwrite computes and config paths respectively, for individual components.
+
+#### Examples
+
+Running E2E on example MEDS data:
 
 ```bash
 python -m corebehrt.azure pipeline E2E CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e ssl_test
 ```
 
-This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for `pretrain` and `finetune_cv`.
+Running finetune with a pretrained model:
+
+```bash
+python -m corebehrt.azure pipeline finetune CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp finetune_cv=GPU-A100-Single --pretrained-model "azureml://jobs/<pretrain-job-id>/outputs/model" -e finetune_test
+```
+
+This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for compute-intensive components.
 
 **Note on configs for pipelines:** Input/output configs for pipelines, contrary to configs for singular jobs, may leave out paths for inputs, as these are always tied to an output from another component. Output paths may be left out (in which case a location in the default blobstore is created).
 
