@@ -3,14 +3,14 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./tests/data/raw_with_values
+  data: ./tests/data/raw
   outcomes: ./tests/data/outcomes
   features: ./tests/data/features
 
 outcomes:
   TEST_OUTCOME:
     type: [ code ]
-    match: [ [ 'DE11' ] ] # Type 1 diabetes, related to "M/IN01", "M/IN02", "LAB/GL" in correlated data
+    match: [ [ 'D01' ] ] # Type 1 diabetes, related to "M/IN01", "M/IN02", "LAB/GL" in correlated data
     exclude: [ 'D437' ]
     match_how: startswith
     case_sensitive: true

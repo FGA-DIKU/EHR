@@ -18,14 +18,14 @@ class TestCreateOutcomes(TestMainScript):
         self.set_config(
             {
                 "paths": {
-                    "data": "./tests/data/raw_with_values",
+                    "data": "./tests/data/raw",
                     "features": "./tests/data/features",
                     "outcomes": self.outcomes_dir,
                 },
                 "outcomes": {
                     "TEST_OUTCOME": {
                         "type": ["code"],
-                        "match": [["DE11"]],
+                        "match": [["D01"]],
                         "exclude": ["D437"],
                         "match_how": "startswith",
                         "case_sensitive": True,
@@ -95,5 +95,3 @@ class TestCreateOutcomes(TestMainScript):
                         expected_row[column],
                         f"Unexpected value at row {idx}, column {column}",
                     )
-
-        print("Test create outcomes passed")

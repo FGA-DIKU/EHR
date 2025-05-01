@@ -32,11 +32,11 @@ outcomes:
     exclude:
     - D437
     match:
-    - - D01
+    - - DE11
     match_how: startswith
     type:
     - code
 paths:
-  data: ./tests/data/raw
+  data: ./tests/data/raw_with_values
   features: ./tests/data/features
   outcomes: ./tests/data/outcomes
