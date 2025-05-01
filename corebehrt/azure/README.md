@@ -4,7 +4,7 @@
 
 The commands listed below must be run from an Azure compute instance. The `corebehrt.azure` sub-module requires only three packages to run:
 
-```
+```text
 pyyaml
 azure-identity
 azure-ai-ml
@@ -97,10 +97,13 @@ python -m corebehrt.azure job create_data CPU-20-LP -e "CBTest" -o features=CBFe
 ### Running pipelines
 
 CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. Currently, only the `E2E` pipeline is added, which can be run on different data sets by using:
-```
+
+```bash
 python -m corebehrt.azure pipeline E2E <data> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
 ```
+
 where `<data>` is the Azure path to the raw data, `<default-compute>` is the default compute to use in each step and `<config-dir>` is the path to a directory with configuration files named according to the pipeline components. E2E has the following components:
+
 * `create_data`
 * `create_outcomes`
 * `select_cohort`
@@ -112,27 +115,31 @@ where `<data>` is the Azure path to the raw data, `<default-compute>` is the def
 `<config-dir>` must contain a config file for each of these components. Options `-cp` and `-c` are used to overwrite computes and config paths respectively, for individual components.
 
 An example of running E2E on the example MEDS data (asset `CoreBEHRT_example_data@latest`):
-```
+
+```bash
 python -m corebehrt.azure pipeline E2E CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e ssl_test
 ```
+
 This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for `pretrain` and `finetune_cv`.
 
 **Note on configs for pipelines:** Input/output configs for pipelines, contrary to configs for singular jobs, may leave out paths for inputs, as these are always tied to an output from another component. Output paths may be left out (in which case a location in the default blobstore is created).
 
-One exception is for input paths, which does not exactly correspond to the output of another component, e.g. `outcome` for `prepare_finetune` (which is of job type `prepare_training_data`). `outcome` references a file in the `outcomes` directory produced by `create_outcomes`. A proper config file must set `outcome` to the path to this file, __relative to the `outcomes` directory__.
+One exception is for input paths, which does not exactly correspond to the output of another component, e.g. `outcome` for `prepare_finetune` (which is of job type `prepare_training_data`). `outcome` references a file in the `outcomes` directory produced by `create_outcomes`. A proper config file must set `outcome` to the path to this file, **relative to the `outcomes` directory**.
 
 See the pipeline example configs in `corebehrt/azure/configs`.
 
 **Note on adding more pipelines**: This is mostly added for creating full pipeline tests. The command line and utility functions currently only support pipelines with a single input (called `data`). Adding pipelines with additional inputs (e.g. `predefined_splits`) requires more work and should probably be done as a more flexible and configuration file based setup (similar to the job setup).
 
-
 ### Running tests
 
 A full test of all components chained in the E2E pipeline can be run using:
-```
+
+```bash
 python -m corebehrt.azure test <test-name>
 ```
+
 This will run the given test `<test-name>` in the experiment `corebehrt_pipeline_tests`. Each tests must have a set of valid component configs + a test config in a properly named directory in `corebehrt/azure/configs`. The test config specifies:
+
 * `data`: data set to use.
 * `computes`: computes to use for each step, with `computes.default` specifying the default.
 * `<component-name>`: A section for each component specifying tests related to that component:
@@ -145,6 +152,7 @@ Note, that long running components will not be halted after `max_run_time` secon
 See the `test.yaml` files in subdirectories of `corebehrt/azure/configs` for examples.
 
 Available tests are:
+
 * **small**: Runs E2E on `example_data/example_MEDS_data` (`CoreBEHRT_example_data@latest`).
 * **full**: Runs E2E on `MEDS_all_20240910:1`.
 
@@ -175,4 +183,3 @@ util.run_job(job, <experiment>)
 ```
 
 where `<job_name>` is one of the CoreBEHRT main scripts, `<compute>` is the name of the compute cluster to use, `<register_output>` (optional) is a dict mapping output names to asset names, and `<log_system_metrics>` (optional, default is `False`) is a boolean.
-
