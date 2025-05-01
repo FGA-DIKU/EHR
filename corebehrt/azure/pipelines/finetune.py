@@ -1,0 +1,50 @@
+def create(component: callable):
+    """
+    Define the Finetune pipeline.
+
+    Param component(job_type, name=None) is a constructor for components
+    which takes arguments job_type (type of job) and optional argument
+    name (name of component if different from type of job).
+    """
+    from azure.ai.ml import dsl, Input
+
+    @dsl.pipeline(name="finetune", description="Finetune CoreBEHRT pipeline")
+    def pipeline(
+        data: Input, features: Input, tokenized: Input, pretrained_model: Input
+    ) -> dict:
+        create_outcomes = component(
+            "create_outcomes",
+        )(
+            data=data,
+            features=features,
+        )
+
+        select_cohort = component(
+            "select_cohort",
+        )(
+            features=features,
+            outcomes=create_outcomes.outputs.outcomes,
+        )
+
+        prepare_finetune = component(
+            "prepare_training_data",
+            name="prepare_finetune",
+        )(
+            features=features,
+            tokenized=tokenized,
+            cohort=select_cohort.outputs.cohort,
+            outcomes=create_outcomes.outputs.outcomes,
+        )
+
+        finetune = component(
+            "finetune_cv",
+        )(
+            prepared_data=prepare_finetune.outputs.prepared_data,
+            pretrained_model=pretrained_model,
+        )
+
+        return {
+            "model": finetune.outputs.model,
+        }
+
+    return pipeline

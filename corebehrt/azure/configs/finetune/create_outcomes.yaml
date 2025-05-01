@@ -1,0 +1,12 @@
+logging:
+  level: INFO
+  path: ./logs
+
+outcomes:
+  breast_cancer:
+    type: [code]
+    match: [['DC50', 'DD05']]
+    match_how: startswith
+    case_sensitive: false
+    
+
