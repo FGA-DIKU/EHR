@@ -4,7 +4,7 @@ logging:
 
 paths:
   data: ./example_data/example_MEDS_data_w_labs
-  splits: [ tuning, held_out ] # Optional, defaults to take all splits in data directory
+  splits: [ train, tuning, held_out ] # Optional, defaults to take all splits in data directory
   outcomes: ./outputs/outcomes/
   features: ./outputs/features/
 
