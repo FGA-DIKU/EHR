@@ -7,7 +7,9 @@ def add_parser(subparsers) -> None:
     Add the pipeline subparser
     """
     parser = subparsers.add_parser("pipeline", help="Run a pipeline job.")
-    parser.add_argument("PIPELINE", type=str, choices={"E2E"}, help="Pipeline to run.")
+    parser.add_argument(
+        "PIPELINE", type=str, choices={"E2E", "finetune"}, help="Pipeline to run."
+    )
     parser.add_argument("DATA", type=str, help="Raw input data.")
     parser.add_argument(
         "COMPUTE",

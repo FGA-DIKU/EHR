@@ -45,7 +45,6 @@ def create(
 
     config_paths = config_paths or {}
     register_output = register_output or {}
-    additional_inputs = additional_inputs or {}
 
     from azure.ai.ml import Input
 
