@@ -45,7 +45,9 @@ def add_pipeline_parser(
     add_common_arguments(parser)
 
     # Set handler function with the pipeline type
-    parser.set_defaults(func=lambda args: run_pipeline(pipeline.name, args))
+    parser.set_defaults(
+        func=lambda args, _name=pipeline.name: run_pipeline(_name, args)
+    )
 
 
 def add_parser(subparsers: argparse._SubParsersAction) -> None:
