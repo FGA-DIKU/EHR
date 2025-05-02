@@ -1,10 +1,11 @@
 import glob
+import logging
 import os
 from typing import Iterator, List, Tuple
 
 import pandas as pd
 
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, SCHEMA
+from corebehrt.constants.data import PID_COL, SCHEMA, TIMESTAMP_COL
 from corebehrt.constants.paths import (
     CONCEPT_FORMAT,
     CSV_EXT,
@@ -12,9 +13,9 @@ from corebehrt.constants.paths import (
     PATIENTS_INFO_FORMAT,
 )
 from corebehrt.functional.io_operations.load import load_concept
-from corebehrt.functional.setup.checks import (
-    check_concepts_columns,
-)
+from corebehrt.functional.setup.checks import check_concepts_columns
+
+logger = logging.getLogger(__name__)
 
 
 class ConceptLoader:
@@ -81,11 +82,17 @@ class ShardLoader:
     def __init__(
         self,
         data_dir: str,
-        splits: List[str] = ["train", "tuning", "held_out"],
+        splits: List[str] = None,
         patient_info_path: str = None,
     ):
         self.data_dir = data_dir
-        self.splits = splits
+
+        if splits is None:
+            self.splits = self._get_all_splits()
+        else:
+            self._validate_splits(splits)
+            self.splits = splits
+
         self.patient_info_path = (
             patient_info_path
             if patient_info_path
@@ -94,6 +101,32 @@ class ShardLoader:
 
     def __call__(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
         return self.process()
+
+    def _validate_splits(self, splits: List[str]) -> None:
+        valid_splits = self._get_all_splits()
+        # Validate user-provided splits
+        invalid_splits = [s for s in splits if s not in valid_splits]
+        if invalid_splits:
+            raise ValueError(
+                f"The following splits are invalid or contain no parquet files: {invalid_splits}"
+            )
+
+    def _get_all_splits(self) -> List[str]:
+        """
+        Get all splits from the data directory
+        """
+        potential_splits_folders = [
+            f for f in os.listdir(self.data_dir) if not f.startswith(".")
+        ]
+        split_folders = []
+        for potential_split_folder in potential_splits_folders:
+            split_path = os.path.join(self.data_dir, potential_split_folder)
+            if os.path.isdir(split_path) and any(
+                f.endswith(".parquet") for f in os.listdir(split_path)
+            ):
+                split_folders.append(potential_split_folder)
+        logger.info(f"Found the following splits in {self.data_dir}: {split_folders}")
+        return split_folders
 
     def process(self) -> Iterator[Tuple[pd.DataFrame, pd.DataFrame]]:
         if os.path.exists(self.patient_info_path):

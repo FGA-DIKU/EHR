@@ -23,7 +23,7 @@ def main_data(config_path):
     outcome_tables = process_data(
         ShardLoader(
             data_dir=cfg.paths.data,
-            splits=["train", "tuning", "held_out"],
+            splits=cfg.paths.get("splits", None),
             patient_info_path=join(cfg.paths.features, "patient_info.parquet"),
         ),
         cfg,
