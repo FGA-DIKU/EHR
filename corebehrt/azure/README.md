@@ -142,7 +142,7 @@ python -m corebehrt.azure pipeline E2E --data CoreBEHRT_example_data@latest CPU-
 Running finetune with a pretrained model:
 
 ```bash
-python -m corebehrt.azure pipeline finetune --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
+python -m corebehrt.azure pipeline FINETUNE --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
 This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for compute-intensive components.
