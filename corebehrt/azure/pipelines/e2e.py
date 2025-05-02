@@ -1,3 +1,21 @@
+"""
+E2E pipeline implementation.
+"""
+
+from corebehrt.azure.pipelines.base import PipelineMeta
+
+E2E = PipelineMeta(
+    name="E2E",
+    help="Run the end-to-end pipeline.",
+    required_inputs={
+        "data": {"help": "Path to the raw input data."},
+    },
+    helper_inputs={
+        # "foo": {"help": "Optional helper input."},
+    },
+)
+
+
 def create(component: callable):
     """
     Define the E2E pipeline.

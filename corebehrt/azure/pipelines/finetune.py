@@ -1,3 +1,21 @@
+"""
+Finetune pipeline implementation.
+"""
+
+from corebehrt.azure.pipelines.base import PipelineMeta
+
+FINETUNE = PipelineMeta(
+    name="FINETUNE",
+    help="Run the finetune pipeline.",
+    required_inputs={
+        "data": {"help": "Path to the raw input data."},
+        "features": {"help": "Path to the features data."},
+        "tokenized": {"help": "Path to the tokenized data."},
+        "pretrained_model": {"help": "Path to the pretrained model."},
+    },
+)
+
+
 def create(component: callable):
     """
     Define the Finetune pipeline.
