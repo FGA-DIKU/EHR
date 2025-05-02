@@ -26,7 +26,7 @@ def create(component: callable):
     """
     from azure.ai.ml import dsl, Input
 
-    @dsl.pipeline(name="finetune", description="Finetune CoreBEHRT pipeline")
+    @dsl.pipeline(name="finetune_pipeline", description="Finetune CoreBEHRT pipeline")
     def pipeline(
         data: Input, features: Input, tokenized: Input, pretrained_model: Input
     ) -> dict:

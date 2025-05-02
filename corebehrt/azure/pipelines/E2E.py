@@ -26,7 +26,7 @@ def create(component: callable):
     """
     from azure.ai.ml import dsl, Input
 
-    @dsl.pipeline(name="E2E", description="Full E2E CoreBEHRT pipeline")
+    @dsl.pipeline(name="E2E_pipeline", description="Full E2E CoreBEHRT pipeline")
     def pipeline(data: Input) -> dict:
         create_data = component(
             "create_data",
