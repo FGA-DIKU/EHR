@@ -31,6 +31,8 @@ def main_data(config_path):
     )
 
     for key, df in outcome_tables.items():
+        if df.empty:
+            logger.warning(f"Outcomes table for {key} is empty")
         df.to_csv(join(cfg.paths.outcomes, f"{key}.csv"), index=False)
 
     logger.info("Finish outcomes creation")
