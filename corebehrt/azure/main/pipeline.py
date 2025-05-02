@@ -33,12 +33,12 @@ def add_pipeline_parser(
     input_group = parser.add_argument_group("Input Data Arguments")
 
     # Add required inputs
-    for input_name, help_text in pipeline.required_inputs.items():
+    for input_name, meta in pipeline.required_inputs.items():
         input_group.add_argument(
             f"--{input_name}",
             type=str,
             required=True,
-            help=help_text,
+            help=meta.get("help", ""),
         )
 
     # Add common arguments

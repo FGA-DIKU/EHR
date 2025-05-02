@@ -145,6 +145,14 @@ Running finetune with a pretrained model:
 python -m corebehrt.azure pipeline FINETUNE --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
+You can also run
+
+```bash
+python -m corebehrt.azure pipeline <PipelineName> --help
+```
+
+to see the help message for the pipeline.
+
 This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for compute-intensive components.
 
 **Note on configs for pipelines:** Input/output configs for pipelines, contrary to configs for singular jobs, may leave out paths for inputs, as these are always tied to an output from another component. Output paths may be left out (in which case a location in the default blobstore is created).
