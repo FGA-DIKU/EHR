@@ -10,6 +10,8 @@ from corebehrt.azure.pipelines import PIPELINE_REGISTRY
 from corebehrt.azure.pipelines.base import PipelineMeta
 from corebehrt.azure.pipelines.parser import add_common_arguments
 
+PIPELINE_REGISTRY_DICT = {p.name: p for p in PIPELINE_REGISTRY}
+
 
 def add_pipeline_parser(
     subparsers: argparse._SubParsersAction, pipeline: PipelineMeta
@@ -63,7 +65,6 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
         dest="pipeline_type",
         help="Type of pipeline to run",
         required=True,
-        choices=[pipeline.name for pipeline in PIPELINE_REGISTRY],
     )
 
     # Add parsers for each pipeline type
@@ -80,7 +81,7 @@ def run_pipeline(pipeline_type: str, args: argparse.Namespace) -> None:
         args: The parsed command line arguments (from argparse) defined in the pipeline parser
     """
     # Get required inputs for this pipeline type
-    required_inputs = PIPELINE_REGISTRY[pipeline_type].required_inputs
+    required_inputs = PIPELINE_REGISTRY_DICT[pipeline_type].required_inputs
 
     # Create input paths dictionary
     input_paths = {}
