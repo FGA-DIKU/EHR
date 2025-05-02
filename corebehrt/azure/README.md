@@ -101,13 +101,13 @@ CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. The foll
 - **E2E Pipeline**: Complete end-to-end pipeline including pretraining and finetuning
 
 ```bash
-python -m corebehrt.azure pipeline E2E -i data=<path> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
+python -m corebehrt.azure pipeline E2E --data <data-path> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
 ```
 
 - **Finetune Pipeline**: Pipeline for finetuning a pretrained model
 
 ```bash
-python -m corebehrt.azure pipeline finetune -i data=<path> -i features=<path> -i tokenized=<path> -i pretrained_model=<path> ... (see E2E pipeline)
+python -m corebehrt.azure pipeline finetune --data <data-path> --features <features-path> --tokenized <tokenized-path> --pretrain_model <pretrain-model-path> ... (rest same as E2E pipeline)
 ```
 
 #### Pipeline Components
@@ -136,13 +136,13 @@ python -m corebehrt.azure pipeline finetune -i data=<path> -i features=<path> -i
 Running E2E on example MEDS data:
 
 ```bash
-python -m corebehrt.azure pipeline E2E -i data=CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
+python -m corebehrt.azure pipeline E2E --data CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
 ```
 
 Running finetune with a pretrained model:
 
 ```bash
-python -m corebehrt.azure pipeline finetune -i data=CoreBEHRT_example_data@latest -i pretrained_model="azureml://jobs/<pretrain-job-id>/outputs/model" -i features=CBFeatures -i tokenized=CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
+python -m corebehrt.azure pipeline finetune --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
 This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for compute-intensive components.
