@@ -11,7 +11,7 @@ FINETUNE = PipelineMeta(
         "data": {"help": "Path to the raw input data."},
         "features": {"help": "Path to the features data."},
         "tokenized": {"help": "Path to the tokenized data."},
-        "pretrained_model": {"help": "Path to the pretrained model."},
+        "pretrain_model": {"help": "Path to the pretrained model."},
     },
 )
 
@@ -28,7 +28,7 @@ def create(component: callable):
 
     @dsl.pipeline(name="finetune_pipeline", description="Finetune CoreBEHRT pipeline")
     def pipeline(
-        data: Input, features: Input, tokenized: Input, pretrained_model: Input
+        data: Input, features: Input, tokenized: Input, pretrain_model: Input
     ) -> dict:
         create_outcomes = component(
             "create_outcomes",
@@ -58,7 +58,7 @@ def create(component: callable):
             "finetune_cv",
         )(
             prepared_data=prepare_finetune.outputs.prepared_data,
-            pretrained_model=pretrained_model,
+            pretrain_model=pretrain_model,
         )
 
         return {
