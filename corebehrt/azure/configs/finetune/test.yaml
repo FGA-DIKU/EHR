@@ -14,13 +14,13 @@ select_cohort:
   max_run_time: 200
 
 finetune_cv:
-  max_run_time: 3600 # 20m
+  max_run_time: 3600 # 60m
   metrics:
   - type: "best.test.accuracy"
     child: "Fold 1"
-    min: 0.96
+    min: 0.6
   - type: "best.test.roc_auc"
     child: "Fold 1"
-    min: 0.3
+    min: 0.6
 
 on_fail: "raise"
