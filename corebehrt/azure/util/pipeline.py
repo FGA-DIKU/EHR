@@ -32,8 +32,6 @@ def create(
     :param log_system_metrics: If True, metrics are logged for all components.
     :param test_cfg_file: Optional path to test configuration file - if set, job types
         configured in the file will be evaluated after they have run.
-    :param additional_inputs: Dictionary of additional input paths to be mapped to Azure Input objects.
-        Keys should match the input parameter names in the pipeline definition.
 
     :return: A pipeline (Azure command) to be run.
     """
