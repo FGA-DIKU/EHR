@@ -5,8 +5,8 @@ from corebehrt.azure.util.config import load_config, map_azure_path
 
 def create(
     name: str,
-    data_path: str,
-    computes: dict,
+    input_paths: dict = None,
+    computes: dict = None,
     config_paths: dict = None,
     config_dir: str = None,
     register_output: dict = None,
@@ -21,7 +21,7 @@ def create(
     evaluated post-run.
 
     :param name: Name of module defining pipeline.
-    :param data_path: Path to MEDS data asset input.
+    :param input_paths: Dictionary mapping <input_name> => <path_to_input>.
     :param computes: Dictionary mapping >component_name> => <compute>. The dict must
         contain "default" as well.
     :param config_paths: Dictionary mapping <component_name> => <path_to_config>. If
@@ -32,6 +32,8 @@ def create(
     :param log_system_metrics: If True, metrics are logged for all components.
     :param test_cfg_file: Optional path to test configuration file - if set, job types
         configured in the file will be evaluated after they have run.
+    :param additional_inputs: Dictionary of additional input paths to be mapped to Azure Input objects.
+        Keys should match the input parameter names in the pipeline definition.
 
     :return: A pipeline (Azure command) to be run.
     """
@@ -43,6 +45,7 @@ def create(
 
     config_paths = config_paths or {}
     register_output = register_output or {}
+    additional_inputs = additional_inputs or {}
 
     from azure.ai.ml import Input
 
@@ -79,11 +82,14 @@ def create(
     # Create pipeline command
     pipeline = pipeline_module.create(component_creator)
 
-    # Prepare pipeline inputs - currently only data
-    data_path = map_azure_path(data_path)
-    data_input = Input(path=data_path, type="uri_folder")
+    # Prepare pipeline inputs
+    inputs = {}
+    # Add additional inputs
+    for input_name, input_path in input_paths.items():
+        input_path = map_azure_path(input_path)
+        inputs[input_name] = Input(path=input_path, type="uri_folder")
 
-    return pipeline(data=data_input)
+    return pipeline(**inputs)
 
 
 def run(pipeline: "command", experiment: str) -> None:  # noqa: F821

@@ -98,36 +98,36 @@ python -m corebehrt.azure job create_data CPU-20-LP -e "CBTest" -o features=CBFe
 
 CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. The following pipelines are available:
 
-1. **E2E Pipeline**: Complete end-to-end pipeline including pretraining and finetuning
+- **E2E Pipeline**: Complete end-to-end pipeline including pretraining and finetuning
 
 ```bash
-python -m corebehrt.azure pipeline E2E <data> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
+python -m corebehrt.azure pipeline E2E -i data=<path> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
 ```
 
-1. **Finetune Pipeline**: Pipeline for finetuning a pretrained model
+- **Finetune Pipeline**: Pipeline for finetuning a pretrained model
 
 ```bash
-python -m corebehrt.azure pipeline finetune <data> [<default-compute>] [<config-dir>] [-cp <component-name>=<compute>, +] [-c <component-name>=<config-path>] -e <experiment>
+python -m corebehrt.azure pipeline finetune -i data=<path> -i features=<path> -i tokenized=<path> -i pretrained_model=<path> ... (see E2E pipeline)
 ```
 
 #### Pipeline Components
 
 **E2E Pipeline Components:**
 
-* `create_data`
-* `create_outcomes`
-* `select_cohort`
-* `prepare_pretrain`
-* `prepare_finetune`
-* `pretrain`
-* `finetune_cv`
+- `create_data`
+- `create_outcomes`
+- `select_cohort`
+- `prepare_pretrain`
+- `prepare_finetune`
+- `pretrain`
+- `finetune_cv`
 
 **Finetune Pipeline Components:**
 
-* `create_outcomes`
-* `select_cohort`
-* `prepare_finetune`
-* `finetune_cv`
+- `create_outcomes`
+- `select_cohort`
+- `prepare_finetune`
+- `finetune_cv`
 
 `<config-dir>` must contain a config file for each component in the chosen pipeline. Options `-cp` and `-c` are used to overwrite computes and config paths respectively, for individual components.
 
@@ -136,13 +136,13 @@ python -m corebehrt.azure pipeline finetune <data> [<default-compute>] [<config-
 Running E2E on example MEDS data:
 
 ```bash
-python -m corebehrt.azure pipeline E2E CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e ssl_test
+python -m corebehrt.azure pipeline E2E -i data=CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
 ```
 
 Running finetune with a pretrained model:
 
 ```bash
-python -m corebehrt.azure pipeline finetune CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp finetune_cv=GPU-A100-Single --pretrained-model "azureml://jobs/<pretrain-job-id>/outputs/model" -e finetune_test
+python -m corebehrt.azure pipeline finetune -i data=CoreBEHRT_example_data@latest -i pretrained_model="azureml://jobs/<pretrain-job-id>/outputs/model" -i features=CBFeatures -i tokenized=CBTokenized CPU-20-LP corebehrt/azure/configs/small -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
 This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for compute-intensive components.
@@ -165,12 +165,12 @@ python -m corebehrt.azure test <test-name>
 
 This will run the given test `<test-name>` in the experiment `corebehrt_pipeline_tests`. Each tests must have a set of valid component configs + a test config in a properly named directory in `corebehrt/azure/configs`. The test config specifies:
 
-* `data`: data set to use.
-* `computes`: computes to use for each step, with `computes.default` specifying the default.
-* `<component-name>`: A section for each component specifying tests related to that component:
-  * `max_run_time`: Max run time given in seconds.
-  * `metrics`: A list of elements with attributes `type` (name of metric), `child` (name of sub-run, e.g. "Fold 1" or "val scores"), `min` (optional minimum value), `max` (optional maximum value).
-* `on_fail`: Optional, if set to `raise`, a test failure will raise an exception and halt the pipeline. If not set, test results will only be logged.
+- `data`: data set to use.
+- `computes`: computes to use for each step, with `computes.default` specifying the default.
+- `<component-name>`: A section for each component specifying tests related to that component:
+  - `max_run_time`: Max run time given in seconds.
+  - `metrics`: A list of elements with attributes `type` (name of metric), `child` (name of sub-run, e.g. "Fold 1" or "val scores"), `min` (optional minimum value), `max` (optional maximum value).
+  - `on_fail`: Optional, if set to `raise`, a test failure will raise an exception and halt the pipeline. If not set, test results will only be logged.
 
 Note, that long running components will not be halted after `max_run_time` seconds has passed. The check is only made after the component has finished. Thus, for bugs increasing runtime to several days, jobs should simply be cancelled.
 
@@ -178,8 +178,8 @@ See the `test.yaml` files in subdirectories of `corebehrt/azure/configs` for exa
 
 Available tests are:
 
-* **small**: Runs E2E on `example_data/example_MEDS_data` (`CoreBEHRT_example_data@latest`).
-* **full**: Runs E2E on `MEDS_all_20240910:1`.
+- **small**: Runs E2E on `example_data/example_MEDS_data` (`CoreBEHRT_example_data@latest`).
+- **full**: Runs E2E on `MEDS_all_20240910:1`.
 
 ## Running from a python script
 
