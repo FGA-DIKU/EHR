@@ -159,9 +159,72 @@ This uses `CPU-20-LP` as the default compute, but uses `GPU-A100-Single` for com
 
 One exception is for input paths, which does not exactly correspond to the output of another component, e.g. `outcome` for `prepare_finetune` (which is of job type `prepare_training_data`). `outcome` references a file in the `outcomes` directory produced by `create_outcomes`. A proper config file must set `outcome` to the path to this file, **relative to the `outcomes` directory**.
 
-See the pipeline example configs in `corebehrt/azure/configs`.
+See the pipeline example configs in `corebehrt/azure/configs/`.
 
-**Note on adding more pipelines**: This is mostly added for creating full pipeline tests. The command line and utility functions currently only support pipelines with a single input (called `data`). Adding pipelines with additional inputs (e.g. `predefined_splits`) requires more work and should probably be done as a more flexible and configuration file based setup (similar to the job setup).
+#### Adding New Pipelines
+
+Pipelines are now defined via a `PipelineMeta` (name, help text, and list of `PipelineArg` inputs), so the CLI and utility functions will automatically generate flags for *any* number of inputs. To add a new pipeline:
+
+1. Create a `PipelineMeta` with one `PipelineArg` per input (name, help, whether it’s required, plus any type/default/choices).  
+2. Implement your `@dsl.pipeline` function as described below, matching those same argument names.
+3. Add the pipeline to the `PIPELINE_REGISTRY` list in `corebehrt/azure/pipelines/__init__.py`.
+
+<details>
+<summary>Detailed Example</summary>
+
+```python
+from corebehrt.azure.pipelines.base import PipelineMeta, PipelineArg
+
+FINETUNE = PipelineMeta(
+    name="FINETUNE",
+    help="Run the finetune pipeline.",
+    inputs=[
+        PipelineArg(name="data",        help="Path to the raw input data.",    required=True),
+        PipelineArg(name="features",    help="Path to the features data.",       required=True),
+        PipelineArg(name="tokenized",   help="Path to the tokenized data.",      required=True),
+        PipelineArg(name="pretrain_model", help="Path to the pretrained model.", required=True),
+        PipelineArg(name="outcomes",    help="Path to the outcomes data.",       required=False),
+    ],
+)
+```
+
+**Building a pipeline function from components**  
+Each pipeline is just a sequence of component invocations. A component name (e.g. `"select_cohort"`) must match one of the scripts under `corebehrt/azure/components` and the entries in `corebehrt/azure/main/job.py` `add_parser`. You then call that component with the same keyword args as your pipeline inputs, and grab any outputs via `.outputs`.
+
+For example, inside your `@dsl.pipeline`:
+
+```python
+# pick out a cohort based on features + outcomes
+select_cohort = component("select_cohort")(
+    features=features,
+    outcomes=outcomes,
+)
+# downstream steps can consume its outputs…
+prepare = component("prepare_training_data")(
+    features=features,
+    tokenized=tokenized,
+    cohort=select_cohort.outputs.cohort,
+    outcomes=outcomes,
+)
+
+# and finally return whatever outputs your pipeline should expose
+return {
+    "model": finetune_cv.outputs.model,
+}
+```
+
+With that in place, your CLI will support:
+
+```bash
+python -m corebehrt.azure pipeline FINETUNE \
+               --data /path/to/data \
+               --features /path/to/features \
+               --tokenized /path/to/tokenized \
+               --pretrain_model /models/base \
+               [--outcomes /path/to/outcomes]
+```
+
+</details>
 
 ### Running tests
 

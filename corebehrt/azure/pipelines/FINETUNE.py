@@ -2,17 +2,22 @@
 Finetune pipeline implementation.
 """
 
-from corebehrt.azure.pipelines.base import PipelineMeta
+from corebehrt.azure.pipelines.base import PipelineMeta, PipelineArg
 
 FINETUNE = PipelineMeta(
     name="FINETUNE",
     help="Run the finetune pipeline.",
-    required_inputs={
-        "data": {"help": "Path to the raw input data."},
-        "features": {"help": "Path to the features data."},
-        "tokenized": {"help": "Path to the tokenized data."},
-        "pretrain_model": {"help": "Path to the pretrained model."},
-    },
+    inputs=[
+        PipelineArg(name="data", help="Path to the raw input data.", required=True),
+        PipelineArg(name="features", help="Path to the features data.", required=True),
+        PipelineArg(
+            name="tokenized", help="Path to the tokenized data.", required=True
+        ),
+        PipelineArg(
+            name="pretrain_model", help="Path to the pretrained model.", required=True
+        ),
+        PipelineArg(name="outcomes", help="Path to the outcomes data.", required=False),
+    ],
 )
 
 
@@ -28,20 +33,26 @@ def create(component: callable):
 
     @dsl.pipeline(name="finetune_pipeline", description="Finetune CoreBEHRT pipeline")
     def pipeline(
-        data: Input, features: Input, tokenized: Input, pretrain_model: Input
+        data: Input,
+        features: Input,
+        tokenized: Input,
+        pretrain_model: Input,
+        outcomes: Input = None,
     ) -> dict:
-        create_outcomes = component(
-            "create_outcomes",
-        )(
-            data=data,
-            features=features,
-        )
+        if outcomes is None:
+            create_outcomes = component(
+                "create_outcomes",
+            )(
+                data=data,
+                features=features,
+            )
+            outcomes = create_outcomes.outputs.outcomes
 
         select_cohort = component(
             "select_cohort",
         )(
             features=features,
-            outcomes=create_outcomes.outputs.outcomes,
+            outcomes=outcomes,
         )
 
         prepare_finetune = component(
@@ -51,7 +62,7 @@ def create(component: callable):
             features=features,
             tokenized=tokenized,
             cohort=select_cohort.outputs.cohort,
-            outcomes=create_outcomes.outputs.outcomes,
+            outcomes=outcomes,
         )
 
         finetune = component(
