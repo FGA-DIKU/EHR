@@ -1,5 +1,32 @@
 """
 Command-line interface for running CoreBEHRT pipelines on Azure.
+
+This module provides the CLI entry point for running multi-step pipelines
+using the Azure ML SDK. It dynamically constructs argument parsers for each
+registered pipeline, based on their metadata (see PipelineMeta and PipelineArg
+in corebehrt.azure.pipelines.base), and dispatches execution to the appropriate
+pipeline definition.
+
+How to use:
+    This module is invoked via the command line as part of the corebehrt.azure
+    package, for example:
+
+        python -m corebehrt.azure pipeline <PIPELINE_NAME> [pipeline-args] [common-args]
+
+    where <PIPELINE_NAME> is one of the registered pipelines (e.g., E2E, FINETUNE),
+    and [pipeline-args] are the required/optional arguments for that pipeline,
+    as defined in its PipelineMeta.
+
+Requirements:
+    - Each pipeline must be registered in PIPELINE_REGISTRY (see corebehrt.azure.pipelines).
+    - Each pipeline must define its arguments using PipelineMeta and PipelineArg.
+    - The Azure ML environment and credentials must be set up as described in the project README.
+
+This module is distinct from 'job.py', which runs single-step jobs. Here, pipelines
+are orchestrations of multiple jobs/components, with their own input/output wiring
+and configuration.
+
+See the project README and the pipelines/ directory for more details and examples.
 """
 
 import argparse
@@ -73,13 +100,14 @@ def run_pipeline(pipeline_type: str, args: argparse.Namespace) -> None:
         pipeline_type: The type of pipeline to run
         args: The parsed command line arguments (from argparse) defined in the pipeline parser
     """
-    # Get required inputs for this pipeline type
-    required_inputs = PIPELINE_REGISTRY_DICT[pipeline_type].required_inputs
+    pipeline_meta = PIPELINE_REGISTRY_DICT[pipeline_type]
 
-    # Create input paths dictionary
+    # Create input paths dictionary from all defined PipelineArgs
     input_paths = {}
-    for input_name in required_inputs:
-        input_paths[input_name] = getattr(args, input_name)
+    for arg in pipeline_meta.inputs:
+        value = getattr(args, arg.name, None)
+        if value is not None:
+            input_paths[arg.name] = value
 
     # Process common arguments
     cfg_paths = parse_pair_args(args.config)
