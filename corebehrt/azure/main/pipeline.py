@@ -56,11 +56,11 @@ def add_pipeline_parser(
         pipeline.name, help=pipeline.help
     )
 
-    # Add common arguments
-    add_common_arguments(parser)
-
     # Add pipeline-specific arguments
     pipeline.add_to_parser(parser)
+
+    # Add common arguments
+    add_common_arguments(parser)
 
     # Set handler function with the pipeline type
     parser.set_defaults(
