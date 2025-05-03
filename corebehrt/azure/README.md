@@ -136,13 +136,13 @@ python -m corebehrt.azure pipeline finetune --data <data-path> --features <featu
 Running E2E on example MEDS data:
 
 ```bash
-python -m corebehrt.azure pipeline E2E --data CoreBEHRT_example_data@latest CPU-20-LP corebehrt/azure/configs/small -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
+python -m corebehrt.azure pipeline E2E CPU-20-LP corebehrt/azure/configs/small --data CoreBEHRT_example_data@latest -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
 ```
 
 Running finetune with a pretrained model:
 
 ```bash
-python -m corebehrt.azure pipeline FINETUNE --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized CPU-20-LP corebehrt/azure/configs/finetune -cp finetune_cv=GPU-A100-Single -e finetune_test
+python -m corebehrt.azure pipeline FINETUNE CPU-20-LP corebehrt/azure/configs/finetune --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
 You can also run
@@ -217,6 +217,8 @@ With that in place, your CLI will support:
 
 ```bash
 python -m corebehrt.azure pipeline FINETUNE \
+               CPU-20-LP \
+               path/to/config/dir \
                --data /path/to/data \
                --features /path/to/features \
                --tokenized /path/to/tokenized \
