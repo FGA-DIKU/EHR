@@ -4,6 +4,7 @@ logging:
 
 paths:
   splits: [ tuning ]
+
 outcomes:
   breast_cancer:
     type: [ code ]

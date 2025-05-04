@@ -1,3 +1,29 @@
+"""
+Command-line interface for running individual CoreBEHRT jobs on Azure.
+
+This module provides the CLI entry point for launching single-step jobs
+(such as data creation, pretraining, or finetuning) using the Azure ML SDK.
+It defines the argument parser for job execution, validates and loads job
+configurations, and dispatches execution to the appropriate job runner.
+
+How to use:
+    This module is invoked via the command line as part of the corebehrt.azure
+    package, for example:
+
+        python -m corebehrt.azure job <JOB> <COMPUTE> [options]
+
+    where <JOB> is one of the supported job types (e.g., create_data, pretrain),
+    and <COMPUTE> is the Azure compute target to use. Additional options include
+    configuration file path, experiment name, output registration, and system
+    metrics logging.
+
+Requirements:
+    - The job name must match one of the supported job types listed in the parser.
+    - A valid configuration file must be provided (or the default will be used).
+    - The Azure ML environment and credentials must be set up as described in the project README.
+
+"""
+
 from corebehrt.azure import util
 from corebehrt.azure.util.config import load_config
 from corebehrt.azure.main.helpers import parse_pair_args

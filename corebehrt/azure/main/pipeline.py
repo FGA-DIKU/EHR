@@ -1,93 +1,133 @@
+"""
+Command-line interface for running CoreBEHRT pipelines on Azure.
+
+This module provides the CLI entry point for running multi-step pipelines
+using the Azure ML SDK. It dynamically constructs argument parsers for each
+registered pipeline, based on their metadata (see PipelineMeta and PipelineArg
+in corebehrt.azure.pipelines.base), and dispatches execution to the appropriate
+pipeline definition.
+
+How to use:
+    This module is invoked via the command line as part of the corebehrt.azure
+    package, for example:
+
+        python -m corebehrt.azure pipeline <PIPELINE_NAME> [pipeline-args] [common-args]
+
+    where <PIPELINE_NAME> is one of the registered pipelines (e.g., E2E, FINETUNE),
+    and [pipeline-args] are the required/optional arguments for that pipeline,
+    as defined in its PipelineMeta.
+
+Requirements:
+    - Each pipeline must be registered in PIPELINE_REGISTRY (see corebehrt.azure.pipelines).
+    - Each pipeline must define its arguments using PipelineMeta and PipelineArg.
+    - The Azure ML environment and credentials must be set up as described in the project README.
+
+This module is distinct from 'job.py', which runs single-step jobs. Here, pipelines
+are orchestrations of multiple jobs/components, with their own input/output wiring
+and configuration.
+
+See the project README and the pipelines/ directory for more details and examples.
+"""
+
+import argparse
+
 from corebehrt.azure import util
 from corebehrt.azure.main.helpers import parse_pair_args
+from corebehrt.azure.pipelines import PIPELINE_REGISTRY
+from corebehrt.azure.pipelines.base import PipelineMeta
+from corebehrt.azure.pipelines.parser import add_common_arguments
+
+PIPELINE_REGISTRY_DICT = {p.name: p for p in PIPELINE_REGISTRY}
 
 
-def add_parser(subparsers) -> None:
+def add_pipeline_parser(
+    subparsers: argparse._SubParsersAction, pipeline: PipelineMeta
+) -> None:
     """
-    Add the pipeline subparser
+    Add a parser for a specific pipeline type.
+
+    Args:
+        subparsers: The subparsers action to add the parser to
+        pipeline_type: The name of the pipeline type
+        config: Configuration for this pipeline type
     """
-    parser = subparsers.add_parser("pipeline", help="Run a pipeline job.")
-    parser.add_argument("PIPELINE", type=str, choices={"E2E"}, help="Pipeline to run.")
-    parser.add_argument("DATA", type=str, help="Raw input data.")
-    parser.add_argument(
-        "COMPUTE",
-        type=str,
-        default=None,
-        nargs="?",
-        help="Default compute target to use. If not set, compute targets must be specified for all components.",
+    # Create parser for this pipeline type
+    parser: argparse.ArgumentParser = subparsers.add_parser(
+        pipeline.name, help=pipeline.help
     )
-    parser.add_argument(
-        "CONFIG_DIR",
-        type=str,
-        default=None,
-        nargs="?",
-        help="Path to folder with configs. If not set, configs must be specified for all components.",
+
+    # Add common arguments
+    add_common_arguments(parser)
+
+    # Add pipeline-specific arguments
+    pipeline.add_to_parser(parser)
+
+    # Set handler function with the pipeline type
+    parser.set_defaults(
+        func=lambda args, _name=pipeline.name: run_pipeline(_name, args)
     )
-    parser.add_argument(
-        "-cp",
-        "--compute",
-        type=str,
-        action="append",
-        default=[],
-        help="Compute target to use for a specific pipeline step. Use: '-cp <job_name>=<compute>'.",
-    )
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=str,
-        action="append",
-        default=[],
-        help="Path to configuration file for each component. Use: '-c <job_name>=<path-to-cfg>'. If not set, default is file from repo.",
-    )
-    parser.add_argument(
-        "-e",
-        "--experiment",
-        type=str,
-        default="corebehrt_runs",
-        help="Experiment to run the job in.",
-    )
-    parser.add_argument(
-        "-o",
-        "--register_output",
-        type=str,
-        action="append",
-        default=[],
-        help="If an output from any step in the pipeline should be registered, provide a name for the Azure asset using the format '--register_output <job_name>.<input>=<name>'.",
-    )
-    parser.add_argument(
-        "-lsm",
-        "--log_system_metrics",
-        action="store_true",
-        default=False,
-        help="If set, system metrics such as CPU, GPU and memory usage are logged in Azure.",
-    )
-    parser.set_defaults(func=create_and_run_pipeline)
 
 
-def create_and_run_pipeline(args) -> None:
+def add_parser(subparsers: argparse._SubParsersAction) -> None:
     """
-    Run the pipeline from the given arguments
-    """
+    Add the pipeline subparser with subparsers for each pipeline type.
 
-    # Read configs
+    Args:
+        subparsers: The subparsers action to add the pipeline parser to
+    """
+    # Main pipeline parser
+    pipeline_parser: argparse.ArgumentParser = subparsers.add_parser(
+        "pipeline", help="Run a pipeline job."
+    )
+
+    # Create subparsers for each pipeline type
+    pipeline_subparsers = pipeline_parser.add_subparsers(
+        dest="pipeline_type",
+        help="Type of pipeline to run",
+        required=True,
+    )
+
+    # Add parsers for each pipeline type
+    for pipeline in PIPELINE_REGISTRY:
+        add_pipeline_parser(pipeline_subparsers, pipeline)
+
+
+def run_pipeline(pipeline_type: str, args: argparse.Namespace) -> None:
+    """
+    Run a pipeline with the specified type and arguments.
+
+    Args:
+        pipeline_type: The type of pipeline to run
+        args: The parsed command line arguments (from argparse) defined in the pipeline parser
+    """
+    pipeline_meta = PIPELINE_REGISTRY_DICT[pipeline_type]
+
+    # Create input paths dictionary from all defined PipelineArgs
+    input_paths = {}
+    for arg in pipeline_meta.inputs:
+        value = getattr(args, arg.name, None)
+        if value is not None:
+            input_paths[arg.name] = value
+
+    # Process common arguments
     cfg_paths = parse_pair_args(args.config)
-
-    # Parse computes and set default
     computes = parse_pair_args(args.compute)
+    register_output = parse_pair_args(args.register_output)
+
+    # Set default compute if provided
     if args.COMPUTE is not None:
         computes["default"] = args.COMPUTE
 
-    # Parse register_output
-    register_output = parse_pair_args(args.register_output)
-
+    # Create the pipeline
     pl = util.pipeline.create(
-        args.PIPELINE,
-        args.DATA,
-        computes,
+        name=pipeline_type,
+        input_paths=input_paths,
+        computes=computes,
         config_paths=cfg_paths,
         config_dir=args.CONFIG_DIR,
         register_output=register_output,
         log_system_metrics=args.log_system_metrics,
     )
 
+    # Run the pipeline
     util.pipeline.run(pl, args.experiment)
