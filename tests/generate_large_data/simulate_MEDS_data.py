@@ -11,8 +11,8 @@ import argparse
 import pyarrow.parquet as pq
 from pandas import NaT
 
-DEFAULT_READ_DIR = "tmp/example_data"
-DEFAULT_WRITE_DIR = "tmp/example_MEDS_data"
+DEFAULT_READ_DIR = "tmp/correlated_data"
+DEFAULT_WRITE_DIR = "tmp/correlated_MEDS_data"
 DEFAULT_BATCH_SIZE = 200_000
 DEFAULT_SHARD_SIZE = 500
 DEFAULT_SPLIT = {"train": 0.8, "tuning": 0.1, "held_out": 0.1}
