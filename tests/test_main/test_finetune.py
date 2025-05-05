@@ -126,5 +126,7 @@ class TestFinetune(TestMainScript):
         metrics = pd.read_csv(join(self.predictions, "metrics.csv"))
         rocs = metrics["roc_auc"].tolist()
         prs = metrics["pr_auc"].tolist()
-        self.assertTrue(all(roc >= 0.7 for roc in rocs) and all(roc <= 0.9 for roc in rocs))
+        self.assertTrue(
+            all(roc >= 0.7 for roc in rocs) and all(roc <= 0.9 for roc in rocs)
+        )
         self.assertTrue(all(pr >= 0.4 for pr in prs) and all(pr <= 0.9 for pr in prs))
