@@ -21,6 +21,7 @@ class TestCreateOutcomes(TestMainScript):
                     "data": "./tests/data/raw",
                     "features": "./tests/data/features",
                     "outcomes": self.outcomes_dir,
+                    "splits": ["train", "tuning", "held_out"],
                 },
                 "outcomes": {
                     "TEST_OUTCOME": {

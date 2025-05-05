@@ -23,7 +23,7 @@ def main_data(config_path):
     outcome_tables = process_data(
         ShardLoader(
             data_dir=cfg.paths.data,
-            splits=["train", "tuning", "held_out"],
+            splits=cfg.paths.get("splits", None),
             patient_info_path=join(cfg.paths.features, "patient_info.parquet"),
         ),
         cfg,
@@ -31,6 +31,8 @@ def main_data(config_path):
     )
 
     for key, df in outcome_tables.items():
+        if df.empty:
+            logger.warning(f"Outcomes table for {key} is empty")
         df.to_csv(join(cfg.paths.outcomes, f"{key}.csv"), index=False)
 
     logger.info("Finish outcomes creation")

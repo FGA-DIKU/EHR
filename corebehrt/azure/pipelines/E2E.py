@@ -1,3 +1,18 @@
+"""
+E2E pipeline implementation.
+"""
+
+from corebehrt.azure.pipelines.base import PipelineMeta, PipelineArg
+
+E2E = PipelineMeta(
+    name="E2E",
+    help="Run the end-to-end pipeline.",
+    inputs=[
+        PipelineArg(name="data", help="Path to the raw input data.", required=True),
+    ],
+)
+
+
 def create(component: callable):
     """
     Define the E2E pipeline.
@@ -8,7 +23,7 @@ def create(component: callable):
     """
     from azure.ai.ml import dsl, Input
 
-    @dsl.pipeline(name="E2E", description="Full E2E CoreBEHRT pipeline")
+    @dsl.pipeline(name="E2E_pipeline", description="Full E2E CoreBEHRT pipeline")
     def pipeline(data: Input) -> dict:
         create_data = component(
             "create_data",
