@@ -31,7 +31,7 @@ class TestFinetune(TestMainScript):
                     "batch_size": 128,
                     "val_batch_size": 128,
                     "effective_batch_size": 128,
-                    "epochs": 30,
+                    "epochs": 10,
                     "info": True,
                     "gradient_clip": {
                         "clip_value": 1.0,
