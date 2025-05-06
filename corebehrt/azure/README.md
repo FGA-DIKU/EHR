@@ -179,7 +179,7 @@ FINETUNE = PipelineMeta(
     name="FINETUNE",
     help="Run the finetune pipeline.",
     inputs=[
-        PipelineArg(name="data",        help="Path to the raw input data.",    required=True),
+        PipelineArg(name="data",        help="Path to the raw input data.",    required=False),
         PipelineArg(name="features",    help="Path to the features data.",       required=True),
         PipelineArg(name="tokenized",   help="Path to the tokenized data.",      required=True),
         PipelineArg(name="pretrain_model", help="Path to the pretrained model.", required=True),
@@ -219,7 +219,7 @@ With that in place, your CLI will support:
 python -m corebehrt.azure pipeline FINETUNE \
                CPU-20-LP \
                path/to/config/dir \
-               --data /path/to/data \
+               [--data /path/to/data] \ # Only required if outcomes are not provided
                --features /path/to/features \
                --tokenized /path/to/tokenized \
                --pretrain_model /models/base \
