@@ -3,12 +3,12 @@ logging:
   path: ./outputs/logs
 
 paths:
-  model: "./outputs/finetuning"
+  model: "./outputs/finetuning_cls"
   folds_dir: "./outputs/finetuning/processed_data"
   test_data_dir: "./outputs/testing/held_out/processed_data" 
   run_name: "evaluate"
 
-  predictions: "./outputs/testing/held_out/predictions"
+  predictions: "./outputs/testing/held_out/predictions_cls"
 
 test_batch_size: 128
 

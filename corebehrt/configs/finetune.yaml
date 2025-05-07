@@ -9,13 +9,14 @@ paths:
   # restart_model: ... # Use for restarting from checkpoint
       
 ## OUTPUTS
-  model: ./outputs/finetuning # Save model/outputs to this folder
+  model: ./outputs/finetuning_cls # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 evaluate: false # evaluate best model on test sets
   
 model:
   cls: default
+  pool_type: 'cls'
 
 trainer_args:
   sampler_function: 
@@ -25,7 +26,7 @@ trainer_args:
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128
-  epochs: 2
+  epochs: 15
   info: true
   gradient_clip: 
     clip_value: 1.0

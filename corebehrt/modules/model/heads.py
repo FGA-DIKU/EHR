@@ -2,22 +2,38 @@ import torch
 
 
 class FineTuneHead(torch.nn.Module):
-    def __init__(self, hidden_size: int):
+    def __init__(self, hidden_size: int, pool_type: str = "bigru"):
         super().__init__()
         self.classifier = torch.nn.Linear(hidden_size, 1)
-        self.pool = BiGRU(hidden_size)
+        
+        if pool_type == "bigru":
+            self.pool = BiGRU(hidden_size)
+        elif pool_type == "cls":
+            self.pool = self.pool_cls
+        else:
+            raise ValueError(f"pool_type must be either 'bigru' or 'cls', got {pool_type}")
 
     def forward(
         self,
         hidden_states: torch.Tensor,
-        attention_mask: torch.Tensor,
+        attention_mask: torch.Tensor = None,
         return_embedding: bool = False,
     ) -> torch.Tensor:
-        return self.pool(
-            hidden_states,
-            attention_mask=attention_mask,
-            return_embedding=return_embedding,
-        )
+        if isinstance(self.pool, BiGRU):
+            return self.pool(
+                hidden_states,
+                attention_mask=attention_mask,
+                return_embedding=return_embedding,
+            )
+        else:
+            x = self.pool(hidden_states)
+            if return_embedding:
+                return x
+            return self.classifier(x)
+
+    def pool_cls(self, x: torch.Tensor) -> torch.Tensor:
+        """Use the CLS token embedding as the pooled representation."""
+        return x[:, 0]
 
 
 class BiGRU(torch.nn.Module):
@@ -42,7 +58,7 @@ class BiGRU(torch.nn.Module):
         packed = torch.nn.utils.rnn.pack_padded_sequence(
             hidden_states, lengths, batch_first=True, enforce_sorted=False
         )
-        # Pass the hidden states through the RßNN
+        # Pass the hidden states through the RNN
         output, _ = self.rnn(packed)
         # Unpack it back to a padded sequence
         output, _ = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
