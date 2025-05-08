@@ -40,7 +40,7 @@ class BiGRU(torch.nn.Module):
     def __init__(self, hidden_size):
         super().__init__()
         self.hidden_size = hidden_size
-        self.rnn_hidden_size = hidden_size // 2
+        self.rnn_hidden_size = hidden_size # // 2
         self.rnn = torch.nn.GRU(
             hidden_size, self.rnn_hidden_size, batch_first=True, bidirectional=True
         )

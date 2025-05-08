@@ -43,6 +43,10 @@ model:
   abspos_scale: 1e-5 # 400k -> 4
   age_shift: -50 # center around 0
   abspos_shift: -90_000 # 0 will be around 2015
+
+  attention_bias: true
+  global_attn_every_n_layers: 1
+  local_attention: 512
   
   is_causal: false  
   
