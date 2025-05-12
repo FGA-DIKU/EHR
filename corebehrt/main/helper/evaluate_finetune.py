@@ -32,12 +32,12 @@ def inference_fold(
         args=cfg.trainer_args,
         cfg=cfg,
     )
-    logits_tensor, targets_tensor, embeddings_tensor = evaluater.inference_loop(
+    logits_tensor, targets_tensor, embeddings_tensor, shap_values = evaluater.inference_loop(
         return_embeddings=return_embeddings
     )
     probas = torch.sigmoid(logits_tensor).numpy()
 
-    return probas, embeddings_tensor
+    return probas, embeddings_tensor, shap_values
 
 
 def get_sequence_length(dataset: BinaryOutcomeDataset) -> List[int]:

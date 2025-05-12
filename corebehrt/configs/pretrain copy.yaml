@@ -1,0 +1,56 @@
+data:
+  dataset:
+    ignore_special_tokens: true
+    masking_ratio: 0.8
+    replace_ratio: 0.1
+    select_ratio: 0.3
+  val_ratio: 0.2
+logging:
+  level: INFO
+  path: ./logs
+metrics:
+  mlm_loss:
+    _target_: corebehrt.modules.monitoring.metrics.LossAccessor
+    loss_name: loss
+  top1:
+    _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
+    topk: 1
+  top10:
+    _target_: corebehrt.modules.monitoring.metrics.PrecisionAtK
+    topk: 10
+model:
+  abspos_scale: 0.0001
+  abspos_shift: -87600
+  age_scale: 0.01
+  age_shift: 0
+  embedding_dropout: 0.1
+  global_attn_every_n_layers: 1
+  hidden_size: 96
+  intermediate_size: 384
+  local_attention: 1024
+  max_position_embeddings: 1024
+  num_attention_heads: 6
+  num_hidden_layers: 6
+  type_vocab_size: 2000
+optimizer:
+  eps: 1.0e-06
+  lr: 0.0005
+paths:
+  model: /mnt/azureml/cr/j/ce053bc0ea1041f9b4b5e30782478d94/cap/data-capability/wd/model
+  prepared_data: /mnt/azureml/cr/j/ce053bc0ea1041f9b4b5e30782478d94/cap/data-capability/wd/INPUT_prepared_data
+scheduler:
+  _target_: transformers.get_cosine_schedule_with_warmup
+  num_training_steps: 33269843
+  num_warmup_steps: 12476
+trainer_args:
+  batch_size: 256
+  compile: false
+  early_stopping: null
+  effective_batch_size: 512
+  epochs: 15
+  gradient_clip:
+    clip_value: 1.0
+  info: true
+  num_workers: 1
+  sampler: null
+  shuffle: true

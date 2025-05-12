@@ -83,7 +83,6 @@ class EhrEmbeddings(nn.Module):
         if inputs_embeds is not None:
             return inputs_embeds
         embeddings = self.concept_embeddings(input_ids)
-
         embeddings += self.segment_embeddings(segments)
         embeddings += self.age_embeddings(age)
         embeddings += self.abspos_embeddings(abspos)
