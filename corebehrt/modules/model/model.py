@@ -65,7 +65,7 @@ class CorebehrtEncoder(ModernBertModel):
         )
         self.is_causal = getattr(config, "is_causal", False)
 
-    def forward(self, batch: dict):
+    def forward(self, batch: dict, **kwargs):
         """
         Forward pass building embeddings and attention mask, then calling ModernBertModel.
 
@@ -75,6 +75,7 @@ class CorebehrtEncoder(ModernBertModel):
                 - "segment": Tensor of segment IDs (B, L)
                 - "age": Tensor of patient ages (B, L)
                 - "abspos": Tensor of absolute position values (B, L)
+            **kwargs: Additional arguments to pass to the ModernBertModel forward method
 
         Returns:
             BaseModelOutput: output of ModernBertModel with last_hidden_state, etc.
@@ -94,7 +95,7 @@ class CorebehrtEncoder(ModernBertModel):
         )
 
         return super().forward(
-            inputs_embeds=inputs_embeds, attention_mask=attention_mask
+            inputs_embeds=inputs_embeds, attention_mask=attention_mask, **kwargs
         )
 
     def _update_attention_mask(
@@ -136,18 +137,19 @@ class CorebehrtForPretraining(CorebehrtEncoder):
         self.sparse_pred_ignore_index = self.config.sparse_pred_ignore_index
 
     # Inspiration from ModernBertForMaskedLM
-    def forward(self, batch: dict):
+    def forward(self, batch: dict, **kwargs):
         """
         Forward pass for masked language modeling.
 
         Args:
             batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
                           optional 'target' for labels (B, L).
+            **kwargs: Additional arguments to pass to the encoder forward method
 
         Returns:
             BaseModelOutput: with logits and optional loss/labels if targets provided.
         """
-        outputs = super().forward(batch)
+        outputs = super().forward(batch, **kwargs)
         last_hidden_state = outputs[0]
 
         labels = batch.get(TARGET)
@@ -192,18 +194,19 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
         self.cls = FineTuneHead(hidden_size=config.hidden_size)
 
-    def forward(self, batch: dict):
+    def forward(self, batch: dict, **kwargs):
         """
         Forward pass for fine-tuning.
 
         Args:
             batch (dict): must contain 'concept', 'segment', 'age', 'abspos', 'attention_mask';
                           optional 'target' as labels.
+            **kwargs: Additional arguments to pass to the encoder forward method
 
         Returns:
             BaseModelOutput: with logits and optional loss if target provided.
         """
-        outputs = super().forward(batch)
+        outputs = super().forward(batch, **kwargs)
 
         sequence_output = outputs[0]  # Last hidden state
         logits = self.cls(sequence_output, batch[ATTENTION_MASK])
