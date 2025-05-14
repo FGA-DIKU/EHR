@@ -82,14 +82,20 @@ class EhrEmbeddings(nn.Module):
             raise ValueError("Invalid input arguments")
         if inputs_embeds is not None:
             return inputs_embeds
-        embeddings = self.concept_embeddings(input_ids)
-        embeddings += self.segment_embeddings(segments)
-        embeddings += self.age_embeddings(age)
-        embeddings += self.abspos_embeddings(abspos)
-
+            
+        # Get individual embeddings
+        concept_emb = self.concept_embeddings(input_ids)
+        segment_emb = self.segment_embeddings(segments)
+        age_emb = self.age_embeddings(age)
+        abspos_emb = self.abspos_embeddings(abspos)
+        
+        # Combine embeddings without in-place operations
+        embeddings = concept_emb + segment_emb + age_emb + abspos_emb
+        
+        # Apply layer norm and dropout
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
-
+        
         return embeddings
 
     @torch.jit.script

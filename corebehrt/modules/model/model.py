@@ -67,31 +67,27 @@ class CorebehrtEncoder(ModernBertModel):
 
     def forward(self, batch: dict):
         """
-        Forward pass building embeddings and attention mask, then calling ModernBertModel.
-
-        Args:
-            batch (dict): must contain:
-                - "concept": Tensor of token indices (B, L)
-                - "segment": Tensor of segment IDs (B, L)
-                - "age": Tensor of patient ages (B, L)
-                - "abspos": Tensor of absolute position values (B, L)
-
-        Returns:
-            BaseModelOutput: output of ModernBertModel with last_hidden_state, etc.
+        Forward pass supporting both standard token input and precomputed embeddings (e.g. for SHAP).
         """
-        if ATTENTION_MASK in batch:
-            attention_mask = batch[ATTENTION_MASK]
+        if "inputs_embeds" in batch:
+            # SHAP path: use precomputed embeddings directly
+            inputs_embeds = batch["inputs_embeds"]
+            attention_mask = batch["attention_mask"]
         else:
-            attention_mask = (
-                batch[CONCEPT_FEAT] != DEFAULT_VOCABULARY[PAD_TOKEN]
-            ).float()
+            # Standard path: build embeddings from token-level EHR features
+            if ATTENTION_MASK in batch:
+                attention_mask = batch[ATTENTION_MASK]
+            else:
+                attention_mask = (
+                    batch[CONCEPT_FEAT] != DEFAULT_VOCABULARY[PAD_TOKEN]
+                ).float()
 
-        inputs_embeds = self.embeddings(
-            input_ids=batch[CONCEPT_FEAT],
-            segments=batch[SEGMENT_FEAT],
-            age=batch[AGE_FEAT],
-            abspos=batch[ABSPOS_FEAT],
-        )
+            inputs_embeds = self.embeddings(
+                input_ids=batch[CONCEPT_FEAT],
+                segments=batch[SEGMENT_FEAT],
+                age=batch[AGE_FEAT],
+                abspos=batch[ABSPOS_FEAT],
+            )
 
         return super().forward(
             inputs_embeds=inputs_embeds, attention_mask=attention_mask

@@ -15,6 +15,7 @@ def inference_fold(
     test_data: BinaryOutcomeDataset,
     logger,
     fold: int,
+    shap_dict: dict,
 ) -> None:
     fold_folder = join(finetune_folder, f"fold_{fold}")
 
@@ -33,9 +34,10 @@ def inference_fold(
         cfg=cfg,
     )
     logits_tensor, targets_tensor, embeddings_tensor, shap_values = evaluater.inference_loop(
-        return_embeddings=return_embeddings
+        return_embeddings=return_embeddings,
+        shap_dict=shap_dict
     )
-    probas = torch.sigmoid(logits_tensor).numpy()
+    probas = torch.sigmoid(logits_tensor.detach()).numpy()
 
     return probas, embeddings_tensor, shap_values
 

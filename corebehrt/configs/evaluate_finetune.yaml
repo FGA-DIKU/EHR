@@ -12,6 +12,10 @@ paths:
 
 test_batch_size: 128
 
+shap: 
+  background_size: 100
+  max_len: 30
+
 return_embeddings: True
 
 metrics:

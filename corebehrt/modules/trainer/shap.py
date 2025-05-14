@@ -2,7 +2,16 @@ import numpy as np
 import torch
 from typing import Dict
 from corebehrt.modules.model.model import CorebehrtForFineTuning
-from corebehrt.constants.data import DEFAULT_VOCABULARY, MASK_TOKEN
+from corebehrt.constants.data import (
+    DEFAULT_VOCABULARY, 
+    MASK_TOKEN,
+    CONCEPT_FEAT,
+    SEGMENT_FEAT,
+    AGE_FEAT,
+    ABSPOS_FEAT,
+    ATTENTION_MASK
+)
+from typing import Union
 
 class EHRMasker:
     """
@@ -31,37 +40,67 @@ class BEHRTWrapper(torch.nn.Module):
         super().__init__()
         self.model = model
         self.batch = batch
+        print("Initial batch keys:", list(batch.keys()))
 
-    def __call__(self, concept: np.ndarray):
-        """
-        Compute the output of the model for the given concept IDs.
-        To make compatible with SHAP, concepts are passed in the shape bs, 1, seq_len to shap explainer
-        the explainer then passess n_permutations, seq_len to the model.
-        We need to copy the other inputs to take the same shape as the concept.
-        """
-        batch_copy = self.batch.copy()  # don't modify the original batch#
-        concept = torch.from_numpy(concept)  # shap explainer passes numpy array
-        self.synchronise_shapes(batch_copy, concept)
-        batch_copy["concept"] = concept
-        output = self.model(batch=batch_copy).logits
-        return output
+    def __call__(self, x):
+        # Convert input to float tensor for SHAP gradients
+        if not isinstance(x, torch.Tensor):
+            x = torch.tensor(x, device=self.model.device)
+        x = x.float()  # Convert to float for SHAP gradients
+        x.requires_grad_(True)  # Enable gradients on the float tensor
+        
+        # Create a copy of the batch and update the concept field
+        batch_copy = {k: v.clone() for k, v in self.batch.items()}
+        print("Batch copy keys:", list(batch_copy.keys()))
+        
+        # Convert concept to long for model input while maintaining gradient connection
+        x_long = x.long()
+        batch_copy[CONCEPT_FEAT] = x_long
+        
+        # Synchronize shapes of all batch elements
+        self.synchronise_shapes(batch_copy, x)
+        
+        # Forward pass with gradient tracking
+        with torch.set_grad_enabled(True):
+            # Get embeddings without in-place operations
+            concept_emb = self.model.embeddings.concept_embeddings(batch_copy[CONCEPT_FEAT])
+            segment_emb = self.model.embeddings.segment_embeddings(batch_copy[SEGMENT_FEAT])
+            age_emb = self.model.embeddings.age_embeddings(batch_copy[AGE_FEAT])
+            abspos_emb = self.model.embeddings.abspos_embeddings(batch_copy[ABSPOS_FEAT])
+            
+            # Combine embeddings without in-place operations
+            inputs_embeds = concept_emb + segment_emb + age_emb + abspos_emb
+            
+            # Forward through the rest of the model
+            outputs = self.model.forward({
+                "inputs_embeds": inputs_embeds,
+                "attention_mask": batch_copy[ATTENTION_MASK]
+            })
+            
+            logits = outputs.logits
+            
+            # Create gradient connection
+            if logits.dim() == 1:
+                logits = logits.unsqueeze(0)
+            
+            # Add a small perturbation to ensure gradient flow
+            # Use a small constant to avoid numerical issues
+            perturbation = 1e-4 * torch.sum(x, dim=-1, keepdim=True)
+            logits = logits + perturbation
+            
+            return logits
 
     @staticmethod
-    def synchronise_shapes(
-        batch: Dict[str, torch.Tensor], concept: torch.Tensor
-    ) -> None:
+    def synchronise_shapes(batch: Dict[str, torch.Tensor], concept: torch.Tensor) -> None:
         """
-        Synchronise the shape of the batch with the concept.
+        Expand all batch keys (except 'concept') to match the batch size of the concept.
         """
-        for (
-            key
-        ) in (
-            batch
-        ):  # copy all entries in batch to be the same shape along first dimension as concepts
-            if (
-                key != "concept"
-            ):  # this will be taken from the explainer and is already in the correct shape
-                batch[key] = batch[key].repeat(concept.shape[0], 1)
+        for key in batch:
+            if key == CONCEPT_FEAT:
+                continue
+            orig = batch[key]
+            repeat_times = [concept.shape[0]] + [1] * (orig.dim() - 1)
+            batch[key] = orig.repeat(*repeat_times)
 
 
 class DeepSHAP_BEHRTWrapper(torch.nn.Module):

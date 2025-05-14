@@ -62,6 +62,7 @@ def main_evaluate(config_path):
             test_data=test_dataset,
             logger=logger,
             fold=n_fold,
+            shap_dict=cfg.get("shap", None)
         )
         combined_df[f"fold_{n_fold}_probas"] = probas
         all_probas.append(probas)
