@@ -1,5 +1,5 @@
 import pandas as pd
-
+from corebehrt.constants.data import CONCEPT_COL, VALUE_COL
 
 class ValueCreator:
     """
@@ -17,17 +17,21 @@ class ValueCreator:
                 code=pd.Series(dtype="object"),
             )
         concepts["binned_value"] = ValueCreator.bin(
-            concepts["numeric_value"], num_bins=num_bins
+            concepts[VALUE_COL], num_bins=num_bins
         )
 
         # Add index + order
         concepts["index"] = concepts.index
         concepts.loc[:, "order"] = 0
         values = concepts.dropna(subset=["binned_value"]).copy()
-        values.loc[:, "code"] = values["binned_value"]
+        
+        # Extract prefix from concept and use it for value codes
+        values["prefix"] = values[CONCEPT_COL].str.extract(r"^([^/]+)/")
+        values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
         values.loc[:, "order"] = 1
         concatted = pd.concat([concepts, values])
-        return concatted.drop(columns=["numeric_value", "binned_value"], axis=1)
+        print(values.head())
+        return concatted.drop(columns=[VALUE_COL, "binned_value", "prefix"], axis=1)
 
     @staticmethod
     def bin(normalized_values: pd.Series, num_bins=100) -> pd.Series:
