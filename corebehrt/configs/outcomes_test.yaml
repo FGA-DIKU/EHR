@@ -11,8 +11,8 @@ paths:
 outcomes:
   TEST_OUTCOME:
     type: [ code ]
-    match: [ [ 'DE11' ] ] # Type 1 diabetes, related to "M/IN01", "M/IN02", "LAB/GL" in correlated data
-    exclude: [ 'D437' ]
+    match: [ ['S/DIAG1'] ] # Type 1 diabetes, related to "M/IN01", "M/IN02", "LAB/GL" in correlated data
+    # exclude: [ 'D437' ]
     match_how: startswith
     case_sensitive: true
   TEST_CENSOR:

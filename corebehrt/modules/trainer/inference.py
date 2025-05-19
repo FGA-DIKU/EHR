@@ -42,52 +42,11 @@ class EHRInferenceRunner(EHRTrainer):
         all_shap_values, all_inputs = [], []
         run_shap = shap_dict is not None
 
-        if run_shap:
-            max_len = shap_dict["max_len"]
-            background_ids = torch.stack([
-                self._pad_sequence(self.test_dataset[i]["concept"], max_len).to(torch.long)
-                for i in torch.randperm(len(self.test_dataset))[:shap_dict["background_size"]]
-            ]).to(self.device)
-
-            with torch.no_grad():
-                background_embeds = self.model.embeddings(
-                    input_ids=background_ids,
-                    segments=torch.zeros_like(background_ids),
-                    age=torch.zeros_like(background_ids).float(),
-                    abspos=torch.arange(background_ids.shape[1], device=self.device).unsqueeze(0).repeat(background_ids.shape[0], 1).float(),
-                )
-
-            class BatchWrapper(torch.nn.Module):
-                def __init__(self, model):
-                    super().__init__()
-                    self.model = model
-
-                def forward(self, x):
-                    # x is now a tensor of shape [batch_size, seq_len, hidden_dim]
-                    batch = {
-                        "inputs_embeds": x,
-                        "attention_mask": (x.abs().sum(-1) != 0).long()
-                    }
-                    return self.model(batch).logits
-
-            wrapped_model = BatchWrapper(self.model)
-            
-            # Create background data as a single tensor
-            background_data = background_embeds  # shape: [background_size, seq_len, hidden_dim]
-            
-            explainer = shap.GradientExplainer(
-                model=wrapped_model,
-                data=background_data
-            )
-
         for batch in loop:
             self.batch_to_device(batch)
 
-            if run_shap:
+            with torch.no_grad(), torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
                 outputs = self.model(batch)
-            else:
-                with torch.no_grad(), torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
-                    outputs = self.model(batch)
 
             logits.append(outputs.logits.float().cpu())
             targets.append(batch["target"].cpu())
@@ -96,34 +55,6 @@ class EHRInferenceRunner(EHRTrainer):
                 model_embs.append(outputs.last_hidden_state.cpu())
                 head_embs.append(self.extract_head_embeddings(batch, outputs).cpu())
                 att_masks.append(batch["attention_mask"].cpu())
-
-            if run_shap:
-                max_len = shap_dict["max_len"]
-                input_ids = torch.stack([
-                    self._pad_sequence(seq, max_len).to(torch.long)
-                    for seq in batch["concept"]
-                ]).to(self.device)
-
-                with torch.no_grad():
-                    input_embeds = self.model.embeddings(
-                        input_ids=input_ids,
-                        segments=torch.zeros_like(input_ids),
-                        age=torch.zeros_like(input_ids).float(),
-                        abspos=torch.arange(input_ids.shape[1], device=self.device).unsqueeze(0).repeat(input_ids.shape[0], 1).float(),
-                    )
-
-                shap_batch_values, input_batch_ids = [], []
-
-                for i in tqdm(range(input_embeds.shape[0]), desc="SHAP per patient"):
-                    patient_embed = input_embeds[i:i+1]  # shape: [1, seq_len, hidden_dim]
-                    shap_val = explainer.shap_values(patient_embed)[0][0]  # shape: [L, D]
-
-                    token_scores = torch.from_numpy(shap_val).float().abs().sum(-1)  # shape: [L]
-                    shap_batch_values.append(token_scores)
-                    input_batch_ids.append(input_ids[i])
-
-                all_shap_values.append(torch.stack(shap_batch_values))  # [B, L]
-                all_inputs.append(torch.stack(input_batch_ids))         # [B, L]
 
         logits_tensor = torch.cat(logits, dim=0).squeeze()
         targets_tensor = torch.cat(targets, dim=0).squeeze()
@@ -137,14 +68,43 @@ class EHRInferenceRunner(EHRTrainer):
         )
 
         if run_shap:
-            all_shap_values = torch.cat(all_shap_values, dim=0)  # [N, L]
-            all_inputs = torch.cat(all_inputs, dim=0)            # [N, L]
-            print("✅ SHAP computed for all patients:", all_shap_values.shape[0])
-            print("SHAP shape:", all_shap_values.shape, "Concept IDs shape:", all_inputs.shape)
-            return logits_tensor, targets_tensor, embeddings, {
-                "shap_values": all_shap_values,
-                "concept_ids": all_inputs
+            shap_dataloader = DataLoader(self.test_dataset, batch_size=1, shuffle=False)
+
+            all_shap_values = []
+            all_inputs = []
+            all_indexes = []
+
+            for batch in shap_dataloader:
+                wrapped_model = BEHRTWrapper(self.model, batch)
+
+                # Get background as float concept IDs
+                background_data = wrapped_model.get_background_data(shap_dict.get("background_size", 100))
+
+                # Initialize SHAP explainer
+                explainer = shap.GradientExplainer(wrapped_model, background_data)
+
+                # Get the current input (concept IDs only)
+                input_tensor = batch[CONCEPT_FEAT].float().to(self.model.device)
+
+                # Compute SHAP values
+                shap_values, indexes = explainer.shap_values(input_tensor, ranked_outputs=1)
+
+                # Fix shapes: shap_values[0] is [1, seq_len] → squeeze to [seq_len]
+                shap_tensor = torch.tensor(shap_values[0]).squeeze(0)
+                concept_tensor = batch[CONCEPT_FEAT].squeeze(0)  # [seq_len]
+
+                all_shap_values.append(shap_tensor)
+                all_inputs.append(concept_tensor)
+                all_indexes.append(torch.tensor(indexes))
+
+            # Combine across patients (i.e., batch dimension)
+            shap_results = {
+                'shap_values': all_shap_values,     # list of [seq_len]
+                'concept_ids': all_inputs,          # list of [seq_len]
+                'indexes': all_indexes              # list of [1]
             }
+
+            return logits_tensor, targets_tensor, embeddings, shap_results
 
         return logits_tensor, targets_tensor, embeddings, None
 

@@ -80,6 +80,7 @@ def main_evaluate(config_path):
             os.makedirs(join(cfg.paths.predictions, "shap_values", f"fold_{n_fold}"), exist_ok=True)
             torch.save(shap_values["shap_values"], join(cfg.paths.predictions, "shap_values", f"fold_{n_fold}", "shap_values.pt"))
             torch.save(shap_values["concept_ids"], join(cfg.paths.predictions, "shap_values", f"fold_{n_fold}", "concept_ids.pt"))
+            torch.save(shap_values["indexes"], join(cfg.paths.predictions, "shap_values", f"fold_{n_fold}", "indexes.pt"))
             torch.save(test_pids, join(cfg.paths.predictions, "shap_values", f"fold_{n_fold}", "pids.pt"))
 
     # Save combined predictions and metrics if specified

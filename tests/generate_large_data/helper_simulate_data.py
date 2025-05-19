@@ -14,7 +14,7 @@ import pyarrow.parquet as pq
 
 # Default parameters
 DEFAULT_N_PATIENTS = 10_000
-DEFAULT_N_CONCEPTS = 20
+DEFAULT_N_CONCEPTS = 10
 DEFAULT_WRITE_DIR = "tmp/correlated_data"
 DEFAULT_INCLUDE_LABS = True
 DEFAULT_DATA_TYPE = "both"
@@ -22,32 +22,35 @@ DEFAULT_DATA_TYPE = "both"
 
 # Concept relationships and probabilities
 CONCEPT_NAMING = {
-    "D": "diagnosis",
-    "M": "medication",
-    "LAB": "labtest",
+    "S/D": "diagnosis",
+    "S/M": "medication",
+    "S/LAB": "labtest",
 }
+
+# Global probability of having any diagnosis
+DIAGNOSIS_PROBABILITY = 0.7
+
 CONCEPT_RELATIONSHIPS = {
-    "DE10": {  # Type 1 diabetes
-        "base_probability": 0.4,  # Probability of selecting this as base condition
+    "S/DIAG1": {  # Type 2 diabetes
+        "base_probability": 0.4,  # Probability of this diagnosis being assigned to a patient
         "related_concepts": {
-            "MIN01": 0.8,  # 30% Probability of creating a related concept
-            "MIN02": 0.2,
-            "LAB/GL": 0.25,
+            "S/MME01": 0.2,  # Independent probability of this related concept being created
+            "S/MME02": 0.9,  # Independent probability of this related concept being created
+            "S/LAB/GL": 0.7,  # Independent probability of this related concept being created
         },
     },
-    "DE11": {  # Type 2 diabetes
-        "base_probability": 0.4,
+    "S/DIAG2": {  # Type 2 diabetes
+        "base_probability": 0.4,  # Probability of this diagnosis being assigned to a patient
         "related_concepts": {
-            "MME01": 0.2,
-            "MME02": 0.9,
-            "LAB/GL": 0.7,
+            "S/MME01": 0.9,  # Independent probability of this related concept being created
+            "S/MME02": 0.2,  # Independent probability of this related concept being created
         },
     },
-    "DO60": {  # Preterm labor
-        "base_probability": 0.2,
+    "S/DIAG3": {  # Type 2 diabetes
+        "base_probability": 0.4,  # Probability of this diagnosis being assigned to a patient
         "related_concepts": {
-            "DDZ32": 0.3,
-            "DDZ34": 0.2,
+            "S/MME03": 0.9,  # Independent probability of this related concept being created
+            "S/MME04": 0.8,  # Independent probability of this related concept being created
         },
     },
 }
@@ -167,32 +170,57 @@ def generate_correlated_concepts_batch(
 
     # Generate concepts with relationships
     concepts = []
-    for _ in range(len(repeated_patients_info)):
-        # Choose a base concept based on probabilities
-        base_concept = np.random.choice(
-            list(CONCEPT_RELATIONSHIPS.keys()),
-            p=[rel["base_probability"] for rel in CONCEPT_RELATIONSHIPS.values()],
-        )
-
-        # Always include the base concept
-        concept_list = [base_concept]
-
-        # Get related concepts based on their individual probabilities
-        related_concepts = get_related_concepts(base_concept)
-        if related_concepts:
-            concept_list.extend(related_concepts)
-
-        # Choose one concept from the list (base + related if any)
-        concept = np.random.choice(concept_list)
-        concepts.append(concept)
-
+    timestamps_list = []
+    pids_list = []
+    for i in range(len(repeated_patients_info)):
+        # First decide if this record should have a diagnosis
+        if np.random.random() < DIAGNOSIS_PROBABILITY:
+            # For each base concept, independently decide if it should be included
+            selected_base_concepts = []
+            for base_concept, rel_dict in CONCEPT_RELATIONSHIPS.items():
+                if np.random.random() < rel_dict["base_probability"]:
+                    selected_base_concepts.append(base_concept)
+            
+            if selected_base_concepts:
+                # Start with all selected base concepts
+                concept_list = []
+                related_concepts = []
+                
+                # For each selected base concept, check its related concepts
+                for base_concept in selected_base_concepts:
+                    # For each related concept, independently decide if it should be included
+                    for related_concept, prob in CONCEPT_RELATIONSHIPS[base_concept]["related_concepts"].items():
+                        if np.random.random() < prob:
+                            related_concepts.append(related_concept)
+                    concept_list.append(base_concept)
+                
+                # Add related concepts first, then base concepts
+                concepts.extend(related_concepts + concept_list)
+                
+                # Create timestamps for related concepts (before base concept)
+                base_timestamp = timestamps[i]
+                if related_concepts:
+                    # Generate timestamps for related concepts that are before the base timestamp
+                    time_diff = pd.Timedelta(days=30)  # Maximum 30 days before
+                    related_timestamps = [
+                        base_timestamp - pd.Timedelta(days=np.random.randint(1, 30))
+                        for _ in range(len(related_concepts))
+                    ]
+                    timestamps_list.extend(related_timestamps)
+                
+                # Add base concept timestamp
+                timestamps_list.extend([base_timestamp] * len(concept_list))
+                
+                # Repeat the PID for all concepts
+                pids_list.extend([repeated_patients_info["PID"].iloc[i]] * (len(related_concepts) + len(concept_list)))
+    
     # Create the DataFrame
     concepts_data = pd.DataFrame(
         {
-            "TIMESTAMP": timestamps,
-            "PID": repeated_patients_info["PID"],
+            "TIMESTAMP": timestamps_list,
+            "PID": pids_list,
             "ADMISSION_ID": [
-                str(uuid.uuid4()) for _ in range(len(repeated_patients_info))
+                str(uuid.uuid4()) for _ in range(len(concepts))
             ],
             "CONCEPT": concepts,
         }
@@ -202,7 +230,7 @@ def generate_correlated_concepts_batch(
         # Generate realistic lab results based on concepts
         results = []
         for concept in concepts:
-            if concept.startswith("LAB"):  # Only generate results for lab tests
+            if concept.startswith("S/LAB"):  # Only generate results for lab tests
                 # Generate random integer between 0 and 100
                 results.append(np.random.randint(0, 100))
             else:
@@ -211,7 +239,7 @@ def generate_correlated_concepts_batch(
 
     # Filter out rows where TIMESTAMP is less than BIRTHDATE
     concepts_data = concepts_data[
-        concepts_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+        concepts_data["TIMESTAMP"] >= pd.to_datetime(repeated_patients_info["BIRTHDATE"].iloc[0])
     ]
 
     return concepts_data

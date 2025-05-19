@@ -7,7 +7,7 @@ paths:
   features: ./outputs/features
   initial_pids: ./outputs/tokenized/pids_held_out.pt # Initial patients to select from [list of pids] (optional)
   outcomes: ./outputs/outcomes/
-  exposure: TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
+  # exposure: TEST_CENSOR.csv # Exposure, optional, set to outcome if not provided. For multiple exposures, create a joint exposure file.
   outcome: TEST_OUTCOME.csv # Outcome
   # exclude_pids: # optional, if provided, exclude these pids from the cohort
   
@@ -17,7 +17,7 @@ paths:
 
 
 selection:
-  exclude_prior_outcomes: true # Exclude patients who had the outcome before index date
+  exclude_prior_outcomes: false # Exclude patients who had the outcome before index date
   exposed_only: false # Exclude patients who are not exposed
   age:
     min_years: 18 # Minimum age to include (inclusive)

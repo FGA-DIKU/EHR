@@ -40,7 +40,6 @@ class BEHRTWrapper(torch.nn.Module):
         super().__init__()
         self.model = model
         self.batch = batch
-        print("Initial batch keys:", list(batch.keys()))
 
     def __call__(self, x):
         # Convert input to float tensor for SHAP gradients
@@ -51,7 +50,6 @@ class BEHRTWrapper(torch.nn.Module):
         
         # Create a copy of the batch and update the concept field
         batch_copy = {k: v.clone() for k, v in self.batch.items()}
-        print("Batch copy keys:", list(batch_copy.keys()))
         
         # Convert concept to long for model input while maintaining gradient connection
         x_long = x.long()
@@ -101,6 +99,20 @@ class BEHRTWrapper(torch.nn.Module):
             orig = batch[key]
             repeat_times = [concept.shape[0]] + [1] * (orig.dim() - 1)
             batch[key] = orig.repeat(*repeat_times)
+
+    def get_background_data(self, background_size: int = 100) -> torch.Tensor:
+        seq_len = self.batch[CONCEPT_FEAT].shape[1]
+        vocab_size = self.model.embeddings.concept_embeddings.num_embeddings
+
+        # Generate random concept IDs
+        background_concepts = torch.randint(
+            low=0,
+            high=vocab_size,
+            size=(background_size, seq_len),
+            device=self.model.device
+        )
+
+        return background_concepts.float()
 
 
 class DeepSHAP_BEHRTWrapper(torch.nn.Module):
