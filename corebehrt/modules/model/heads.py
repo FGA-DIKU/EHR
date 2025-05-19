@@ -35,18 +35,19 @@ class FineTuneHead(torch.nn.Module):
         """Use the CLS token embedding as the pooled representation."""
         return x[:, 0]
 
-
 class BiGRU(torch.nn.Module):
     def __init__(self, hidden_size):
         super().__init__()
         self.hidden_size = hidden_size
-        self.rnn_hidden_size = hidden_size # // 2
+        self.rnn_hidden_size = hidden_size // 2
         self.rnn = torch.nn.GRU(
             hidden_size, self.rnn_hidden_size, batch_first=True, bidirectional=True
         )
+        # Add layer normalization
+        self.norm = torch.nn.LayerNorm(hidden_size)
         # Adjust the input size of the classifier based on the bidirectionality
         classifier_input_size = hidden_size
-        self.classifier = torch.nn.Linear(classifier_input_size, 1)
+        self.classifier = torch.nn.Linear(classifier_input_size, 1, bias=True)
 
     def forward(
         self,
@@ -62,6 +63,11 @@ class BiGRU(torch.nn.Module):
         output, _ = self.rnn(packed)
         # Unpack it back to a padded sequence
         output, _ = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
+        
+        # Normalize the RNN outputs
+        output = self.norm(output)
+        
+        # Get the last valid output for both directions
         last_sequence_idx = lengths - 1
 
         # Use the last output of the RNN as input to the classifier
@@ -74,6 +80,8 @@ class BiGRU(torch.nn.Module):
             :, 0, self.rnn_hidden_size :
         ]  # First output from the backward pass
         x = torch.cat((forward_output, backward_output), dim=-1)
+        x = self.norm(x)
+        
         if return_embedding:
             return x
         x = self.classifier(x)

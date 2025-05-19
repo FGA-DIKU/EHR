@@ -191,7 +191,8 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
         else:
             pos_weight = None
 
-        self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        self.loss_fct = nn.BCEWithLogitsLoss(pos_weight=pos_weight) #FocalLoss(alpha=1.0, gamma=2.0, pos_weight=pos_weight) # nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
         self.cls = FineTuneHead(hidden_size=config.hidden_size, pool_type=getattr(config, "pool_type", "bigru"))
 
     def forward(self, batch: dict, **kwargs):
@@ -219,3 +220,28 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
 
     def get_loss(self, hidden_states, labels):
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
+
+
+class FocalLoss(nn.Module):
+    def __init__(self, alpha=1.0, gamma=2.0, reduction='mean', pos_weight=None):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.reduction = reduction
+        self.pos_weight = pos_weight
+
+    def forward(self, logits, targets):
+        # BCE with logits
+        bce_loss = torch.nn.functional.binary_cross_entropy_with_logits(
+            logits, targets, reduction='none', pos_weight=self.pos_weight
+        )
+        # Probabilities for the true class
+        p_t = torch.exp(-bce_loss)
+        # Focal loss scaling
+        focal_loss = self.alpha * (1 - p_t) ** self.gamma * bce_loss
+        if self.reduction == 'mean':
+            return focal_loss.mean()
+        elif self.reduction == 'sum':
+            return focal_loss.sum()
+        else:
+            return focal_loss
