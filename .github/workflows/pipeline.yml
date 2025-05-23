@@ -90,3 +90,44 @@ jobs:
               run: |
                 source .venv/bin/activate
                 python -m corebehrt.main.evaluate_finetune
+
+            # Performance tests
+            - name: main.select_cohort_test
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.select_cohort --config_path ./corebehrt/configs/select_cohort_test.yaml
+
+            - name: main.prepare_training_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_finetune_bad_censoring.yaml
+
+            - name: main.prepare_training_data
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.prepare_training_data --config_path ./corebehrt/configs/prepare_finetune_good_censoring.yaml
+
+            - name: main.finetune_cv_bad
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_bad.yaml
+
+            - name: main.finetune_cv_good
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.finetune_cv --config_path ./corebehrt/configs/finetune_good.yaml
+
+            - name: main.evaluate_finetune_bad
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/evaluate_finetune_bad.yaml
+
+            - name: main.evaluate_finetune_good
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/evaluate_finetune_good.yaml
+
+            - name: tests/test_pipeline/test_performance
+              run: |
+                source .venv/bin/activate
+                python -m tests.test_pipeline.test_performance --config_path ./corebehrt/configs/test_performance.yaml

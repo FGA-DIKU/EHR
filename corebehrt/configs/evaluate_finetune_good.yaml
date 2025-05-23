@@ -1,0 +1,16 @@
+logging:
+  level: INFO
+  path: ./outputs/logs
+
+paths:
+  model: "./outputs/finetuning_good_censoring"
+  folds_dir: "./outputs/finetuning/processed_data_good"
+  test_data_dir: "./outputs/testing/held_out/processed_data" 
+  run_name: "evaluate"
+  predictions: "./outputs/testing/held_out/predictions"
+
+test_batch_size: 128
+
+save_info: 
+  sequence_length: 
+    _target_: corebehrt.main.helper.evaluate_finetune.get_sequence_length
