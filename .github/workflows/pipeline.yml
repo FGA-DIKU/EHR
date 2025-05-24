@@ -162,12 +162,7 @@ jobs:
             - name: main.evaluate_finetune_bad
               run: |
                 source .venv/bin/activate
-                python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/performance_tests/evaluate_finetune_bad_on_bad.yaml
-
-            - name: main.evaluate_finetune_bad
-              run: |
-                source .venv/bin/activate
-                python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/performance_tests/evaluate_finetune_bad_on_good.yaml
+                python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/performance_tests/evaluate_finetune_bad.yaml
 
             - name: main.evaluate_finetune_good
               run: |
