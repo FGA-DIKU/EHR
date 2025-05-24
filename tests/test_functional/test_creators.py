@@ -9,6 +9,7 @@ from corebehrt.functional.features.creators import (
     create_segments,
     create_background,
     sort_features,
+    _create_patient_info,
 )
 
 
@@ -199,6 +200,501 @@ class TestCreators(unittest.TestCase):
 
         # Assert the segments are as expected
         self.assertTrue((result["segment"] == self.expected_segments).all())
+
+
+class TestCreateBackground(unittest.TestCase):
+    def setUp(self):
+        """Set up test data"""
+        self.concepts = pd.DataFrame(
+            {
+                "subject_id": [
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "2",
+                    "2",
+                    "2",
+                    "2",
+                    "3",
+                    "3",
+                    "3",
+                    "3",
+                ],
+                "time": [
+                    datetime(2000, 5, 1),
+                    NaT,
+                    datetime(2015, 7, 1),
+                    datetime(2015, 7, 2),
+                    datetime(2016, 8, 2),
+                    datetime(2022, 9, 3),
+                    datetime(1995, 9, 3),
+                    NaT,
+                    datetime(2015, 9, 10),
+                    datetime(2018, 4, 5),
+                    datetime(1962, 11, 5),
+                    NaT,
+                    datetime(2020, 11, 6),
+                    datetime(2022, 6, 6),
+                ],
+                "code": [
+                    "DOB",
+                    "GENDER//F",
+                    "A",
+                    "B",
+                    "C",
+                    "DOD",
+                    "DOB",
+                    "GENDER//M",
+                    "A",
+                    "D",
+                    "DOB",
+                    "GENDER//M",
+                    "D",
+                    "D",
+                ],
+            }
+        )
+
+    def test_basic_functionality(self):
+        """Test basic functionality of create_background"""
+        result, patient_info = create_background(self.concepts)
+
+        # Check that background concepts are properly prefixed
+        bg_concepts = result[result["code"].str.startswith("BG_", na=False)]
+        self.assertEqual(len(bg_concepts), 3)  # Should have 3 background concepts
+
+        # Check that background concepts have birthdate as time
+        for _, row in bg_concepts.iterrows():
+            patient_id = row["subject_id"]
+            expected_birthdate = patient_info[patient_info["subject_id"] == patient_id][
+                "birthdate"
+            ].iloc[0]
+            self.assertEqual(row["time"], expected_birthdate)
+
+    def test_duplicate_indices_bug(self):
+        """Test the specific bug with duplicate indices"""
+        # Create DataFrame with duplicate indices
+        concepts_with_dup_indices = self.concepts.copy()
+        concepts_with_dup_indices.index = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6]
+
+        result, patient_info = create_background(concepts_with_dup_indices)
+
+        # Verify that only NaT rows were updated
+        original_nat_count = self.concepts["time"].isna().sum()
+        result_bg_count = result["code"].str.startswith("BG_", na=False).sum()
+        self.assertEqual(original_nat_count, result_bg_count)
+
+        # Verify that non-NaT rows were not affected
+        non_nat_original = self.concepts[~self.concepts["time"].isna()]
+        non_bg_result = result[~result["code"].str.startswith("BG_", na=False)]
+        non_bg_result = non_bg_result[
+            ~non_bg_result["code"].str.startswith("ADM_", na=False)
+        ]
+
+        # Check that timestamps of non-background concepts remain unchanged
+        for idx in non_nat_original.index:
+            if idx < len(non_bg_result):
+                original_time = non_nat_original.loc[idx, "time"]
+                if pd.notna(original_time):
+                    # Find corresponding row in result
+                    matching_rows = non_bg_result[
+                        (
+                            non_bg_result["subject_id"]
+                            == non_nat_original.loc[idx, "subject_id"]
+                        )
+                        & (non_bg_result["code"] == non_nat_original.loc[idx, "code"])
+                    ]
+                    if not matching_rows.empty:
+                        self.assertEqual(matching_rows.iloc[0]["time"], original_time)
+
+    def test_non_contiguous_indices(self):
+        """Test with non-contiguous indices"""
+        concepts_non_contiguous = self.concepts.copy()
+        concepts_non_contiguous.index = [
+            0,
+            2,
+            4,
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20,
+            22,
+            24,
+            26,
+        ]
+
+        result, patient_info = create_background(concepts_non_contiguous)
+
+        # Should still work correctly
+        bg_concepts = result[result["code"].str.startswith("BG_", na=False)]
+        self.assertEqual(len(bg_concepts), 3)
+
+    def test_no_background_concepts(self):
+        """Test with DataFrame containing no NaT values (no background concepts)"""
+        concepts_no_bg = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(2015, 7, 2),
+                ],
+                "code": ["DOB", "A", "B"],
+            }
+        )
+
+        result, patient_info = create_background(concepts_no_bg)
+
+        # Should have no background concepts
+        bg_concepts = result[result["code"].str.startswith("BG_", na=False)]
+        self.assertEqual(len(bg_concepts), 0)
+
+    def test_admission_discharge_prefixing(self):
+        """Test that admission and discharge codes are properly prefixed"""
+        concepts_with_adm = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(2015, 7, 2),
+                    datetime(2015, 7, 3),
+                ],
+                "code": ["DOB", "ADMISSION", "DISCHARGE", "A"],
+            }
+        )
+
+        result, patient_info = create_background(concepts_with_adm)
+
+        # Check that ADMISSION and DISCHARGE are prefixed with ADM_
+        adm_concepts = result[result["code"].str.startswith("ADM_", na=False)]
+        self.assertEqual(len(adm_concepts), 2)
+        self.assertIn("ADM_ADMISSION", result["code"].values)
+        self.assertIn("ADM_DISCHARGE", result["code"].values)
+
+    def test_patient_info_creation(self):
+        """Test patient info DataFrame creation"""
+        result, patient_info = create_background(self.concepts)
+
+        # Check structure
+        self.assertEqual(len(patient_info), 3)  # 3 unique patients
+        self.assertIn("subject_id", patient_info.columns)
+        self.assertIn("birthdate", patient_info.columns)
+        self.assertIn("deathdate", patient_info.columns)
+        self.assertIn("GENDER", patient_info.columns)
+
+        # Check specific values
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        self.assertEqual(patient_1["GENDER"], "F")
+        self.assertEqual(patient_1["birthdate"], datetime(2000, 5, 1))
+        self.assertEqual(patient_1["deathdate"], datetime(2022, 9, 3))
+
+    def test_empty_dataframe(self):
+        """Test with empty DataFrame"""
+        empty_df = pd.DataFrame(columns=["subject_id", "time", "code"])
+        result, patient_info = create_background(empty_df)
+        print("===========")
+        print("patient info")
+        print(patient_info)
+        self.assertEqual(len(result), 0)
+        self.assertEqual(len(patient_info), 0)
+
+    def test_preserves_original_dataframe(self):
+        """Test that original DataFrame is not modified"""
+        original_concepts = self.concepts.copy()
+        result, patient_info = create_background(self.concepts)
+
+        # Original should be unchanged
+        pd.testing.assert_frame_equal(self.concepts, original_concepts)
+
+
+class TestCreatePatientInfo(unittest.TestCase):
+    def setUp(self):
+        """Set up test data for patient info testing"""
+        # Concepts after processing by create_background (with BG_ prefixes and birthdate column)
+        self.processed_concepts = pd.DataFrame(
+            {
+                "subject_id": [
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "1",
+                    "2",
+                    "2",
+                    "2",
+                    "2",
+                    "3",
+                    "3",
+                    "3",
+                    "4",
+                    "4",
+                    "4",
+                    "4",
+                ],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(2022, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(2015, 9, 10),
+                    datetime(2018, 4, 5),
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                    datetime(2020, 11, 6),
+                    datetime(1980, 3, 15),
+                    datetime(1980, 3, 15),
+                    datetime(1980, 3, 15),
+                    datetime(2010, 1, 1),
+                ],
+                "code": [
+                    "DOB",
+                    "BG_GENDER//F",
+                    "BG_SMOKER//Y",
+                    "A",
+                    "DOD",
+                    "DOB",
+                    "BG_GENDER//M",
+                    "A",
+                    "D",
+                    "DOB",
+                    "BG_GENDER//M",
+                    "D",
+                    "DOB",
+                    "BG_GENDER//F",
+                    "BG_DIABETES//Y",
+                    "B",
+                ],
+                "birthdate": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                    datetime(1962, 11, 5),
+                    datetime(1980, 3, 15),
+                    datetime(1980, 3, 15),
+                    datetime(1980, 3, 15),
+                    datetime(1980, 3, 15),
+                ],
+            }
+        )
+
+    def test_basic_patient_info_creation(self):
+        """Test basic patient info creation functionality"""
+        patient_info = _create_patient_info(self.processed_concepts)
+
+        # Check structure
+        self.assertEqual(len(patient_info), 4)  # 4 unique patients
+        self.assertIn("subject_id", patient_info.columns)
+        self.assertIn("birthdate", patient_info.columns)
+        self.assertIn("deathdate", patient_info.columns)
+
+        # Check that we have the expected patients
+        expected_patients = ["1", "2", "3", "4"]
+        actual_patients = sorted(patient_info["subject_id"].tolist())
+        self.assertEqual(actual_patients, expected_patients)
+
+    def test_birthdate_extraction(self):
+        """Test that birthdates are correctly extracted"""
+        patient_info = _create_patient_info(self.processed_concepts)
+
+        # Check specific birthdates
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        patient_2 = patient_info[patient_info["subject_id"] == "2"].iloc[0]
+        patient_3 = patient_info[patient_info["subject_id"] == "3"].iloc[0]
+        patient_4 = patient_info[patient_info["subject_id"] == "4"].iloc[0]
+
+        self.assertEqual(patient_1["birthdate"], datetime(2000, 5, 1))
+        self.assertEqual(patient_2["birthdate"], datetime(1995, 9, 3))
+        self.assertEqual(patient_3["birthdate"], datetime(1962, 11, 5))
+        self.assertEqual(patient_4["birthdate"], datetime(1980, 3, 15))
+
+    def test_deathdate_extraction(self):
+        """Test that death dates are correctly extracted"""
+        patient_info = _create_patient_info(self.processed_concepts)
+
+        # Patient 1 has DOD, others don't
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        patient_2 = patient_info[patient_info["subject_id"] == "2"].iloc[0]
+
+        self.assertEqual(patient_1["deathdate"], datetime(2022, 9, 3))
+        self.assertTrue(pd.isna(patient_2["deathdate"]))
+
+    def test_background_variables_extraction(self):
+        """Test that background variables are correctly extracted"""
+        patient_info = _create_patient_info(self.processed_concepts)
+
+        # Check that background columns exist
+        self.assertIn("GENDER", patient_info.columns)
+        self.assertIn("SMOKER", patient_info.columns)
+        self.assertIn("DIABETES", patient_info.columns)
+
+        # Check specific values
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        patient_2 = patient_info[patient_info["subject_id"] == "2"].iloc[0]
+        patient_4 = patient_info[patient_info["subject_id"] == "4"].iloc[0]
+
+        self.assertEqual(patient_1["GENDER"], "F")
+        self.assertEqual(patient_1["SMOKER"], "Y")
+        self.assertEqual(patient_2["GENDER"], "M")
+        self.assertEqual(patient_4["DIABETES"], "Y")
+
+        # Check that missing values are NaN
+        self.assertTrue(pd.isna(patient_2["SMOKER"]))
+        self.assertTrue(pd.isna(patient_1["DIABETES"]))
+
+    def test_no_background_concepts(self):
+        """Test patient info creation when there are no background concepts"""
+        concepts_no_bg = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "2", "2"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(1995, 9, 3),
+                    datetime(2015, 9, 10),
+                ],
+                "code": ["DOB", "A", "DOB", "B"],
+                "birthdate": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                ],
+            }
+        )
+
+        patient_info = _create_patient_info(concepts_no_bg)
+
+        # Should still have basic structure
+        self.assertEqual(len(patient_info), 2)
+        self.assertIn("subject_id", patient_info.columns)
+        self.assertIn("birthdate", patient_info.columns)
+        self.assertIn("deathdate", patient_info.columns)
+
+        # Should have correct birthdates
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        patient_2 = patient_info[patient_info["subject_id"] == "2"].iloc[0]
+        self.assertEqual(patient_1["birthdate"], datetime(2000, 5, 1))
+        self.assertEqual(patient_2["birthdate"], datetime(1995, 9, 3))
+
+    def test_empty_concepts(self):
+        """Test patient info creation with empty concepts DataFrame"""
+        empty_concepts = pd.DataFrame(
+            columns=["subject_id", "time", "code", "birthdate"]
+        )
+        patient_info = _create_patient_info(empty_concepts)
+
+        # Should return empty DataFrame with correct structure
+        self.assertEqual(len(patient_info), 0)
+        self.assertIn("subject_id", patient_info.columns)
+        self.assertIn("birthdate", patient_info.columns)
+        self.assertIn("deathdate", patient_info.columns)
+
+        # Check that datetime columns have correct dtype
+        self.assertEqual(patient_info["birthdate"].dtype, "datetime64[ns]")
+        self.assertEqual(patient_info["deathdate"].dtype, "datetime64[ns]")
+
+    def test_concepts_without_birthdate_column(self):
+        """Test patient info creation when concepts don't have birthdate column (fallback to DOB codes)"""
+        concepts_no_birthdate_col = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "2", "2", "2"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                    datetime(1995, 9, 3),
+                    datetime(1995, 9, 3),
+                    datetime(2015, 9, 10),
+                ],
+                "code": ["DOB", "BG_GENDER//F", "A", "DOB", "BG_GENDER//M", "B"],
+            }
+        )
+
+        patient_info = _create_patient_info(concepts_no_birthdate_col)
+
+        # Should still extract birthdates correctly from DOB codes
+        self.assertEqual(len(patient_info), 2)
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        patient_2 = patient_info[patient_info["subject_id"] == "2"].iloc[0]
+
+        self.assertEqual(patient_1["birthdate"], datetime(2000, 5, 1))
+        self.assertEqual(patient_2["birthdate"], datetime(1995, 9, 3))
+
+    def test_duplicate_background_values(self):
+        """Test handling of duplicate background values (should take first)"""
+        concepts_with_duplicates = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                ],
+                "code": [
+                    "DOB",
+                    "BG_GENDER//F",
+                    "BG_GENDER//M",
+                    "A",
+                ],  # Duplicate GENDER values
+                "birthdate": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                ],
+            }
+        )
+
+        patient_info = _create_patient_info(concepts_with_duplicates)
+
+        # Should take the first value (F)
+        patient_1 = patient_info[patient_info["subject_id"] == "1"].iloc[0]
+        self.assertEqual(patient_1["GENDER"], "F")
+
+    def test_background_values_without_double_slash(self):
+        """Test handling of background codes without '//' separator"""
+        concepts_no_separator = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2015, 7, 1),
+                ],
+                "code": ["DOB", "BG_GENDER", "A"],  # No // separator
+                "birthdate": [
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                    datetime(2000, 5, 1),
+                ],
+            }
+        )
+
+        patient_info = _create_patient_info(concepts_no_separator)
+
+        # Should handle gracefully (might result in NaN or empty string)
+        self.assertEqual(len(patient_info), 1)
+        # The exact behavior depends on how pandas handles the split, but it shouldn't crash
 
 
 if __name__ == "__main__":

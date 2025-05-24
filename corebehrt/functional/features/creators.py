@@ -1,23 +1,24 @@
+import uuid
+import warnings
+
 import numpy as np
 import pandas as pd
 
-from corebehrt.functional.features.normalize import normalize_segments_series
-from corebehrt.functional.utils.time import get_hours_since_epoch
-import uuid
-import warnings
 from corebehrt.constants.data import (
     ABSPOS_COL,
-    PID_COL,
-    TIMESTAMP_COL,
-    CONCEPT_COL,
-    BIRTHDATE_COL,
-    DEATHDATE_COL,
-    SEGMENT_COL,
     ADMISSION_CODE,
-    DISCHARGE_CODE,
-    DEATH_CODE,
     BIRTH_CODE,
+    BIRTHDATE_COL,
+    CONCEPT_COL,
+    DEATH_CODE,
+    DEATHDATE_COL,
+    DISCHARGE_CODE,
+    PID_COL,
+    SEGMENT_COL,
+    TIMESTAMP_COL,
 )
+from corebehrt.functional.features.normalize import normalize_segments_series
+from corebehrt.functional.utils.time import get_hours_since_epoch
 
 
 def create_abspos(concepts: pd.DataFrame) -> pd.DataFrame:
@@ -47,63 +48,116 @@ def create_age_in_years(concepts: pd.DataFrame) -> pd.DataFrame:
 
 
 def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
-    # Get the patient info out
-    dod_rows = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
-    deathdates = dict(zip(dod_rows[PID_COL], dod_rows[TIMESTAMP_COL]))
-    patient_info = pd.DataFrame(
-        {
-            PID_COL: concepts[PID_COL].unique(),
-            BIRTHDATE_COL: concepts.drop_duplicates(PID_COL)[BIRTHDATE_COL],
-        }
-    )
-    patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdates)
-    bg_info = concepts[concepts[CONCEPT_COL].str.startswith("BG_")][
-        [PID_COL, CONCEPT_COL]
-    ]
-    if len(bg_info) == 0:
-        warnings.warn("No background information found in concepts.")
-        return concepts, patient_info
-    bg_info[["column_name", "value"]] = bg_info[CONCEPT_COL].str.split(
-        "//", expand=True
-    )
-    bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
-    bg_info_pivot = bg_info.pivot_table(
-        index=PID_COL, columns="column_name", values="value", aggfunc="first"
-    ).reset_index()
-    merged_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
-    return merged_info
+    """
+    Create patient information DataFrame from concepts.
+
+    Args:
+        concepts: DataFrame with patient concepts
+
+    Returns:
+        DataFrame with patient information including birthdate, deathdate, and background variables
+    """
+    # Get unique patients
+    patients = concepts[PID_COL].unique()
+
+    # Initialize patient info - handle empty case
+    patient_info = pd.DataFrame({PID_COL: patients})
+
+    # If no patients, return empty DataFrame with proper structure
+    if len(patients) == 0:
+        warnings.warn("No patients found in concepts")
+        patient_info[BIRTHDATE_COL] = pd.Series([], dtype="datetime64[ns]")
+        patient_info[DEATHDATE_COL] = pd.Series([], dtype="datetime64[ns]")
+        return patient_info
+
+    # Extract birthdates from concepts that have birthdate column
+    if BIRTHDATE_COL in concepts.columns:
+        # Use the birthdate column that was added by create_background
+        birthdate_data = concepts.drop_duplicates(PID_COL)[[PID_COL, BIRTHDATE_COL]]
+        patient_info = pd.merge(patient_info, birthdate_data, on=PID_COL, how="left")
+    else:
+        # Fallback: extract from DOB codes
+        dob_data = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
+        birthdate_map = dict(zip(dob_data[PID_COL], dob_data[TIMESTAMP_COL]))
+        patient_info[BIRTHDATE_COL] = patient_info[PID_COL].map(birthdate_map)
+
+    # Extract death dates (DOD)
+    dod_data = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
+    deathdate_map = dict(zip(dod_data[PID_COL], dod_data[TIMESTAMP_COL]))
+    patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdate_map)
+
+    # Extract background variables (those that start with BG_)
+    bg_concepts = concepts[concepts[CONCEPT_COL].str.startswith("BG_", na=False)]
+
+    # Process background concepts if they exist
+    if not bg_concepts.empty:
+        bg_info = bg_concepts[[PID_COL, CONCEPT_COL]].copy()
+
+        # Split BG_ concepts into column_name and value, handling cases without "//"
+        split_result = bg_info[CONCEPT_COL].str.split("//", expand=True)
+
+        # Ensure we always have at least 2 columns
+        if split_result.shape[1] == 1:
+            # No "//" separator found, add empty value column
+            split_result[1] = None
+
+        bg_info["column_name"] = split_result[0]
+        bg_info["value"] = split_result[1] if split_result.shape[1] > 1 else None
+
+        # Remove BG_ prefix from column names
+        bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
+
+        # Filter out rows without proper column names or with empty column names after cleaning
+        bg_info = bg_info[
+            bg_info["column_name"].notna() & (bg_info["column_name"] != "")
+        ]
+
+        if not bg_info.empty:
+            # Create pivot table for background variables
+            bg_info_pivot = bg_info.pivot_table(
+                index=PID_COL, columns="column_name", values="value", aggfunc="first"
+            ).reset_index()
+
+            # Merge with patient_info
+            patient_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
+
+    return patient_info
 
 
-def create_background(concepts: pd.DataFrame) -> pd.DataFrame:
+def create_background(concepts: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Create background concepts for each patient based on the static background variables in the dataframe.
     Sets the time of the background concepts to the birthdate of the patient.
     Expects 'DOB' concept to be present in the patients_info DataFrame.
+
+    Args:
+        concepts: DataFrame with columns 'subject_id', 'time', 'code'
+
     Returns:
-        table with background concepts, including 'subject_id', 'time', 'code', and 'numeric_value' columns.
-        additionally, 'birthdate' column is added to the concepts DataFrame.
+        tuple: (updated_concepts_df, patient_info_df)
+            - updated_concepts_df: concepts with background concepts updated and birthdate column added
+            - patient_info_df: patient information with birthdate, deathdate, and background variables
     """
+    # Create a copy to avoid modifying the original DataFrame
+    concepts = concepts.copy()
+
+    # Extract birthdates from DOB rows
     dob_rows = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
     birthdates = dict(zip(dob_rows[PID_COL], dob_rows[TIMESTAMP_COL]))
     concepts[BIRTHDATE_COL] = concepts[PID_COL].map(birthdates)
 
-    bg_rows = concepts[concepts[TIMESTAMP_COL].isna()]
-    concepts.loc[bg_rows.index, TIMESTAMP_COL] = concepts.loc[
-        bg_rows.index, BIRTHDATE_COL
-    ]
-    concepts.loc[bg_rows.index, CONCEPT_COL] = (
-        "BG_" + concepts.loc[bg_rows.index, CONCEPT_COL]
-    )
+    # Use boolean masking instead of index-based selection for background rows
+    bg_mask = concepts[TIMESTAMP_COL].isna()
+    concepts.loc[bg_mask, TIMESTAMP_COL] = concepts.loc[bg_mask, BIRTHDATE_COL]
+    concepts.loc[bg_mask, CONCEPT_COL] = "BG_" + concepts.loc[bg_mask, CONCEPT_COL]
 
-    adm_rows = concepts[
-        concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
-        | concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
-    ]
-    concepts.loc[adm_rows.index, CONCEPT_COL] = (
-        "ADM_" + concepts.loc[adm_rows.index, CONCEPT_COL]
-    )
+    # Use boolean masking for admission/discharge rows
+    adm_mask = concepts[CONCEPT_COL].str.contains(ADMISSION_CODE, na=False) | concepts[
+        CONCEPT_COL
+    ].str.contains(DISCHARGE_CODE, na=False)
+    concepts.loc[adm_mask, CONCEPT_COL] = "ADM_" + concepts.loc[adm_mask, CONCEPT_COL]
 
-    # Get the patient info out
+    # Get the patient info
     patient_info = _create_patient_info(concepts)
     return concepts, patient_info
 
