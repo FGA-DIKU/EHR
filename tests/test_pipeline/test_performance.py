@@ -2,7 +2,7 @@ import pandas as pd
 from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.setup.config import load_config
 
-CONFIG_PATH = "./corebehrt/configs/evaluate_finetune.yaml"
+CONFIG_PATH = "./corebehrt/configs/performance_tests/test_performance.yaml"
 
 
 def main_evaluate_performance(config_path):
