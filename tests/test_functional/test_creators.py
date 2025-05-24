@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from pandas import NaT
 
 from corebehrt.functional.features.creators import (
@@ -10,6 +10,7 @@ from corebehrt.functional.features.creators import (
     create_background,
     sort_features,
     _create_patient_info,
+    _assign_admission_ids,
 )
 
 
@@ -695,6 +696,289 @@ class TestCreatePatientInfo(unittest.TestCase):
         # Should handle gracefully (might result in NaN or empty string)
         self.assertEqual(len(patient_info), 1)
         # The exact behavior depends on how pandas handles the split, but it shouldn't crash
+
+
+class TestAssignAdmissionIds(unittest.TestCase):
+    def setUp(self):
+        """Set up test data"""
+        self.base_time = datetime(2020, 1, 1, 10, 0, 0)
+
+    def test_time_based_admission_simple(self):
+        """Test basic time-based admission assignment"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),  # Same admission
+                    self.base_time + timedelta(hours=50),  # New admission (>48h)
+                    self.base_time + timedelta(hours=51),  # Same admission
+                ],
+                "code": ["A", "B", "C", "D"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should have 2 unique admission IDs
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 2)
+
+        # First two events should have same admission ID
+        self.assertEqual(result.iloc[0]["admission_id"], result.iloc[1]["admission_id"])
+
+        # Last two events should have same admission ID (different from first two)
+        self.assertEqual(result.iloc[2]["admission_id"], result.iloc[3]["admission_id"])
+        self.assertNotEqual(
+            result.iloc[0]["admission_id"], result.iloc[2]["admission_id"]
+        )
+
+    def test_explicit_admission_discharge(self):
+        """Test explicit admission/discharge event handling"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=3),
+                    self.base_time + timedelta(hours=50),
+                    self.base_time + timedelta(hours=51),
+                ],
+                "code": ["A", "ADM_ADMISSION", "B", "ADM_DISCHARGE", "C", "D"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should have 3 unique admission IDs
+        print("==========")
+        print(result)
+        print("==========")
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 3)
+
+        # Events during admission should have same ID
+        admission_id = result.iloc[1]["admission_id"]  # ADM_ADMISSION event
+        self.assertEqual(result.iloc[2]["admission_id"], admission_id)  # Event B
+        self.assertEqual(result.iloc[3]["admission_id"], admission_id)  # ADM_DISCHARGE
+
+        # Events outside admission should have different IDs
+        self.assertNotEqual(result.iloc[0]["admission_id"], admission_id)  # Event A
+        self.assertNotEqual(result.iloc[4]["admission_id"], admission_id)  # Event C
+        self.assertNotEqual(result.iloc[5]["admission_id"], admission_id)  # Event D
+
+    def test_multiple_patients(self):
+        """Test handling multiple patients"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "2", "2", "2"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time,
+                    self.base_time + timedelta(hours=50),
+                    self.base_time + timedelta(hours=51),
+                ],
+                "code": ["A", "B", "C", "D", "E"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Patient 1 should have 1 admission ID
+        patient_1_admissions = result[result["subject_id"] == "1"][
+            "admission_id"
+        ].unique()
+        self.assertEqual(len(patient_1_admissions), 1)
+
+        # Patient 2 should have 2 admission IDs
+        patient_2_admissions = result[result["subject_id"] == "2"][
+            "admission_id"
+        ].unique()
+        self.assertEqual(len(patient_2_admissions), 2)
+
+        # Admission IDs should be different between patients
+        all_patient_1_ids = set(result[result["subject_id"] == "1"]["admission_id"])
+        all_patient_2_ids = set(result[result["subject_id"] == "2"]["admission_id"])
+        self.assertTrue(all_patient_1_ids.isdisjoint(all_patient_2_ids))
+
+    def test_duplicate_indices(self):
+        """Test handling of DataFrame with duplicate indices"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=50),
+                    self.base_time + timedelta(hours=51),
+                ],
+                "code": ["A", "B", "C", "D"],
+            }
+        )
+        # Create duplicate indices
+        concepts.index = [0, 0, 1, 1]
+
+        result = _assign_admission_ids(concepts)
+
+        # Should still work correctly
+        self.assertEqual(len(result), 4)
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 2)
+
+        # Verify admission_id column was added
+        self.assertIn("admission_id", result.columns)
+        self.assertTrue(result["admission_id"].notna().all())
+
+    def test_non_contiguous_indices(self):
+        """Test handling of DataFrame with non-contiguous indices"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=50),
+                    self.base_time + timedelta(hours=51),
+                ],
+                "code": ["A", "B", "C", "D"],
+            }
+        )
+        # Create non-contiguous indices
+        concepts.index = [0, 5, 10, 15]
+
+        result = _assign_admission_ids(concepts)
+
+        # Should work correctly
+        self.assertEqual(len(result), 4)
+        self.assertTrue(result["admission_id"].notna().all())
+
+        # Check original indices are preserved
+        self.assertEqual(list(result.index), [0, 5, 10, 15])
+
+    def test_empty_dataframe(self):
+        """Test handling of empty DataFrame"""
+        concepts = pd.DataFrame(columns=["subject_id", "time", "code"])
+        result = _assign_admission_ids(concepts)
+
+        self.assertEqual(len(result), 0)
+        self.assertIn("admission_id", result.columns)
+
+    def test_single_event(self):
+        """Test handling of single event"""
+        concepts = pd.DataFrame(
+            {"subject_id": ["1"], "time": [self.base_time], "code": ["A"]}
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        self.assertEqual(len(result), 1)
+        self.assertIsNotNone(result.iloc[0]["admission_id"])
+
+    def test_overlapping_admissions_warning(self):
+        """Test behavior with overlapping admissions (should handle gracefully)"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=3),
+                    self.base_time + timedelta(hours=4),
+                ],
+                "code": ["ADM_ADMISSION", "A", "ADM_ADMISSION", "B", "ADM_DISCHARGE"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should handle gracefully without crashing
+        self.assertEqual(len(result), 5)
+        self.assertTrue(result["admission_id"].notna().all())
+
+    def test_discharge_without_admission(self):
+        """Test discharge event without preceding admission"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["A", "ADM_DISCHARGE", "B"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should handle gracefully
+        self.assertEqual(len(result), 3)
+        print("==========")
+        print(result)
+        print("==========")
+        self.assertTrue(result["admission_id"].notna().all())
+
+    def test_preserves_original_dataframe(self):
+        """Test that original DataFrame is not modified"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1"],
+                "time": [self.base_time, self.base_time + timedelta(hours=1)],
+                "code": ["A", "B"],
+            }
+        )
+        original_concepts = concepts.copy()
+
+        result = _assign_admission_ids(concepts)
+
+        # Original should be unchanged
+        pd.testing.assert_frame_equal(concepts, original_concepts)
+
+        # Result should have admission_id column
+        self.assertIn("admission_id", result.columns)
+        self.assertNotIn("admission_id", concepts.columns)
+
+    def test_nat_timestamps(self):
+        """Test handling of NaT (Not a Time) timestamps"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [self.base_time, NaT, self.base_time + timedelta(hours=1)],
+                "code": ["A", "B", "C"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should handle gracefully
+        self.assertEqual(len(result), 3)
+        # All rows should have admission_id (even those with NaT)
+        self.assertTrue(result["admission_id"].notna().all())
+
+    def test_unsorted_timestamps(self):
+        """Test that function handles unsorted timestamps correctly"""
+        concepts = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time + timedelta(hours=2),  # Out of order
+                    self.base_time,
+                    self.base_time + timedelta(hours=50),
+                    self.base_time + timedelta(hours=1),
+                ],
+                "code": ["A", "B", "C", "D"],
+            }
+        )
+
+        result = _assign_admission_ids(concepts)
+
+        # Should sort by timestamp internally and assign correctly
+        self.assertEqual(len(result), 4)
+        self.assertTrue(result["admission_id"].notna().all())
 
 
 if __name__ == "__main__":
