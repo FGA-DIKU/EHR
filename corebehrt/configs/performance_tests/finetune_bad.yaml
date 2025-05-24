@@ -4,12 +4,12 @@ logging:
 
 paths:
 ## INPUTS
-  prepared_data: ./outputs/finetuning/processed_data/
+  prepared_data: ./outputs/finetuning/processed_data/bad/
   pretrain_model: ./outputs/pretraining
   # restart_model: ... # Use for restarting from checkpoint
       
 ## OUTPUTS
-  model: ./outputs/finetuning # Save model/outputs to this folder
+  model: ./outputs/finetuning/bad_censoring # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 evaluate: false # evaluate best model on test sets
@@ -25,13 +25,13 @@ trainer_args:
   batch_size: 128
   val_batch_size: 128
   effective_batch_size: 128
-  epochs: 2
+  epochs: 10
   info: true
   gradient_clip: 
     clip_value: 1.0
   shuffle: true
   checkpoint_frequency: 1
-  early_stopping: 20
+  early_stopping: 3
   stopping_criterion: roc_auc
   
   # Freezing options
@@ -43,7 +43,7 @@ trainer_args:
 
   
 optimizer:
-  lr: 5e-4
+  lr: 5e-3
   eps: 1e-6
 
 scheduler:
@@ -57,6 +57,7 @@ metrics:
     threshold: 0.6
   roc_auc:
     _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
+
   pr_auc:
     _target_: corebehrt.modules.monitoring.metrics.PR_AUC
   precentage_positives:
