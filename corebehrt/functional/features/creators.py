@@ -233,10 +233,10 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
 
         # Check if patient has explicit ADMISSION/DISCHARGE events
         has_admission = (
-            patient_data["code"].str.startswith("ADM_ADMISSION", na=False)
+            patient_data[CONCEPT_COL].str.startswith("ADM_ADMISSION", na=False)
         ).any()
         has_discharge = (
-            patient_data["code"].str.startswith("ADM_DISCHARGE", na=False)
+            patient_data[CONCEPT_COL].str.startswith("ADM_DISCHARGE", na=False)
         ).any()
 
         if has_admission or has_discharge:
