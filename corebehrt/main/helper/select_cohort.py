@@ -84,6 +84,7 @@ def select_cohort(
     # Determine index dates for all patients
     # For absolute mode, a fixed date is assigned; for relative, it's computed based on exposures.
     logger.info("Determining index dates")
+    print(len(patients_info), len(exposures))
     mode = index_date_cfg["mode"]
     index_dates = IndexDateHandler.determine_index_dates(
         patients_info,

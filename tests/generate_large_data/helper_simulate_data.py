@@ -36,7 +36,7 @@ CONCEPT_RELATIONSHIPS = {
         },
     },
     "DE11": {  # Type 2 diabetes
-        "base_probability": 0.4,
+        "base_probability": 0.2,
         "related_concepts": {
             "MME01": 0.2,
             "MME02": 0.9,
@@ -139,6 +139,9 @@ def generate_correlated_concepts_batch(
     """
     Generate medical concepts with realistic correlations and relationships.
     This creates data that better represents real-world medical patterns.
+    Multiple base concepts can be selected independently, or none at all (resulting in no concepts for that record).
+    All selected base concepts and their related concepts are included.
+    Base concepts are selected once per patient, not per record.
     """
     # Generate random number of records for each patient
     n_records_per_patient = np.random.exponential(
@@ -165,53 +168,79 @@ def generate_correlated_concepts_batch(
     random_timestamps = np.random.randint(birthdates, deathdates, dtype=np.int64)
     timestamps = pd.to_datetime(random_timestamps, unit="s")
 
+    # First, select base concepts for each unique patient
+    patient_base_concepts = {}
+    for pid in patients_info["PID"].unique():
+        selected_base_concepts = []
+        for base_concept, rel_info in CONCEPT_RELATIONSHIPS.items():
+            if np.random.random() < rel_info["base_probability"]:
+                selected_base_concepts.append(base_concept)
+        patient_base_concepts[pid] = selected_base_concepts
+
     # Generate concepts with relationships
-    concepts = []
-    for _ in range(len(repeated_patients_info)):
-        # Choose a base concept based on probabilities
-        base_concept = np.random.choice(
-            list(CONCEPT_RELATIONSHIPS.keys()),
-            p=[rel["base_probability"] for rel in CONCEPT_RELATIONSHIPS.values()],
-        )
+    all_concepts = []
+    all_timestamps = []
+    all_pids = []
+    all_admission_ids = []
+    all_results = []
+    all_birthdates = []
+    all_is_base = []  # Track whether each concept is a base concept
 
-        # Always include the base concept
-        concept_list = [base_concept]
+    for i in range(len(repeated_patients_info)):
+        pid = repeated_patients_info["PID"].iloc[i]
+        selected_base_concepts = patient_base_concepts[pid]
 
-        # Get related concepts based on their individual probabilities
-        related_concepts = get_related_concepts(base_concept)
-        if related_concepts:
-            concept_list.extend(related_concepts)
+        if selected_base_concepts:
+            # Get related concepts for all selected base concepts
+            concepts_for_record = []
+            is_base_for_record = []  # Track which concepts are base concepts
+            for base_concept in selected_base_concepts:
+                concepts_for_record.append(base_concept)  # Add base concept
+                is_base_for_record.append(True)  # Mark as base concept
+                related = get_related_concepts(base_concept)
+                concepts_for_record.extend(related)  # Add related concepts
+                is_base_for_record.extend(
+                    [False] * len(related)
+                )  # Mark as not base concepts
 
-        # Choose one concept from the list (base + related if any)
-        concept = np.random.choice(concept_list)
-        concepts.append(concept)
+            # Add all concepts for this record
+            all_concepts.extend(concepts_for_record)
+            all_timestamps.extend([timestamps[i]] * len(concepts_for_record))
+            all_pids.extend([pid] * len(concepts_for_record))
+            all_admission_ids.extend(
+                [str(uuid.uuid4()) for _ in range(len(concepts_for_record))]
+            )
+            all_birthdates.extend(
+                [repeated_patients_info["BIRTHDATE"].iloc[i]] * len(concepts_for_record)
+            )
+            all_is_base.extend(is_base_for_record)
+
+            if result_col:
+                # Generate results for lab concepts
+                for concept in concepts_for_record:
+                    if concept.startswith("LAB"):
+                        all_results.append(np.random.randint(0, 100))
+                    else:
+                        all_results.append(np.nan)
 
     # Create the DataFrame
     concepts_data = pd.DataFrame(
         {
-            "TIMESTAMP": timestamps,
-            "PID": repeated_patients_info["PID"],
-            "ADMISSION_ID": [
-                str(uuid.uuid4()) for _ in range(len(repeated_patients_info))
-            ],
-            "CONCEPT": concepts,
+            "TIMESTAMP": all_timestamps,
+            "PID": all_pids,
+            "ADMISSION_ID": all_admission_ids,
+            "CONCEPT": all_concepts,
+            "IS_BASE": all_is_base,  # Add column to track base concepts
         }
     )
 
     if result_col:
-        # Generate realistic lab results based on concepts
-        results = []
-        for concept in concepts:
-            if concept.startswith("LAB"):  # Only generate results for lab tests
-                # Generate random integer between 0 and 100
-                results.append(np.random.randint(0, 100))
-            else:
-                results.append(np.nan)  # NaN for non-lab concepts
-        concepts_data["RESULT"] = results
+        concepts_data["RESULT"] = all_results
 
     # Filter out rows where TIMESTAMP is less than BIRTHDATE
     concepts_data = concepts_data[
-        concepts_data["TIMESTAMP"] >= repeated_patients_info["BIRTHDATE"].values
+        concepts_data["TIMESTAMP"]
+        >= pd.Series(all_birthdates, index=concepts_data.index)
     ]
 
     return concepts_data
