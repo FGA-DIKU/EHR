@@ -8,7 +8,7 @@ CONFIG_PATH = "./corebehrt/configs/performance_tests/test_performance.yaml"
 def main_evaluate_performance(config_path):
     # Setup directories
     cfg = load_config(config_path)
-    bad_on_bad_metrics_path = cfg.paths.bad_on_bad_metrics_path
+    bad_on_bad_metrics_path = cfg.paths.bad_metrics_path
     good_metrics_path = cfg.paths.good_metrics_path
 
     bad_metrics = pd.read_csv(bad_on_bad_metrics_path)
