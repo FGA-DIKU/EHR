@@ -1,8 +1,0 @@
-logging:
-  level: INFO
-  path: ./outputs/logs
-
-paths:
-  ### Inputs
-  good_metrics_path: ./outputs/finetuning_good_censoring/metrics.csv
-  bad_metrics_path: ./outputs/finetuning_bad_censoring/metrics.csv

@@ -11,13 +11,13 @@ paths:
   outcome: TEST_OUTCOME.csv
 
   ## OUTPUTS
-  prepared_data: ./outputs/finetuning/processed_data_bad/ # Save model/outputs to this folder
+  prepared_data: ./outputs/finetuning/processed_data/bad/ # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
 
 data:
   type: "finetune"
   truncation_len: 30
-  min_len: 2 # 0 by default
+  min_len: 1 # 0 by default
 
 outcome:
   # we will convert outcomes to binary based on whether at least one outcome is in the follow up window

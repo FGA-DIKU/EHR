@@ -57,7 +57,6 @@ metrics:
     threshold: 0.6
   roc_auc:
     _target_: corebehrt.modules.monitoring.metrics.ROC_AUC
-
   pr_auc:
     _target_: corebehrt.modules.monitoring.metrics.PR_AUC
   precentage_positives:

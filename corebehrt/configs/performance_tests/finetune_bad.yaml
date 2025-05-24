@@ -4,12 +4,12 @@ logging:
 
 paths:
 ## INPUTS
-  prepared_data: ./outputs/finetuning/processed_data_bad/
+  prepared_data: ./outputs/finetuning/processed_data/bad/
   pretrain_model: ./outputs/pretraining
   # restart_model: ... # Use for restarting from checkpoint
       
 ## OUTPUTS
-  model: ./outputs/finetuning_bad_censoring # Save model/outputs to this folder
+  model: ./outputs/finetuning/bad_censoring # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 evaluate: false # evaluate best model on test sets
@@ -31,7 +31,7 @@ trainer_args:
     clip_value: 1.0
   shuffle: true
   checkpoint_frequency: 1
-  early_stopping: 20
+  early_stopping: 3
   stopping_criterion: roc_auc
   
   # Freezing options
@@ -43,7 +43,7 @@ trainer_args:
 
   
 optimizer:
-  lr: 5e-4
+  lr: 5e-3
   eps: 1e-6
 
 scheduler:
