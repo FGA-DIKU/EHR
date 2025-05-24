@@ -106,5 +106,5 @@ class TestCreateData(TestMainScript):
                     self.assertNotEqual(
                         index_vals[i] + 1,
                         index_vals[i + 1],
-                        f"Indices {index_vals[i]} and {index_vals[i + 1]} are next to each other",
+                        f"Two value tokens are next to each other with indices {index_vals[i]} and {index_vals[i + 1]}. Values {concepts[index_vals[i]]} and {concepts[index_vals[i + 1]]}",
                     )
