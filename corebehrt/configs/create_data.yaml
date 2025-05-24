@@ -3,9 +3,9 @@ logging:
   path: ./outputs/logs
 
 paths:
-  data: ./tests/data/raw
-  tokenized: ./tests/data/tokenized
-  features: ./tests/data/features
+  data: ./example_data/correlated_MEDS_data
+  tokenized: ./outputs/tokenized
+  features: ./outputs/features
   # optional
   # code_mapping: ./outputs/code_mapping.pt
   # vocabulary: ./outputs/vocabulary # vocab folder
