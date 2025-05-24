@@ -1,23 +1,27 @@
+import uuid
+import warnings
+
 import numpy as np
 import pandas as pd
 
-from corebehrt.functional.features.normalize import normalize_segments_series
-from corebehrt.functional.utils.time import get_hours_since_epoch
-import uuid
-import warnings
 from corebehrt.constants.data import (
     ABSPOS_COL,
-    PID_COL,
-    TIMESTAMP_COL,
-    CONCEPT_COL,
-    BIRTHDATE_COL,
-    DEATHDATE_COL,
-    SEGMENT_COL,
+    ADMISSION,
     ADMISSION_CODE,
-    DISCHARGE_CODE,
-    DEATH_CODE,
+    ADMISSION_ID_COL,
     BIRTH_CODE,
+    BIRTHDATE_COL,
+    CONCEPT_COL,
+    DEATH_CODE,
+    DEATHDATE_COL,
+    DISCHARGE,
+    DISCHARGE_CODE,
+    PID_COL,
+    SEGMENT_COL,
+    TIMESTAMP_COL,
 )
+from corebehrt.functional.features.normalize import normalize_segments_series
+from corebehrt.functional.utils.time import get_hours_since_epoch
 
 
 def create_abspos(concepts: pd.DataFrame) -> pd.DataFrame:
@@ -47,63 +51,110 @@ def create_age_in_years(concepts: pd.DataFrame) -> pd.DataFrame:
 
 
 def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
-    # Get the patient info out
-    dod_rows = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
-    deathdates = dict(zip(dod_rows[PID_COL], dod_rows[TIMESTAMP_COL]))
-    patient_info = pd.DataFrame(
-        {
-            PID_COL: concepts[PID_COL].unique(),
-            BIRTHDATE_COL: concepts.drop_duplicates(PID_COL)[BIRTHDATE_COL],
-        }
-    )
-    patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdates)
-    bg_info = concepts[concepts[CONCEPT_COL].str.startswith("BG_")][
-        [PID_COL, CONCEPT_COL]
-    ]
-    if len(bg_info) == 0:
-        warnings.warn("No background information found in concepts.")
-        return concepts, patient_info
-    bg_info[["column_name", "value"]] = bg_info[CONCEPT_COL].str.split(
-        "//", expand=True
-    )
-    bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
-    bg_info_pivot = bg_info.pivot_table(
-        index=PID_COL, columns="column_name", values="value", aggfunc="first"
-    ).reset_index()
-    merged_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
-    return merged_info
+    """
+    Create patient information DataFrame from concepts.
+
+    Args:
+        concepts: DataFrame with patient concepts
+
+    Returns:
+        DataFrame with patient information including birthdate, deathdate, and background variables
+    """
+    # Get unique patients
+    patients = concepts[PID_COL].unique()
+
+    # Initialize patient info - handle empty case
+    patient_info = pd.DataFrame({PID_COL: patients})
+
+    # If no patients, return empty DataFrame with proper structure
+    if len(patients) == 0:
+        warnings.warn("No patients found in concepts")
+        patient_info[BIRTHDATE_COL] = pd.Series([], dtype="datetime64[ns]")
+        patient_info[DEATHDATE_COL] = pd.Series([], dtype="datetime64[ns]")
+        return patient_info
+
+    # Fallback: extract from DOB codes
+    dob_data = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
+    birthdate_map = dict(zip(dob_data[PID_COL], dob_data[TIMESTAMP_COL]))
+    patient_info[BIRTHDATE_COL] = patient_info[PID_COL].map(birthdate_map)
+
+    # Extract death dates (DOD)
+    dod_data = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
+    deathdate_map = dict(zip(dod_data[PID_COL], dod_data[TIMESTAMP_COL]))
+    patient_info[DEATHDATE_COL] = patient_info[PID_COL].map(deathdate_map)
+
+    # Extract background variables (those that start with BG_)
+    bg_concepts = concepts[concepts[CONCEPT_COL].str.startswith("BG_", na=False)]
+
+    # Process background concepts if they exist
+    if not bg_concepts.empty:
+        bg_info = bg_concepts[[PID_COL, CONCEPT_COL]].copy()
+
+        # Split BG_ concepts into column_name and value, handling cases without "//"
+        split_result = bg_info[CONCEPT_COL].str.split("//", expand=True)
+
+        # Ensure we always have at least 2 columns
+        if split_result.shape[1] == 1:
+            # No "//" separator found, add empty value column
+            split_result[1] = None
+
+        bg_info["column_name"] = split_result[0]
+        bg_info["value"] = split_result[1]
+
+        # Remove BG_ prefix from column names
+        bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
+
+        # Filter out rows without proper column names or with empty column names after cleaning
+        bg_info = bg_info[
+            bg_info["column_name"].notna() & (bg_info["column_name"] != "")
+        ]
+
+        if not bg_info.empty:
+            # Create pivot table for background variables
+            bg_info_pivot = bg_info.pivot_table(
+                index=PID_COL, columns="column_name", values="value", aggfunc="first"
+            ).reset_index()
+
+            # Merge with patient_info
+            patient_info = pd.merge(patient_info, bg_info_pivot, on=PID_COL, how="left")
+
+    return patient_info
 
 
-def create_background(concepts: pd.DataFrame) -> pd.DataFrame:
+def create_background(concepts: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Create background concepts for each patient based on the static background variables in the dataframe.
     Sets the time of the background concepts to the birthdate of the patient.
     Expects 'DOB' concept to be present in the patients_info DataFrame.
+
+    Args:
+        concepts: DataFrame with columns 'subject_id', 'time', 'code'
+
     Returns:
-        table with background concepts, including 'subject_id', 'time', 'code', and 'numeric_value' columns.
-        additionally, 'birthdate' column is added to the concepts DataFrame.
+        tuple: (updated_concepts_df, patient_info_df)
+            - updated_concepts_df: concepts with background concepts updated and birthdate column added
+            - patient_info_df: patient information with birthdate, deathdate, and background variables
     """
+    # Create a copy to avoid modifying the original DataFrame
+    concepts = concepts.copy()
+
+    # Extract birthdates from DOB rows
     dob_rows = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
     birthdates = dict(zip(dob_rows[PID_COL], dob_rows[TIMESTAMP_COL]))
     concepts[BIRTHDATE_COL] = concepts[PID_COL].map(birthdates)
 
-    bg_rows = concepts[concepts[TIMESTAMP_COL].isna()]
-    concepts.loc[bg_rows.index, TIMESTAMP_COL] = concepts.loc[
-        bg_rows.index, BIRTHDATE_COL
-    ]
-    concepts.loc[bg_rows.index, CONCEPT_COL] = (
-        "BG_" + concepts.loc[bg_rows.index, CONCEPT_COL]
-    )
+    # Use boolean masking instead of index-based selection for background rows
+    bg_mask = concepts[TIMESTAMP_COL].isna()
+    concepts.loc[bg_mask, TIMESTAMP_COL] = concepts.loc[bg_mask, BIRTHDATE_COL]
+    concepts.loc[bg_mask, CONCEPT_COL] = "BG_" + concepts.loc[bg_mask, CONCEPT_COL]
 
-    adm_rows = concepts[
-        concepts[CONCEPT_COL].str.contains(ADMISSION_CODE)
-        | concepts[CONCEPT_COL].str.contains(DISCHARGE_CODE)
-    ]
-    concepts.loc[adm_rows.index, CONCEPT_COL] = (
-        "ADM_" + concepts.loc[adm_rows.index, CONCEPT_COL]
-    )
+    # Use boolean masking for admission/discharge rows
+    adm_mask = concepts[CONCEPT_COL].str.contains(ADMISSION_CODE, na=False) | concepts[
+        CONCEPT_COL
+    ].str.contains(DISCHARGE_CODE, na=False)
+    concepts.loc[adm_mask, CONCEPT_COL] = "ADM_" + concepts.loc[adm_mask, CONCEPT_COL]
 
-    # Get the patient info out
+    # Get the patient info
     patient_info = _create_patient_info(concepts)
     return concepts, patient_info
 
@@ -162,35 +213,156 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign 'admission_id' to each row in concepts based on 'ADMISSION' and 'DISCHARGE' events.
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
-    If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
+    If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events
+    if the time between them is greater than 48 hours.
     Assumes not overlapping ADMISSION and DISCHARGE events.
     """
 
     def _get_adm_id():
         return str(uuid.uuid4())
 
-    concepts = concepts.reset_index(drop=True)
-    concepts["admission_id"] = None
-    concepts["admission_id"] = concepts["admission_id"].astype(object)
+    # Work with a copy to avoid modifying the original
+    result = concepts.copy()
+    result[ADMISSION_ID_COL] = None
+    result[ADMISSION_ID_COL] = result[ADMISSION_ID_COL].astype(object)
 
-    # Concepts within 48 hours of each other are considered to be part of the same admission
-    outside_segments = concepts[concepts["admission_id"].isna()].copy()
-    outside_segments = outside_segments.sort_values(by=[PID_COL, TIMESTAMP_COL])
-    outside_segments["time_diff"] = (
-        outside_segments.groupby(PID_COL)[TIMESTAMP_COL].diff().dt.total_seconds()
-    )
-    outside_segments["new_admission"] = (outside_segments["time_diff"] > 48 * 3600) | (
-        outside_segments["time_diff"].isna()
-    )
-    outside_segments["admission_id"] = outside_segments["new_admission"].apply(
-        lambda x: _get_adm_id() if x else None
-    )
-    outside_segments["admission_id"] = outside_segments["admission_id"].ffill()
-    concepts.loc[outside_segments.index, "admission_id"] = outside_segments[
-        "admission_id"
-    ]
+    # Process each patient separately
+    for patient_id in result[PID_COL].unique():
+        patient_mask = result[PID_COL] == patient_id
+        patient_data = result[patient_mask].copy()
 
-    return concepts
+        # Sort by timestamp
+        patient_data = patient_data.sort_values(by=TIMESTAMP_COL)
+
+        # Check if patient has explicit ADMISSION/DISCHARGE events
+        has_admission = (
+            patient_data[CONCEPT_COL].str.startswith(ADMISSION, na=False)
+        ).any()
+        has_discharge = (
+            patient_data[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
+        ).any()
+
+        if has_admission or has_discharge:
+            # Handle explicit admission/discharge logic
+            patient_data = _assign_explicit_admission_ids(patient_data, _get_adm_id)
+        else:
+            # Handle time-based admission logic (48-hour rule)
+            patient_data = _assign_time_based_admission_ids(patient_data, _get_adm_id)
+
+        # Update the result DataFrame using boolean indexing instead of index matching
+        result.loc[patient_mask, ADMISSION_ID_COL] = patient_data[
+            ADMISSION_ID_COL
+        ].values
+
+    return result
+
+
+def _assign_time_based_admission_ids(
+    patient_data: pd.DataFrame, get_adm_id_func
+) -> pd.DataFrame:
+    """
+    Assign admission IDs based on 48-hour time gaps.
+    """
+    patient_data = patient_data.copy()
+
+    if len(patient_data) == 0:
+        patient_data[ADMISSION_ID_COL] = None
+        patient_data[ADMISSION_ID_COL] = patient_data[ADMISSION_ID_COL].astype(object)
+        return patient_data
+
+    # Calculate time differences using vectorized operations
+    time_diff = patient_data[TIMESTAMP_COL].diff().dt.total_seconds()
+
+    # Mark new admissions (first event or gap > 48 hours)
+    new_admission = (time_diff > 48 * 3600) | time_diff.isna()
+
+    # Create admission groups using cumsum
+    admission_groups = new_admission.cumsum()
+
+    # Generate unique admission IDs for each group
+    unique_groups = admission_groups.unique()
+    group_to_id = {group: get_adm_id_func() for group in unique_groups}
+    patient_data[ADMISSION_ID_COL] = admission_groups.map(group_to_id).astype(object)
+
+    return patient_data
+
+
+def _assign_explicit_admission_ids(
+    patient_data: pd.DataFrame, get_adm_id_func
+) -> pd.DataFrame:
+    """
+    Assign admission IDs based on explicit ADMISSION and DISCHARGE events.
+    Events outside admission periods are grouped by 48-hour rule.
+    """
+    patient_data = patient_data.copy()
+
+    if len(patient_data) == 0:
+        patient_data[ADMISSION_ID_COL] = None
+        patient_data[ADMISSION_ID_COL] = patient_data[ADMISSION_ID_COL].astype(object)
+        return patient_data
+
+    # Pre-process codes and timestamps to avoid repeated lookups
+    codes = patient_data[CONCEPT_COL].fillna("").values
+    timestamps = patient_data[TIMESTAMP_COL].values
+
+    # Initialize result array
+    admission_ids = [None] * len(patient_data)
+
+    current_admission_id = None
+    current_outside_admission_id = None
+    last_outside_timestamp = None
+
+    # Process events using direct array iteration instead of iterrows
+    for i, (code, timestamp) in enumerate(zip(codes, timestamps)):
+        if code.startswith(ADMISSION):
+            # Start new admission
+            current_admission_id = get_adm_id_func()
+            admission_ids[i] = current_admission_id
+            # Reset outside admission tracking
+            current_outside_admission_id = None
+            last_outside_timestamp = None
+
+        elif code.startswith(DISCHARGE):
+            # End current admission
+            if current_admission_id is not None:
+                admission_ids[i] = current_admission_id
+            else:
+                # Discharge without admission - assign unique ID
+                admission_ids[i] = get_adm_id_func()
+            current_admission_id = None
+            # Reset outside admission tracking
+            current_outside_admission_id = None
+            last_outside_timestamp = None
+
+        else:
+            # Regular event
+            if current_admission_id is not None:
+                # Inside admission period
+                admission_ids[i] = current_admission_id
+            else:
+                # Outside admission period - apply 48-hour rule
+                if (
+                    current_outside_admission_id is None
+                    or last_outside_timestamp is None
+                    or pd.isna(timestamp)
+                    or pd.isna(last_outside_timestamp)
+                    or (
+                        pd.Timestamp(timestamp) - pd.Timestamp(last_outside_timestamp)
+                    ).total_seconds()
+                    > 48 * 3600
+                ):
+                    # Start new outside-admission group
+                    current_outside_admission_id = get_adm_id_func()
+
+                admission_ids[i] = current_outside_admission_id
+                last_outside_timestamp = timestamp
+
+    # Assign results using vectorized assignment
+    patient_data[ADMISSION_ID_COL] = pd.Series(
+        admission_ids, index=patient_data.index, dtype=object
+    )
+
+    return patient_data
 
 
 def _assign_segments(df):
@@ -198,7 +370,7 @@ def _assign_segments(df):
     Assign segments to the concepts DataFrame based on 'admission_id'
     """
     # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df[SEGMENT_COL] = df.groupby(PID_COL)["admission_id"].transform(
+    df[SEGMENT_COL] = df.groupby(PID_COL)[ADMISSION_ID_COL].transform(
         normalize_segments_series
     )
     return df
