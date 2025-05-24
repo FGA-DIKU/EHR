@@ -6,12 +6,15 @@ import pandas as pd
 
 from corebehrt.constants.data import (
     ABSPOS_COL,
+    ADMISSION,
     ADMISSION_CODE,
+    ADMISSION_ID_COL,
     BIRTH_CODE,
     BIRTHDATE_COL,
     CONCEPT_COL,
     DEATH_CODE,
     DEATHDATE_COL,
+    DISCHARGE,
     DISCHARGE_CODE,
     PID_COL,
     SEGMENT_COL,
@@ -220,8 +223,8 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
 
     # Work with a copy to avoid modifying the original
     result = concepts.copy()
-    result["admission_id"] = None
-    result["admission_id"] = result["admission_id"].astype(object)
+    result[ADMISSION_ID_COL] = None
+    result[ADMISSION_ID_COL] = result[ADMISSION_ID_COL].astype(object)
 
     # Process each patient separately
     for patient_id in result[PID_COL].unique():
@@ -233,10 +236,10 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
 
         # Check if patient has explicit ADMISSION/DISCHARGE events
         has_admission = (
-            patient_data[CONCEPT_COL].str.startswith("ADM_ADMISSION", na=False)
+            patient_data[CONCEPT_COL].str.startswith(ADMISSION, na=False)
         ).any()
         has_discharge = (
-            patient_data[CONCEPT_COL].str.startswith("ADM_DISCHARGE", na=False)
+            patient_data[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
         ).any()
 
         if has_admission or has_discharge:
@@ -247,7 +250,9 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
             patient_data = _assign_time_based_admission_ids(patient_data, _get_adm_id)
 
         # Update the result DataFrame using boolean indexing instead of index matching
-        result.loc[patient_mask, "admission_id"] = patient_data["admission_id"].values
+        result.loc[patient_mask, ADMISSION_ID_COL] = patient_data[
+            ADMISSION_ID_COL
+        ].values
 
     return result
 
@@ -261,8 +266,8 @@ def _assign_time_based_admission_ids(
     patient_data = patient_data.copy()
 
     if len(patient_data) == 0:
-        patient_data["admission_id"] = None
-        patient_data["admission_id"] = patient_data["admission_id"].astype(object)
+        patient_data[ADMISSION_ID_COL] = None
+        patient_data[ADMISSION_ID_COL] = patient_data[ADMISSION_ID_COL].astype(object)
         return patient_data
 
     # Calculate time differences using vectorized operations
@@ -277,7 +282,7 @@ def _assign_time_based_admission_ids(
     # Generate unique admission IDs for each group
     unique_groups = admission_groups.unique()
     group_to_id = {group: get_adm_id_func() for group in unique_groups}
-    patient_data["admission_id"] = admission_groups.map(group_to_id).astype(object)
+    patient_data[ADMISSION_ID_COL] = admission_groups.map(group_to_id).astype(object)
 
     return patient_data
 
@@ -292,12 +297,12 @@ def _assign_explicit_admission_ids(
     patient_data = patient_data.copy()
 
     if len(patient_data) == 0:
-        patient_data["admission_id"] = None
-        patient_data["admission_id"] = patient_data["admission_id"].astype(object)
+        patient_data[ADMISSION_ID_COL] = None
+        patient_data[ADMISSION_ID_COL] = patient_data[ADMISSION_ID_COL].astype(object)
         return patient_data
 
     # Pre-process codes and timestamps to avoid repeated lookups
-    codes = patient_data["code"].fillna("").values
+    codes = patient_data[CONCEPT_COL].fillna("").values
     timestamps = patient_data[TIMESTAMP_COL].values
 
     # Initialize result array
@@ -309,7 +314,7 @@ def _assign_explicit_admission_ids(
 
     # Process events using direct array iteration instead of iterrows
     for i, (code, timestamp) in enumerate(zip(codes, timestamps)):
-        if code.startswith("ADM_ADMISSION"):
+        if code.startswith(ADMISSION):
             # Start new admission
             current_admission_id = get_adm_id_func()
             admission_ids[i] = current_admission_id
@@ -317,7 +322,7 @@ def _assign_explicit_admission_ids(
             current_outside_admission_id = None
             last_outside_timestamp = None
 
-        elif code.startswith("ADM_DISCHARGE"):
+        elif code.startswith(DISCHARGE):
             # End current admission
             if current_admission_id is not None:
                 admission_ids[i] = current_admission_id
@@ -353,7 +358,7 @@ def _assign_explicit_admission_ids(
                 last_outside_timestamp = timestamp
 
     # Assign results using vectorized assignment
-    patient_data["admission_id"] = pd.Series(
+    patient_data[ADMISSION_ID_COL] = pd.Series(
         admission_ids, index=patient_data.index, dtype=object
     )
 
@@ -365,7 +370,7 @@ def _assign_segments(df):
     Assign segments to the concepts DataFrame based on 'admission_id'
     """
     # Group by 'PID' and apply factorize to 'ADMISSION_ID'
-    df[SEGMENT_COL] = df.groupby(PID_COL)["admission_id"].transform(
+    df[SEGMENT_COL] = df.groupby(PID_COL)[ADMISSION_ID_COL].transform(
         normalize_segments_series
     )
     return df
