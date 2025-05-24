@@ -252,6 +252,36 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _assign_time_based_admission_ids(
+    patient_data: pd.DataFrame, get_adm_id_func
+) -> pd.DataFrame:
+    """
+    Assign admission IDs based on 48-hour time gaps.
+    """
+    patient_data = patient_data.copy()
+
+    if len(patient_data) == 0:
+        patient_data["admission_id"] = None
+        patient_data["admission_id"] = patient_data["admission_id"].astype(object)
+        return patient_data
+
+    # Calculate time differences using vectorized operations
+    time_diff = patient_data[TIMESTAMP_COL].diff().dt.total_seconds()
+
+    # Mark new admissions (first event or gap > 48 hours)
+    new_admission = (time_diff > 48 * 3600) | time_diff.isna()
+
+    # Create admission groups using cumsum
+    admission_groups = new_admission.cumsum()
+
+    # Generate unique admission IDs for each group
+    unique_groups = admission_groups.unique()
+    group_to_id = {group: get_adm_id_func() for group in unique_groups}
+    patient_data["admission_id"] = admission_groups.map(group_to_id).astype(object)
+
+    return patient_data
+
+
 def _assign_explicit_admission_ids(
     patient_data: pd.DataFrame, get_adm_id_func
 ) -> pd.DataFrame:
@@ -260,24 +290,29 @@ def _assign_explicit_admission_ids(
     Events outside admission periods are grouped by 48-hour rule.
     """
     patient_data = patient_data.copy()
-    patient_data["admission_id"] = None
-    patient_data["admission_id"] = patient_data["admission_id"].astype(object)
+
+    if len(patient_data) == 0:
+        patient_data["admission_id"] = None
+        patient_data["admission_id"] = patient_data["admission_id"].astype(object)
+        return patient_data
+
+    # Pre-process codes and timestamps to avoid repeated lookups
+    codes = patient_data["code"].fillna("").values
+    timestamps = patient_data[TIMESTAMP_COL].values
+
+    # Initialize result array
+    admission_ids = [None] * len(patient_data)
 
     current_admission_id = None
     current_outside_admission_id = None
     last_outside_timestamp = None
 
-    for idx, row in patient_data.iterrows():
-        code = row.get("code", "")
-        timestamp = row[TIMESTAMP_COL]
-
-        if pd.isna(code):
-            code = ""
-
+    # Process events using direct array iteration instead of iterrows
+    for i, (code, timestamp) in enumerate(zip(codes, timestamps)):
         if code.startswith("ADM_ADMISSION"):
             # Start new admission
             current_admission_id = get_adm_id_func()
-            patient_data.at[idx, "admission_id"] = current_admission_id
+            admission_ids[i] = current_admission_id
             # Reset outside admission tracking
             current_outside_admission_id = None
             last_outside_timestamp = None
@@ -285,10 +320,10 @@ def _assign_explicit_admission_ids(
         elif code.startswith("ADM_DISCHARGE"):
             # End current admission
             if current_admission_id is not None:
-                patient_data.at[idx, "admission_id"] = current_admission_id
+                admission_ids[i] = current_admission_id
             else:
                 # Discharge without admission - assign unique ID
-                patient_data.at[idx, "admission_id"] = get_adm_id_func()
+                admission_ids[i] = get_adm_id_func()
             current_admission_id = None
             # Reset outside admission tracking
             current_outside_admission_id = None
@@ -298,50 +333,29 @@ def _assign_explicit_admission_ids(
             # Regular event
             if current_admission_id is not None:
                 # Inside admission period
-                patient_data.at[idx, "admission_id"] = current_admission_id
+                admission_ids[i] = current_admission_id
             else:
                 # Outside admission period - apply 48-hour rule
                 if (
                     current_outside_admission_id is None
                     or last_outside_timestamp is None
-                    or (timestamp - last_outside_timestamp).total_seconds() > 48 * 3600
+                    or pd.isna(timestamp)
+                    or pd.isna(last_outside_timestamp)
+                    or (
+                        pd.Timestamp(timestamp) - pd.Timestamp(last_outside_timestamp)
+                    ).total_seconds()
+                    > 48 * 3600
                 ):
                     # Start new outside-admission group
                     current_outside_admission_id = get_adm_id_func()
 
-                patient_data.at[idx, "admission_id"] = current_outside_admission_id
+                admission_ids[i] = current_outside_admission_id
                 last_outside_timestamp = timestamp
 
-    return patient_data
-
-
-def _assign_time_based_admission_ids(
-    patient_data: pd.DataFrame, get_adm_id_func
-) -> pd.DataFrame:
-    """
-    Assign admission IDs based on 48-hour time gaps.
-    """
-    patient_data = patient_data.copy()
-    patient_data["admission_id"] = None
-    patient_data["admission_id"] = patient_data["admission_id"].astype(object)
-
-    # Calculate time differences
-    patient_data["time_diff"] = patient_data[TIMESTAMP_COL].diff().dt.total_seconds()
-
-    # Mark new admissions (first event or gap > 48 hours)
-    patient_data["new_admission"] = (patient_data["time_diff"] > 48 * 3600) | (
-        patient_data["time_diff"].isna()
+    # Assign results using vectorized assignment
+    patient_data["admission_id"] = pd.Series(
+        admission_ids, index=patient_data.index, dtype=object
     )
-
-    # Assign admission IDs
-    current_admission_id = None
-    for idx, row in patient_data.iterrows():
-        if row["new_admission"]:
-            current_admission_id = get_adm_id_func()
-        patient_data.at[idx, "admission_id"] = current_admission_id
-
-    # Clean up temporary columns
-    patient_data = patient_data.drop(["time_diff", "new_admission"], axis=1)
 
     return patient_data
 
