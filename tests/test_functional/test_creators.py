@@ -2,6 +2,7 @@ import unittest
 import pandas as pd
 from datetime import datetime, timedelta
 from pandas import NaT
+import uuid
 
 from corebehrt.functional.features.creators import (
     create_age_in_years,
@@ -11,6 +12,7 @@ from corebehrt.functional.features.creators import (
     sort_features,
     _create_patient_info,
     _assign_admission_ids,
+    _assign_explicit_admission_ids,
 )
 
 
@@ -979,6 +981,446 @@ class TestAssignAdmissionIds(unittest.TestCase):
         # Should sort by timestamp internally and assign correctly
         self.assertEqual(len(result), 4)
         self.assertTrue(result["admission_id"].notna().all())
+
+
+class TestAssignExplicitAdmissionIds(unittest.TestCase):
+    def setUp(self):
+        """Set up test data"""
+        self.base_time = datetime(2020, 1, 1, 10, 0, 0)
+
+        # Import the function we need to test directly
+        self._assign_explicit_admission_ids = _assign_explicit_admission_ids
+
+        def _get_adm_id():
+            return str(uuid.uuid4())
+
+        self._get_adm_id = _get_adm_id
+
+    def test_basic_admission_discharge_flow(self):
+        """Test basic admission and discharge flow"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=3),
+                ],
+                "code": ["ADM_ADMISSION", "A", "B", "ADM_DISCHARGE"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # All events should have the same admission ID
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 1)
+
+        # All admission IDs should be the same
+        admission_id = result.iloc[0]["admission_id"]
+        for _, row in result.iterrows():
+            self.assertEqual(row["admission_id"], admission_id)
+
+    def test_multiple_admissions_same_patient(self):
+        """Test multiple separate admissions for the same patient"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=50),  # Outside admission, >48h gap
+                    self.base_time + timedelta(hours=52),
+                    self.base_time + timedelta(hours=53),
+                    self.base_time + timedelta(hours=54),
+                ],
+                "code": [
+                    "ADM_ADMISSION",
+                    "A",
+                    "ADM_DISCHARGE",
+                    "B",
+                    "ADM_ADMISSION",
+                    "C",
+                    "ADM_DISCHARGE",
+                ],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 3 unique admission IDs
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 3)
+
+        # First admission (indices 0, 1, 2)
+        first_admission_id = result.iloc[0]["admission_id"]
+        self.assertEqual(result.iloc[1]["admission_id"], first_admission_id)
+        self.assertEqual(result.iloc[2]["admission_id"], first_admission_id)
+
+        # Outside event (index 3) should have different ID
+        outside_id = result.iloc[3]["admission_id"]
+        self.assertNotEqual(outside_id, first_admission_id)
+
+        # Second admission (indices 4, 5, 6)
+        second_admission_id = result.iloc[4]["admission_id"]
+        self.assertEqual(result.iloc[5]["admission_id"], second_admission_id)
+        self.assertEqual(result.iloc[6]["admission_id"], second_admission_id)
+        self.assertNotEqual(second_admission_id, first_admission_id)
+        self.assertNotEqual(second_admission_id, outside_id)
+
+    def test_discharge_without_prior_admission(self):
+        """Test discharge event without preceding admission"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["A", "ADM_DISCHARGE", "B"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 3 unique admission IDs (each event gets its own)
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 3)
+
+        # All admission IDs should be different
+        ids = [result.iloc[i]["admission_id"] for i in range(3)]
+        self.assertEqual(len(set(ids)), 3)
+
+    def test_events_inside_active_admission(self):
+        """Test that events during admission are properly grouped"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=3),
+                    self.base_time + timedelta(hours=4),
+                    self.base_time + timedelta(hours=5),
+                ],
+                "code": ["ADM_ADMISSION", "A", "B", "C", "D", "ADM_DISCHARGE"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # All events should have the same admission ID
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 1)
+
+        admission_id = result.iloc[0]["admission_id"]
+        for _, row in result.iterrows():
+            self.assertEqual(row["admission_id"], admission_id)
+
+    def test_events_outside_admission_with_48_hour_grouping(self):
+        """Test 48-hour grouping for events outside admission periods"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),  # Same group as first
+                    self.base_time + timedelta(hours=50),  # New group (>48h gap)
+                    self.base_time + timedelta(hours=51),  # Same group as third
+                    self.base_time + timedelta(hours=100),  # New group (>48h gap)
+                ],
+                "code": ["A", "B", "C", "D", "E"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 3 unique admission IDs
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 3)
+
+        # First two events should have same ID
+        self.assertEqual(result.iloc[0]["admission_id"], result.iloc[1]["admission_id"])
+
+        # Events 3 and 4 should have same ID (different from first group)
+        self.assertEqual(result.iloc[2]["admission_id"], result.iloc[3]["admission_id"])
+        self.assertNotEqual(
+            result.iloc[0]["admission_id"], result.iloc[2]["admission_id"]
+        )
+
+        # Event 5 should have unique ID
+        self.assertNotEqual(
+            result.iloc[4]["admission_id"], result.iloc[0]["admission_id"]
+        )
+        self.assertNotEqual(
+            result.iloc[4]["admission_id"], result.iloc[2]["admission_id"]
+        )
+
+    def test_nat_timestamps(self):
+        """Test handling of NaT (Not a Time) timestamps"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    NaT,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["ADM_ADMISSION", "A", "B", "ADM_DISCHARGE"],
+            }
+        ).sort_values(by="time", na_position="first")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should handle gracefully without crashing
+        self.assertEqual(len(result), 4)
+        self.assertTrue(result["admission_id"].notna().all())
+
+    def test_missing_codes(self):
+        """Test handling of missing/NaN codes"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=3),
+                ],
+                "code": ["ADM_ADMISSION", None, "B", "ADM_DISCHARGE"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should handle gracefully, treating None as regular event
+        self.assertEqual(len(result), 4)
+        self.assertTrue(result["admission_id"].notna().all())
+
+        # All events should have same admission ID (inside admission period)
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 1)
+
+    def test_overlapping_admissions(self):
+        """Test behavior with overlapping admission events"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time
+                    + timedelta(hours=2),  # Second admission before first discharge
+                    self.base_time + timedelta(hours=3),
+                    self.base_time + timedelta(hours=4),
+                ],
+                "code": ["ADM_ADMISSION", "A", "ADM_ADMISSION", "B", "ADM_DISCHARGE"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should handle gracefully without crashing
+        self.assertEqual(len(result), 5)
+        self.assertTrue(result["admission_id"].notna().all())
+
+        # Second admission should start new admission period
+        first_admission_id = result.iloc[0]["admission_id"]
+        second_admission_id = result.iloc[2]["admission_id"]
+        self.assertNotEqual(first_admission_id, second_admission_id)
+
+    def test_empty_dataframe(self):
+        """Test handling of empty DataFrame"""
+        patient_data = pd.DataFrame(columns=["subject_id", "time", "code"])
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        self.assertEqual(len(result), 0)
+        self.assertIn("admission_id", result.columns)
+        self.assertEqual(result["admission_id"].dtype, object)
+
+    def test_single_event(self):
+        """Test handling of single event"""
+        patient_data = pd.DataFrame(
+            {"subject_id": ["1"], "time": [self.base_time], "code": ["A"]}
+        )
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        self.assertEqual(len(result), 1)
+        self.assertIsNotNone(result.iloc[0]["admission_id"])
+
+    def test_only_admission_events(self):
+        """Test with only admission events (no discharge)"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["ADM_ADMISSION", "A", "B"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # All events should have same admission ID
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 1)
+
+    def test_only_discharge_events(self):
+        """Test with only discharge events (no admission)"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["A", "ADM_DISCHARGE", "B"],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 3 different admission IDs (discharge without admission + 48h rule)
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 3)
+
+    def test_consecutive_admissions_no_gap(self):
+        """Test consecutive admissions with no time gap"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                    self.base_time + timedelta(hours=2),  # Same time as discharge
+                    self.base_time + timedelta(hours=3),
+                    self.base_time + timedelta(hours=4),
+                ],
+                "code": [
+                    "ADM_ADMISSION",
+                    "A",
+                    "ADM_DISCHARGE",
+                    "ADM_ADMISSION",
+                    "B",
+                    "ADM_DISCHARGE",
+                ],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 2 different admission IDs
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 2)
+
+        # First admission group
+        first_admission_id = result.iloc[0]["admission_id"]
+        self.assertEqual(result.iloc[1]["admission_id"], first_admission_id)
+        self.assertEqual(result.iloc[2]["admission_id"], first_admission_id)
+
+        # Second admission group
+        second_admission_id = result.iloc[3]["admission_id"]
+        self.assertEqual(result.iloc[4]["admission_id"], second_admission_id)
+        self.assertEqual(result.iloc[5]["admission_id"], second_admission_id)
+        self.assertNotEqual(first_admission_id, second_admission_id)
+
+    def test_admission_discharge_with_outside_events(self):
+        """Test mix of admission periods and outside events"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1", "1", "1", "1", "1", "1"],
+                "time": [
+                    self.base_time,  # Outside event 0
+                    self.base_time + timedelta(hours=2),  # Outside event (same group) 0
+                    self.base_time
+                    + timedelta(
+                        hours=50, minutes=1
+                    ),  # Outside event (new group, >48h) 1
+                    self.base_time + timedelta(hours=52),  # Admission start 2
+                    self.base_time + timedelta(hours=53),  # Inside admission 2
+                    self.base_time + timedelta(hours=54),  # Discharge 2
+                    self.base_time
+                    + timedelta(hours=100),  # Outside event (new group, >48h) 3
+                    self.base_time
+                    + timedelta(hours=101),  # Outside event (same group) 3
+                ],
+                "code": [
+                    "A",
+                    "B",
+                    "C",
+                    "ADM_ADMISSION",
+                    "D",
+                    "ADM_DISCHARGE",
+                    "E",
+                    "F",
+                ],
+            }
+        ).sort_values(by="time")
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should have 4 unique admission IDs
+        unique_admissions = result["admission_id"].unique()
+        self.assertEqual(len(unique_admissions), 4)
+
+        # First outside group (events 0, 1)
+        first_outside_id = result.iloc[0]["admission_id"]
+        self.assertEqual(result.iloc[1]["admission_id"], first_outside_id)
+
+        # Second outside group (event 2)
+        second_outside_id = result.iloc[2]["admission_id"]
+        self.assertNotEqual(second_outside_id, first_outside_id)
+
+        # Admission group (events 3, 4, 5)
+        admission_id = result.iloc[3]["admission_id"]
+        self.assertEqual(result.iloc[4]["admission_id"], admission_id)
+        self.assertEqual(result.iloc[5]["admission_id"], admission_id)
+        self.assertNotEqual(admission_id, first_outside_id)
+        self.assertNotEqual(admission_id, second_outside_id)
+
+        # Third outside group (events 6, 7)
+        third_outside_id = result.iloc[6]["admission_id"]
+        self.assertEqual(result.iloc[7]["admission_id"], third_outside_id)
+        self.assertNotEqual(third_outside_id, first_outside_id)
+        self.assertNotEqual(third_outside_id, second_outside_id)
+        self.assertNotEqual(third_outside_id, admission_id)
+
+    def test_preserves_dataframe_structure(self):
+        """Test that the function preserves DataFrame structure and index"""
+        patient_data = pd.DataFrame(
+            {
+                "subject_id": ["1", "1", "1"],
+                "time": [
+                    self.base_time,
+                    self.base_time + timedelta(hours=1),
+                    self.base_time + timedelta(hours=2),
+                ],
+                "code": ["ADM_ADMISSION", "A", "ADM_DISCHARGE"],
+                "extra_column": ["X", "Y", "Z"],
+            }
+        )
+        # Set custom index
+        patient_data.index = [10, 20, 30]
+
+        result = self._assign_explicit_admission_ids(patient_data, self._get_adm_id)
+
+        # Should preserve original structure
+        self.assertEqual(list(result.index), [10, 20, 30])
+        self.assertIn("extra_column", result.columns)
+        self.assertEqual(list(result["extra_column"]), ["X", "Y", "Z"])
+        self.assertIn("admission_id", result.columns)
 
 
 if __name__ == "__main__":
