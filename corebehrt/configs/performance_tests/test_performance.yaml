@@ -5,5 +5,4 @@ logging:
 paths:
   ### Inputs
   good_metrics_path: ./outputs/testing/held_out/predictions/good/metrics.csv
-  bad_on_bad_metrics_path: ./outputs/testing/held_out/predictions/bad_on_bad/metrics.csv
-  bad_on_good_metrics_path: ./outputs/testing/held_out/predictions/bad_on_good/metrics.csv
+  bad_metrics_path: ./outputs/testing/held_out/predictions/bad_on_bad/metrics.csv

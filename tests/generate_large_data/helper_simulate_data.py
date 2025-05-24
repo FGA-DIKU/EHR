@@ -170,7 +170,7 @@ def generate_correlated_concepts_batch(
 
     # First, select base concepts for each unique patient
     patient_base_concepts = {}
-    for pid in patients_info['PID'].unique():
+    for pid in patients_info["PID"].unique():
         selected_base_concepts = []
         for base_concept, rel_info in CONCEPT_RELATIONSHIPS.items():
             if np.random.random() < rel_info["base_probability"]:
@@ -199,16 +199,22 @@ def generate_correlated_concepts_batch(
                 is_base_for_record.append(True)  # Mark as base concept
                 related = get_related_concepts(base_concept)
                 concepts_for_record.extend(related)  # Add related concepts
-                is_base_for_record.extend([False] * len(related))  # Mark as not base concepts
+                is_base_for_record.extend(
+                    [False] * len(related)
+                )  # Mark as not base concepts
 
             # Add all concepts for this record
             all_concepts.extend(concepts_for_record)
             all_timestamps.extend([timestamps[i]] * len(concepts_for_record))
             all_pids.extend([pid] * len(concepts_for_record))
-            all_admission_ids.extend([str(uuid.uuid4()) for _ in range(len(concepts_for_record))])
-            all_birthdates.extend([repeated_patients_info["BIRTHDATE"].iloc[i]] * len(concepts_for_record))
+            all_admission_ids.extend(
+                [str(uuid.uuid4()) for _ in range(len(concepts_for_record))]
+            )
+            all_birthdates.extend(
+                [repeated_patients_info["BIRTHDATE"].iloc[i]] * len(concepts_for_record)
+            )
             all_is_base.extend(is_base_for_record)
-            
+
             if result_col:
                 # Generate results for lab concepts
                 for concept in concepts_for_record:
@@ -233,7 +239,8 @@ def generate_correlated_concepts_batch(
 
     # Filter out rows where TIMESTAMP is less than BIRTHDATE
     concepts_data = concepts_data[
-        concepts_data["TIMESTAMP"] >= pd.Series(all_birthdates, index=concepts_data.index)
+        concepts_data["TIMESTAMP"]
+        >= pd.Series(all_birthdates, index=concepts_data.index)
     ]
 
     return concepts_data
@@ -541,6 +548,7 @@ def main_write(
     # Close all writers
     for writer in writers.values():
         writer.close()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

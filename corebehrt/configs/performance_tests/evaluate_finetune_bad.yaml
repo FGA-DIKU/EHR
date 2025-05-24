@@ -5,9 +5,9 @@ logging:
 paths:
   model: "./outputs/finetuning/bad_censoring"
   folds_dir: "./outputs/finetuning/processed_data/bad"
-  test_data_dir: "./outputs/testing/held_out/processed_data/good" 
+  test_data_dir: "./outputs/testing/held_out/processed_data/bad" 
   run_name: "evaluate"
-  predictions: "./outputs/testing/held_out/predictions/bad_on_good"
+  predictions: "./outputs/testing/held_out/predictions/bad"
 
 test_batch_size: 128
 
