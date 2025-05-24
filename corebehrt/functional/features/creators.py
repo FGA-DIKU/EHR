@@ -70,16 +70,10 @@ def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
         patient_info[DEATHDATE_COL] = pd.Series([], dtype="datetime64[ns]")
         return patient_info
 
-    # Extract birthdates from concepts that have birthdate column
-    if BIRTHDATE_COL in concepts.columns:
-        # Use the birthdate column that was added by create_background
-        birthdate_data = concepts.drop_duplicates(PID_COL)[[PID_COL, BIRTHDATE_COL]]
-        patient_info = pd.merge(patient_info, birthdate_data, on=PID_COL, how="left")
-    else:
-        # Fallback: extract from DOB codes
-        dob_data = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
-        birthdate_map = dict(zip(dob_data[PID_COL], dob_data[TIMESTAMP_COL]))
-        patient_info[BIRTHDATE_COL] = patient_info[PID_COL].map(birthdate_map)
+    # Fallback: extract from DOB codes
+    dob_data = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
+    birthdate_map = dict(zip(dob_data[PID_COL], dob_data[TIMESTAMP_COL]))
+    patient_info[BIRTHDATE_COL] = patient_info[PID_COL].map(birthdate_map)
 
     # Extract death dates (DOD)
     dod_data = concepts[concepts[CONCEPT_COL] == DEATH_CODE]
@@ -102,7 +96,7 @@ def _create_patient_info(concepts: pd.DataFrame) -> pd.DataFrame:
             split_result[1] = None
 
         bg_info["column_name"] = split_result[0]
-        bg_info["value"] = split_result[1] if split_result.shape[1] > 1 else None
+        bg_info["value"] = split_result[1]
 
         # Remove BG_ prefix from column names
         bg_info["column_name"] = bg_info["column_name"].str.replace("BG_", "")
