@@ -8,10 +8,10 @@ CONFIG_PATH = "./corebehrt/configs/performance_tests/test_performance.yaml"
 def main_evaluate_performance(config_path):
     # Setup directories
     cfg = load_config(config_path)
-    bad_on_bad_metrics_path = cfg.paths.bad_metrics_path
+    bad_metrics_path = cfg.paths.bad_metrics_path
     good_metrics_path = cfg.paths.good_metrics_path
 
-    bad_metrics = pd.read_csv(bad_on_bad_metrics_path)
+    bad_metrics = pd.read_csv(bad_metrics_path)
     good_metrics = pd.read_csv(good_metrics_path)
 
     good_rocs = good_metrics["roc_auc"].tolist()
@@ -21,9 +21,6 @@ def main_evaluate_performance(config_path):
         roc <= 0.9 for roc in good_rocs
     )
     acceptable_bad_rocs = all(roc >= 0.99 for roc in bad_on_bad_rocs)
-
-    print(good_rocs)
-    print(bad_on_bad_rocs)
 
     if not acceptable_good_rocs:
         raise ValueError(
