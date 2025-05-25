@@ -208,53 +208,39 @@ def create_segments(concepts: pd.DataFrame) -> pd.DataFrame:
     concepts = assign_segments_to_death(concepts)
     return concepts
 
-
 def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     """
     Assign 'admission_id' to each row in concepts based on 'ADMISSION' and 'DISCHARGE' events.
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
-    If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events
-    if the time between them is greater than 48 hours.
+    If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events if the time between them is greater than 48 hours.
     Assumes not overlapping ADMISSION and DISCHARGE events.
     """
 
     def _get_adm_id():
         return str(uuid.uuid4())
 
-    # Work with a copy to avoid modifying the original
-    result = concepts.copy()
-    result[ADMISSION_ID_COL] = None
-    result[ADMISSION_ID_COL] = result[ADMISSION_ID_COL].astype(object)
+    concepts = concepts.reset_index(drop=True)
+    concepts["admission_id"] = None
+    concepts["admission_id"] = concepts["admission_id"].astype(object)
 
-    # Process each patient separately
-    for patient_id in result[PID_COL].unique():
-        patient_mask = result[PID_COL] == patient_id
-        patient_data = result[patient_mask].copy()
+    # Concepts within 48 hours of each other are considered to be part of the same admission
+    outside_segments = concepts[concepts["admission_id"].isna()].copy()
+    outside_segments = outside_segments.sort_values(by=[PID_COL, TIMESTAMP_COL])
+    outside_segments["time_diff"] = (
+        outside_segments.groupby(PID_COL)[TIMESTAMP_COL].diff().dt.total_seconds()
+    )
+    outside_segments["new_admission"] = (outside_segments["time_diff"] > 48 * 3600) | (
+        outside_segments["time_diff"].isna()
+    )
+    outside_segments["admission_id"] = outside_segments["new_admission"].apply(
+        lambda x: _get_adm_id() if x else None
+    )
+    outside_segments["admission_id"] = outside_segments["admission_id"].ffill()
+    concepts.loc[outside_segments.index, "admission_id"] = outside_segments[
+        "admission_id"
+    ]
 
-        # Sort by timestamp
-        patient_data = patient_data.sort_values(by=TIMESTAMP_COL)
-
-        # Check if patient has explicit ADMISSION/DISCHARGE events
-        has_admission = (
-            patient_data[CONCEPT_COL].str.startswith(ADMISSION, na=False)
-        ).any()
-        has_discharge = (
-            patient_data[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
-        ).any()
-
-        if has_admission or has_discharge:
-            # Handle explicit admission/discharge logic
-            patient_data = _assign_explicit_admission_ids(patient_data, _get_adm_id)
-        else:
-            # Handle time-based admission logic (48-hour rule)
-            patient_data = _assign_time_based_admission_ids(patient_data, _get_adm_id)
-
-        # Update the result DataFrame using boolean indexing instead of index matching
-        result.loc[patient_mask, ADMISSION_ID_COL] = patient_data[
-            ADMISSION_ID_COL
-        ].values
-
-    return result
+    return concepts
 
 
 def _assign_time_based_admission_ids(
