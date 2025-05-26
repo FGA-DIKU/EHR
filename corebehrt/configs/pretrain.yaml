@@ -29,15 +29,17 @@ trainer_args:
     clip_value: 1.0
   shuffle: true
   early_stopping: null # num_epochs or null/false
+  use_autocast: false
 
 model:
+  linear: true
   hidden_size: 96
   num_hidden_layers: 3
   num_attention_heads: 3
   intermediate_size: 64
   
   type_vocab_size: 1024 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
-  embedding_dropout: 0.1 
+  #embedding_dropout: 0.1 
   max_position_embeddings: 512 # the longest sequence length we will use this model with
   age_scale: 1e-2 # 100 -> 1
   abspos_scale: 1e-5 # 400k -> 4

@@ -33,6 +33,7 @@ trainer_args:
   checkpoint_frequency: 1
   early_stopping: 20
   stopping_criterion: roc_auc
+  use_autocast: false
   
   # Freezing options
   n_layers_to_freeze: 1

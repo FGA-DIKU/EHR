@@ -15,6 +15,8 @@ import torch
 import torch.nn as nn
 from transformers import ModernBertModel
 from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
+from transformers import BertModel
+from transformers.models.roformer.modeling_roformer import RoFormerEncoder
 
 from corebehrt.constants.data import (
     ABSPOS_FEAT,
@@ -34,12 +36,12 @@ from corebehrt.constants.model import (
 )
 from corebehrt.functional.modeling.attention import make_attention_causal
 from corebehrt.modules.model.embeddings import EhrEmbeddings
-from corebehrt.modules.model.heads import FineTuneHead
+from corebehrt.modules.model.heads import FineTuneHead, MLMHead
 
 logger = logging.getLogger(__name__)
 
 
-class CorebehrtEncoder(ModernBertModel):
+class CorebehrtEncoder(BertModel):
     """
     Encoder backbone for EHR data using ModernBert.
 
@@ -56,7 +58,9 @@ class CorebehrtEncoder(ModernBertModel):
             vocab_size=config.vocab_size,
             hidden_size=config.hidden_size,
             type_vocab_size=config.type_vocab_size,
-            embedding_dropout=config.embedding_dropout,
+            layer_norm_eps=config.layer_norm_eps,
+            hidden_dropout_prob=config.hidden_dropout_prob,
+            #embedding_dropout=config.embedding_dropout,
             pad_token_id=config.pad_token_id,
             age_scale=getattr(config, "age_scale", TIME2VEC_AGE_SCALE),
             age_shift=getattr(config, "age_shift", TIME2VEC_AGE_SHIFT),
@@ -118,63 +122,134 @@ class CorebehrtEncoder(ModernBertModel):
         return global_attention_mask, sliding_window_mask
 
 
-class CorebehrtForPretraining(CorebehrtEncoder):
-    """
-    Masked Language Model head for EHR pretraining.
+class BertEHREncoder(BertModel):
+     def __init__(self, config):
+         super().__init__(config)
+         self.embeddings = EhrEmbeddings(
+             vocab_size=config.vocab_size,
+             hidden_size=config.hidden_size,
+             type_vocab_size=config.type_vocab_size,
+             layer_norm_eps=config.layer_norm_eps,
+             hidden_dropout_prob=config.hidden_dropout_prob,
+         )
 
-    Adds a prediction head and linear decoder on top of CorebehrtEncoder.
-    """
+         # Activate transformer++ recipe
+         config.rotary_value = False
+         self.encoder = RoFormerEncoder(config)
+         for layer in self.encoder.layer:
+             layer.intermediate.intermediate_act_fn = SwiGLU(config.intermediate_size)
 
+     def forward(self, batch: dict):
+         position_ids = {key: batch[key] for key in ["age", "abspos"]}
+         outputs = super().forward(
+             input_ids=batch["concept"],
+             attention_mask=torch.ones_like(batch["concept"]),
+             token_type_ids=batch["segment"],
+             position_ids=position_ids,
+         )
+         return outputs
+
+
+class SwiGLU(nn.Module):
+    def __init__(self, intermediate_size: int):
+        super().__init__()
+        self.linear1 = nn.Linear(intermediate_size, intermediate_size, bias=False)
+        self.linear2 = nn.Linear(intermediate_size, intermediate_size, bias=False)
+        self.linear3 = nn.Linear(intermediate_size, intermediate_size, bias=False)
+        self.swish = nn.SiLU()
+
+    def forward(self, x):
+        return self.linear3(self.swish(self.linear2(x)) * self.linear1(x))
+
+class CorebehrtForPretraining(BertEHREncoder):
     def __init__(self, config):
         super().__init__(config)
         self.loss_fct = nn.CrossEntropyLoss()
-        self.head = ModernBertPredictionHead(config)
-        self.decoder = nn.Linear(
-            config.hidden_size, config.vocab_size, bias=config.decoder_bias
+        self.cls = MLMHead(
+            hidden_size=config.hidden_size,
+            vocab_size=config.vocab_size,
+            layer_norm_eps=config.layer_norm_eps,
         )
 
-        self.sparse_prediction = self.config.sparse_prediction
-        self.sparse_pred_ignore_index = self.config.sparse_pred_ignore_index
+    def forward(self, batch: dict):
+        outputs = super().forward(batch)
 
-    # Inspiration from ModernBertForMaskedLM
-    def forward(self, batch: dict, **kwargs):
-        """
-        Forward pass for masked language modeling.
-
-        Args:
-            batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
-                          optional 'target' for labels (B, L).
-            **kwargs: Additional arguments to pass to the encoder forward method
-
-        Returns:
-            BaseModelOutput: with logits and optional loss/labels if targets provided.
-        """
-        outputs = super().forward(batch, **kwargs)
-        last_hidden_state = outputs[0]
-
-        labels = batch.get(TARGET)
-        if self.sparse_prediction and labels is not None:
-            # flatten labels and output first
-            labels = labels.view(-1)
-            last_hidden_state = last_hidden_state.view(labels.shape[0], -1)
-
-            # then filter out the non-masked tokens
-            mask_tokens = labels != self.sparse_pred_ignore_index
-            last_hidden_state = last_hidden_state[mask_tokens]
-            labels = labels[mask_tokens]
-
-        logits = self.decoder(self.head(last_hidden_state))
+        sequence_output = outputs[0]  # Last hidden state
+        logits = self.cls(sequence_output)
         outputs.logits = logits
+        labels = batch.get(TARGET)
 
         if labels is not None:
             outputs.loss = self.get_loss(logits, labels)
             outputs.labels = labels
-
         return outputs
 
     def get_loss(self, logits, labels):
         """Calculate loss for masked language model."""
         return self.loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
+
+
+# class CorebehrtForPretraining(CorebehrtEncoder):
+#     """
+#     Masked Language Model head for EHR pretraining.
+
+#     Adds a prediction head and linear decoder on top of CorebehrtEncoder.
+#     """
+
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.loss_fct = nn.CrossEntropyLoss()
+#         self.head = MLMHead(
+#              hidden_size=config.hidden_size,
+#              vocab_size=config.vocab_size,
+#              layer_norm_eps=config.layer_norm_eps,
+#          )#ModernBertPredictionHead(config)
+#         self.decoder = nn.Linear(
+#             config.hidden_size, config.vocab_size, #, bias=config.decoder_bias
+#         )
+
+#         # self.sparse_prediction = self.config.sparse_prediction
+#         # self.sparse_pred_ignore_index = self.config.sparse_pred_ignore_index
+
+#     # Inspiration from ModernBertForMaskedLM
+#     def forward(self, batch: dict, **kwargs):
+#         """
+#         Forward pass for masked language modeling.
+
+#         Args:
+#             batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
+#                           optional 'target' for labels (B, L).
+#             **kwargs: Additional arguments to pass to the encoder forward method
+
+#         Returns:
+#             BaseModelOutput: with logits and optional loss/labels if targets provided.
+#         """
+#         outputs = super().forward(batch, **kwargs)
+#         last_hidden_state = outputs[0]
+
+#         labels = batch.get(TARGET)
+#         # if self.sparse_prediction and labels is not None:
+#         #     # flatten labels and output first
+#         #     labels = labels.view(-1)
+#         #     last_hidden_state = last_hidden_state.view(labels.shape[0], -1)
+
+#         #     # then filter out the non-masked tokens
+#         #     mask_tokens = labels != self.sparse_pred_ignore_index
+#         #     last_hidden_state = last_hidden_state[mask_tokens]
+#         #     labels = labels[mask_tokens]
+
+#         logits = self.decoder(self.head(last_hidden_state))
+#         outputs.logits = logits
+
+#         if labels is not None:
+#             outputs.loss = self.get_loss(logits, labels)
+#             outputs.labels = labels
+
+#         return outputs
+
+#     def get_loss(self, logits, labels):
+#         """Calculate loss for masked language model."""
+#         return self.loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
 
 
 class CorebehrtForFineTuning(CorebehrtEncoder):

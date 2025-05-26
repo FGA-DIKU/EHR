@@ -3,6 +3,7 @@ from os.path import join
 
 import torch
 from transformers import ModernBertConfig
+from transformers import BertConfig
 
 from corebehrt.functional.setup.model import get_last_checkpoint_epoch
 
@@ -23,7 +24,7 @@ class ModelLoader:
         """Load model from config and checkpoint. model_class is the class of the model to be loaded."""
         checkpoint = self.load_checkpoint() if checkpoint is None else checkpoint
         # Load the config from file
-        config = ModernBertConfig.from_pretrained(self.model_path)
+        config = BertConfig.from_pretrained(self.model_path)
         config.update(add_config)
         model = model_class(config, **kwargs)
 

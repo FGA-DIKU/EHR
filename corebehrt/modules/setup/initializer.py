@@ -5,7 +5,7 @@ import torch
 from torch.optim import AdamW
 from torch.utils.data import Sampler
 from transformers import ModernBertConfig
-
+from transformers import BertConfig
 
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt.modules.model.model import (
@@ -39,14 +39,16 @@ class Initializer:
         else:
             logger.info("Initializing new model")
             vocab_size = len(train_dataset.vocabulary)
+            print(self.cfg.model)
+            print(BertConfig(**self.cfg.model, vocab_size=vocab_size))
             model = CorebehrtForPretraining(
-                ModernBertConfig(
+                BertConfig(
                     **self.cfg.model,
                     vocab_size=vocab_size,
-                    pad_token_id=0,
-                    cls_token_id=1,
-                    sep_token_id=2,
-                    sparse_prediction=True,
+                    # pad_token_id=0,
+                    # cls_token_id=1,
+                    # sep_token_id=2,
+                    # sparse_prediction=True,
                 )
             )
         return model

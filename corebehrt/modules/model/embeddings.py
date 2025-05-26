@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from typing import Optional, Dict
 
 from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_SCALE,
@@ -10,7 +11,6 @@ from corebehrt.constants.model import (
     TIME2VEC_ABSPOS_SHIFT,
 )
 from corebehrt.constants.data import DEFAULT_VOCABULARY, PAD_TOKEN
-from typing import Optional
 
 
 class EhrEmbeddings(nn.Module):
@@ -39,7 +39,8 @@ class EhrEmbeddings(nn.Module):
         vocab_size: int,
         hidden_size: int,
         type_vocab_size: int,
-        embedding_dropout: float,
+        layer_norm_eps: float,
+        hidden_dropout_prob: float,
         pad_token_id: int = DEFAULT_VOCABULARY[PAD_TOKEN],
         age_scale: float = TIME2VEC_AGE_SCALE,
         abspos_scale: float = TIME2VEC_ABSPOS_SCALE,
@@ -47,8 +48,8 @@ class EhrEmbeddings(nn.Module):
         abspos_shift: float = TIME2VEC_ABSPOS_SHIFT,
     ):
         super().__init__()
-        self.LayerNorm = nn.LayerNorm(hidden_size)
-        self.dropout = nn.Dropout(embedding_dropout)
+        self.LayerNorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
+        self.dropout = nn.Dropout(hidden_dropout_prob)
 
         # Initialize embeddings
         self.concept_embeddings = nn.Embedding(
@@ -73,20 +74,31 @@ class EhrEmbeddings(nn.Module):
     def forward(
         self,
         input_ids: torch.LongTensor = None,  # concepts
-        segments: torch.LongTensor = None,
-        age: torch.Tensor = None,
-        abspos: torch.Tensor = None,
+        token_type_ids: torch.LongTensor = None,  # segments
+        position_ids: Dict[str, torch.Tensor] = None,  # age and abspos
+        segments: torch.LongTensor = None,  # ModernBERT style segments
+        age: torch.Tensor = None,  # ModernBERT style age
+        abspos: torch.Tensor = None,  # ModernBERT style abspos
         inputs_embeds: torch.Tensor = None,
+        **kwargs
     ) -> torch.Tensor:
-        if not self._validate_inputs(input_ids, segments, age, abspos, inputs_embeds):
-            raise ValueError("Invalid input arguments")
         if inputs_embeds is not None:
             return inputs_embeds
-        embeddings = self.concept_embeddings(input_ids)
 
-        embeddings += self.segment_embeddings(segments)
-        embeddings += self.age_embeddings(age)
-        embeddings += self.abspos_embeddings(abspos)
+        # Handle ModernBERT style inputs
+        if segments is not None and age is not None and abspos is not None:
+            token_type_ids = segments
+            position_ids = {"age": age, "abspos": abspos}
+        elif position_ids is None or not all(k in position_ids for k in ["age", "abspos"]):
+            raise ValueError("position_ids must be a dictionary containing 'age' and 'abspos' keys")
+
+        if token_type_ids is None:
+            token_type_ids = torch.zeros_like(input_ids)
+
+        embeddings = self.concept_embeddings(input_ids)
+        embeddings += self.segment_embeddings(token_type_ids)
+        embeddings += self.age_embeddings(position_ids["age"])
+        embeddings += self.abspos_embeddings(position_ids["abspos"])
 
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

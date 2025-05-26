@@ -28,6 +28,12 @@ class PrecisionAtK:
         logits = outputs.logits
         labels = outputs.labels
 
+        # Reshape to 2D if needed (batch_size * seq_len, vocab_size)
+        if len(logits.shape) == 3:
+            batch_size, seq_len, vocab_size = logits.shape
+            logits = logits.view(-1, vocab_size)
+            labels = labels.view(-1)
+
         _, pred = logits.topk(self.topk, -1, True, True)
         pred = pred.t()
         correct = pred.eq(labels)
