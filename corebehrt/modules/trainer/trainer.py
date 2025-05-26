@@ -120,6 +120,7 @@ class EHRTrainer:
         default_args = {
             "save_every_k_steps": float("inf"),
             "collate_fn": dynamic_padding,
+            #"use_autocast": True, #False,  # Default to using autocast
         }
         self.args = {**default_args, **args}
         self.log(f"Trainer args: {self.args}")
@@ -210,7 +211,10 @@ class EHRTrainer:
         self.optimizer.zero_grad()
         self.batch_to_device(batch)
 
-        with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+        if self.args["use_autocast"]:
+            with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                loss = self.model(batch).loss
+        else:
             loss = self.model(batch).loss
         self.scaler.scale(loss).backward()
 
@@ -395,9 +399,13 @@ class EHRTrainer:
         with torch.no_grad():
             for batch in loop:
                 self.batch_to_device(batch)
-                with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                if self.args["use_autocast"]:
+                    with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                        outputs = self.model(batch)
+                else:
                     outputs = self.model(batch)
                 loss += outputs.loss.item()
+                print("logits range", outputs.logits.min(), outputs.logits.max())
 
                 if self.accumulate_logits:
                     logits_list.append(
