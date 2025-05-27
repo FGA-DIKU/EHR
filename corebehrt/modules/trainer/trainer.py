@@ -535,6 +535,7 @@ class EHRTrainer:
             self.best_metric_value,
             current_metric_value,
             self.args.get("plateau_threshold", 0.01),
+            higher_is_better=False if "loss" in self.stopping_metric else True,
         )
 
     def _unfreeze_model(self, reason: str):

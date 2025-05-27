@@ -155,6 +155,7 @@ def is_plateau(
     best_metric_value: float,
     current_metric_value: float,
     plateau_threshold: float = 0.01,
+    higher_is_better: bool = True,
 ) -> bool:
     """
     Determines if training has reached a plateau by comparing current metric to best.
@@ -167,9 +168,13 @@ def is_plateau(
         bool: True if a plateau is detected, False otherwise
     """
     # Calculate relative improvement (absolute value of the change divided by the best)
-    relative_improvement = abs(current_metric_value - best_metric_value) / abs(
+    relative_improvement = (current_metric_value - best_metric_value) / abs(
         best_metric_value
     )
 
-    # We consider it a plateau if the relative improvement is less than the threshold
-    return relative_improvement < plateau_threshold
+    # We consider it a plateau if the relative improvement is less than the threshold or if the metric is worse than the best
+    return (
+        relative_improvement < plateau_threshold
+        if higher_is_better
+        else relative_improvement > -plateau_threshold
+    )
