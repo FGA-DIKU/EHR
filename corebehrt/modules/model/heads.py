@@ -28,6 +28,8 @@ class BiGRU(torch.nn.Module):
         self.rnn = torch.nn.GRU(
             hidden_size, self.rnn_hidden_size, batch_first=True, bidirectional=True
         )
+        # Add layer normalization
+        self.norm = torch.nn.LayerNorm(hidden_size)
         # Adjust the input size of the classifier based on the bidirectionality
         classifier_input_size = hidden_size
         self.classifier = torch.nn.Linear(classifier_input_size, 1)
@@ -42,7 +44,7 @@ class BiGRU(torch.nn.Module):
         packed = torch.nn.utils.rnn.pack_padded_sequence(
             hidden_states, lengths, batch_first=True, enforce_sorted=False
         )
-        # Pass the hidden states through the RßNN
+        # Pass the hidden states through the RNN
         output, _ = self.rnn(packed)
         # Unpack it back to a padded sequence
         output, _ = torch.nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
@@ -58,6 +60,8 @@ class BiGRU(torch.nn.Module):
             :, 0, self.rnn_hidden_size :
         ]  # First output from the backward pass
         x = torch.cat((forward_output, backward_output), dim=-1)
+        # Apply layer normalization
+        x = self.norm(x)
         if return_embedding:
             return x
         x = self.classifier(x)
