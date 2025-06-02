@@ -1,0 +1,12 @@
+logging:
+  level: INFO
+  path: ./outputs/logs
+
+paths:
+## INPUTS
+  prepared_data: ./outputs/finetuning/processed_data/
+      
+## OUTPUTS
+  model: ./outputs/xgboost # Save model/outputs to this folder  
+
+ 

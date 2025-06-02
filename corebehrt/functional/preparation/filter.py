@@ -12,7 +12,7 @@ from typing import List
 import pandas as pd
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, DEFAULT_VOCABULARY, AGE_AT_CENSORING_TOKEN
 
 
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
@@ -44,18 +44,41 @@ def exclude_short_sequences(
     return [p for p in patients if len(p.concepts) >= min_len]
 
 
+def _add_age_at_censoring_token(patient: PatientData, censor_date: float) -> PatientData:
+    """
+    Helper function to add age at censoring as a token at the end of the sequence.
+
+    Args:
+        patient: The PatientData object to add the token to
+        censor_date: The date at which to calculate the age
+
+    Returns:
+        The PatientData object with the age at censoring token added
+    """
+    if len(patient.ages) > 0:
+        # Calculate age at censoring in years
+        age_at_censoring = int((censor_date - patient.abspos[0]) / (365.25 * 24))  # Convert to years
+        patient.concepts.append(DEFAULT_VOCABULARY[AGE_AT_CENSORING_TOKEN])
+        patient.abspos.append(censor_date)
+        patient.segments.append(patient.segments[-1]+1 if patient.segments else 0)
+        patient.ages.append(age_at_censoring)
+    return patient
+
+
 def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     """
     Censors a patient's data by truncating all attributes at the censor date.
+    Adds the age at censoring as a token at the end of the sequence.
 
     The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained.
+    Then adds the age at censoring as a final token.
 
     Args:
         patient: The PatientData object to be censored.
         censor_dates: A mapping from patient IDs to their respective censor dates.
 
     Returns:
-        The censored PatientData object with truncated attributes.
+        The censored PatientData object with truncated attributes and age at censoring token.
     """
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
@@ -67,7 +90,7 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     patient.segments = patient.segments[:idx]
     patient.ages = patient.ages[:idx]
 
-    return patient
+    return _add_age_at_censoring_token(patient, censor_date)
 
 
 def censor_patient_with_delays(
@@ -75,8 +98,10 @@ def censor_patient_with_delays(
 ) -> PatientData:
     """
     Censors a patient's data using concept-specific delays applied to their censor date.
+    Adds the age at censoring as a token at the end of the sequence.
 
     For each concept in the patient's record, calculates an effective censor date by adding a delay (if specified) to the base censor date for the patient. Retains only those concepts and corresponding attributes whose timestamps are less than or equal to their effective censor dates.
+    Then adds the age at censoring as a final token.
 
     Args:
         patient: The patient data to censor.
@@ -84,7 +109,8 @@ def censor_patient_with_delays(
         concept_id_to_delay: Optional dictionary mapping concept IDs to delay values (in hours). Concepts not present in the dictionary use a delay of 0.
 
     Returns:
-        The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates.
+        The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates,
+        and age at censoring token.
     """
     base_censor_date = censor_dates[patient.pid]
 
@@ -109,7 +135,7 @@ def censor_patient_with_delays(
     patient.segments = [s for i, s in enumerate(patient.segments) if keep_mask[i]]
     patient.ages = [a for i, a in enumerate(patient.ages) if keep_mask[i]]
 
-    return patient
+    return _add_age_at_censoring_token(patient, base_censor_date)
 
 
 def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
