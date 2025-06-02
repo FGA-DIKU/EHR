@@ -227,18 +227,14 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
 
     result = result.sort_values(by=[PID_COL, TIMESTAMP_COL])
 
-    has_admission = (
-        result[CONCEPT_COL].str.startswith(ADMISSION, na=False)
-    ).any()
-    has_discharge = (
-        result[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
-    ).any()
+    has_admission = (result[CONCEPT_COL].str.startswith(ADMISSION, na=False)).any()
+    has_discharge = (result[CONCEPT_COL].str.startswith(DISCHARGE, na=False)).any()
 
     if has_admission and has_discharge:
         new_result = _assign_explicit_admission_ids(result, _get_adm_id)
     else:
         new_result = _assign_time_based_admission_ids(result, _get_adm_id)
-    
+
     result[ADMISSION_ID_COL] = new_result[ADMISSION_ID_COL]
 
     return result
@@ -260,12 +256,14 @@ def _assign_time_based_admission_ids(
 
     # Calculate time differences using vectorized operations
     time_diff = patient_data[TIMESTAMP_COL].diff().dt.total_seconds()
-    
+
     # Mark new admissions (first event or gap > 48 hours)
     new_admission = (time_diff > 48 * 3600) | time_diff.isna()
-    
+
     # Also mark new admission when patient ID changes
-    new_admission = new_admission | (patient_data[PID_COL] != patient_data[PID_COL].shift())
+    new_admission = new_admission | (
+        patient_data[PID_COL] != patient_data[PID_COL].shift()
+    )
 
     # Create admission groups using cumsum
     admission_groups = new_admission.cumsum()
@@ -309,7 +307,7 @@ def _assign_explicit_admission_ids(
         # Initialize patient state if not exists
         if pid not in patient_states:
             patient_states[pid] = (None, None, None)
-        
+
         current_admission_id, current_outside_id, last_timestamp = patient_states[pid]
 
         if code.startswith(ADMISSION):
