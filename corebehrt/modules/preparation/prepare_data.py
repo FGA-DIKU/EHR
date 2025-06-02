@@ -135,7 +135,9 @@ class DatasetPreparer:
             data.patients,
             data_cfg.get("min_len", 1) + background_length,
         )
-        logger.info(f"Number of patients after excluding short sequences: {len(data.patients)}")
+        logger.info(
+            f"Number of patients after excluding short sequences: {len(data.patients)}"
+        )
 
         # Truncation
         non_priority_tokens = (
@@ -205,7 +207,9 @@ class DatasetPreparer:
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
         )
-        logger.info(f"Number of patients after excluding short sequences: {len(data.patients)}")
+        logger.info(
+            f"Number of patients after excluding short sequences: {len(data.patients)}"
+        )
 
         # Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)

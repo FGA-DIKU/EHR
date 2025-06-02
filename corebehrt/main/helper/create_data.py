@@ -66,7 +66,7 @@ def create_and_save_features(cfg, splits, logger) -> None:
         shards = [
             shard for shard in os.listdir(path_name) if not shard.startswith(".")
         ]  # MEDS on azure makes hidden files
-        
+
         logger.info(f"Found {len(shards)} shards to process in {split_name}")
 
         # Initialize counters for this split
@@ -84,7 +84,7 @@ def create_and_save_features(cfg, splits, logger) -> None:
                 shard_path,
             ).load()
             total_concepts_loaded += len(concepts)
-            
+
             agg_kwargs = cfg.get("features", {}).get("agg_kwargs", {})
             if agg_kwargs:
                 concepts = handle_aggregations(
@@ -96,35 +96,39 @@ def create_and_save_features(cfg, splits, logger) -> None:
                 total_concepts_after_agg += len(concepts)
             else:
                 total_concepts_after_agg = total_concepts_loaded
-                
+
             concepts = exclude_concepts(
                 concepts,
                 cfg.get("features", {}).get("exclude_regex", None),
             )
             total_concepts_after_exclusion += len(concepts)
-            
+
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
             combined_patient_info = pd.concat([combined_patient_info, patient_info])
             features = exclude_incorrect_event_ages(features)
             total_concepts_after_incorrect += len(features)
-            
+
             features.to_parquet(
                 f"{split_save_path}/{shard_n}.parquet",
                 index=False,
                 schema=pa.schema(FEATURES_SCHEMA),
             )
-        
+
         # Log final statistics for this split
         logger.info(f"Total concepts loaded: {total_concepts_loaded}")
         logger.info(f"Total concepts after aggregation: {total_concepts_after_agg}")
         logger.info(f"Total concepts after exclusion: {total_concepts_after_exclusion}")
-        logger.info(f"Total concepts after incorrect age removal: {total_concepts_after_incorrect}")
+        logger.info(
+            f"Total concepts after incorrect age removal: {total_concepts_after_incorrect}"
+        )
 
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
-    logger.info(f"Total number of patients across all splits: {len(combined_patient_info)}")
+    logger.info(
+        f"Total number of patients across all splits: {len(combined_patient_info)}"
+    )
 
 
 def exclude_concepts(concepts, exclude_regex):
