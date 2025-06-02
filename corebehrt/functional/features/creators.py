@@ -215,7 +215,6 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     Assigns the same 'admission_id' to all events between 'ADMISSION' and 'DISCHARGE' events.
     If no 'ADMISSION' and 'DISCHARGE' events are present, assigns a new 'admission_id' to all events
     if the time between them is greater than 48 hours.
-    Assumes not overlapping ADMISSION and DISCHARGE events.
     """
 
     def _get_adm_id():
@@ -226,33 +225,21 @@ def _assign_admission_ids(concepts: pd.DataFrame) -> pd.DataFrame:
     result[ADMISSION_ID_COL] = None
     result[ADMISSION_ID_COL] = result[ADMISSION_ID_COL].astype(object)
 
-    # Process each patient separately
-    for patient_id in result[PID_COL].unique():
-        patient_mask = result[PID_COL] == patient_id
-        patient_data = result[patient_mask].copy()
+    result = result.sort_values(by=[PID_COL, TIMESTAMP_COL])
 
-        # Sort by timestamp
-        patient_data = patient_data.sort_values(by=TIMESTAMP_COL)
+    has_admission = (
+        result[CONCEPT_COL].str.startswith(ADMISSION, na=False)
+    ).any()
+    has_discharge = (
+        result[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
+    ).any()
 
-        # Check if patient has explicit ADMISSION/DISCHARGE events
-        has_admission = (
-            patient_data[CONCEPT_COL].str.startswith(ADMISSION, na=False)
-        ).any()
-        has_discharge = (
-            patient_data[CONCEPT_COL].str.startswith(DISCHARGE, na=False)
-        ).any()
-
-        if has_admission or has_discharge:
-            # Handle explicit admission/discharge logic
-            patient_data = _assign_explicit_admission_ids(patient_data, _get_adm_id)
-        else:
-            # Handle time-based admission logic (48-hour rule)
-            patient_data = _assign_time_based_admission_ids(patient_data, _get_adm_id)
-
-        # Update the result DataFrame using boolean indexing instead of index matching
-        result.loc[patient_mask, ADMISSION_ID_COL] = patient_data[
-            ADMISSION_ID_COL
-        ].values
+    if has_admission and has_discharge:
+        new_result = _assign_explicit_admission_ids(result, _get_adm_id)
+    else:
+        new_result = _assign_time_based_admission_ids(result, _get_adm_id)
+    
+    result[ADMISSION_ID_COL] = new_result[ADMISSION_ID_COL]
 
     return result
 
@@ -262,6 +249,7 @@ def _assign_time_based_admission_ids(
 ) -> pd.DataFrame:
     """
     Assign admission IDs based on 48-hour time gaps.
+    Admission IDs are only shared between events of the same patient.
     """
     patient_data = patient_data.copy()
 
@@ -272,9 +260,12 @@ def _assign_time_based_admission_ids(
 
     # Calculate time differences using vectorized operations
     time_diff = patient_data[TIMESTAMP_COL].diff().dt.total_seconds()
-
+    
     # Mark new admissions (first event or gap > 48 hours)
     new_admission = (time_diff > 48 * 3600) | time_diff.isna()
+    
+    # Also mark new admission when patient ID changes
+    new_admission = new_admission | (patient_data[PID_COL] != patient_data[PID_COL].shift())
 
     # Create admission groups using cumsum
     admission_groups = new_admission.cumsum()
@@ -293,6 +284,7 @@ def _assign_explicit_admission_ids(
     """
     Assign admission IDs based on explicit ADMISSION and DISCHARGE events.
     Events outside admission periods are grouped by 48-hour rule.
+    Admission IDs are only shared between events of the same patient.
     """
     patient_data = patient_data.copy()
 
@@ -304,23 +296,29 @@ def _assign_explicit_admission_ids(
     # Pre-process codes and timestamps to avoid repeated lookups
     codes = patient_data[CONCEPT_COL].fillna("").values
     timestamps = patient_data[TIMESTAMP_COL].values
+    pids = patient_data[PID_COL].values
 
     # Initialize result array
     admission_ids = [None] * len(patient_data)
 
-    current_admission_id = None
-    current_outside_admission_id = None
-    last_outside_timestamp = None
+    # Track admission state per patient
+    patient_states = {}  # pid -> (current_admission_id, current_outside_id, last_timestamp)
 
     # Process events using direct array iteration instead of iterrows
-    for i, (code, timestamp) in enumerate(zip(codes, timestamps)):
+    for i, (code, timestamp, pid) in enumerate(zip(codes, timestamps, pids)):
+        # Initialize patient state if not exists
+        if pid not in patient_states:
+            patient_states[pid] = (None, None, None)
+        
+        current_admission_id, current_outside_id, last_timestamp = patient_states[pid]
+
         if code.startswith(ADMISSION):
             # Start new admission
             current_admission_id = get_adm_id_func()
             admission_ids[i] = current_admission_id
             # Reset outside admission tracking
-            current_outside_admission_id = None
-            last_outside_timestamp = None
+            current_outside_id = None
+            last_timestamp = None
 
         elif code.startswith(DISCHARGE):
             # End current admission
@@ -331,8 +329,8 @@ def _assign_explicit_admission_ids(
                 admission_ids[i] = get_adm_id_func()
             current_admission_id = None
             # Reset outside admission tracking
-            current_outside_admission_id = None
-            last_outside_timestamp = None
+            current_outside_id = None
+            last_timestamp = None
 
         else:
             # Regular event
@@ -342,20 +340,23 @@ def _assign_explicit_admission_ids(
             else:
                 # Outside admission period - apply 48-hour rule
                 if (
-                    current_outside_admission_id is None
-                    or last_outside_timestamp is None
+                    current_outside_id is None
+                    or last_timestamp is None
                     or pd.isna(timestamp)
-                    or pd.isna(last_outside_timestamp)
+                    or pd.isna(last_timestamp)
                     or (
-                        pd.Timestamp(timestamp) - pd.Timestamp(last_outside_timestamp)
+                        pd.Timestamp(timestamp) - pd.Timestamp(last_timestamp)
                     ).total_seconds()
                     > 48 * 3600
                 ):
                     # Start new outside-admission group
-                    current_outside_admission_id = get_adm_id_func()
+                    current_outside_id = get_adm_id_func()
 
-                admission_ids[i] = current_outside_admission_id
-                last_outside_timestamp = timestamp
+                admission_ids[i] = current_outside_id
+                last_timestamp = timestamp
+
+        # Update patient state
+        patient_states[pid] = (current_admission_id, current_outside_id, last_timestamp)
 
     # Assign results using vectorized assignment
     patient_data[ADMISSION_ID_COL] = pd.Series(
