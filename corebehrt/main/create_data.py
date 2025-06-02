@@ -58,7 +58,7 @@ def main_data(config_path):
             splits = ["train", "tuning"]
         else:
             splits = ["train", "tuning", "held_out"]
-        create_and_save_features(cfg, splits)
+        create_and_save_features(cfg, splits, logger)
         logger.info("Finished feature creation and processing")
 
     logger.info("Tokenizing")
