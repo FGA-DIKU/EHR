@@ -8,6 +8,8 @@ import torch
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
+from sklearn.preprocessing import OneHotEncoder
+import numpy as np
 
 from corebehrt.constants.data import (
     ABSPOS_FEAT,
@@ -16,6 +18,11 @@ from corebehrt.constants.data import (
     CONCEPT_FEAT,
     SEGMENT_FEAT,
     TARGET,
+    PAD_TOKEN,
+    CLS_TOKEN,
+    SEP_TOKEN,
+    UNKNOWN_TOKEN,
+    MASK_TOKEN,
 )
 from corebehrt.modules.preparation.mask import ConceptMasker
 
@@ -213,6 +220,45 @@ class BinaryOutcomeDataset(Dataset):
             TARGET: torch.tensor(patient.outcome, dtype=torch.float),
         }
         return sample
+
+    def __len__(self):
+        return len(self.patients)
+
+
+class EncodedDataset(Dataset):
+    def __init__(self, patients: List[PatientData], vocabulary: dict):
+        self.patients = patients
+        self.num_features = len(vocabulary)
+        self.token_to_idx = self.get_token_to_idx(vocabulary)
+
+    def get_token_to_idx(self, vocabulary: dict) -> dict:
+        filtered_vocabulary = {k: v for k, v in vocabulary.items() if k not in [PAD_TOKEN, CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, MASK_TOKEN]}
+        token_to_idx = {token: idx for idx, token in enumerate(sorted(filtered_vocabulary.keys()))}
+        return token_to_idx
+
+    def _one_hot_encode(self, patient: PatientData) -> dict:
+        # Create a binary vector for the patient's concepts
+        X = np.zeros(self.num_features, dtype=np.int16)
+        
+        # Get unique concepts and map them to indices
+        unique_concepts = np.unique(patient.concepts)
+        for concept in unique_concepts:
+            if concept in self.token_to_idx:
+                idx = self.token_to_idx[concept]
+                X[idx] = 1
+        
+        # Get the age at censoring (last age in the sequence)
+        age_at_censoring = patient.ages[-1] if patient.ages else 0
+        
+        return {
+            'concepts': X,
+            'age_at_censoring': age_at_censoring,
+            'outcome': patient.outcome if patient.outcome is not None else None
+        }
+
+    def __getitem__(self, index: int) -> dict:
+        patient = self.patients[index]
+        return self._one_hot_encode(patient)
 
     def __len__(self):
         return len(self.patients)

@@ -14,6 +14,7 @@ from corebehrt.constants.paths import (
     PREPARE_PRETRAIN_CFG,
     PREPARE_FINETUNE_CFG,
     EVALUATE_CFG,
+    XGBOOST_CFG,
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
@@ -400,6 +401,21 @@ class DirectoryPreparer:
         if "tokenized" not in self.cfg.paths:
             logger.info("Tokenized dir not in config. Adding from pretrain config.")
             self.cfg.paths.tokenized = data_cfg.paths.tokenized
+
+
+    def setup_xgboost(self) -> None:
+            """
+            Validates path config and sets up directories for xgboost.
+            """
+            # Setup logging
+            self.setup_logging("xgboost")
+
+            # Validate and create directories
+            self.check_directory("prepared_data")
+            self.create_run_directory("model", base="runs")
+
+            # Write config in output directory.
+            self.write_config("model", name=XGBOOST_CFG)
 
     def setup_evaluate(self) -> None:
         """
