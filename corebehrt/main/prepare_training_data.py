@@ -1,4 +1,4 @@
-"""Prepare data for training. Run create_data.py first to create the dataset and vocabulary."""
+"""Prepare data for training. Run create_data.yaml first to create the dataset and vocabulary."""
 
 import logging
 import torch

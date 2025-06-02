@@ -127,6 +127,7 @@ class DatasetPreparer:
             data.patients = data.process_in_parallel(
                 censor_patient, censor_dates=censor_dates
             )
+
         background_length = get_background_length(data, vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")
@@ -134,6 +135,7 @@ class DatasetPreparer:
             data.patients,
             data_cfg.get("min_len", 1) + background_length,
         )
+        logger.info(f"Number of patients after excluding short sequences: {len(data.patients)}")
 
         # Truncation
         non_priority_tokens = (
@@ -203,6 +205,7 @@ class DatasetPreparer:
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
         )
+        logger.info(f"Number of patients after excluding short sequences: {len(data.patients)}")
 
         # Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)

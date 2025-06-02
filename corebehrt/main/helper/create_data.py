@@ -124,7 +124,7 @@ def create_and_save_features(cfg, splits, logger) -> None:
 
     patient_info_path = f"{cfg.paths.features}/patient_info.parquet"
     combined_patient_info.to_parquet(patient_info_path, index=False)
-    logger.info(f"Total number of patients: {len(combined_patient_info)}")
+    logger.info(f"Total number of patients across all splits: {len(combined_patient_info)}")
 
 
 def exclude_concepts(concepts, exclude_regex):
