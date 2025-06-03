@@ -75,7 +75,7 @@ def _create_result_row(
 ) -> pd.Series:
     """Create a result row based on the primary event and matching secondary events."""
     result_row = primary_row.copy()
-    if timestamp_source == "secondary":
+    if timestamp_source == SECONDARY:
         # Use the closest secondary event timestamp
         primary_time = primary_row[ABSPOS_COL]
         closest_idx = (matches[ABSPOS_COL] - primary_time).abs().idxmin()

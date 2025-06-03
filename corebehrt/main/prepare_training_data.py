@@ -1,4 +1,4 @@
-"""Pretrain BERT model on EHR data. Use config_template pretrain.yaml. Run main_data_pretrain.py first to create the dataset and vocabulary."""
+"""Prepare data for training. Run create_data.yaml first to create the dataset and vocabulary."""
 
 import logging
 import torch

@@ -357,7 +357,7 @@ class DirectoryPreparer:
         """
         Validates path config and sets up directories for preparing pretrain data.
         """
-        self.setup_logging("prepare pretrain data")
+        self.setup_logging("prepare finetune data")
         self.check_directory("features")
         self.check_directory("tokenized")
         self.check_directory("cohort")
