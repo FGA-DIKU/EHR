@@ -4,19 +4,15 @@ from typing import List
 
 import torch
 import numpy as np
-import xgboost as xgb
 from sklearn.metrics import roc_auc_score, accuracy_score
 
 from corebehrt.azure import log_metrics, setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
-from corebehrt.constants.train import DEFAULT_VAL_SPLIT
-from corebehrt.functional.features.split import get_n_splits_cv_pids
-from corebehrt.functional.trainer.setup import replace_steps_with_epochs
 from corebehrt.modules.preparation.dataset import PatientDataset, EncodedDataset
-from corebehrt.modules.setup.manager import ModelManager
-from corebehrt.modules.trainer.trainer import EHRTrainer
+import xgboost as xgb
 import logging
-
+from corebehrt.modules.setup.config import instantiate_function
+from corebehrt.main.helper.finetune_cv import log_best_metrics
 
 def prepare_data_for_xgboost(dataset, logger):
     """Convert encoded dataset to XGBoost format."""
@@ -72,7 +68,7 @@ def xgboost_fold(
     test_data: PatientDataset = None,
     vocab: dict = None,
 ) -> None:
-    """Train XGBoost model on one fold"""
+    """Train XGBoost model on one fold using Booster."""
 
     fold_folder = join(model_folder, f"fold_{fold}")
     os.makedirs(fold_folder, exist_ok=True)
@@ -88,104 +84,55 @@ def xgboost_fold(
     val_dataset = EncodedDataset(val_data.patients, vocab)
     test_dataset = EncodedDataset(test_data.patients, vocab) if test_data and len(test_data) > 0 else None
 
-    # Prepare data for XGBoost
-    logger.info("Preparing training data...")
     X_train, y_train = prepare_data_for_xgboost(train_dataset, logger)
-    logger.info("Preparing validation data...")
     X_val, y_val = prepare_data_for_xgboost(val_dataset, logger)
     if test_dataset:
-        logger.info("Preparing test data...")
         X_test, y_test = prepare_data_for_xgboost(test_dataset, logger)
 
-    # Initialize XGBoost parameters
-    params = {
-        'objective': 'binary:logistic',
-        'eval_metric': 'auc',
-        'max_depth': 6,
-        'learning_rate': 0.1,
-        'n_estimators': 100,
-        'subsample': 0.8,
-        'colsample_bytree': 0.8,
-        'min_child_weight': 1,
-        'gamma': 0,
-        'random_state': 42
-    }
-
-    # Create DMatrix for XGBoost
+    # Prepare DMatrix
     dtrain = xgb.DMatrix(X_train, label=y_train)
     dval = xgb.DMatrix(X_val, label=y_val)
     if test_dataset:
         dtest = xgb.DMatrix(X_test, label=y_test)
 
-    # Train the model
+    # Parameters for xgb.train
+    params = dict(cfg.model)  # copy config
+
     logger.info(f"Starting XGBoost training for fold {fold}...")
     model = xgb.train(
-        params,
-        dtrain,
-        num_boost_round=params['n_estimators'],
+        params=params,
+        dtrain=dtrain,
         evals=[(dtrain, 'train'), (dval, 'val')],
-        early_stopping_rounds=10,
-        verbose_eval=True
+        verbose_eval=True,
+        **cfg.trainer_args
     )
 
-    # Make predictions
+    # Predict
     train_preds = model.predict(dtrain)
     val_preds = model.predict(dval)
     if test_dataset:
         test_preds = model.predict(dtest)
 
-    # Calculate metrics
-    train_auc = roc_auc_score(y_train, train_preds)
-    val_auc = roc_auc_score(y_val, val_preds)
-    train_acc = accuracy_score(y_train, train_preds > 0.5)
-    val_acc = accuracy_score(y_val, val_preds > 0.5)
-
-    # Log metrics
-    metrics = {
-        'train_auc': train_auc,
-        'val_auc': val_auc,
-        'train_acc': train_acc,
-        'val_acc': val_acc
-    }
-    log_best_metrics(0.0, metrics, 'val')  # Using 0.0 as loss since XGBoost doesn't use it
-
-    if test_dataset:
-        test_auc = roc_auc_score(y_test, test_preds)
-        test_acc = accuracy_score(y_test, test_preds > 0.5)
-        test_metrics = {
-            'test_auc': test_auc,
-            'test_acc': test_acc
-        }
-        log_best_metrics(0.0, test_metrics, 'test')
-
-    # Save the model
+    # Compute metrics using config-defined metrics
+    if hasattr(cfg, "metrics") and cfg.metrics:
+        metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()}
+        
+        # Compute train metrics
+        train_metrics = {f"train_{name}": func(y_train, train_preds) for name, func in metrics.items()}
+        log_best_metrics(0.0, train_metrics, "train")
+        logger.info(f"Train metrics: {train_metrics}")
+        
+        # Compute validation metrics
+        val_metrics = {f"val_{name}": func(y_val, val_preds) for name, func in metrics.items()}
+        log_best_metrics(0.0, val_metrics, "val")
+        logger.info(f"Val metrics: {val_metrics}")
+        
+        # Compute test metrics if available
+        if test_dataset:
+            test_metrics = {f"test_{name}": func(y_test, test_preds) for name, func in metrics.items()}
+            log_best_metrics(0.0, test_metrics, "test")
+            logger.info(f"Test metrics: {test_metrics}")
+            
+    # Save model
     model.save_model(join(fold_folder, 'xgboost_model.json'))
     logger.info(f"Model saved to {join(fold_folder, 'xgboost_model.json')}")
-
-
-def log_best_metrics(loss: float, metrics: dict, split: str) -> None:
-    """
-    Logs a dict of metrics, where each metric is prepended by 'best.<split>.'.
-    Example: 'val_loss' -> 'best.val.val_loss'
-    """
-    row = {f"{split}_loss": loss, **metrics}
-    prefixed = {f"best.{split}.{k}": v for k, v in row.items()}
-    log_metrics(prefixed)
-
-
-def check_for_overlap(folds: List[dict], test_pids: list, logger) -> None:
-    """
-    Check for overlap between test and train/validation patient IDs.
-    """
-    fold = folds[0]  # all folds have same pids in total, we use fold 0 as example
-
-    train_pids = set(fold[TRAIN_KEY])
-    val_pids = set(fold[VAL_KEY])
-    test_pids = set(test_pids)
-    if train_pids & test_pids or val_pids & test_pids:
-        logger.warning(
-            "Found overlap between test and train/validation patient IDs. "
-            "This means some patients appear in both test and training/validation sets, "
-            "which may lead to data leakage and overly optimistic results. "
-            "Please verify this overlap is intentional for your use case."
-        )
