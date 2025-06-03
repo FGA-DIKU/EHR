@@ -24,6 +24,7 @@ model:
 trainer_args:
   early_stopping_rounds: 10
   num_boost_round: 100
+  verbose_eval: False
 
 metrics:
   roc_auc: 

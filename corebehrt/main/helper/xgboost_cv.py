@@ -4,24 +4,44 @@ from typing import List
 
 import torch
 import numpy as np
-from sklearn.metrics import roc_auc_score, accuracy_score
 
-from corebehrt.azure import log_metrics, setup_metrics_dir
+from corebehrt.azure import setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.modules.preparation.dataset import PatientDataset, EncodedDataset
 import xgboost as xgb
-import logging
 from corebehrt.modules.setup.config import instantiate_function
 from corebehrt.main.helper.finetune_cv import log_best_metrics
 
 def prepare_data_for_xgboost(dataset, logger):
     """Convert encoded dataset to XGBoost format."""
     all_data = [dataset[i] for i in range(len(dataset))]
+    vocabulary = dataset.vocabulary
     
-    # Get the one-hot encoded concepts, age at censoring, and outcomes
+    # Get the one-hot encoded concepts (categorical features)
     X_concepts = np.array([d['concepts'] for d in all_data])
+    
+    # Get age at censoring (numeric feature)
     X_age = np.array([d['age_at_censoring'] for d in all_data]).reshape(-1, 1)
-    X = np.hstack([X_concepts, X_age])  # Combine concepts and age features
+    
+    # Combine features
+    X = np.hstack([X_concepts, X_age])
+    
+    # Create feature names using vocabulary
+    feature_names = []
+    # Use the actual number of concept features from X_concepts
+    for i in range(X_concepts.shape[1]):
+        # Find the token that maps to this index
+        token = next((t for t, idx in dataset.token_to_idx.items() if idx == i), None)
+        if token is not None:
+            concept = vocabulary.get(token, "unknown")
+            feature_names.append(f"concept_{concept}")
+        else:
+            feature_names.append(f"concept_unknown_{i}")
+    feature_names.append("age_at_censoring")
+    
+    # Create feature types (categorical vs numeric)
+    feature_types = ['c'] * X_concepts.shape[1] + ['q']  # 'c' for categorical, 'q' for numeric
+    
     y = np.array([d['outcome'] for d in all_data])
     
     if logger:
@@ -29,8 +49,10 @@ def prepare_data_for_xgboost(dataset, logger):
         logger.info(f"Unique outcomes: {np.unique(y, return_counts=True)}")
         logger.info(f"Age range: [{X_age.min()}, {X_age.max()}]")
         logger.info(f"Non-zero features: {np.count_nonzero(X)}")
+        logger.info(f"Number of features: {len(feature_names)}")
+        logger.info(f"Feature types: {dict(zip(feature_names, feature_types))}")
     
-    return X, y
+    return X, y, feature_names, feature_types
 
 
 def cv_loop(
@@ -84,16 +106,16 @@ def xgboost_fold(
     val_dataset = EncodedDataset(val_data.patients, vocab)
     test_dataset = EncodedDataset(test_data.patients, vocab) if test_data and len(test_data) > 0 else None
 
-    X_train, y_train = prepare_data_for_xgboost(train_dataset, logger)
-    X_val, y_val = prepare_data_for_xgboost(val_dataset, logger)
+    X_train, y_train, feature_names_train, feature_types_train = prepare_data_for_xgboost(train_dataset, logger)
+    X_val, y_val, feature_names_val, feature_types_val = prepare_data_for_xgboost(val_dataset, logger)
     if test_dataset:
-        X_test, y_test = prepare_data_for_xgboost(test_dataset, logger)
+        X_test, y_test, feature_names_test, feature_types_test = prepare_data_for_xgboost(test_dataset, logger)
 
-    # Prepare DMatrix
-    dtrain = xgb.DMatrix(X_train, label=y_train)
-    dval = xgb.DMatrix(X_val, label=y_val)
+    # Prepare DMatrix with feature types
+    dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=feature_names_train, feature_types=feature_types_train)
+    dval = xgb.DMatrix(X_val, label=y_val, feature_names=feature_names_val, feature_types=feature_types_val)
     if test_dataset:
-        dtest = xgb.DMatrix(X_test, label=y_test)
+        dtest = xgb.DMatrix(X_test, label=y_test, feature_names=feature_names_test, feature_types=feature_types_test)
 
     # Parameters for xgb.train
     params = dict(cfg.model)  # copy config
@@ -103,7 +125,6 @@ def xgboost_fold(
         params=params,
         dtrain=dtrain,
         evals=[(dtrain, 'train'), (dval, 'val')],
-        verbose_eval=True,
         **cfg.trainer_args
     )
 

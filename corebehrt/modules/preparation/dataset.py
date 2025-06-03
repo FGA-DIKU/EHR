@@ -229,12 +229,13 @@ class EncodedDataset(Dataset):
     def __init__(self, patients: List[PatientData], vocabulary: dict):
         self.patients = patients
         self.num_features = len(vocabulary)
-        self.token_to_idx = self.get_token_to_idx(vocabulary)
+        self.token_to_idx, self.vocabulary = self.get_token_to_idx(vocabulary)
 
     def get_token_to_idx(self, vocabulary: dict) -> dict:
         filtered_vocabulary = {k: v for k, v in vocabulary.items() if k not in [PAD_TOKEN, CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, MASK_TOKEN]}
         token_to_idx = {token: idx for idx, token in enumerate(sorted(filtered_vocabulary.keys()))}
-        return token_to_idx
+        new_vocabulary = {k: v for k, v in vocabulary.items() if k in token_to_idx}
+        return token_to_idx, new_vocabulary
 
     def _one_hot_encode(self, patient: PatientData) -> dict:
         # Create a binary vector for the patient's concepts
