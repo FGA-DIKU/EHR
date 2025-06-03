@@ -15,8 +15,8 @@ logging:
   path: ./outputs/logs
 paths:
   data: ./tests/data/raw
-  features: ./tests/data/features
-  tokenized: ./tests/data/tokenized
+  features: ./outputs/features
+  tokenized: ./outputs/tokenized
 tokenizer:
   cls_token: true
   sep_tokens: true
