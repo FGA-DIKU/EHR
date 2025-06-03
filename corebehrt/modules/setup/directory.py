@@ -417,7 +417,7 @@ class DirectoryPreparer:
             # Write config in output directory.
             self.write_config("model", name=XGBOOST_CFG)
 
-    def setup_evaluate(self) -> None:
+    def setup_evaluate(self, finetune_cfg=None) -> None:
         """
         Validates path config and sets up directories for finetune.
         """
@@ -430,7 +430,10 @@ class DirectoryPreparer:
         self.check_directory("folds_dir")
         self.create_directory("predictions", clear=True)
         self.write_config("predictions", name=EVALUATE_CFG)
-        self.write_config("predictions", source="model", name=FINETUNE_CFG)
+        if finetune_cfg is not None:
+            self.write_config("predictions", source="model", name=finetune_cfg)
+        else:
+            self.write_config("predictions", source="model", name=FINETUNE_CFG)
 
     #
     # Directory naming generators

@@ -169,6 +169,16 @@ jobs:
                 source .venv/bin/activate
                 python -m corebehrt.main.evaluate_finetune --config_path ./corebehrt/configs/performance_tests/evaluate_finetune_good.yaml
 
+            - name: main.xgboost
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.xgboost_cv --config_path ./corebehrt/configs/performance_tests/xgboost.yaml
+
+            - name: main.evaluate_xgboost
+              run: |
+                source .venv/bin/activate
+                python -m corebehrt.main.evaluate_xgboost --config_path ./corebehrt/configs/performance_tests/evaluate_xgboost.yaml
+                
             - name: tests/test_pipeline/test_performance
               run: |
                 source .venv/bin/activate
