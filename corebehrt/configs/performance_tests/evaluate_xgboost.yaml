@@ -10,6 +10,9 @@ paths:
 
   predictions: "./outputs/testing/held_out/xgboost_predictions"
 
+return_feature_importance:
+  importance_type: "gain"
+
 metrics:
   roc_auc: 
     _target_: sklearn.metrics.roc_auc_score

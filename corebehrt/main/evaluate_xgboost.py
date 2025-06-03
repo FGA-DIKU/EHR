@@ -4,44 +4,19 @@ import pandas as pd
 import torch
 import os
 import xgboost as xgb
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
 
-from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS
+from corebehrt.constants.paths import FOLDS_FILE, PREPARED_ALL_PATIENTS, XGBOOST_CFG
 from corebehrt.functional.setup.args import get_args
-from corebehrt.main.helper.xgboost_cv import prepare_data_for_xgboost
 from corebehrt.main.helper.finetune_cv import check_for_overlap
 from corebehrt.main.helper.evaluate_finetune import compute_metrics
 from corebehrt.modules.preparation.dataset import EncodedDataset, PatientDataset
-from corebehrt.modules.setup.config import load_config
+from corebehrt.modules.setup.config import load_config, instantiate_function
 from corebehrt.modules.setup.directory import DirectoryPreparer
 from corebehrt.functional.io_operations.load import load_vocabulary
-
-from corebehrt.constants.paths import XGBOOST_CFG
+from corebehrt.main.helper.evaluate_xgboost import xgb_inference_fold
 
 CONFIG_PATH = "./corebehrt/configs/evaluate_xgboost.yaml"
-
-
-def inference_fold(model_folder: str, test_dataset: EncodedDataset, fold: int, logger) -> np.ndarray:
-    """Run inference for a single fold using a saved Booster."""
-    # Load the model
-    model_path = join(model_folder, f"fold_{fold}", "xgboost_model.json")
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Model file not found at {model_path}")
-    
-    logger.info(f"Loading model from {model_path}")
-    model = xgb.Booster()
-    model.load_model(model_path)
-    
-    # Prepare test data
-    X_test, _ = prepare_data_for_xgboost(test_dataset, logger)
-    dtest = xgb.DMatrix(X_test)
-    
-    # Get predictions (probabilities)
-    probas = model.predict(dtest)
-    
-    return probas
-
 
 def main_evaluate(config_path):
     # Setup directories
@@ -67,17 +42,28 @@ def main_evaluate(config_path):
         "target": targets,
     })
 
+    if cfg.get("save_info", False):
+        for k, v in cfg.save_info.items():
+            func = instantiate_function(v)
+            combined_df[k] = func(test_dataset)
+
     all_probas = []
-    for n_fold, fold in enumerate(folds, start=1):
+    for n_fold, _ in enumerate(folds, start=1):
         logger.info(f"Evaluating fold {n_fold}/{len(folds)}")
-        probas = inference_fold(
+        probas, fi_df = xgb_inference_fold(
             model_folder=cfg.paths.model,
             test_dataset=test_dataset,
             fold=n_fold,
-            logger=logger
+            logger=logger,
+            fi_cfg=cfg.get("return_feature_importance", None)
         )
         combined_df[f"fold_{n_fold}_probas"] = probas
         all_probas.append(probas)
+
+        if fi_df is not None:
+            os.makedirs(join(cfg.paths.predictions, "feature_importance"), exist_ok=True)
+            fi_df.to_csv(join(cfg.paths.predictions, "feature_importance", f"fold_{n_fold}.csv"), index=False)
+            logger.info(f"Feature importance saved for fold {n_fold}")
 
     # Save predictions
     combined_df.to_csv(join(cfg.paths.predictions, "predictions.csv"), index=False)
