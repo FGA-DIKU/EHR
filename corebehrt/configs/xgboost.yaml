@@ -13,17 +13,20 @@ model:
   objective: binary:logistic
   eval_metric: auc
   max_depth: 6
-  learning_rate: 0.1
+  learning_rate: 0.01
   subsample: 0.8
   colsample_bytree: 0.8
   min_child_weight: 1
   gamma: 0
   random_state: 42
+  n_estimators: 1000
+  early_stopping_rounds: 50
+  scale_pos_weight: 1
 
 trainer_args:
-  early_stopping_rounds: 10
-  num_boost_round: 100
-  verbose_eval: True
+  num_boost_round: 1000
+  early_stopping_rounds: 50
+  verbose_eval: 10
 
 metrics:
   roc_auc: 
