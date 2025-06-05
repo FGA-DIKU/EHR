@@ -44,9 +44,36 @@ def create_age_in_years(concepts: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: concepts with a new 'age' column
     """
+    # Debug prints for data types
+    print("\nData types of columns:")
+    print(f"TIMESTAMP_COL ({TIMESTAMP_COL}) dtype:", concepts[TIMESTAMP_COL].dtype)
+    print(f"BIRTHDATE_COL ({BIRTHDATE_COL}) dtype:", concepts[BIRTHDATE_COL].dtype)
+    
+    # Print sample of problematic rows
+    print("\nSample of rows where types might be problematic:")
+    sample_size = min(5, len(concepts))
+    print("\nFirst few rows of data:")
+    print(concepts[[TIMESTAMP_COL, BIRTHDATE_COL]].head(sample_size))
+    
+    # Print any null values
+    print("\nNumber of null values:")
+    print(f"Null values in {TIMESTAMP_COL}:", concepts[TIMESTAMP_COL].isnull().sum())
+    print(f"Null values in {BIRTHDATE_COL}:", concepts[BIRTHDATE_COL].isnull().sum())
+    
+    # Try to convert columns to datetime if they aren't already
+    if not pd.api.types.is_datetime64_any_dtype(concepts[TIMESTAMP_COL]):
+        print(f"\nConverting {TIMESTAMP_COL} to datetime...")
+        concepts[TIMESTAMP_COL] = pd.to_datetime(concepts[TIMESTAMP_COL], errors='coerce')
+    
+    if not pd.api.types.is_datetime64_any_dtype(concepts[BIRTHDATE_COL]):
+        print(f"\nConverting {BIRTHDATE_COL} to datetime...")
+        concepts[BIRTHDATE_COL] = pd.to_datetime(concepts[BIRTHDATE_COL], errors='coerce')
+    
+    # Calculate age
     concepts["age"] = (
         concepts[TIMESTAMP_COL] - concepts[BIRTHDATE_COL]
     ).dt.days // 365.25
+    
     return concepts
 
 

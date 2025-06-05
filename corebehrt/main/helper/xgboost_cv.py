@@ -50,7 +50,6 @@ def prepare_data_for_xgboost(dataset, logger):
         logger.info(f"Age range: [{X_age.min()}, {X_age.max()}]")
         logger.info(f"Non-zero features: {np.count_nonzero(X)}")
         logger.info(f"Number of features: {len(feature_names)}")
-        logger.info(f"Feature types: {dict(zip(feature_names, feature_types))}")
     
     return X, y, feature_names, feature_types
 
@@ -103,6 +102,9 @@ def xgboost_fold(
 
     logger.info("Initializing datasets")
     train_dataset = EncodedDataset(train_data.patients, vocab)
+
+    print(train_data.patients[0].concepts)
+        
     val_dataset = EncodedDataset(val_data.patients, vocab)
     test_dataset = EncodedDataset(test_data.patients, vocab) if test_data and len(test_data) > 0 else None
 

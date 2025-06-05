@@ -32,7 +32,7 @@ def prepare_data_for_xgboost(dataset):
     return X, y
 
 
-def main_train(config_path):
+def main_xgboost(config_path):
     cfg = load_config(config_path)
 
     # Setup directories
@@ -80,4 +80,4 @@ def main_train(config_path):
 if __name__ == "__main__":
     args = get_args(CONFIG_PATH)
     config_path = args.config_path
-    main_train(config_path)
+    main_xgboost(config_path)

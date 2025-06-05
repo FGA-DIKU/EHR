@@ -48,7 +48,7 @@ SCHEMA = {
     "subject_id": "int64",
     "age": "float32",
     "abspos": "float64",
-    "segment": "int32",
+    "segment": "int32"
 }
 
 FEATURES_SCHEMA = {**SCHEMA, "code": "str"}
