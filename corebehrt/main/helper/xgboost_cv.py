@@ -14,42 +14,28 @@ from corebehrt.main.helper.finetune_cv import log_best_metrics
 
 def prepare_data_for_xgboost(dataset, logger):
     """Convert encoded dataset to XGBoost format."""
-    all_data = [dataset[i] for i in range(len(dataset))]
-    vocabulary = dataset.vocabulary
-    
-    # Get the one-hot encoded concepts (categorical features)
-    X_concepts = np.array([d['concepts'] for d in all_data])
-    
-    # Get age at censoring (numeric feature)
-    X_age = np.array([d['age_at_censoring'] for d in all_data]).reshape(-1, 1)
-    
-    # Combine features
+
+    concepts = [dataset[i]['concepts'] for i in range(len(dataset))]
+    age_at_censoring = [dataset[i]['age_at_censoring'] for i in range(len(dataset))]
+    X_concepts = np.array(concepts)
+    X_age = np.array(age_at_censoring).reshape(-1, 1)
     X = np.hstack([X_concepts, X_age])
     
     # Create feature names using vocabulary
     feature_names = []
-    # Use the actual number of concept features from X_concepts
-    for i in range(X_concepts.shape[1]):
-        # Find the token that maps to this index
-        token = next((t for t, idx in dataset.token_to_idx.items() if idx == i), None)
-        if token is not None:
-            concept = vocabulary.get(token, "unknown")
-            feature_names.append(f"concept_{concept}")
-        else:
-            feature_names.append(f"concept_unknown_{i}")
+    # Create reverse mapping from index to code
+    idx_to_code = dataset.idx_to_token
+    
+    # Use only valid indices in the same order as the one-hot encoding
+    for orig_idx in dataset.valid_indices:
+        code = idx_to_code[orig_idx]
+        feature_names.append(f"concept_{code}")
     feature_names.append("age_at_censoring")
     
-    # Create feature types (categorical vs numeric)
-    feature_types = ['c'] * X_concepts.shape[1] + ['q']  # 'c' for categorical, 'q' for numeric
+    # Create feature types (all categorical)
+    feature_types = ['c'] * len(dataset.valid_indices) + ['q']
     
-    y = np.array([d['outcome'] for d in all_data])
-    
-    if logger:
-        logger.info(f"Data shape: X={X.shape}, y={y.shape}")
-        logger.info(f"Unique outcomes: {np.unique(y, return_counts=True)}")
-        logger.info(f"Age range: [{X_age.min()}, {X_age.max()}]")
-        logger.info(f"Non-zero features: {np.count_nonzero(X)}")
-        logger.info(f"Number of features: {len(feature_names)}")
+    y = np.array([dataset[i]['outcome'] for i in range(len(dataset))])
     
     return X, y, feature_names, feature_types
 

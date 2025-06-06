@@ -3,31 +3,42 @@ import pandas as pd
 import xgboost as xgb
 import numpy as np
 import os
+import torch
 
 from corebehrt.main.helper.xgboost_cv import prepare_data_for_xgboost
 from corebehrt.modules.preparation.dataset import EncodedDataset
 
 
-def get_feature_importance(model: xgb.Booster, fi_cfg: dict, test_dataset: EncodedDataset, feature_names: list, logger) -> pd.DataFrame:
-    """Get feature importance for a trained XGBoost model."""
+def get_feature_importance(model: xgb.Booster, fi_cfg: dict, feature_names: list) -> pd.DataFrame:
+    """Get feature importance for a trained XGBoost model.
+    
+    Args:
+        model: Trained XGBoost model
+        fi_cfg: Feature importance configuration
+        feature_names: List of feature names
+    """
     importance_type = fi_cfg.get("importance_type", "gain")
     importance = model.get_score(importance_type=importance_type)
     
-    # Build dataframe with feature names
+    # Create a dictionary with all features, defaulting to 0 importance
+    all_importance = {name: 0.0 for name in feature_names}
+    # Update with actual importance scores
+    all_importance.update(importance)
+    
+    # Build dataframe with feature names and extract concepts
     importance_df = pd.DataFrame({
-        "feature": list(importance.keys()),
-        "importance": list(importance.values())
+        "concept": [x.split("_", 1)[1] if x.startswith("concept_") else x for x in all_importance.keys()],
+        "importance": list(all_importance.values())
     }).sort_values("importance", ascending=False)
     
-    # Add concept names by removing the "concept_" prefix
-    importance_df["concept"] = importance_df["feature"].apply(
-        lambda x: x.replace("concept_", "") if x.startswith("concept_") else x
-    )
+    print("\nTop 10 most important features:")
+    print(importance_df.head(10))
+    print(f"\nTotal number of features: {len(importance_df)}")
+    print(f"Number of features with non-zero importance: {len(importance)}")
     
-    print(importance_df)
     return importance_df
 
-def xgb_inference_fold(model_folder: str, test_dataset: EncodedDataset, fold: int, fi_cfg: dict, logger) -> np.ndarray:
+def xgb_inference_fold(model_folder: str, test_dataset: EncodedDataset, fold: int, fi_cfg: dict, logger, vocab_mapping_path: str = None) -> np.ndarray:
     """Run inference for a single fold using a saved Booster."""
     # Load the model
     model_path = join(model_folder, f"fold_{fold}", "xgboost_model.json")
@@ -39,7 +50,7 @@ def xgb_inference_fold(model_folder: str, test_dataset: EncodedDataset, fold: in
     model.load_model(model_path)
     
     # Prepare test data
-    X_test, _, feature_names, feature_types = prepare_data_for_xgboost(test_dataset, logger)
+    X_test, y_test, feature_names, feature_types = prepare_data_for_xgboost(test_dataset, logger)
     dtest = xgb.DMatrix(X_test, feature_names=feature_names, feature_types=feature_types)
     
     # Get predictions (probabilities)
@@ -48,7 +59,7 @@ def xgb_inference_fold(model_folder: str, test_dataset: EncodedDataset, fold: in
     # Save feature importance if requested
     if fi_cfg is not None:
         logger.info(f"Getting feature importance for fold {fold}")
-        fi_df = get_feature_importance(model, fi_cfg, test_dataset, feature_names, logger)
+        fi_df = get_feature_importance(model, fi_cfg, feature_names)
     else:
         fi_df = None
     
