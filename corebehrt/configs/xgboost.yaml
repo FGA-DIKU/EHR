@@ -12,16 +12,20 @@ paths:
 model:
   objective: binary:logistic
   eval_metric: auc
-  max_depth: 6
-  learning_rate: 0.01
+  max_depth: 4
+  learning_rate: 0.1
   subsample: 0.8
   colsample_bytree: 0.8
-  min_child_weight: 1
-  gamma: 0
+  min_child_weight: 3
+  gamma: 1
   random_state: 42
   n_estimators: 1000
   early_stopping_rounds: 50
   scale_pos_weight: 1
+  tree_method: 'hist'  # Use histogram-based algorithm for better performance
+  grow_policy: 'lossguide'  # Grow tree based on loss reduction
+  max_bin: 256  # Number of bins for histogram
+  max_leaves: 64  # Maximum number of leaves in a tree
 
 trainer_args:
   num_boost_round: 1000
