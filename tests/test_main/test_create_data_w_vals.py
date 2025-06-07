@@ -7,7 +7,6 @@ from corebehrt.constants.data import CONCEPT_COL, PID_COL
 from corebehrt.constants.paths import DATA_CFG
 from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.main.create_data import main_data
-
 from tests.test_main.base import TestMainScript
 
 
@@ -94,7 +93,9 @@ class TestCreateData(TestMainScript):
                     col, tokenised_features.columns, f"Missing required column: {col}"
                 )
 
-            patient_list = dataframe_to_patient_list(tokenised_features)
+            patient_list = dataframe_to_patient_list(
+                tokenised_features, dob_token=vocab["DOB"]
+            )
             for patient in patient_list:
                 concepts = patient.concepts
                 self.assertTrue(concepts[0] == vocab["[CLS]"])
