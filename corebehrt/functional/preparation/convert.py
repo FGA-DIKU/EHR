@@ -44,7 +44,8 @@ def dataframe_to_patient_list(df: pd.DataFrame, dob_token: int) -> List[PatientD
         abspos_list = group[ABSPOS_COL].tolist()
         segments_list = group[SEGMENT_COL].tolist()
         ages_list = group[AGE_COL].tolist()
-
+        if dob_token not in concepts_list:
+            raise ValueError(f"DOB token {dob_token} not found in concepts list")
         # Create a PatientData instance
         patient = PatientData(
             pid=pid,
