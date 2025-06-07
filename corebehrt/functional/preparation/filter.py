@@ -129,6 +129,10 @@ def _append_predict_token(
     """
     Appends a predict token to the patient's data.
     """
+    if patient.dob is None:
+        raise ValueError(
+            f"Patient {patient.pid} is missing date of birth (dob) required for age calculation"
+        )
     patient.concepts.append(predict_token_id)
     patient.abspos.append(float(censor_date))
     patient.segments.append(1)
