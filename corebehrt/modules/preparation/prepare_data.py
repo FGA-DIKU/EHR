@@ -131,16 +131,7 @@ class DatasetPreparer:
                 censor_dates=censor_dates,
                 predict_token_id=self.predict_token,
             )
-        # To see all attributes
-        # Or access specific attributes
-        patient = data.patients[0]
-        print("PID:", patient.pid)
-        print("Concepts:", patient.concepts)  # First 5 concepts
-        print("Abspos:", patient.abspos)  # First 5 timestamps
-        print("Segments:", patient.segments)  # First 5 segments
-        print("Ages:", patient.ages)  # First 5 ages
-        print("DOB:", patient.dob)
-        assert False
+
         background_length = get_background_length(data, self.vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")
@@ -189,8 +180,6 @@ class DatasetPreparer:
 
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
-        vocab = load_vocabulary(paths_cfg.tokenized)
-        dob_token = vocab[BIRTH_CODE]
         loader = ShardLoader(
             data_dir=paths_cfg.tokenized,
             splits=["features_train"],
@@ -206,17 +195,17 @@ class DatasetPreparer:
 
             if data_cfg.get("cutoff_date"):
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
-            df = self._truncate(df, vocab, data_cfg.truncation_len)
+            df = self._truncate(df, self.vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             self._check_sorted(df)
-            batch_patient_list = dataframe_to_patient_list(df, dob_token)
+            batch_patient_list = dataframe_to_patient_list(df, dob_token=self.dob_token)
             patient_list.extend(batch_patient_list)
 
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
 
         logger.info("Excluding short sequences")
-        background_length = get_background_length(data, vocab)
+        background_length = get_background_length(data, self.vocab)
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
@@ -233,7 +222,7 @@ class DatasetPreparer:
 
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
-        save_vocabulary(vocab, self.processed_dir)
+        save_vocabulary(self.vocab, self.processed_dir)
         if save_data:
             data.save(self.processed_dir)
         return data
