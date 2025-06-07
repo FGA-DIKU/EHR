@@ -13,7 +13,7 @@ from corebehrt.constants.data import (
 )
 
 
-def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
+def dataframe_to_patient_list(df: pd.DataFrame, dob_token: int) -> List[PatientData]:
     """Convert a DataFrame containing patient data into a list of PatientData objects.
 
     Args:
@@ -52,6 +52,7 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
             abspos=abspos_list,
             segments=segments_list,
             ages=ages_list,
+            dob=abspos_list[concepts_list.index(dob_token)],
         )
 
         patients_data.append(patient)

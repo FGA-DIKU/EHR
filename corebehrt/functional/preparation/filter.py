@@ -44,18 +44,22 @@ def exclude_short_sequences(
     return [p for p in patients if len(p.concepts) >= min_len]
 
 
-def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
+def censor_patient(
+    patient: PatientData, censor_dates: pd.Series, predict_token_id: int
+) -> PatientData:
     """
-    Censors a patient's data by truncating all attributes at the censor date.
+    Censors a patient's data by truncating all attributes at the censor date,
+    then appends a CLS token with the censoring information.
 
-    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained.
+    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained, then adds a CLS token at the end.
 
     Args:
         patient: The PatientData object to be censored.
         censor_dates: A mapping from patient IDs to their respective censor dates.
+        cls_token_id: The concept ID to use for the CLS token.
 
     Returns:
-        The censored PatientData object with truncated attributes.
+        The censored PatientData object with truncated attributes and appended CLS token.
     """
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
@@ -67,11 +71,16 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     patient.segments = patient.segments[:idx]
     patient.ages = patient.ages[:idx]
 
+    patient = _append_predict_token(patient, predict_token_id, censor_date)
+
     return patient
 
 
 def censor_patient_with_delays(
-    patient: PatientData, censor_dates: pd.Series, concept_id_to_delay: dict = None
+    patient: PatientData,
+    censor_dates: pd.Series,
+    predict_token_id: int,
+    concept_id_to_delay: dict = None,
 ) -> PatientData:
     """
     Censors a patient's data using concept-specific delays applied to their censor date.
@@ -109,6 +118,22 @@ def censor_patient_with_delays(
     patient.segments = [s for i, s in enumerate(patient.segments) if keep_mask[i]]
     patient.ages = [a for i, a in enumerate(patient.ages) if keep_mask[i]]
 
+    patient = _append_predict_token(patient, predict_token_id, base_censor_date)
+
+    return patient
+
+
+def _append_predict_token(
+    patient: PatientData, predict_token_id: int, censor_date: float
+) -> PatientData:
+    """
+    Appends a predict token to the patient's data.
+    """
+    patient.concepts.append(predict_token_id)
+    patient.abspos.append(float(censor_date))
+    patient.segments.append(1)
+    age_in_years = float((censor_date - patient.dob) / (365.25 * 24))
+    patient.ages.append(age_in_years)
     return patient
 
 
