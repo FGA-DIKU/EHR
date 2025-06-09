@@ -44,7 +44,6 @@ def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
         abspos_list = group[ABSPOS_COL].tolist()
         segments_list = group[SEGMENT_COL].tolist()
         ages_list = group[AGE_COL].tolist()
-
         # Create a PatientData instance
         patient = PatientData(
             pid=pid,

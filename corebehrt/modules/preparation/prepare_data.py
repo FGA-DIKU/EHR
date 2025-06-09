@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from os.path import join
-from typing import Tuple, List
+from typing import List, Tuple
 
 import pandas as pd
 import torch
@@ -17,8 +17,8 @@ from corebehrt.functional.io_operations.save import save_vocabulary
 from corebehrt.functional.preparation.convert import dataframe_to_patient_list
 from corebehrt.functional.preparation.filter import (
     censor_patient,
-    exclude_short_sequences,
     censor_patient_with_delays,
+    exclude_short_sequences,
 )
 from corebehrt.functional.preparation.truncate import (
     truncate_patient,
@@ -27,14 +27,14 @@ from corebehrt.functional.preparation.truncate import (
 from corebehrt.functional.preparation.utils import (
     get_background_length,
     get_background_length_pd,
-    get_non_priority_tokens,
     get_concept_id_to_delay,
+    get_non_priority_tokens,
 )
 from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
 from corebehrt.modules.features.loader import ShardLoader
 from corebehrt.modules.monitoring.logger import TqdmToLogger
-from corebehrt.modules.preparation.dataset import PatientDataset, PatientData
+from corebehrt.modules.preparation.dataset import PatientData, PatientDataset
 from corebehrt.modules.setup.config import Config
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
@@ -45,6 +45,8 @@ class DatasetPreparer:
     def __init__(self, cfg: Config):
         self.cfg = cfg
         self.processed_dir = cfg.paths.prepared_data
+        self.vocab = load_vocabulary(cfg.paths.tokenized)
+        self.predict_token = self.vocab["[CLS]"]
 
     def prepare_finetune_data(self, mode="tuning") -> PatientDataset:
         """
@@ -61,7 +63,6 @@ class DatasetPreparer:
         outcome_cfg = self.cfg.outcome
         paths_cfg = self.cfg.paths
         data_cfg = self.cfg.data
-
         pids = self.load_cohort(paths_cfg)
 
         # Load index dates and convert to abspos
@@ -91,7 +92,6 @@ class DatasetPreparer:
             patient_list.extend(batch_patient_list)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
-        vocab = load_vocabulary(paths_cfg.tokenized)
 
         # Loading and processing outcomes
         outcomes = pd.read_csv(paths_cfg.outcome)
@@ -116,19 +116,22 @@ class DatasetPreparer:
         self._validate_censoring(data.patients, censor_dates, logger)
         if "concept_pattern_hours_delay" in self.cfg:
             concept_id_to_delay = get_concept_id_to_delay(
-                self.cfg.concept_pattern_hours_delay, vocab
+                self.cfg.concept_pattern_hours_delay, self.vocab
             )
             data.patients = data.process_in_parallel(
                 censor_patient_with_delays,
                 censor_dates=censor_dates,
+                predict_token_id=self.predict_token,
                 concept_id_to_delay=concept_id_to_delay,
             )
         else:
             data.patients = data.process_in_parallel(
-                censor_patient, censor_dates=censor_dates
+                censor_patient,
+                censor_dates=censor_dates,
+                predict_token_id=self.predict_token,
             )
 
-        background_length = get_background_length(data, vocab)
+        background_length = get_background_length(data, self.vocab)
         # Exclude short sequences
         logger.info("Excluding short sequences")
         data.patients = exclude_short_sequences(
@@ -143,13 +146,13 @@ class DatasetPreparer:
         non_priority_tokens = (
             None
             if data_cfg.get("low_priority_prefixes", None) is None
-            else get_non_priority_tokens(vocab, data_cfg.low_priority_prefixes)
+            else get_non_priority_tokens(self.vocab, data_cfg.low_priority_prefixes)
         )
         data.patients = data.process_in_parallel(
             truncate_patient,
             max_len=data_cfg.truncation_len,
             background_length=background_length,
-            sep_token=vocab["[SEP]"],
+            sep_token=self.vocab["[SEP]"],
             non_priority_tokens=non_priority_tokens,
         )
 
@@ -163,7 +166,7 @@ class DatasetPreparer:
         )
         # save
         os.makedirs(self.processed_dir, exist_ok=True)
-        save_vocabulary(vocab, self.processed_dir)
+        save_vocabulary(self.vocab, self.processed_dir)
         data.save(self.processed_dir)
         outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
         index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
@@ -176,7 +179,6 @@ class DatasetPreparer:
 
         pids = self.load_cohort(paths_cfg)
         # Load tokenized data + vocab
-        vocab = load_vocabulary(paths_cfg.tokenized)
         loader = ShardLoader(
             data_dir=paths_cfg.tokenized,
             splits=["features_train"],
@@ -192,7 +194,7 @@ class DatasetPreparer:
 
             if data_cfg.get("cutoff_date"):
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
-            df = self._truncate(df, vocab, data_cfg.truncation_len)
+            df = self._truncate(df, self.vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             self._check_sorted(df)
             batch_patient_list = dataframe_to_patient_list(df)
@@ -202,7 +204,7 @@ class DatasetPreparer:
         data = PatientDataset(patients=patient_list)
 
         logger.info("Excluding short sequences")
-        background_length = get_background_length(data, vocab)
+        background_length = get_background_length(data, self.vocab)
         data.patients = exclude_short_sequences(
             data.patients,
             data_cfg.get("min_len", 0) + background_length,
@@ -219,7 +221,7 @@ class DatasetPreparer:
 
         # Save
         os.makedirs(self.processed_dir, exist_ok=True)
-        save_vocabulary(vocab, self.processed_dir)
+        save_vocabulary(self.vocab, self.processed_dir)
         if save_data:
             data.save(self.processed_dir)
         return data
