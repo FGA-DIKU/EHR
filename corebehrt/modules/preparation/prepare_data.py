@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from corebehrt.constants.data import ABSPOS_COL, BIRTH_CODE, PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
 from corebehrt.constants.paths import INDEX_DATES_FILE, OUTCOMES_FILE, PID_FILE
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
@@ -46,7 +46,6 @@ class DatasetPreparer:
         self.cfg = cfg
         self.processed_dir = cfg.paths.prepared_data
         self.vocab = load_vocabulary(cfg.paths.tokenized)
-        self.dob_token = self.vocab[BIRTH_CODE]
         self.predict_token = self.vocab["[CLS]"]
 
     def prepare_finetune_data(self, mode="tuning") -> PatientDataset:
@@ -89,7 +88,7 @@ class DatasetPreparer:
                 df = self._cutoff_data(df, data_cfg.cutoff_date)
             # !TODO: if index date is the same for all patients, then we can censor here.
             self._check_sorted(df)
-            batch_patient_list = dataframe_to_patient_list(df, self.dob_token)
+            batch_patient_list = dataframe_to_patient_list(df)
             patient_list.extend(batch_patient_list)
         logger.info(f"Number of patients: {len(patient_list)}")
         data = PatientDataset(patients=patient_list)
@@ -198,7 +197,7 @@ class DatasetPreparer:
             df = self._truncate(df, self.vocab, data_cfg.truncation_len)
             df = df.reset_index(drop=False)
             self._check_sorted(df)
-            batch_patient_list = dataframe_to_patient_list(df, dob_token=self.dob_token)
+            batch_patient_list = dataframe_to_patient_list(df)
             patient_list.extend(batch_patient_list)
 
         logger.info(f"Number of patients: {len(patient_list)}")

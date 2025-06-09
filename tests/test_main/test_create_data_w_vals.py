@@ -93,9 +93,7 @@ class TestCreateData(TestMainScript):
                     col, tokenised_features.columns, f"Missing required column: {col}"
                 )
 
-            patient_list = dataframe_to_patient_list(
-                tokenised_features, dob_token=vocab["DOB"]
-            )
+            patient_list = dataframe_to_patient_list(tokenised_features)
             for patient in patient_list:
                 concepts = patient.concepts
                 self.assertTrue(concepts[0] == vocab["[CLS]"])

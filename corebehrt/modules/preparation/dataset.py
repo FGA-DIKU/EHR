@@ -28,7 +28,6 @@ class PatientData:
     segments: List[int]
     ages: List[float]  # e.g. age at each concept
     outcome: int = None
-    dob: float = None  # absolute position of birth
 
 
 class PatientDataset:

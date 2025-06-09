@@ -10,6 +10,7 @@ from bisect import bisect_right
 from typing import List
 
 import pandas as pd
+import warnings
 
 from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import PID_COL, TIMESTAMP_COL
@@ -129,14 +130,10 @@ def _append_predict_token(
     """
     Appends a predict token to the patient's data.
     """
-    if patient.dob is None:
-        raise ValueError(
-            f"Patient {patient.pid} is missing date of birth (dob) required for age calculation"
-        )
     patient.concepts.append(predict_token_id)
     patient.abspos.append(float(censor_date))
     patient.segments.append(patient.segments[-1])
-    age_in_years = float((censor_date - patient.dob) / (365.25 * 24))
+    age_in_years = float((censor_date - patient.abspos[0]) / (365.25 * 24))
     patient.ages.append(age_in_years)
     return patient
 
@@ -181,5 +178,7 @@ def filter_rows_by_regex(df, col, regex):
     Returns:
         Filtered DataFrame.
     """
-    mask = df[col].astype(str).str.contains(regex, case=False, na=False, regex=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        mask = df[col].astype(str).str.contains(regex, case=False, na=False, regex=True)
     return df.loc[~mask]

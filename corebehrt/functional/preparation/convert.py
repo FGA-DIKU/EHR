@@ -13,7 +13,7 @@ from corebehrt.constants.data import (
 )
 
 
-def dataframe_to_patient_list(df: pd.DataFrame, dob_token: int) -> List[PatientData]:
+def dataframe_to_patient_list(df: pd.DataFrame) -> List[PatientData]:
     """Convert a DataFrame containing patient data into a list of PatientData objects.
 
     Args:
@@ -44,8 +44,6 @@ def dataframe_to_patient_list(df: pd.DataFrame, dob_token: int) -> List[PatientD
         abspos_list = group[ABSPOS_COL].tolist()
         segments_list = group[SEGMENT_COL].tolist()
         ages_list = group[AGE_COL].tolist()
-        if dob_token not in concepts_list:
-            raise ValueError(f"DOB token {dob_token} not found in concepts list")
         # Create a PatientData instance
         patient = PatientData(
             pid=pid,
@@ -53,7 +51,6 @@ def dataframe_to_patient_list(df: pd.DataFrame, dob_token: int) -> List[PatientD
             abspos=abspos_list,
             segments=segments_list,
             ages=ages_list,
-            dob=abspos_list[concepts_list.index(dob_token)],
         )
 
         patients_data.append(patient)
