@@ -135,7 +135,7 @@ def _append_predict_token(
         )
     patient.concepts.append(predict_token_id)
     patient.abspos.append(float(censor_date))
-    patient.segments.append(1)
+    patient.segments.append(patient.segments[-1])
     age_in_years = float((censor_date - patient.dob) / (365.25 * 24))
     patient.ages.append(age_in_years)
     return patient

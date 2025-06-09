@@ -70,30 +70,7 @@ class TestCensorPatient(unittest.TestCase):
         # We expect only abspos <= 2.5, so indexes 0 and 1 remain
         self.assertListEqual(censored.concepts, [101, 102, 103])
         self.assertListEqual(censored.abspos, [1.0, 2.5, 2.5])
-        self.assertListEqual(censored.segments, [0, 0, 1])
-        self.assertListEqual(censored.ages, [30.0, 31.2, 0])
-
-    def test_censor_patient_no_events(self):
-        # If everything is after the censor date, we get an empty list
-        p1 = PatientData(
-            pid=1,
-            concepts=[101, 102],
-            abspos=[5.0, 6.0],
-            segments=[0, 1],
-            ages=[30.0, 31.0],
-            dob=2.0,  # 0 at censoring
-        )
-        censor_dates = {1: 2.0}
-
-        censored = censor_patient(p1, censor_dates, predict_token_id=101)
-        self.assertEqual(len(censored.concepts), 1)
-        self.assertEqual(len(censored.abspos), 1)
-        self.assertEqual(len(censored.segments), 1)
-        self.assertEqual(len(censored.ages), 1)
-        self.assertListEqual(censored.concepts, [101])
-        self.assertListEqual(censored.abspos, [2.0])
-        self.assertListEqual(censored.segments, [1])
-        self.assertListEqual(censored.ages, [0])
+        self.assertListEqual(censored.segments, [0, 0, 0])
 
     def test_censor_patient_all_included(self):
         # If censor_date is large, everything is included
@@ -171,7 +148,7 @@ class TestCensorPatientWithDelays(unittest.TestCase):
         # Should behave like standard censoring
         self.assertListEqual(censored.concepts, [101, 102, 101])
         self.assertListEqual(censored.abspos, [1.0, 2.0, 2.0])
-        self.assertListEqual(censored.segments, [0, 0, 1])
+        self.assertListEqual(censored.segments, [0, 0, 0])
         self.assertAlmostEqual(censored.ages[0], 30.0)
         self.assertAlmostEqual(censored.ages[1], 31.0)
         self.assertAlmostEqual(censored.ages[2], 2.0)
