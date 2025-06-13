@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
+import xgboost as xgb
 
 from corebehrt.constants.data import (
     ABSPOS_FEAT,
@@ -227,44 +228,69 @@ class BinaryOutcomeDataset(Dataset):
 
 
 class EncodedDataset(Dataset):
-    def __init__(self, patients: List[PatientData], vocabulary: dict):
-        self.patients = patients
+    def __init__(self, vocabulary: dict, new_vocab: dict = None):
         self.vocabulary = vocabulary
-        self.num_features = len(vocabulary)
-        self.token_to_idx = {token: idx for idx, token in enumerate(sorted(vocabulary.keys()))}
+        self.token_to_idx = {
+            token: idx for idx, token in enumerate(sorted(vocabulary.keys()))
+        }
         self.idx_to_token = {idx: token for token, idx in self.token_to_idx.items()}
-        
         # Filter out special tokens
-        special_tokens = [PAD_TOKEN, CLS_TOKEN, SEP_TOKEN, UNKNOWN_TOKEN, MASK_TOKEN, AGE_AT_CENSORING_TOKEN]
-        
+        special_tokens = [
+            PAD_TOKEN,
+            CLS_TOKEN,
+            SEP_TOKEN,
+            UNKNOWN_TOKEN,
+            MASK_TOKEN,
+            AGE_AT_CENSORING_TOKEN,
+        ]
+
         # Create mapping from original indices to new indices
-        self.valid_indices = []
-        self.original_to_new_idx = {}
-        new_idx = 0
-        for idx, token in self.idx_to_token.items():
-            if token not in special_tokens:
-                self.valid_indices.append(idx)
-                self.original_to_new_idx[idx] = new_idx
-                new_idx += 1
-        
+        if new_vocab is None:
+            logger.info("Creating new vocabulary")
+            self.valid_indices = []
+            self.original_to_new_idx = {}
+            new_idx = 0
+            new_vocab = {}
+            for idx, token in self.idx_to_token.items():
+                if token not in special_tokens:
+                    self.valid_indices.append(idx)
+                    self.original_to_new_idx[idx] = new_idx
+                    new_vocab[token] = new_idx
+                    new_idx += 1
+            self.new_vocab = new_vocab
+        else:
+            logger.info("Using existing vocabulary")
+            self.new_vocab = new_vocab
+            self.valid_indices = [
+                self.token_to_idx[token] for token in new_vocab.keys()
+            ]
+            self.original_to_new_idx = {
+                idx: new_vocab[token]
+                for token, idx in self.token_to_idx.items()
+                if token in new_vocab
+            }
+
     def _one_hot_encode(self, patient: PatientData) -> dict:
         # Create a binary vector for the patient's concepts
         X = np.zeros(len(self.valid_indices), dtype=np.int16)
-        
+
         # Get unique concepts and map them to indices
         unique_concepts = np.unique(patient.concepts)
-        
+
         # Map concepts to their positions in the valid indices
         for concept in unique_concepts:
             if concept in self.original_to_new_idx:
                 new_idx = self.original_to_new_idx[concept]
                 X[new_idx] = 1
-        
+
         return {
-            'concepts': X,
-            'age_at_censoring': patient.ages[-1] if patient.ages else 0,
-            'outcome': patient.outcome if patient.outcome is not None else None
+            "concepts": X,
+            "age_at_censoring": patient.ages[-1] if patient.ages else 0,
+            "outcome": patient.outcome if patient.outcome is not None else None,
         }
+
+    def encode_patients(self, patients: List[PatientData]) -> List[dict]:
+        return [self._one_hot_encode(patient) for patient in patients]
 
     def __getitem__(self, index: int) -> dict:
         patient = self.patients[index]

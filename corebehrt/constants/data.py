@@ -8,7 +8,7 @@ CLS_TOKEN = "[CLS]"
 SEP_TOKEN = "[SEP]"
 MASK_TOKEN = "[MASK]"
 PAD_TOKEN = "[PAD]"
-AGE_AT_CENSORING_TOKEN = "[AGE_AT_CENSORING]"
+AGE_AT_CENSORING_TOKEN = "AGE_AT_CENSORING"
 
 DEFAULT_VOCABULARY = {
     PAD_TOKEN: 0,
@@ -16,7 +16,6 @@ DEFAULT_VOCABULARY = {
     SEP_TOKEN: 2,
     UNKNOWN_TOKEN: 3,
     MASK_TOKEN: 4,
-    AGE_AT_CENSORING_TOKEN: 5,
 }
 
 ### Columns ###
@@ -48,7 +47,7 @@ SCHEMA = {
     "subject_id": "int64",
     "age": "float32",
     "abspos": "float64",
-    "segment": "int32"
+    "segment": "int32",
 }
 
 FEATURES_SCHEMA = {**SCHEMA, "code": "str"}

@@ -2,7 +2,6 @@
 
 import logging
 import torch
-import numpy as np
 from os.path import join
 from corebehrt.functional.setup.args import get_args
 from corebehrt.modules.preparation.dataset import PatientDataset
@@ -20,16 +19,6 @@ from corebehrt.constants.paths import (
     PREPARED_ALL_PATIENTS,
 )
 import os
-
-def prepare_data_for_xgboost(dataset):
-    """Convert encoded dataset to XGBoost format."""
-    all_data = [dataset[i] for i in range(len(dataset))]
-    
-    # For each patient, take the mean of their concept encodings to get a fixed-length vector
-    X = np.array([np.mean(d['concepts'], axis=0) for d in all_data])
-    y = np.array([d['outcome'] for d in all_data])
-    
-    return X, y
 
 
 def main_xgboost(config_path):
@@ -57,7 +46,6 @@ def main_xgboost(config_path):
             test_data = data.filter_by_pids(test_pids)
     train_val_data = data.filter_by_pids(train_val_pids)
 
-
     # Use folds from prepared data
     folds_path = join(cfg.paths.prepared_data, FOLDS_FILE)
     folds = torch.load(folds_path)
@@ -74,7 +62,6 @@ def main_xgboost(config_path):
         folds,
         test_data,
     )
-
 
 
 if __name__ == "__main__":

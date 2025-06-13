@@ -7,3 +7,4 @@ paths:
   good_metrics_path: ./outputs/testing/held_out/predictions/good/metrics.csv
   bad_metrics_path: ./outputs/testing/held_out/predictions/bad/metrics.csv
   xgb_metrics_path: ./outputs/testing/held_out/xgboost_predictions/metrics.csv
+  xgb_feature_importance_path: ./outputs/testing/held_out/xgboost_predictions/feature_importance/fold_1.csv

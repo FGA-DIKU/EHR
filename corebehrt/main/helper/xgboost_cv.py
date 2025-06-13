@@ -1,43 +1,14 @@
 import os
 from os.path import join
-from typing import List
-
 import torch
-import numpy as np
+import xgboost as xgb
 
 from corebehrt.azure import setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
-from corebehrt.modules.preparation.dataset import PatientDataset, EncodedDataset
-import xgboost as xgb
+from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.modules.setup.config import instantiate_function
 from corebehrt.main.helper.finetune_cv import log_best_metrics
-
-def prepare_data_for_xgboost(dataset, logger):
-    """Convert encoded dataset to XGBoost format."""
-
-    concepts = [dataset[i]['concepts'] for i in range(len(dataset))]
-    age_at_censoring = [dataset[i]['age_at_censoring'] for i in range(len(dataset))]
-    X_concepts = np.array(concepts)
-    X_age = np.array(age_at_censoring).reshape(-1, 1)
-    X = np.hstack([X_concepts, X_age])
-    
-    # Create feature names using vocabulary
-    feature_names = []
-    # Create reverse mapping from index to code
-    idx_to_code = dataset.idx_to_token
-    
-    # Use only valid indices in the same order as the one-hot encoding
-    for orig_idx in dataset.valid_indices:
-        code = idx_to_code[orig_idx]
-        feature_names.append(f"concept_{code}")
-    feature_names.append("age_at_censoring")
-    
-    # Create feature types (all categorical)
-    feature_types = ['c'] * len(dataset.valid_indices) + ['q']
-    
-    y = np.array([dataset[i]['outcome'] for i in range(len(dataset))])
-    
-    return X, y, feature_names, feature_types
+from corebehrt.modules.preparation.encode import OneHotEncoder
 
 
 def cv_loop(
@@ -65,6 +36,7 @@ def cv_loop(
                 cfg, logger, model_folder, train_data, val_data, fold, test_data, vocab
             )
 
+
 def xgboost_fold(
     cfg,
     logger,
@@ -87,23 +59,26 @@ def xgboost_fold(
         torch.save(test_data.get_pids(), join(fold_folder, "test_pids.pt"))
 
     logger.info("Initializing datasets")
-    train_dataset = EncodedDataset(train_data.patients, vocab)
+    encoder = OneHotEncoder(vocabulary=vocab)
+    train_patients = train_data.patients
+    val_patients = val_data.patients
+    test_patients = test_data.patients if test_data and len(test_data) > 0 else None
+    encoding_vocab = encoder.encoding_vocab
+    torch.save(encoding_vocab, join(fold_folder, "encoding_vocab.pt"))
 
-    print(train_data.patients[0].concepts)
-        
-    val_dataset = EncodedDataset(val_data.patients, vocab)
-    test_dataset = EncodedDataset(test_data.patients, vocab) if test_data and len(test_data) > 0 else None
+    (
+        X_train,
+        y_train,
+    ) = encoder.to_xgboost(train_patients)
+    X_val, y_val = encoder.to_xgboost(val_patients)
+    if test_patients:
+        X_test, y_test = encoder.to_xgboost(test_patients)
 
-    X_train, y_train, feature_names_train, feature_types_train = prepare_data_for_xgboost(train_dataset, logger)
-    X_val, y_val, feature_names_val, feature_types_val = prepare_data_for_xgboost(val_dataset, logger)
-    if test_dataset:
-        X_test, y_test, feature_names_test, feature_types_test = prepare_data_for_xgboost(test_dataset, logger)
-
-    # Prepare DMatrix with feature types
-    dtrain = xgb.DMatrix(X_train, label=y_train, feature_names=feature_names_train, feature_types=feature_types_train)
-    dval = xgb.DMatrix(X_val, label=y_val, feature_names=feature_names_val, feature_types=feature_types_val)
-    if test_dataset:
-        dtest = xgb.DMatrix(X_test, label=y_test, feature_names=feature_names_test, feature_types=feature_types_test)
+    # Prepare DMatrix without feature names/types
+    dtrain = xgb.DMatrix(X_train, label=y_train)
+    dval = xgb.DMatrix(X_val, label=y_val)
+    if test_patients:
+        dtest = xgb.DMatrix(X_test, label=y_test)
 
     # Parameters for xgb.train
     params = dict(cfg.model)  # copy config
@@ -112,36 +87,44 @@ def xgboost_fold(
     model = xgb.train(
         params=params,
         dtrain=dtrain,
-        evals=[(dtrain, 'train'), (dval, 'val')],
-        **cfg.trainer_args
+        evals=[(dtrain, "train"), (dval, "val")],
+        **cfg.trainer_args,
     )
 
     # Predict
     train_preds = model.predict(dtrain)
     val_preds = model.predict(dval)
-    if test_dataset:
+    if test_patients:
         test_preds = model.predict(dtest)
 
     # Compute metrics using config-defined metrics
     if hasattr(cfg, "metrics") and cfg.metrics:
         metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()}
-        
+
         # Compute train metrics
-        train_metrics = {f"train_{name}": func(y_train, train_preds) for name, func in metrics.items()}
+        train_metrics = {
+            f"train_{name}": func(y_train, train_preds)
+            for name, func in metrics.items()
+        }
         log_best_metrics(0.0, train_metrics, "train")
         logger.info(f"Train metrics: {train_metrics}")
-        
+
         # Compute validation metrics
-        val_metrics = {f"val_{name}": func(y_val, val_preds) for name, func in metrics.items()}
+        val_metrics = {
+            f"val_{name}": func(y_val, val_preds) for name, func in metrics.items()
+        }
         log_best_metrics(0.0, val_metrics, "val")
         logger.info(f"Val metrics: {val_metrics}")
-        
+
         # Compute test metrics if available
-        if test_dataset:
-            test_metrics = {f"test_{name}": func(y_test, test_preds) for name, func in metrics.items()}
+        if test_patients:
+            test_metrics = {
+                f"test_{name}": func(y_test, test_preds)
+                for name, func in metrics.items()
+            }
             log_best_metrics(0.0, test_metrics, "test")
             logger.info(f"Test metrics: {test_metrics}")
-            
+
     # Save model
-    model.save_model(join(fold_folder, 'xgboost_model.json'))
+    model.save_model(join(fold_folder, "xgboost_model.json"))
     logger.info(f"Model saved to {join(fold_folder, 'xgboost_model.json')}")

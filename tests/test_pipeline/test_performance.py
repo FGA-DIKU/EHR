@@ -12,6 +12,7 @@ def main_evaluate_performance(config_path):
     good_metrics_path = cfg.paths.good_metrics_path
     xgb_metrics_path = cfg.paths.xgb_metrics_path
 
+    # Check rocs auc for all models
     bad_metrics = pd.read_csv(bad_metrics_path)
     good_metrics = pd.read_csv(good_metrics_path)
     xgb_metrics = pd.read_csv(xgb_metrics_path)
@@ -38,11 +39,17 @@ def main_evaluate_performance(config_path):
             "Performance metrics are not acceptable for model with no censoring"
         )
     if not acceptable_xgb_rocs:
-        raise ValueError(
-            "Performance metrics are not acceptable for XGBoost model"
-        )
+        raise ValueError("Performance metrics are not acceptable for XGBoost model")
 
-    print("Performance metrics are acceptable")
+    # Check feature importance for XGBoost model
+    xgb_feature_importance = pd.read_csv(cfg.paths.xgb_feature_importance_path)
+    xgb_feature_importance = xgb_feature_importance.sort_values(
+        "importance", ascending=False
+    )
+    top2_expected_concepts = ["DE10", "DO60"]
+    top2_concepts = xgb_feature_importance.head(2)["concept"].tolist()
+    if top2_concepts != top2_expected_concepts:
+        raise ValueError("Top 2 concepts are not expected for XGBoost model")
 
 
 if __name__ == "__main__":

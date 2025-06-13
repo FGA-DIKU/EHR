@@ -13,7 +13,12 @@ import pandas as pd
 import warnings
 
 from corebehrt.modules.preparation.dataset import PatientData
-from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, DEFAULT_VOCABULARY, AGE_AT_CENSORING_TOKEN
+from corebehrt.constants.data import (
+    PID_COL,
+    TIMESTAMP_COL,
+    DEFAULT_VOCABULARY,
+    AGE_AT_CENSORING_TOKEN,
+)
 
 
 def filter_table_by_pids(df: pd.DataFrame, pids: List[str]) -> pd.DataFrame:
@@ -45,7 +50,6 @@ def exclude_short_sequences(
     return [p for p in patients if len(p.concepts) >= min_len]
 
 
-<<<<<<< HEAD
 def censor_patient(
     patient: PatientData, censor_dates: pd.Series, predict_token_id: int
 ) -> PatientData:
@@ -54,36 +58,6 @@ def censor_patient(
     then appends a CLS token with the censoring information.
 
     The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained, then adds a CLS token at the end.
-=======
-def _add_age_at_censoring_token(patient: PatientData, censor_date: float) -> PatientData:
-    """
-    Helper function to add age at censoring as a token at the end of the sequence.
-
-    Args:
-        patient: The PatientData object to add the token to
-        censor_date: The date at which to calculate the age
-
-    Returns:
-        The PatientData object with the age at censoring token added
-    """
-    if len(patient.ages) > 0:
-        # Calculate age at censoring in years
-        age_at_censoring = int((censor_date - patient.abspos[0]) / (365.25 * 24))  # Convert to years
-        patient.concepts.append(DEFAULT_VOCABULARY[AGE_AT_CENSORING_TOKEN])
-        patient.abspos.append(censor_date)
-        patient.segments.append(patient.segments[-1]+1 if patient.segments else 0)
-        patient.ages.append(age_at_censoring)
-    return patient
-
-
-def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
-    """
-    Censors a patient's data by truncating all attributes at the censor date.
-    Adds the age at censoring as a token at the end of the sequence.
-
-    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained.
-    Then adds the age at censoring as a final token.
->>>>>>> 27009878 (xgboost + age at censoring)
 
     Args:
         patient: The PatientData object to be censored.
@@ -91,11 +65,7 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
         cls_token_id: The concept ID to use for the CLS token.
 
     Returns:
-<<<<<<< HEAD
         The censored PatientData object with truncated attributes and appended CLS token.
-=======
-        The censored PatientData object with truncated attributes and age at censoring token.
->>>>>>> 27009878 (xgboost + age at censoring)
     """
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
@@ -107,13 +77,9 @@ def censor_patient(patient: PatientData, censor_dates: float) -> PatientData:
     patient.segments = patient.segments[:idx]
     patient.ages = patient.ages[:idx]
 
-<<<<<<< HEAD
     patient = _append_predict_token(patient, predict_token_id, censor_date)
 
     return patient
-=======
-    return _add_age_at_censoring_token(patient, censor_date)
->>>>>>> 27009878 (xgboost + age at censoring)
 
 
 def censor_patient_with_delays(
@@ -161,7 +127,6 @@ def censor_patient_with_delays(
     patient.segments = [s for i, s in enumerate(patient.segments) if keep_mask[i]]
     patient.ages = [a for i, a in enumerate(patient.ages) if keep_mask[i]]
 
-<<<<<<< HEAD
     patient = _append_predict_token(patient, predict_token_id, base_censor_date)
 
     return patient
@@ -175,13 +140,12 @@ def _append_predict_token(
     """
     patient.concepts.append(predict_token_id)
     patient.abspos.append(float(censor_date))
-    patient.segments.append(patient.segments[-1])
+    patient.segments.append(
+        patient.segments[-1] + 1 if patient.segments else 0
+    )  # Use 0 as default segment if segments list is empty
     age_in_years = float((censor_date - patient.abspos[0]) / (365.25 * 24))
     patient.ages.append(age_in_years)
     return patient
-=======
-    return _add_age_at_censoring_token(patient, base_censor_date)
->>>>>>> 27009878 (xgboost + age at censoring)
 
 
 def filter_by_column_rule(df, column, include_values=None, exclude_values=None):
