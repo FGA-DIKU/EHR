@@ -47,7 +47,7 @@ def main_evaluate(config_path):
     )
 
     all_probas = []
-    for n_fold in range(1, len(folds)+1):
+    for n_fold in range(1, len(folds) + 1):
         logger.info(f"Evaluating fold {n_fold}/{len(folds)}")
         probas, fi_df = xgb_inference_fold(
             model_folder=cfg.paths.model,

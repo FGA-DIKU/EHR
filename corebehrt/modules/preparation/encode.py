@@ -1,8 +1,6 @@
-from typing import List
 import numpy as np
 import logging
 
-from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import (
     PAD_TOKEN,
     CLS_TOKEN,
