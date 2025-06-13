@@ -44,9 +44,24 @@ def create_age_in_years(concepts: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: concepts with a new 'age' column
     """
+    # Try to convert columns to datetime if they aren't already
+    if not pd.api.types.is_datetime64_any_dtype(concepts[TIMESTAMP_COL]):
+        print(f"\nConverting {TIMESTAMP_COL} to datetime...")
+        concepts[TIMESTAMP_COL] = pd.to_datetime(
+            concepts[TIMESTAMP_COL], errors="coerce"
+        )
+
+    if not pd.api.types.is_datetime64_any_dtype(concepts[BIRTHDATE_COL]):
+        print(f"\nConverting {BIRTHDATE_COL} to datetime...")
+        concepts[BIRTHDATE_COL] = pd.to_datetime(
+            concepts[BIRTHDATE_COL], errors="coerce"
+        )
+
+    # Calculate age
     concepts["age"] = (
         concepts[TIMESTAMP_COL] - concepts[BIRTHDATE_COL]
     ).dt.days // 365.25
+
     return concepts
 
 

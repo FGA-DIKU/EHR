@@ -8,3 +8,4 @@ setuptools==75.6.0
 torch==2.5.1
 tqdm==4.67.1
 transformers>=4.48.0
+xgboost>=3.0.2

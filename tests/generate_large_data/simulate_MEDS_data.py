@@ -10,6 +10,7 @@ import argparse
 
 import pyarrow.parquet as pq
 from pandas import NaT
+import torch
 
 DEFAULT_READ_DIR = "tmp/correlated_data"
 DEFAULT_WRITE_DIR = "tmp/correlated_MEDS_data"
@@ -98,7 +99,7 @@ def get_concepts_for_shard(read_dir, shard_pids, hash_to_integer_map, patients_i
             else [np.nan] * len(concept)
         )
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         {
             "subject_id": subject_ids,
             "time": time,
@@ -106,6 +107,9 @@ def get_concepts_for_shard(read_dir, shard_pids, hash_to_integer_map, patients_i
             "numeric_value": numeric_value,
         }
     )
+
+    df["time"] = pd.to_datetime(df["time"])
+    return df
 
 
 def main_write(read_dir, write_dir, shard_size, split, patient_info_args):
@@ -145,6 +149,7 @@ def main_write(read_dir, write_dir, shard_size, split, patient_info_args):
                 f"{write_dir}/{split_name}/{counter}.parquet", index=True
             )
             counter += 1
+    torch.save(hash_to_integer_map, f"{write_dir}/hash_to_integer_map.pt")
 
 
 if __name__ == "__main__":

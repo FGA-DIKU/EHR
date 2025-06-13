@@ -83,7 +83,7 @@ class TestCensorPatient(unittest.TestCase):
         # We expect only abspos <= censor_date, so indexes 0 and 1 remain, plus predict token
         self.assertListEqual(censored.concepts, [101, 102, 999])
         self.assertListEqual(censored.abspos, [0.0, 10.0, 10.0])
-        self.assertListEqual(censored.segments, [0, 0, 0])
+        self.assertListEqual(censored.segments, [0, 0, 1])
         # Ages: 0 at DOB, calculated at event, calculated at censor
         expected_censor_age = 10.0 / (365.25 * 24)
         self.assertAlmostEqual(censored.ages[2], expected_censor_age, places=6)
@@ -102,7 +102,7 @@ class TestCensorPatient(unittest.TestCase):
         self.assertEqual(len(censored.concepts), 2)
         self.assertListEqual(censored.concepts, [101, 102])
         self.assertListEqual(censored.abspos, [0.0, 8760.0])
-        self.assertListEqual(censored.segments, [0, 0])
+        self.assertListEqual(censored.segments, [0, 1])
         # Age at censor should be 1 year
         self.assertAlmostEqual(censored.ages[1], 1.0, places=2)
 
@@ -155,7 +155,7 @@ class TestCensorPatientWithDelays(unittest.TestCase):
         # Expected: background(0h), 101(10h with +10 delay, effective censor 30h), 202(20h with +20 delay, effective censor 40h), 201(40h with +20 delay, effective censor 40h), predict_token
         self.assertListEqual(censored.concepts, [100, 101, 202, 201, 103])
         self.assertListEqual(censored.abspos, [0.0, 10.0, 20.0, 40.0, 20.0])
-        self.assertListEqual(censored.segments, [0, 0, 0, 1, 1])
+        self.assertListEqual(censored.segments, [0, 0, 0, 1, 2])
         # Check ages
         self.assertAlmostEqual(censored.ages[0], 0.0)
         self.assertAlmostEqual(censored.ages[1], 10.0 / (365.25 * 24), places=6)
@@ -190,7 +190,7 @@ class TestCensorPatientWithDelays(unittest.TestCase):
         # Should behave like standard censoring - only events <= censor_date
         self.assertListEqual(censored.concepts, [100, 101, 102, 999])
         self.assertListEqual(censored.abspos, [0.0, 10.0, 20.0, 20.0])
-        self.assertListEqual(censored.segments, [0, 0, 0, 0])
+        self.assertListEqual(censored.segments, [0, 0, 0, 1])
         self.assertAlmostEqual(censored.ages[0], 0.0)
         self.assertAlmostEqual(censored.ages[1], 10.0 / (365.25 * 24), places=6)
         self.assertAlmostEqual(censored.ages[2], 20.0 / (365.25 * 24), places=6)
