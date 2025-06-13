@@ -16,8 +16,6 @@ from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import (
     PID_COL,
     TIMESTAMP_COL,
-    DEFAULT_VOCABULARY,
-    AGE_AT_CENSORING_TOKEN,
 )
 
 
