@@ -45,7 +45,7 @@ class OneHotEncoder:
             self.original_to_new_idx = {
                 vocabulary[token]: idx
                 for token, idx in encoding_vocab.items()
-                if token not in special_tokens
+                if token not in special_tokens and token in vocabulary
             }
 
         self.num_features = len(self.encoding_vocab)
