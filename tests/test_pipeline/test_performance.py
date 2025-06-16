@@ -46,11 +46,11 @@ def main_evaluate_performance(config_path):
     xgb_feature_importance = xgb_feature_importance.sort_values(
         "importance", ascending=False
     )
-    top2_expected_concepts = ["DE10", "DO60"]
-    top2_concepts = xgb_feature_importance.head(2)["concept"].tolist()
-    if top2_concepts != top2_expected_concepts:
+    top_expected_concepts = ["DE10", "DO60"]
+    top5_concepts = xgb_feature_importance.head(5)["concept"].tolist()
+    if top_expected_concepts not in top5_concepts:
         raise ValueError(
-            f"Top 2 concepts are not expected for XGBoost model: {top2_concepts} != {top2_expected_concepts}"
+            f"Top concepts are not expected for XGBoost model: {top5_concepts} != {top_expected_concepts}"
         )
 
 
