@@ -46,8 +46,8 @@ def main_evaluate_performance(config_path):
     xgb_feature_importance = xgb_feature_importance.sort_values(
         "importance", ascending=False
     )
-    top_expected_concepts = ["DE10", "DO60"]
-    top5_concepts = xgb_feature_importance.head(5)["concept"].tolist()
+    top_expected_concepts = {"DE10", "DO60"}
+    top5_concepts = set(xgb_feature_importance.head(5)["concept"].tolist())
     if not top_expected_concepts.issubset(top5_concepts):
         raise ValueError(
             f"Expected top concepts {top_expected_concepts} missing from top-5 {top5_concepts}"
