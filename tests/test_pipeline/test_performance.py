@@ -48,9 +48,9 @@ def main_evaluate_performance(config_path):
     )
     top_expected_concepts = ["DE10", "DO60"]
     top5_concepts = xgb_feature_importance.head(5)["concept"].tolist()
-    if top_expected_concepts not in top5_concepts:
+    if not top_expected_concepts.issubset(top5_concepts):
         raise ValueError(
-            f"Top concepts are not expected for XGBoost model: {top5_concepts} != {top_expected_concepts}"
+            f"Expected top concepts {top_expected_concepts} missing from top-5 {top5_concepts}"
         )
 
 

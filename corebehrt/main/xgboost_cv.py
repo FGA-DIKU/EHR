@@ -44,6 +44,7 @@ def main_xgboost(config_path):
         if os.path.exists(join(cfg.paths.prepared_data, TEST_PIDS_FILE)):
             test_pids = torch.load(join(cfg.paths.prepared_data, TEST_PIDS_FILE))
             test_data = data.filter_by_pids(test_pids)
+            train_val_pids = [pid for pid in train_val_pids if pid not in test_pids]
     train_val_data = data.filter_by_pids(train_val_pids)
 
     # Use folds from prepared data

@@ -32,7 +32,7 @@ class OneHotEncoder:
             new_idx = 0
             encoding_vocab = {}
             original_to_new_idx = {}
-            for old_idx, token in enumerate(vocabulary.keys()):
+            for token, old_idx in vocabulary.items():
                 if token not in special_tokens:
                     encoding_vocab[token] = new_idx
                     original_to_new_idx[old_idx] = new_idx

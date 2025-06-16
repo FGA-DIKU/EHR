@@ -18,9 +18,8 @@ model:
   colsample_bytree: 0.8
   min_child_weight: 3
   gamma: 1
-  random_state: 42
+  seed: 42
   n_estimators: 1000
-  early_stopping_rounds: 50
   scale_pos_weight: 1
   tree_method: 'hist'  # Use histogram-based algorithm for better performance
   grow_policy: 'lossguide'  # Grow tree based on loss reduction

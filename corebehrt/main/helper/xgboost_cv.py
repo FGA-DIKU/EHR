@@ -117,7 +117,7 @@ def xgboost_fold(
         logger.info(f"Val metrics: {val_metrics}")
 
         # Compute test metrics if available
-        if test_patients:
+        if test_patients is not None:
             test_metrics = {
                 f"test_{name}": func(y_test, test_preds)
                 for name, func in metrics.items()

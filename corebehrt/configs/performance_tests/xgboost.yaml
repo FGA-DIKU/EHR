@@ -5,11 +5,9 @@ logging:
 paths:
 ## INPUTS
   prepared_data: ./outputs/finetuning/processed_data/good/
-      
 ## OUTPUTS
   model: ./outputs/finetuning/xgboost # Save model/outputs to this folder  
 
- 
 model:
   objective: binary:logistic
   eval_metric: auc
@@ -19,7 +17,7 @@ model:
   colsample_bytree: 0.8
   min_child_weight: 1
   gamma: 0
-  random_state: 42
+  seed: 42
 
 trainer_args:
   early_stopping_rounds: 10

@@ -4,6 +4,7 @@ import xgboost as xgb
 import numpy as np
 import os
 import torch
+from typing import Tuple, Optional
 
 from corebehrt.modules.preparation.encode import OneHotEncoder
 
@@ -32,7 +33,7 @@ def get_feature_importance(
 
 def xgb_inference_fold(
     model_folder: str, test_data, fold: int, fi_cfg: dict, logger, vocab: dict
-) -> np.ndarray:
+) -> Tuple[np.ndarray, Optional[pd.DataFrame]]:
     """Run inference for a single fold using a saved Booster and the saved encoding mapping."""
     # Load the model
     model_path = join(model_folder, f"fold_{fold}", "xgboost_model.json")
