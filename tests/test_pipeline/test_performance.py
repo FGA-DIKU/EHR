@@ -49,7 +49,9 @@ def main_evaluate_performance(config_path):
     top2_expected_concepts = ["DE10", "DO60"]
     top2_concepts = xgb_feature_importance.head(2)["concept"].tolist()
     if top2_concepts != top2_expected_concepts:
-        raise ValueError("Top 2 concepts are not expected for XGBoost model")
+        raise ValueError(
+            f"Top 2 concepts are not expected for XGBoost model: {top2_concepts} != {top2_expected_concepts}"
+        )
 
 
 if __name__ == "__main__":
