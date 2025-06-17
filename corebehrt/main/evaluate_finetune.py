@@ -41,6 +41,8 @@ def main_evaluate(config_path):
     folds = torch.load(join(cfg.paths.folds_dir, FOLDS_FILE), weights_only=False)
     check_for_overlap(folds, test_pids, logger)
     targets = test_data.get_outcomes()
+    logger.info(f"Number of test patients: {len(test_pids)}")
+    logger.info(f"Number of test positive targets: {sum(targets)}")
 
     # Get predictions
     combined_df = pd.DataFrame(
