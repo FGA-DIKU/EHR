@@ -55,7 +55,7 @@ def censor_patient(
     Censors a patient's data by truncating all attributes at the censor date,
     then appends a CLS token with the censoring information.
 
-    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained, then adds a CLS token at the end.
+    The function shortens the concept, abspos, segments, and ages lists of a PatientData object so that only entries occurring before or at the patient's censor date are retained, then adds a predict token at the end.
 
     Args:
         patient: The PatientData object to be censored.
@@ -88,10 +88,10 @@ def censor_patient_with_delays(
 ) -> PatientData:
     """
     Censors a patient's data using concept-specific delays applied to their censor date.
-    Adds the age at censoring as a token at the end of the sequence.
+    Adds the predict token with age at censoring at the end of the sequence.
 
     For each concept in the patient's record, calculates an effective censor date by adding a delay (if specified) to the base censor date for the patient. Retains only those concepts and corresponding attributes whose timestamps are less than or equal to their effective censor dates.
-    Then adds the age at censoring as a final token.
+    Then adds predict token with age at censoring as a final token.
 
     Args:
         patient: The patient data to censor.
@@ -100,7 +100,7 @@ def censor_patient_with_delays(
 
     Returns:
         The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates,
-        and age at censoring token.
+        and a predict token.
     """
     base_censor_date = censor_dates[patient.pid]
 

@@ -3,7 +3,7 @@ from os.path import join
 import torch
 import xgboost as xgb
 
-from corebehrt.azure import setup_metrics_dir
+from corebehrt.azure.util.log import setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.modules.setup.config import instantiate_function

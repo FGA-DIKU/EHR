@@ -32,7 +32,7 @@ class OneHotEncoder:
             new_idx = 0
             encoding_vocab = {}
             original_to_new_idx = {}
-            for token, old_idx in vocabulary.items():
+            for token, old_idx in sorted(vocabulary.items(), key=lambda x: x[1]):
                 if token not in special_tokens:
                     encoding_vocab[token] = new_idx
                     original_to_new_idx[old_idx] = new_idx
@@ -63,7 +63,7 @@ class OneHotEncoder:
                     new_idx = self.original_to_new_idx[concept]
                     X_concepts[i, new_idx] = 1
             age_at_censoring.append(patient.ages[-1] if patient.ages else 0)
-            y.append(patient.outcome if patient.outcome is not None else None)
+            y.append(patient.outcome)
         X_age = np.array(age_at_censoring).reshape(-1, 1)
         X = np.hstack([X_concepts, X_age])
         y = np.array(y)
