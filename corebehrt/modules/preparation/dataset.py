@@ -28,6 +28,7 @@ class PatientData:
     segments: List[int]
     ages: List[float]  # e.g. age at each concept
     outcome: int = None
+    labels: List[int] = None
 
 
 class PatientDataset:
@@ -128,6 +129,17 @@ class PatientDataset:
 
         return self
 
+    def get_labels(self) -> List[int]:
+        return [p.labels for p in self.patients]
+
+    def assign_labels(self):
+        """
+        Assigns labels to each patient in the dataset consisting of all concepts except the first one.
+        """
+        for p in self.patients:
+            p.labels = p.concepts[1:]
+        return self
+
     @staticmethod
     def combine_datasets(datasets: List["PatientDataset"]) -> "PatientDataset":
         """Combine multiple PatientDataset objects into one.
@@ -189,6 +201,28 @@ class MLMDataset(Dataset):
     def __len__(self):
         return len(self.patients)
 
+
+class DecoderDataset(Dataset):
+    def __init__(self, patients: List[PatientData], vocabulary: dict):
+        self.patients = patients
+        self.vocabulary = vocabulary
+
+    def __getitem__(self, index: int) -> dict:
+        patient = self.patients[index]
+        concepts = torch.tensor(patient.concepts, dtype=torch.long)
+        attention_mask = torch.ones(len(patient.concepts), dtype=torch.long)
+        sample = {
+            CONCEPT_FEAT: concepts,
+            ABSPOS_FEAT: torch.tensor(patient.abspos, dtype=torch.float),
+            SEGMENT_FEAT: torch.tensor(patient.segments, dtype=torch.long),
+            AGE_FEAT: torch.tensor(patient.ages, dtype=torch.float),
+            ATTENTION_MASK: attention_mask,
+            TARGET: torch.tensor(patient.labels, dtype=torch.long),
+        }
+        return sample
+    
+    def __len__(self):
+        return len(self.patients)
 
 class BinaryOutcomeDataset(Dataset):
     """

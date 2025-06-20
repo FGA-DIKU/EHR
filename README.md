@@ -72,7 +72,7 @@ source .venv/bin/activate
 ![COREBEHRT Overview](docs/COREBEHRT_overview_dark.jpg)
 
 Below is a high-level description of the steps in the COREBEHRT pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
-The pipeline can be run from the root directory by executing the following commands:
+The encoder pipeline can be run from the root directory by executing the following commands:
 
 ```bash
 (.venv) python -m corebehrt.main.create_data
@@ -86,6 +86,24 @@ The pipeline can be run from the root directory by executing the following comma
 (.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_held_out.yaml
 (.venv) python -m corebehrt.main.evaluate_finetune --config_path corebehrt/configs/evaluate_finetune.yaml
 ```
+
+The xgboost pipeline can be run from the root directory by executing the following commands:
+```bash
+(.venv) python -m corebehrt.main.create_data
+(.venv) python -m corebehrt.main.create_outcomes
+(.venv) python -m corebehrt.main.select_cohort
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_finetune.yaml
+(.venv) python -m corebehrt.main.xgboost_cv --config_path ./corebehrt/configs/xgboost.yaml
+(.venv) python -m corebehrt.main.evaluate_xgboost --config_path ./corebehrt/configs/evaluate_xgboost.yaml
+```
+
+The decoder pipeline can be run from the root directory by executing the following commands:
+```bash
+(.venv) python -m corebehrt.main.create_data
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_train_decoder.yaml
+(.venv) python -m corebehrt.main.train_decoder
+```
+
 
 ### Converting to MEDS
 

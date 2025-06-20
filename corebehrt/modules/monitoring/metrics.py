@@ -44,6 +44,72 @@ class LossAccessor:
     def __call__(self, outputs, batch):
         return outputs.__getattribute__(self.loss_name).cpu()
 
+class Perplexity:
+    """Compute perplexity for language modeling."""
+    
+    def __call__(self, outputs, batch):
+        # Perplexity = exp(cross_entropy_loss)
+        loss = outputs.loss
+        return torch.exp(loss).item()
+
+class TokenAccuracy:
+    """Compute token-level accuracy for next token prediction."""
+    
+    def __call__(self, outputs, batch):
+        logits = outputs.logits  # Shape: (batch_size, seq_len, vocab_size)
+        labels = outputs.labels  # Shape: (batch_size, seq_len)
+        
+        # Handle case where logits and labels have different lengths due to shifting
+        if logits.shape[1] != labels.shape[1]:
+            # Logits are shifted (remove last position), labels are not shifted
+            logits = logits[:, :-1, :]  # Remove last position from logits
+        
+        # Get predicted tokens
+        pred_tokens = torch.argmax(logits, dim=-1)  # Shape: (batch_size, seq_len)
+        
+        # Calculate accuracy
+        correct = (pred_tokens == labels).float()
+        # Only consider non-padded tokens
+        mask = (labels != -100).float()  # -100 is padding for loss calculation
+        if mask.sum() == 0:
+            return 0.0
+        
+        accuracy = (correct * mask).sum() / mask.sum()
+        return accuracy.item()
+
+
+class NextTokenPrecisionAtK:
+    """Compute precision@k for next token prediction."""
+    
+    def __init__(self, topk=10):
+        self.topk = topk
+    
+    def __call__(self, outputs, batch):
+        logits = outputs.logits  # Shape: (batch_size, seq_len, vocab_size)
+        labels = outputs.labels  # Shape: (batch_size, seq_len)
+        
+        # Handle case where logits and labels have different lengths due to shifting
+        if logits.shape[1] != labels.shape[1]:
+            # Logits are shifted (remove last position), labels are not shifted
+            # We need to align them by removing the last position from logits
+            logits = logits[:, :-1, :]  # Remove last position from logits
+        
+        # Get top-k predictions for each position
+        _, pred_indices = logits.topk(self.topk, dim=-1)  # Shape: (batch_size, seq_len, k)
+        
+        # Check if true label is in top-k predictions
+        correct = torch.zeros_like(labels, dtype=torch.bool)
+        for i in range(self.topk):
+            correct |= (pred_indices[:, :, i] == labels)
+        
+        # Only consider non-padded tokens
+        mask = (labels != -100)
+        if mask.sum() == 0:
+            return 0.0
+        
+        precision = (correct & mask).float().sum() / mask.float().sum()
+        return precision.item()
+
 
 def binary_hit(outputs, batch, threshold=0.5, average=True):
     logits = outputs.logits

@@ -15,6 +15,7 @@ from corebehrt.constants.paths import (
     PREPARE_FINETUNE_CFG,
     EVALUATE_CFG,
     XGBOOST_CFG,
+    TRAIN_DECODER_CFG
 )
 from corebehrt.functional.setup.checks import check_categories
 from corebehrt.modules.setup.config import Config, load_config
@@ -434,6 +435,19 @@ class DirectoryPreparer:
         else:
             self.write_config("predictions", source="model", name=FINETUNE_CFG)
 
+    def setup_decoder(self) -> None:
+        """
+        Validates path config and sets up directories for pretrain.
+        """
+        # Setup logging
+        self.setup_logging("train_decoder")
+
+        # Validate and create directories
+        self.check_directory("prepared_data")
+        self.create_run_directory("model", base="runs")
+
+        # Write config in output directory.
+        self.write_config("model", name=TRAIN_DECODER_CFG)
     #
     # Directory naming generators
     #

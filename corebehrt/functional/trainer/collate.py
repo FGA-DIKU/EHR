@@ -6,11 +6,13 @@ def dynamic_padding(batch: list) -> dict:
     Collate function that handles both:
       - Binary classification with a 0D scalar 'target'
       - MLM with a 1D sequence 'target' that matches 'concept'
+      - Language modeling with a 1D sequence 'target' that is one token shorter than 'concept'
 
     Steps:
       1) Determine max sequence length from the 'concept' field.
       2) For each sample in the batch:
          - For each key, if the tensor is 1D and matches the sequence length, pad to 'max_len'.
+         - For 'target' field, if it's 1D and one token shorter than concept, pad to 'max_len - 1'.
            * If key == 'target' and it's 1D, pad with -100 (MLM style).
            * Else pad with 0.
          - If the tensor is 0D (a scalar), skip padding.
@@ -42,6 +44,13 @@ def dynamic_padding(batch: list) -> dict:
                     filler = torch.zeros(diff, dtype=tensor_field.dtype)
 
                 # Concatenate
+                sample[key] = torch.cat([tensor_field, filler], dim=0)
+            
+            # Special case: target field for language modeling (one token shorter)
+            elif key == "target" and tensor_field.dim() == 1 and tensor_field.shape[0] == seq_len - 1:
+                # Target is one token shorter than concept (next token prediction)
+                target_diff = (max_len - 1) - tensor_field.shape[0]
+                filler = torch.full((target_diff,), -100, dtype=tensor_field.dtype)
                 sample[key] = torch.cat([tensor_field, filler], dim=0)
 
     # 3) Stack into a dict of batch tensors

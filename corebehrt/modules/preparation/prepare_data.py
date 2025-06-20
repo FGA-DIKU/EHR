@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL
+from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL, DEFAULT_VOCABULARY, BOS_TOKEN, EOS_TOKEN
 from corebehrt.constants.paths import INDEX_DATES_FILE, OUTCOMES_FILE, PID_FILE
 from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
@@ -29,6 +29,7 @@ from corebehrt.functional.preparation.utils import (
     get_background_length_pd,
     get_concept_id_to_delay,
     get_non_priority_tokens,
+    add_bos_eos_tokens
 )
 from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
@@ -173,7 +174,7 @@ class DatasetPreparer:
 
         return data
 
-    def prepare_pretrain_data(self, save_data=False) -> Tuple[PatientDataset, dict]:
+    def prepare_pretrain_data(self, save_data=False, add_decoder_tokens=False) -> Tuple[PatientDataset, dict]:
         data_cfg = self.cfg.data
         paths_cfg = self.cfg.paths
 
@@ -212,6 +213,13 @@ class DatasetPreparer:
         logger.info(
             f"Number of patients after excluding short sequences: {len(data.patients)}"
         )
+
+        if add_decoder_tokens:
+            data.patients = data.process_in_parallel(
+                add_bos_eos_tokens,
+                bos_token=DEFAULT_VOCABULARY[BOS_TOKEN],
+                eos_token=DEFAULT_VOCABULARY[EOS_TOKEN],
+            )
 
         # Normalize segments
         data.patients = data.process_in_parallel(normalize_segments_for_patient)

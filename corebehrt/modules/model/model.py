@@ -13,7 +13,7 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
-from transformers import ModernBertModel
+from transformers import ModernBertModel, GPT2Model
 from transformers.models.modernbert.modeling_modernbert import ModernBertPredictionHead
 
 from corebehrt.constants.data import (
@@ -219,3 +219,117 @@ class CorebehrtForFineTuning(CorebehrtEncoder):
 
     def get_loss(self, hidden_states, labels):
         return self.loss_fct(hidden_states.view(-1), labels.view(-1))
+
+class CorebehrtDecoder(GPT2Model):
+    """
+    Decoder backbone for EHR data using GPT2.
+
+    Attributes:
+        embeddings (EhrEmbeddings): custom embeddings for concepts, segments, age, and absolute position.
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+        # Replace the default GPT2 embeddings with our custom EHR embeddings
+        self.embeddings = EhrEmbeddings(
+            vocab_size=config.vocab_size,
+            hidden_size=config.hidden_size,
+            type_vocab_size=config.type_vocab_size,
+            embedding_dropout=config.embedding_dropout,
+            pad_token_id=config.pad_token_id,
+            age_scale=getattr(config, "age_scale", TIME2VEC_AGE_SCALE),
+            age_shift=getattr(config, "age_shift", TIME2VEC_AGE_SHIFT),
+            abspos_scale=getattr(config, "abspos_scale", TIME2VEC_ABSPOS_SCALE),
+            abspos_shift=getattr(config, "abspos_shift", TIME2VEC_ABSPOS_SHIFT),
+        )
+
+    def forward(self, batch: dict, **kwargs):
+        """
+        Forward pass building embeddings and attention mask, then calling GPT2Model.
+
+        Args:
+            batch (dict): must contain:
+                - "concept": Tensor of token indices (B, L)
+                - "segment": Tensor of segment IDs (B, L)
+                - "age": Tensor of patient ages (B, L)
+                - "abspos": Tensor of absolute position values (B, L)
+            **kwargs: Additional arguments to pass to the GPT2Model forward method
+
+        Returns:
+            BaseModelOutput: output of GPT2Model with last_hidden_state, etc.
+        """
+        if ATTENTION_MASK in batch:
+            attention_mask = batch[ATTENTION_MASK]
+        else:
+            attention_mask = (
+                batch[CONCEPT_FEAT] != DEFAULT_VOCABULARY[PAD_TOKEN]
+            ).float()
+
+        inputs_embeds = self.embeddings(
+            input_ids=batch[CONCEPT_FEAT],
+            segments=batch[SEGMENT_FEAT],
+            age=batch[AGE_FEAT],
+            abspos=batch[ABSPOS_FEAT],
+        )
+
+        return super().forward(
+            inputs_embeds=inputs_embeds, attention_mask=attention_mask, **kwargs
+        )
+
+class CorebehrtForLanguageModeling(CorebehrtDecoder):
+    """
+    Language modeling head for EHR generation using the decoder.
+
+    Adds a linear projection head on top of CorebehrtDecoder for next token prediction.
+    """
+
+    def __init__(self, config):
+        super().__init__(config)
+        self.loss_fct = nn.CrossEntropyLoss()
+        # GPT2 models typically have a language modeling head built-in
+        # We can use the existing lm_head from GPT2Model
+        if hasattr(self, 'lm_head'):
+            # Use the existing lm_head if available
+            pass
+        else:
+            # Create a new language modeling head
+            self.lm_head = nn.Linear(
+                config.hidden_size, config.vocab_size, bias=False
+            )
+
+    def forward(self, batch: dict, **kwargs):
+        """
+        Forward pass for language modeling (next token prediction).
+
+        Args:
+            batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
+                          optional 'target' for labels (B, L).
+            **kwargs: Additional arguments to pass to the decoder forward method
+
+        Returns:
+            BaseModelOutput: with logits and optional loss if targets provided.
+        """
+        outputs = super().forward(batch, **kwargs)
+        last_hidden_state = outputs[0]
+
+        # Get logits from the language modeling head
+        logits = self.lm_head(last_hidden_state)
+        outputs.logits = logits
+
+        # Calculate loss if labels are provided
+        labels = batch.get(TARGET)
+        if labels is not None:
+            # For next token prediction:
+            # - logits: predict next token at each position (remove last position)
+            # - labels: target tokens (already shifted, no need to shift again)
+            shift_logits = logits[..., :-1, :].contiguous()
+            
+            outputs.loss = self.get_loss(shift_logits, labels)
+            outputs.labels = labels
+
+        return outputs
+
+    def get_loss(self, logits, labels):
+        """Calculate loss for language modeling."""
+        return self.loss_fct(logits.view(-1, self.config.vocab_size), labels.view(-1))
+

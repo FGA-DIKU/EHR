@@ -4,13 +4,15 @@ from typing import List, Optional, Tuple
 import torch
 from torch.optim import AdamW
 from torch.utils.data import Sampler
-from transformers import ModernBertConfig
+from transformers import ModernBertConfig, GPT2Config
 
-
+from corebehrt.constants.data import DEFAULT_VOCABULARY, BOS_TOKEN, EOS_TOKEN
 from corebehrt.modules.setup.config import Config, instantiate_class
 from corebehrt.modules.model.model import (
     CorebehrtForPretraining,
     CorebehrtForFineTuning,
+    CorebehrtDecoder,
+    CorebehrtForLanguageModeling,
 )
 from corebehrt.modules.setup.loader import ModelLoader
 from corebehrt.modules.trainer.utils import get_sampler, get_loss_weight
@@ -47,6 +49,28 @@ class Initializer:
                     cls_token_id=1,
                     sep_token_id=2,
                     sparse_prediction=True,
+                )
+            )
+        return model
+    
+    def initialize_decoder_model(self, train_dataset):
+        """Initialize model from checkpoint or from scratch."""
+        if self.checkpoint:
+            logger.info("Loading model from checkpoint")
+            model = self.loader.load_model(
+                CorebehrtForLanguageModeling, checkpoint=self.checkpoint
+            )
+            model.to(self.device)
+        else:
+            logger.info("Initializing new model")
+            vocab_size = len(train_dataset.vocabulary)
+            print(self.cfg.model)
+            model = CorebehrtForLanguageModeling(
+                GPT2Config(
+                    **self.cfg.model,
+                    vocab_size=vocab_size,
+                    bos_token_id=DEFAULT_VOCABULARY[BOS_TOKEN],
+                    eos_token_id=DEFAULT_VOCABULARY[EOS_TOKEN],
                 )
             )
         return model
