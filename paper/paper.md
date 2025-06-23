@@ -29,7 +29,7 @@ authors:
 affiliations:
  - name: Copenhagen University, Denmark
    index: 1
-date: 20 June 2025
+date: 23 June 2025
 bibliography: paper.bib
 ---
 
@@ -56,6 +56,6 @@ The figures below depict the censoring scheme for the data preprocessing, where 
 ![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=50%}
 
 # Acknowledgements
-Thanks to Mads Nielsen and Martin Sillesen data access and supervision. 
+Thanks to Mads Nielsen and Martin Sillesen for data access and supervision. 
 
 # References
