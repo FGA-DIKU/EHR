@@ -68,12 +68,9 @@ Modeling is performed using a ModernBERT backbone [@warner2024smarter] from the 
 # Statement of need
 The growing adoption of foundation models in Natural Language Processing (NLP) [@devlin2019bert; @brown2020language; @touvron2023llama], coupled with the increasing availability of EHR data, has led to a surge in adapting such models to the clinical domain [@li2020behrt; @rasmy2021med; @pang2021cehr; @pang2024cehr; @gu2023mamba; @odgaard2024core]. However, existing frameworks often differ significantly in model architecture, data representations, and preprocessing steps, making comparison and reproducibility challenging. Notably, recent efforts such as the CEHR Benchmark [@pang2024cehr] have begun to standardise evaluation protocols, underscoring the diversity in approaches across the field.
 
-<<<<<<< HEAD
 BONSAI was developed to provide an end-to-end pipeline in a modular setup, enabling flexible experimentation with EHR modeling. Users can easily switch between data representations, sources, normalisation strategies, and fine-tuning heads. Although ModernBERT is the default backbone, the framework supports alternative architectures with minimal configuration changes. It also includes baseline models for comparison and supports deployment on Microsoft Azure, a platform commonly used for working with protected health data, making it practical for working with real-world clinical data.
 
 # Figures
-\autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
-
 ![The BONSAI pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
 The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
