@@ -53,10 +53,7 @@ Figure \autoref{fig:pipeline} depicts the overall pipeline of BONSAI.
 The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
 
 ![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=80%}
-<<<<<<< HEAD
 
-=======
->>>>>>> 17c2390 (improved image)
 ![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=80%}
 
 # Acknowledgements
