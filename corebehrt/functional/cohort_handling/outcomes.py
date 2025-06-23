@@ -45,3 +45,31 @@ def get_binary_outcomes(
     result.index_name = PID_COL
     result[has_outcome.index] = has_outcome
     return result.astype(int)
+
+def get_outcome_positions(
+    index_dates: pd.DataFrame,
+    outcomes: pd.DataFrame,
+) -> pd.Series:
+    """Get absolute positions of outcomes for each patient.
+
+    Args:
+        index_dates: DataFrame with PID_COL and abspos columns
+        outcomes: DataFrame with PID_COL and abspos columns
+
+    Returns:
+        Series with PID index and float values indicating the absolute position of the outcome.
+        NaN for patients without outcomes.
+    """
+    # Merge outcomes with index dates to get all patients
+    merged = pd.merge(
+        outcomes[[PID_COL, ABSPOS_COL]],
+        index_dates[[PID_COL, ABSPOS_COL]].rename(columns={ABSPOS_COL: "index_abspos"}),
+        on=PID_COL,
+        how="right"  # Keep all patients from index_dates
+    )
+
+    # For patients with multiple outcomes, take the first one
+    # You could modify this to take the earliest, latest, or handle multiple outcomes differently
+    result = merged.groupby(PID_COL)[ABSPOS_COL].first()
+    
+    return result

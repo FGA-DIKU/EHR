@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from corebehrt.constants.data import ABSPOS_COL, PID_COL, TIMESTAMP_COL, DEFAULT_VOCABULARY, BOS_TOKEN, EOS_TOKEN
 from corebehrt.constants.paths import INDEX_DATES_FILE, OUTCOMES_FILE, PID_FILE
-from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes
+from corebehrt.functional.cohort_handling.outcomes import get_binary_outcomes, get_outcome_positions
 from corebehrt.functional.features.normalize import normalize_segments_for_patient
 from corebehrt.functional.io_operations.load import load_vocabulary
 from corebehrt.functional.io_operations.save import save_vocabulary
@@ -100,15 +100,18 @@ class DatasetPreparer:
         outcomes = filter_df_by_pids(outcomes, data.get_pids())
         logger.info("Handling outcomes")
         # Outcome Handler now only needs to do 1 thing: if outcome is in follow up window 1 else 0
-        binary_outcomes = get_binary_outcomes(
-            index_dates,
-            outcomes,
-            outcome_cfg.get("n_hours_start_follow_up", 0),
-            outcome_cfg.get("n_hours_end_follow_up", None),
-        )
+        if data_cfg.get("add_decoder_tokens", False):
+            assigned_outcomes = get_outcome_positions(index_dates, outcomes)
+        else:
+            assigned_outcomes = get_binary_outcomes(
+                index_dates,
+                outcomes,
+                outcome_cfg.get("n_hours_start_follow_up", 0),
+                outcome_cfg.get("n_hours_end_follow_up", None),
+            )
 
         logger.info("Assigning outcomes")
-        data = data.assign_outcomes(binary_outcomes)
+        data = data.assign_outcomes(assigned_outcomes)
 
         censor_dates = (
             index_dates.set_index(PID_COL)[ABSPOS_COL]
@@ -156,6 +159,13 @@ class DatasetPreparer:
             sep_token=self.vocab["[SEP]"],
             non_priority_tokens=non_priority_tokens,
         )
+
+        if data_cfg.get("add_decoder_tokens", False):
+            data.patients = data.process_in_parallel(
+                add_bos_eos_tokens,
+                bos_token=DEFAULT_VOCABULARY[BOS_TOKEN],
+                eos_token=DEFAULT_VOCABULARY[EOS_TOKEN],
+            )
 
         data.patients = data.process_in_parallel(normalize_segments_for_patient)
         # Check if max segment is larger than type_vocab b_size
