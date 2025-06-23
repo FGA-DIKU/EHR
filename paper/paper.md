@@ -93,6 +93,10 @@ Thanks to Mads Nielsen and Martin Sillesen for data access and supervision.
 =======
 xxx was developed to provide an end-to-end pipeline in a modular setup, enabling flexible experimentation with EHR modeling. Users can easily switch between data representations, sources, normalisation strategies, and fine-tuning heads. Although ModernBERT is the default backbone, the framework supports alternative architectures with minimal configuration changes. It also includes baseline models for comparison and supports deployment on Microsoft Azure, a platform commonly used for working with protected health data, making it practical for working with real-world clinical data.
 
+# Figures
+Figure \autoref{fig:pipeline} depicts the overall pipeline of xxx. 
+![The xxx pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg)
+
 # Acknowledgements
 Thanks to Mads and Martin for data + supervision? 
 >>>>>>> 0e4c8a8 (draft for joss paper)
