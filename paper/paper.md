@@ -52,8 +52,8 @@ Figure \autoref{fig:pipeline} depicts the overall pipeline of xxx.
 
 The figures below depict the censoring scheme for the data preprocessing, where figure \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and figure \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
 
-![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=100%}
-![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=100%}
+![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=80%}
+![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=80%}
 
 # Acknowledgements
 Thanks to Mads Nielsen and Martin Sillesen for data access and supervision. 
