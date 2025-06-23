@@ -15,17 +15,16 @@ authors:
     orcid: 
     equal-contrib: true
     affiliation: 1 
-- name: Mikkel Odgaard
+  - name: Mikkel Odgaard
     orcid: 
     equal-contrib: true
     affiliation: 1 
-- name: Stephan Lorenzen
+  - name: Stephan Lorenzen
     orcid: 
     equal-contrib: true
     affiliation: 1 
-- name: Zahra Sobhaninia
+  - name: Zahra Sobhaninia
     orcid: 
-    equal-contrib: true
     affiliation: 1 
 affiliations:
  - name: Copenhagen University, Denmark
