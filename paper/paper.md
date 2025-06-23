@@ -46,13 +46,14 @@ The growing adoption of foundation models in Natural Language Processing (NLP) [
 xxx was developed to provide an end-to-end pipeline in a modular setup, enabling flexible experimentation with EHR modeling. Users can easily switch between data representations, sources, normalisation strategies, and fine-tuning heads. Although ModernBERT is the default backbone, the framework supports alternative architectures with minimal configuration changes. It also includes baseline models for comparison and supports deployment on Microsoft Azure, a platform commonly used for working with protected health data, making it practical for working with real-world clinical data.
 
 # Figures
-Figure \autoref{fig:pipeline} depicts the overall pipeline of xxx. 
+\autoref{fig:pipeline} depicts the overall pipeline of xxx. 
 
 ![The xxx pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
-The figures below depict the censoring scheme for the data preprocessing, where figure \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and figure \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
+The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
 
 ![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=80%}
+
 ![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=80%}
 
 # Acknowledgements
