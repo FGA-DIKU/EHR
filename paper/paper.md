@@ -51,7 +51,6 @@ date: 23 June 2025
     orcid: 
     equal-contrib: true
     affiliation: 1 
-
 affiliations:
  - name: Copenhagen University, Denmark
    index: 1
@@ -62,10 +61,14 @@ bibliography: paper.bib
 
 # Summary 
 <<<<<<< HEAD
+<<<<<<< HEAD
 BONSAI is an end-to-end Python framework for processing and analysing Electronic Health Records (EHR) data. It extends the model described in the CORE-BEHRT paper [@odgaard2024core] and is designed to streamline data preparation, model pre-training, and fine-tuning for patient-level prediction tasks. The framework is built for efficient large-scale processing of EHR data, making it suitable for clinical applications involving substantial volumes of patient record. 
 =======
 xxx is an end-to-end Python framework for processing and analysing Electronic Health Records (EHR) data. It extends the model described in the CORE-BEHRT paper [@odgaard2024core] and is designed to streamline data preparation, model pre-training, and fine-tuning for patient-level prediction tasks.
 >>>>>>> 0e4c8a8 (draft for joss paper)
+=======
+xxx is an end-to-end Python framework for processing and analysing Electronic Health Records (EHR) data. It extends the model described in the CORE-BEHRT paper [@odgaard2024core] and is designed to streamline data preparation, model pre-training, and fine-tuning for patient-level prediction tasks. The framework is built for efficient large-scale processing of EHR data, making it suitable for clinical applications involving substantial volumes of patient record. 
+>>>>>>> 91af54d (minor changes)
 
 The framework accepts EHR data in the MEDS format [@kolo2024meds], performs comprehensive preprocessing, and prepares the data for BERT-based modeling, following the structure of the BEHRT model [@li2020behrt]. This includes converting raw EHR data into tokenised inputs by mapping vocabulary to numerical tokens and aligning patient histories into temporally ordered sequences of medical concepts. Each concept is paired with temporal features such as visit timestamps (positions), patient age, and visit-level segment encodings. Additional static features, including date of birth (DOB), gender, and optionally date of death (DOD), are prepended to each sequence. Separator and classification tokens can be optionally included. Numeric values can be binned and added as categorical tokens. Aggregation of similar concepts is supported via regex-based grouping, and the removal of specific concepts is also included via regex.
 
@@ -97,8 +100,18 @@ xxx was developed to provide an end-to-end pipeline in a modular setup, enabling
 Figure \autoref{fig:pipeline} depicts the overall pipeline of xxx. 
 ![The xxx pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg)
 
+The figures below depict the censoring scheme for the data preprocessing, where figure \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and figure \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
+
+![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=50%}
+
+![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=50%}
+
 # Acknowledgements
+<<<<<<< HEAD
 Thanks to Mads and Martin for data + supervision? 
 >>>>>>> 0e4c8a8 (draft for joss paper)
+=======
+Thanks to Mads Nielsen and Martin Sillesen data access and supervision. 
+>>>>>>> 91af54d (minor changes)
 
 # References
