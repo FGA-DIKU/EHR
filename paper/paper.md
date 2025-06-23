@@ -47,13 +47,12 @@ xxx was developed to provide an end-to-end pipeline in a modular setup, enabling
 
 # Figures
 Figure \autoref{fig:pipeline} depicts the overall pipeline of xxx. 
-![The xxx pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg)
+![The xxx pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
 The figures below depict the censoring scheme for the data preprocessing, where figure \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and figure \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
 
-![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=50%}
-
-![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=50%}
+![Censoring in the simulated prospective setup.\label{fig:prospective_censoring}](../docs/COREBEHRT_simulated_prospective.jpg){width=10%}
+![Censoring in the post-hoc setup.\label{fig:post_hoc_censoring}](../docs/COREBEHRT_post_hoc_censoring.jpg){width=10%}
 
 # Acknowledgements
 Thanks to Mads Nielsen and Martin Sillesen for data access and supervision. 
