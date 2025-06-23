@@ -12,7 +12,6 @@ authors:
     equal-contrib: true
     affiliation: 1 
   - name: Kiril Klein
-<<<<<<< HEAD
     orcid: 0000-0001-8779-0209
     equal-contrib: true
     affiliation: 1 
@@ -31,30 +30,6 @@ affiliations:
  - name: Copenhagen University, Denmark
    index: 1
 date: 23 June 2025
-=======
-    orcid: 
-    equal-contrib: true
-    affiliation: 1 
-  - name: Mikkel Odgaard
-    orcid: 
-    equal-contrib: true
-    affiliation: 1 
-  - name: Stephan Lorenzen
-    orcid: 
-    equal-contrib: true
-    affiliation: 1 
-  - name: Zahra Sobhaninia
-    orcid: 
-    affiliation: 1 
-affiliations:
- - name: Copenhagen University, Denmark
-   index: 1
-<<<<<<< HEAD
-date: 20 June 2025
->>>>>>> 0e4c8a8 (draft for joss paper)
-=======
-date: 23 June 2025
->>>>>>> c8b2e81 (pdf generation)
 bibliography: paper.bib
 ---
 
@@ -71,6 +46,8 @@ The growing adoption of foundation models in Natural Language Processing (NLP) [
 BONSAI was developed to provide an end-to-end pipeline in a modular setup, enabling flexible experimentation with EHR modeling. Users can easily switch between data representations, sources, normalisation strategies, and fine-tuning heads. Although ModernBERT is the default backbone, the framework supports alternative architectures with minimal configuration changes. It also includes baseline models for comparison and supports deployment on Microsoft Azure, a platform commonly used for working with protected health data, making it practical for working with real-world clinical data.
 
 # Figures
+Figure \autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
+
 ![The BONSAI pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
 The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup, and \autoref{fig:post_hoc_censoring} shows the censoring scheme for the post-hoc setup. 
