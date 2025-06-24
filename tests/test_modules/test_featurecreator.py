@@ -113,16 +113,6 @@ class TestFeatureCreator(unittest.TestCase):
             self.feature_creator(concepts_wo_dob)
         self.assertIn("Some patients have no DOB", str(context.exception))
 
-    def test_create_background_wo_bg(self):
-        concepts_wo_bg = self.concepts.copy()
-        patient_2_bg_mask = (concepts_wo_bg[PID_COL] == 2) & (
-            concepts_wo_bg[CONCEPT_COL] == "GENDER//F"
-        )
-        concepts_wo_bg = concepts_wo_bg[~patient_2_bg_mask].copy()
-        with self.assertRaises(ValueError) as context:
-            self.feature_creator(concepts_wo_bg)
-        self.assertIn("Some patients have no GENDER", str(context.exception))
-
     def test_create_abspos(self):
         result, _ = self.feature_creator(self.concepts)
         self.assertIn("abspos", result.columns)

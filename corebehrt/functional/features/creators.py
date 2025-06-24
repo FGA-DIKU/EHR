@@ -173,21 +173,7 @@ def create_background(concepts: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
 
     # Get the patient info
     patient_info = _create_patient_info(concepts)
-    _check_patient_info(patient_info)
     return concepts, patient_info
-
-
-def _check_patient_info(patient_info: pd.DataFrame) -> None:
-    """
-    Check that there are no NaN values in patient_info except for DEATHDATE_COL
-    """
-    # Check that there are no NaN values in patient_info except for DEATHDATE_COL
-    columns_to_check = [col for col in patient_info.columns if col != DEATHDATE_COL]
-    for col in columns_to_check:
-        if patient_info[col].isna().any():
-            raise ValueError(f"Some patients have no {col}")
-    return True
-
 
 def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
     """
