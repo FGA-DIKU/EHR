@@ -175,6 +175,7 @@ def create_background(concepts: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
     patient_info = _create_patient_info(concepts)
     return concepts, patient_info
 
+
 def assign_index_and_order(df: pd.DataFrame) -> pd.DataFrame:
     """
     Assign 'index' and 'order' columns to ensure correct ordering.
