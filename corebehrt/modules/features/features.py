@@ -24,18 +24,14 @@ class FeatureCreator:
         concepts: pd.DataFrame,
     ) -> pd.DataFrame:
         check_features_columns(concepts)
-        concepts = concepts[
-            [PID_COL, TIMESTAMP_COL, CONCEPT_COL]
-        ]  # take only relevant columns
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)
 
         features = assign_index_and_order(features)
-
         features = exclude_event_nans(
             features, columns=[PID_COL, TIMESTAMP_COL, CONCEPT_COL]
-        )  # Filter nans only for relevant columns
+        )  # ! do not touch this: including additional columns here might cause loss of events.
         features = sort_features(features)
 
         features = create_segments(features)
