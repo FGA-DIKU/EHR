@@ -10,7 +10,7 @@ from corebehrt.functional.features.creators import (
 )
 from corebehrt.functional.features.exclude import exclude_event_nans
 from corebehrt.functional.setup.checks import check_features_columns
-from corebehrt.constants.data import PID_COL
+from corebehrt.constants.data import PID_COL, TIMESTAMP_COL, CONCEPT_COL
 
 
 class FeatureCreator:
@@ -24,12 +24,18 @@ class FeatureCreator:
         concepts: pd.DataFrame,
     ) -> pd.DataFrame:
         check_features_columns(concepts)
+        concepts = concepts[
+            [PID_COL, TIMESTAMP_COL, CONCEPT_COL]
+        ]  # take only relevant columns
         features, patient_info = create_background(concepts)
         features = create_age_in_years(features)
         features = create_abspos(features)
 
         features = assign_index_and_order(features)
-        features = exclude_event_nans(features)
+
+        features = exclude_event_nans(
+            features, columns=[PID_COL, TIMESTAMP_COL, CONCEPT_COL]
+        )  # Filter nans only for relevant columns
         features = sort_features(features)
 
         features = create_segments(features)
