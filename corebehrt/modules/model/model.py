@@ -280,14 +280,20 @@ class CorebehrtForLanguageModeling(CorebehrtDecoder):
     """
     Language modeling head for EHR generation using the decoder.
 
-    Adds a linear projection head on top of CorebehrtDecoder for next token prediction.
+    Supports two modes:
+    - Single prediction: Only predicts concept tokens (faster, simpler)
+    - Multi-embedding prediction: Predicts concepts, segments, ages, and abspos (more complete)
     """
 
     def __init__(self, config):
         super().__init__(config)
         self.loss_fct = nn.CrossEntropyLoss()
-        # GPT2 models typically have a language modeling head built-in
-        # We can use the existing lm_head from GPT2Model
+        self.mse_loss = nn.MSELoss()
+        
+        # Configuration for prediction mode
+        self.predict_all_embeddings = getattr(config, "predict_all_embeddings", False)
+        
+        # Language modeling head for concepts (always present)
         if hasattr(self, 'lm_head'):
             # Use the existing lm_head if available
             pass
@@ -296,10 +302,16 @@ class CorebehrtForLanguageModeling(CorebehrtDecoder):
             self.lm_head = nn.Linear(
                 config.hidden_size, config.vocab_size, bias=False
             )
+        
+        # Additional prediction heads (only if predict_all_embeddings=True)
+        if self.predict_all_embeddings:
+            self.segment_head = nn.Linear(config.hidden_size, config.type_vocab_size)
+            self.age_head = nn.Linear(config.hidden_size, 1)  # Age is continuous
+            self.abspos_head = nn.Linear(config.hidden_size, 1)  # Abspos is continuous
 
     def forward(self, batch: dict, **kwargs):
         """
-        Forward pass for language modeling (next token prediction).
+        Forward pass for language modeling prediction.
 
         Args:
             batch (dict): must contain 'concept', 'segment', 'age', 'abspos';
@@ -312,19 +324,56 @@ class CorebehrtForLanguageModeling(CorebehrtDecoder):
         outputs = super().forward(batch, **kwargs)
         last_hidden_state = outputs[0]
 
-        # Get logits from the language modeling head
-        logits = self.lm_head(last_hidden_state)
-        outputs.logits = logits
+        # Always predict concepts
+        concept_logits = self.lm_head(last_hidden_state)
+        outputs.logits = concept_logits  # Keep for compatibility
+        outputs.concept_logits = concept_logits
+
+        # Predict other embeddings only if configured
+        if self.predict_all_embeddings:
+            segment_logits = self.segment_head(last_hidden_state)
+            age_predictions = self.age_head(last_hidden_state).squeeze(-1)
+            abspos_predictions = self.abspos_head(last_hidden_state).squeeze(-1)
+            
+            # Store all predictions in outputs
+            outputs.segment_logits = segment_logits
+            outputs.age_predictions = age_predictions
+            outputs.abspos_predictions = abspos_predictions
 
         # Calculate loss if labels are provided
         labels = batch.get(TARGET)
         if labels is not None:
-            # For next token prediction:
-            # - logits: predict next token at each position (remove last position)
-            # - labels: target tokens (already shifted, no need to shift again)
-            shift_logits = logits[..., :-1, :].contiguous()
+            total_loss = 0
             
-            outputs.loss = self.get_loss(shift_logits, labels)
+            # Concept loss (language modeling) - always present
+            shift_concept_logits = concept_logits[..., :-1, :].contiguous()
+            concept_loss = self.loss_fct(shift_concept_logits.view(-1, self.config.vocab_size), labels.view(-1))
+            total_loss += concept_loss
+            
+            # Additional losses only if predict_all_embeddings=True
+            if self.predict_all_embeddings:
+                # Segment loss (classification)
+                if 'segment' in batch:
+                    segment_labels = batch['segment'][..., 1:].contiguous()  # Shift segments
+                    shift_segment_logits = segment_logits[..., :-1, :].contiguous()
+                    segment_loss = self.loss_fct(shift_segment_logits.view(-1, self.config.type_vocab_size), segment_labels.view(-1))
+                    total_loss += segment_loss
+                
+                # Age loss (regression)
+                if 'age' in batch:
+                    age_labels = batch['age'][..., 1:].contiguous()  # Shift ages
+                    shift_age_predictions = age_predictions[..., :-1].contiguous()
+                    age_loss = self.mse_loss(shift_age_predictions, age_labels)
+                    total_loss += age_loss
+                
+                # Abspos loss (regression)
+                if 'abspos' in batch:
+                    abspos_labels = batch['abspos'][..., 1:].contiguous()  # Shift abspos
+                    shift_abspos_predictions = abspos_predictions[..., :-1].contiguous()
+                    abspos_loss = self.mse_loss(shift_abspos_predictions, abspos_labels)
+                    total_loss += abspos_loss
+            
+            outputs.loss = total_loss
             outputs.labels = labels
 
         return outputs

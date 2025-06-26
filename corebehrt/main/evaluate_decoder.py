@@ -47,19 +47,75 @@ def main_evaluate(config_path):
     logger.info(f"Number of test patients: {len(test_pids)}")
     logger.info(f"Number of test positive targets: {sum(targets)}")
 
-    # Load model
+    # Load model from the first fold
     modelmanager_trained = ModelManager(cfg, fold=None)
     checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
     model = modelmanager_trained.initialize_decoder_model(checkpoint, [])
     
-
-    # gen_data = generate_sequences(cfg, test_dataset, vocab, folds, logger)
+    # Debug information
+    logger.info(f"Model type: {type(model)}")
+    logger.info(f"Model has generate method: {hasattr(model, 'generate')}")
+    logger.info(f"Test dataset size: {len(test_dataset)}")
+    logger.info(f"First patient concepts length: {len(test_dataset.patients[0].concepts)}")
+    logger.info(f"First patient labels: {test_dataset.patients[0].labels}")
     
-    # # Print some basic information about the generated sequences
-    # logger.info(f"Generated {gen_data['total_sequences']} sequences across {gen_data['num_folds']} folds")
-    # if gen_data['generated_sequences']:
-    #     first_seq = gen_data['generated_sequences'][0]
-    #     logger.info(f"First sequence - Original length: {first_seq['original_length']}, Generated length: {first_seq['generated_length']}")
+    # Simple test to see if model can predict different tokens
+    logger.info("Testing model prediction capabilities...")
+    test_batch = {
+        "concept": torch.tensor([[1, 2, 3, 4, 5]]).to(model.device if hasattr(model, 'device') else 'cpu'),
+        "segment": torch.tensor([[0, 0, 0, 0, 0]]).to(model.device if hasattr(model, 'device') else 'cpu'),
+        "age": torch.tensor([[0.0, 0.0, 0.0, 0.0, 0.0]]).to(model.device if hasattr(model, 'device') else 'cpu'),
+        "abspos": torch.tensor([[0.0, 0.0, 0.0, 0.0, 0.0]]).to(model.device if hasattr(model, 'device') else 'cpu'),
+        "attention_mask": torch.tensor([[1, 1, 1, 1, 1]]).to(model.device if hasattr(model, 'device') else 'cpu')
+    }
+    
+    with torch.no_grad():
+        outputs = model(batch=test_batch)
+        logits = outputs.logits
+        last_logits = logits[:, -1, :]
+        predicted_token = torch.argmax(last_logits, dim=-1).item()
+        logger.info(f"Test sequence: [1, 2, 3, 4, 5]")
+        logger.info(f"Predicted next token: {predicted_token}")
+        logger.info(f"Expected different from 5: {predicted_token != 5}")
+
+    gen_data = generate_sequences(cfg, test_dataset, vocab, logger, model)
+    
+    # Print some basic information about the generated sequences
+    logger.info(f"Generated {gen_data['total_sequences']} sequences")
+    if gen_data['generated_sequences']:
+        first_seq = gen_data['generated_sequences'][0]
+        logger.info(f"First sequence - Original length: {first_seq['original_length']}, Generated length: {first_seq['generated_length']}")
+        logger.info(f"Original sequence (first 10 tokens): {first_seq['original_sequence'][:10]}")
+        logger.info(f"Generated concepts (first 10 tokens): {first_seq['generated_sequence'][:10]}")
+        logger.info(f"Generated segments (first 10): {first_seq['generated_segments'][:10]}")
+        logger.info(f"Generated ages (first 10): {first_seq['generated_ages'][:10]}")
+        logger.info(f"Generated abspos (first 10): {first_seq['generated_abspos'][:10]}")
+        
+        # Check if sequences are actually different
+        original = first_seq['original_sequence']
+        generated = first_seq['generated_sequence']
+        if len(generated) > len(original):
+            new_tokens = generated[len(original):]
+            logger.info(f"New generated tokens: {new_tokens}")
+        else:
+            logger.info("No new tokens generated - sequences are identical")
+        
+        # Show a few more examples
+        for i in range(min(3, len(gen_data['generated_sequences']))):
+            seq = gen_data['generated_sequences'][i]
+            logger.info(f"Sequence {i+1}: Original={seq['original_length']}, Generated={seq['generated_length']}")
+            
+            # Check if this sequence has new tokens
+            orig = seq['original_sequence']
+            gen = seq['generated_sequence']
+            if len(gen) > len(orig):
+                new_tokens = gen[len(orig):]
+                logger.info(f"  New tokens: {new_tokens[:5]}...")  # Show first 5 new tokens
+                logger.info(f"  New segments: {seq['generated_segments'][len(orig):len(orig)+5]}...")
+                logger.info(f"  New ages: {seq['generated_ages'][len(orig):len(orig)+5]}...")
+                logger.info(f"  New abspos: {seq['generated_abspos'][len(orig):len(orig)+5]}...")
+            else:
+                logger.info("  No new tokens generated")
     
     # Check if we should run sequence generation evaluation
 #     run_sequence_generation_evaluation(cfg, test_dataset, vocab, folds, logger)

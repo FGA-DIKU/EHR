@@ -49,7 +49,6 @@ def main_train(config_path):
     train_pids = train_data.get_pids()
     val_pids = val_data.get_pids()
     folds = [{TRAIN_KEY: train_pids, VAL_KEY: val_pids}]
-    print(folds)
     torch.save(folds, join(cfg.paths.model, FOLDS_FILE))
 
     # Initialize datasets

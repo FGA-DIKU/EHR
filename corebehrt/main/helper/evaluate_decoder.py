@@ -84,87 +84,60 @@ def generate_sequences(
     cfg: dict,
     test_dataset: DecoderDataset,
     vocab: Dict[str, int],
-    folds: List[int],
-    logger
+    logger,
+    model: torch.nn.Module
 ) -> Dict[str, Any]:
     """
-    Generate sequences using the decoder model across all folds.
+    Generate sequences using the decoder model.
     
     Args:
         cfg: Configuration dictionary
         test_dataset: Test dataset
         vocab: Vocabulary dictionary
-        folds: List of fold numbers
         logger: Logger instance
+        model: Pre-loaded model to use for generation
         
     Returns:
         Dictionary containing generated sequences and metadata
     """
-    logger.info("Starting sequence generation across all folds")
+    logger.info("Starting sequence generation")
     
     # Get generation configuration
     generation_config = cfg.get("sequence_generation", {
         'max_length': 512,
         'num_beams': 1,
-        'do_sample': False,
-        'temperature': 1.0,
-        'top_p': 1.0,
+        'do_sample': True,  # Enable sampling
+        'temperature': 0.8,  # Lower temperature for some randomness
+        'top_p': 0.9,  # Use nucleus sampling
         'pad_token_id': 0,
         'eos_token_id': 2,
         'bos_token_id': 1
     })
     
-    all_generated_sequences = []
-    all_embeddings = []
+    # Create inference runner
+    evaluater = DecoderInferenceRunner(
+        model=model,
+        test_dataset=test_dataset,
+        args=cfg.trainer_args,
+        cfg=cfg,
+    )
     
-    for n_fold, fold in enumerate(folds, start=1):
-        logger.info(f"Generating sequences for fold {n_fold}")
-        
-        # Load model for this fold
-        fold_folder = join(cfg.paths.model, f"fold_{fold}")
-        modelmanager_trained = ModelManager(cfg, fold)
-        checkpoint = modelmanager_trained.load_checkpoint(checkpoints=True)
-        model = modelmanager_trained.initialize_decoder_model(checkpoint, [])
-        
-        # Create inference runner
-        return_embeddings = cfg.get("return_embeddings", False)
-        evaluater = DecoderInferenceRunner(
-            model=model,
-            test_dataset=test_dataset,
-            args=cfg.trainer_args,
-            cfg=cfg,
-        )
-        
-        # Generate sequences for this fold
-        generated_sequences, embeddings = evaluater.inference_loop(
-            return_embeddings=return_embeddings,
-            generate_sequences=True,
-            generation_config=generation_config
-        )
-        
-        # Add fold information to sequences
-        for seq_data in generated_sequences:
-            seq_data['fold'] = n_fold
-        
-        all_generated_sequences.extend(generated_sequences)
-        if embeddings is not None:
-            all_embeddings.append(embeddings)
-        
-        logger.info(f"Fold {n_fold} - Generated {len(generated_sequences)} sequences")
+    # Generate sequences
+    generated_sequences, _ = evaluater.inference_loop(
+        return_embeddings=False,
+        generate_sequences=True,
+        generation_config=generation_config
+    )
     
     # Prepare results
     results = {
-        'generated_sequences': all_generated_sequences,
-        'total_sequences': len(all_generated_sequences),
-        'num_folds': len(folds),
+        'generated_sequences': generated_sequences,
+        'total_sequences': len(generated_sequences),
         'generation_config': generation_config,
         'vocab_size': len(vocab)
     }
     
-    if all_embeddings:
-        results['embeddings'] = all_embeddings
-    
-    logger.info(f"Sequence generation completed. Total sequences: {len(all_generated_sequences)}")
+    logger.info(f"Sequence generation completed. Total sequences: {len(generated_sequences)}")
     
     return results
 

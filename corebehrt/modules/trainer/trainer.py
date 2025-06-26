@@ -313,6 +313,143 @@ class EHRTrainer:
         )
         self.log(f"Epoch {epoch} val loss: {val_loss}")
         self.log(f"Epoch {epoch} metrics: {val_metrics}\n")
+        
+        # Generate sample sequences every few epochs
+        if epoch % self.args.get("generation_frequency", 5) == 0:
+            self._generate_sample_sequences(epoch)
+
+    def _generate_sample_sequences(self, epoch: int):
+        """
+        Generate and print sample sequences during training.
+        
+        Args:
+            epoch: Current training epoch
+        """
+        if not hasattr(self, 'test_dataset') or self.test_dataset is None:
+            return
+            
+        self.log(f"=== Generating sample sequences at epoch {epoch} ===")
+        
+        # Get a few samples from the test dataset
+        sample_indices = list(range(min(3, len(self.test_dataset))))
+        
+        for i, idx in enumerate(sample_indices):
+            # Get sample data
+            sample = self.test_dataset[idx]
+            input_concepts = sample['concept'].unsqueeze(0).to(self.device)
+            input_segments = sample['segment'].unsqueeze(0).to(self.device)
+            input_ages = sample['age'].unsqueeze(0).to(self.device)
+            input_abspos = sample['abspos'].unsqueeze(0).to(self.device)
+            
+            # Generate continuation
+            generated = self._generate_continuation(
+                input_concepts, input_segments, input_ages, input_abspos
+            )
+            
+            # Print results
+            original_seq = input_concepts[0].cpu().tolist()
+            generated_seq = generated['concepts'][0].cpu().tolist()
+            
+            self.log(f"Sample {i+1}:")
+            self.log(f"  Original: {original_seq[:10]}...")
+            self.log(f"  Generated: {generated_seq[:15]}...")
+            
+            # Show new tokens
+            if len(generated_seq) > len(original_seq):
+                new_tokens = generated_seq[len(original_seq):]
+                self.log(f"  New tokens: {new_tokens}")
+            else:
+                self.log(f"  No new tokens generated")
+        
+        self.log("=" * 50)
+
+    def _generate_continuation(self, input_concepts, input_segments, input_ages, input_abspos, max_new_tokens=10):
+        """
+        Generate a continuation of the input sequence.
+        
+        Args:
+            input_concepts: Input concept tokens
+            input_segments: Input segment tokens
+            input_ages: Input age tokens
+            input_abspos: Input abspos tokens
+            max_new_tokens: Maximum number of new tokens to generate
+            
+        Returns:
+            Dictionary with generated sequences
+        """
+        self.model.eval()
+        
+        with torch.no_grad():
+            # Initialize with input
+            generated_concepts = input_concepts.clone()
+            generated_segments = input_segments.clone()
+            generated_ages = input_ages.clone()
+            generated_abspos = input_abspos.clone()
+            
+            # Generate tokens one by one
+            for step in range(max_new_tokens):
+                # Prepare batch
+                current_batch = {
+                    "concept": generated_concepts,
+                    "segment": generated_segments,
+                    "age": generated_ages,
+                    "abspos": generated_abspos,
+                    "attention_mask": torch.ones_like(generated_concepts)
+                }
+                
+                # Get model outputs
+                with torch.autocast(device_type=self.device.type, dtype=torch.bfloat16):
+                    outputs = self.model(batch=current_batch)
+                    logits = outputs.logits
+                
+                # Get next token logits
+                next_token_logits = logits[:, -1, :] / 0.8  # Temperature
+                
+                # Apply top-p filtering
+                sorted_logits, sorted_indices = torch.sort(next_token_logits, descending=True)
+                cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
+                sorted_indices_to_remove = cumulative_probs > 0.9
+                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
+                sorted_indices_to_remove[..., 0] = 0
+                indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
+                next_token_logits[indices_to_remove] = float('-inf')
+                
+                # Sample next token
+                probs = torch.softmax(next_token_logits, dim=-1)
+                next_tokens = torch.multinomial(probs, num_samples=1).squeeze(1)
+                
+                # Generate corresponding embeddings
+                next_segments = torch.zeros_like(next_tokens)
+                next_ages = torch.zeros_like(next_tokens, dtype=torch.float)
+                next_abspos = torch.zeros_like(next_tokens, dtype=torch.float)
+                
+                for i in range(len(next_tokens)):
+                    if next_tokens[i].item() == 2:  # SEP token
+                        next_segments[i] = generated_segments[i, -1] + 1 if generated_segments.size(1) > 0 else 1
+                    else:
+                        next_segments[i] = generated_segments[i, -1] if generated_segments.size(1) > 0 else 0
+                    
+                    next_ages[i] = generated_ages[i, -1] + 0.1 if generated_ages.size(1) > 0 else 0.1
+                    next_abspos[i] = generated_abspos[i, -1] + 1.0 if generated_abspos.size(1) > 0 else 1.0
+                
+                # Append to sequences
+                generated_concepts = torch.cat([generated_concepts, next_tokens.unsqueeze(-1)], dim=-1)
+                generated_segments = torch.cat([generated_segments, next_segments.unsqueeze(-1)], dim=-1)
+                generated_ages = torch.cat([generated_ages, next_ages.unsqueeze(-1)], dim=-1)
+                generated_abspos = torch.cat([generated_abspos, next_abspos.unsqueeze(-1)], dim=-1)
+                
+                # Stop if EOS token
+                if 2 in next_tokens:  # SEP token as EOS
+                    break
+        
+        self.model.train()
+        
+        return {
+            'concepts': generated_concepts,
+            'segments': generated_segments,
+            'ages': generated_ages,
+            'abspos': generated_abspos
+        }
 
     def _should_stop_early(
         self,

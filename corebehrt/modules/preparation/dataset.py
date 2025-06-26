@@ -211,13 +211,21 @@ class DecoderDataset(Dataset):
         patient = self.patients[index]
         concepts = torch.tensor(patient.concepts, dtype=torch.long)
         attention_mask = torch.ones(len(patient.concepts), dtype=torch.long)
+        
+        # Handle None labels for censored data (sequence generation)
+        if patient.labels is None:
+            # For sequence generation, we don't need labels
+            target = torch.tensor([], dtype=torch.long)  # Empty tensor
+        else:
+            target = torch.tensor(patient.labels, dtype=torch.long)
+        
         sample = {
             CONCEPT_FEAT: concepts,
             ABSPOS_FEAT: torch.tensor(patient.abspos, dtype=torch.float),
             SEGMENT_FEAT: torch.tensor(patient.segments, dtype=torch.long),
             AGE_FEAT: torch.tensor(patient.ages, dtype=torch.float),
             ATTENTION_MASK: attention_mask,
-            TARGET: torch.tensor(patient.labels, dtype=torch.long),
+            TARGET: target,
         }
         return sample
     
