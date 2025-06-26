@@ -6,14 +6,12 @@ paths:
 ## INPUTS
   features: ./outputs/features
   tokenized: ./outputs/tokenized
-  # tokenized_file: ...
-  # tokenized_pids: ...
-  
-  ## optional
-  # cohort: ... # path to cohort directory
+  cohort: ./outputs/cohort/held_out/ # path to cohort directory
+  outcomes: ./outputs/outcomes
+  outcome: TEST_OUTCOME.csv
 
 ## OUTPUTS
-  prepared_data: ./outputs/pretraining/processed_data/ # Save model/outputs to this folder
+  prepared_data: ./outputs/testing/held_out/processed_data_decoder # Save model/outputs to this folder
   #runs: ./outputs/pretraining # Use for generating a new model folder
   
 data:

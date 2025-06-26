@@ -35,7 +35,12 @@ class ModelManager:
 
         # Update config from old model, if relevant
         if self.restart_model_path is not None:
-            self.cfg.model = load_model_cfg_from_checkpoint(cfg_path, "finetune_config")
+            if os.path.exists(join(cfg_path, "finetune_config.yaml")):
+                self.cfg.model = load_model_cfg_from_checkpoint(cfg_path, "finetune_config")
+            elif os.path.exists(join(cfg_path, "train_decoder.yaml")):
+                self.cfg.model = load_model_cfg_from_checkpoint(cfg_path, "train_decoder")
+            else:
+                raise ValueError("No config file found in restart_model path")
 
         # Check arguments are valid
         self.check_arguments()
@@ -95,6 +100,14 @@ class ModelManager:
             self.cfg, checkpoint=checkpoint, model_path=self.checkpoint_model_path
         )
         model = self.initializer.initialize_finetune_model(outcomes)
+        return model
+    
+    def initialize_decoder_model(self, checkpoint, train_dataset):
+        logger.info("Initializing model")
+        self.initializer = Initializer(
+            self.cfg, checkpoint=checkpoint, model_path=self.checkpoint_model_path
+        )
+        model = self.initializer.initialize_decoder_model(train_dataset)
         return model
 
     def initialize_training_components(self, model, outcomes):

@@ -57,7 +57,7 @@ class Initializer:
         """Initialize model from checkpoint or from scratch."""
         if self.checkpoint:
             logger.info("Loading model from checkpoint")
-            model = self.loader.load_model(
+            model = self.loader.load_decoder_model(
                 CorebehrtForLanguageModeling, checkpoint=self.checkpoint
             )
             model.to(self.device)

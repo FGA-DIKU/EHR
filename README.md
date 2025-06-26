@@ -102,6 +102,10 @@ The decoder pipeline can be run from the root directory by executing the followi
 (.venv) python -m corebehrt.main.create_data
 (.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_train_decoder.yaml
 (.venv) python -m corebehrt.main.train_decoder
+(.venv) python -m corebehrt.main.create_outcomes
+(.venv) python -m corebehrt.main.select_cohort --config_path corebehrt/configs/select_cohort_held_out.yaml
+(.venv) python -m corebehrt.main.prepare_training_data --config_path corebehrt/configs/prepare_test_decoder.yaml
+(.venv) python -m corebehrt.main.evaluate_decoder --config_path ./corebehrt/configs/evaluate_decoder.yaml
 ```
 
 

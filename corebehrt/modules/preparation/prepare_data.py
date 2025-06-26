@@ -181,7 +181,6 @@ class DatasetPreparer:
         data.save(self.processed_dir)
         outcomes.to_csv(join(self.processed_dir, OUTCOMES_FILE), index=False)
         index_dates.to_csv(join(self.processed_dir, INDEX_DATES_FILE), index=False)
-
         return data
 
     def prepare_pretrain_data(self, save_data=False, add_decoder_tokens=False) -> Tuple[PatientDataset, dict]:

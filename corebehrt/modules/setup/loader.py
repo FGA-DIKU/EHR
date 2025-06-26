@@ -2,7 +2,7 @@ import logging
 from os.path import join
 
 import torch
-from transformers import ModernBertConfig
+from transformers import ModernBertConfig, GPT2Config
 
 from corebehrt.functional.setup.model import get_last_checkpoint_epoch
 
@@ -27,6 +27,17 @@ class ModelLoader:
         config.update(add_config)
         model = model_class(config, **kwargs)
 
+        return self.load_state_dict_into_model(model, checkpoint)
+    
+    def load_decoder_model(
+        self, model_class, add_config: dict = {}, checkpoint: dict = None, kwargs={}
+    ):
+        """Load model from config and checkpoint. model_class is the class of the model to be loaded."""
+        checkpoint = self.load_checkpoint() if checkpoint is None else checkpoint
+        # Load the config from file
+        config = GPT2Config.from_pretrained(self.model_path)
+        config.update(add_config)
+        model = model_class(config, **kwargs)
         return self.load_state_dict_into_model(model, checkpoint)
 
     def load_state_dict_into_model(

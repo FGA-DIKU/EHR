@@ -23,10 +23,10 @@ trainer_args:
   early_stopping: null # num_epochs or null/false
 
 model:
-  n_embd: 768
-  n_layer: 12
-  n_head: 12
-  n_inner: 48
+  n_embd: 384 #768
+  n_layer: 6 #12
+  n_head: 6 #12
+  n_inner: 24 #48
   type_vocab_size: 1024 # !!! type_vocab_size should be > truncation_len//2 if sep token else >truncation len
   n_positions: 1024 # the longest sequence length we will use this model with
   embedding_dropout: 0.1

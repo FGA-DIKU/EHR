@@ -13,6 +13,7 @@ PREPARE_FINETUNE_CFG = "prepare_finetune.yaml"
 EVALUATE_CFG = "evaluate_finetune.yaml"
 XGBOOST_CFG = "xgboost.yaml"
 TRAIN_DECODER_CFG = "train_decoder.yaml"
+EVALUATE_DECODER_CFG = "evaluate_decoder.yaml"
 
 ### Files ###
 VOCABULARY_FILE = "vocabulary.pt"
