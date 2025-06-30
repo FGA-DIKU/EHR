@@ -7,7 +7,7 @@
 ![Doc Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kirilklein/b02ecb317ea24a8ced5e72ae96e1c0c3/raw/docstr-coverage.json)
 ![Test Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kirilklein/b02ecb317ea24a8ced5e72ae96e1c0c3/raw/covbadge.json)
 
-> **A framework for processing and analyzing Electronic Health Records (EHR) data using BERT-based models.**
+> **A framework for processing and analyzing Electronic Health Records (EHR) data using transformer-based models.**
 
 BONSAI helps researchers and data scientists preprocess EHR data, train models, and generate outcomes for downstream clinical predictions and analyses.
 
