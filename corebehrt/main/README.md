@@ -15,7 +15,7 @@ This guide walks through the steps required to **finetune a model for binary cla
 
 ## 1. Create Data
 
-The COREBEHRT pipeline requires input data in the [MEDS (Medical-Event-Data-Standard)](https://github.com/Medical-Event-Data-Standard/meds) format, which is a standardized structure for longitudinal healthcare data. You can use [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to convert your raw healthcare data into MEDS format.
+The BONSAI pipeline requires input data in the [MEDS (Medical-Event-Data-Standard)](https://github.com/Medical-Event-Data-Standard/meds) format, which is a standardized structure for longitudinal healthcare data. You can use [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to convert your raw healthcare data into MEDS format.
 `create_data` is the first step in the pipeline and is used to convert MEDS data into features and tokenize them.
 Feature creation done by `FeatureCreator` class in `corebehrt/functional/features/creators.py`. Consists of:
 
@@ -227,7 +227,7 @@ With this example config we fine-tune the model using data available up to 01/01
 For testing, we use data up to 01/01/2021 to predict outcomes from 01/01/2021-01/01/2022.
 
 <div align="center">
-  <img src="../../docs/COREBEHRT_simulated_prospective.jpg" alt="COREBEHRT simulated prospective study">
+  <img src="../../docs/BONSAI_simulated_prospective.jpg" alt="BONSAI simulated prospective study">
 </div>
 
 

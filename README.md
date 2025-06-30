@@ -1,4 +1,4 @@
-# COREBEHRT
+# BONSAI
 
 [![Pipeline tests](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/pipeline.yml)
 [![Unittests](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml/badge.svg)](https://github.com/FGA-DIKU/EHR/actions/workflows/unittests.yml)
@@ -7,15 +7,15 @@
 ![Doc Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kirilklein/b02ecb317ea24a8ced5e72ae96e1c0c3/raw/docstr-coverage.json)
 ![Test Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/kirilklein/b02ecb317ea24a8ced5e72ae96e1c0c3/raw/covbadge.json)
 
-> **A framework for processing and analyzing Electronic Health Records (EHR) data using BERT-based models.**
+> **A framework for processing and analyzing Electronic Health Records (EHR) data using transformer-based models.**
 
-COREBEHRT helps researchers and data scientists preprocess EHR data, train models, and generate outcomes for downstream clinical predictions and analyses.
+BONSAI helps researchers and data scientists preprocess EHR data, train models, and generate outcomes for downstream clinical predictions and analyses.
 
 ---
 
 ## Table of Contents
 
-- [COREBEHRT](#corebehrt)
+- [BONSAI](#corebehrt)
   - [Table of Contents](#table-of-contents)
   - [Key Features](#key-features)
   - [Directory Overview](#directory-overview)
@@ -69,9 +69,9 @@ source .venv/bin/activate
 
 ## Pipeline
 
-![COREBEHRT Overview](docs/COREBEHRT_overview_dark.jpg)
+![BONSAI Overview](docs/COREBEHRT_overview_dark.jpg)
 
-Below is a high-level description of the steps in the COREBEHRT pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
+Below is a high-level description of the steps in the BONSAI pipeline. For detailed configuration options, see the [main README](corebehrt/main/README.md).
 The pipeline can be run from the root directory by executing the following commands:
 
 ```bash
@@ -89,7 +89,7 @@ The pipeline can be run from the root directory by executing the following comma
 
 ### Converting to MEDS
 
-Before using COREBEHRT, you need to convert your raw healthcare data into the [MEDS (Medical-Event-Data-Standard) format](https://github.com/Medical-Event-Data-Standard/meds) format. We provide a companion tool [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to help with this conversion:
+Before using BONSAI, you need to convert your raw healthcare data into the [MEDS (Medical-Event-Data-Standard) format](https://github.com/Medical-Event-Data-Standard/meds) format. We provide a companion tool [ehr2meds](https://github.com/FGA-DIKU/ehr2meds) to help with this conversion:
 
 - Converts source data (e.g., hospital EHR dumps, registry data) into MEDS
 - Performs code normalization and standardization
@@ -140,7 +140,7 @@ For a detailed overview of the pipeline, see the [main README](corebehrt/main/RE
 
 ## Azure Integration
 
-For running COREBEHRT on Azure cloud infrastructure using SDK v2, refer to the [Azure guide](corebehrt/azure/README.md). This includes:
+For running BONSAI on Azure cloud infrastructure using SDK v2, refer to the [Azure guide](corebehrt/azure/README.md). This includes:
 
 - Configuration setup for Azure
 - Data store management
@@ -162,7 +162,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Citation
 
-If you use COREBEHRT in your research, please cite the following paper:
+If you use BONSAI in your research, please cite the following paper:
 
 ```bibtex
 ```
