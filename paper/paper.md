@@ -1,5 +1,5 @@
 ---
-title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using BERT-based models'
+title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
 tags:
     - Python
     - EHR
