@@ -1,5 +1,9 @@
 ---
+<<<<<<< HEAD
 title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
+=======
+title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using BERT-based models'
+>>>>>>> 6ea7e61 (name change)
 tags:
     - Python
     - EHR
@@ -46,7 +50,11 @@ The growing adoption of foundation models in Natural Language Processing (NLP) [
 BONSAI was developed to provide an end-to-end pipeline in a modular setup, enabling flexible experimentation with EHR modeling. Users can easily switch between data representations, sources, normalisation strategies, and fine-tuning heads. Although ModernBERT is the default backbone, the framework supports alternative architectures with minimal configuration changes. It also includes baseline models for comparison and supports deployment on Microsoft Azure, a platform commonly used for working with protected health data, making it practical for working with real-world clinical data.
 
 # Figures
+<<<<<<< HEAD
 Figure \autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
+=======
+\autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
+>>>>>>> 6ea7e61 (name change)
 
 ![The BONSAI pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
