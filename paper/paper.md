@@ -12,15 +12,15 @@ authors:
     equal-contrib: true
     affiliation: 1 
   - name: Kiril Klein
-    orcid: 
+    orcid: 0000-0001-8779-0209
     equal-contrib: true
     affiliation: 1 
   - name: Mikkel Odgaard
-    orcid: 
+    orcid: 0000-0002-9072-0874
     equal-contrib: true
     affiliation: 1 
   - name: Stephan Lorenzen
-    orcid: 
+    orcid: 0000-0001-6701-3752
     equal-contrib: true
     affiliation: 1 
   - name: Zahra Sobhaninia
