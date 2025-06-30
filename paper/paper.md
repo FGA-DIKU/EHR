@@ -1,9 +1,13 @@
 ---
 <<<<<<< HEAD
+<<<<<<< HEAD
 title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
 =======
 title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using BERT-based models'
 >>>>>>> 6ea7e61 (name change)
+=======
+title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
+>>>>>>> 26164a8 (transformer model)
 tags:
     - Python
     - EHR
