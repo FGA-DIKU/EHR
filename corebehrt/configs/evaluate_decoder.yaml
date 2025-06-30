@@ -10,34 +10,21 @@ paths:
 
 # Evaluation parameters
 test_batch_size: 128
-return_embeddings: True
 
 # Sequence generation parameters
 sequence_generation:
   max_length: 50  # Maximum length of generated sequences
-  temperature: 1.0  # Sampling temperature (higher = more random)
+  do_sample: true  # Enable sampling instead of greedy decoding
+  temperature: 0.8  # Sampling temperature (lower = more focused, higher = more random)
   top_k: 50  # Top-k sampling parameter
   top_p: 0.9  # Top-p (nucleus) sampling parameter
+  repetition_penalty: 1.1  # Penalty for repeating tokens
 
-# Outcome detection parameters
-outcome_detection:
-  use_token_detection: true
-  use_position_detection: true
-  use_pattern_detection: false
-  outcome_tokens: []  # List of token IDs that represent outcomes
-  position_tolerance: 5  # Tolerance for position-based outcome detection (in tokens)
-  outcome_patterns: []  # List of patterns to look for in generated sequences
-
-# Metrics for regular inference
-metrics:
-  perplexity:
-    _target_: corebehrt.modules.monitoring.metrics.Perplexity
-  ce_loss:
-    _target_: corebehrt.modules.monitoring.metrics.LossAccessor
-    loss_name: loss
-  next_token_precision_at_10:
-    _target_: corebehrt.modules.monitoring.metrics.NextTokenPrecisionAtK
-    topk: 10
+sequence_evaluation:
+  outcomes: ['DE11']
+  metrics: 
+    roc_auc: 
+      _target_: sklearn.metrics.roc_auc_score
 
 # Save additional information
 save_info: 

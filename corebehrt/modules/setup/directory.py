@@ -372,7 +372,6 @@ class DirectoryPreparer:
                 self.cfg.paths.outcome = join(outcomes, outcome)
 
             self.check_file("outcome")
-
         self.create_directory("prepared_data", clear=True)
         if name is None:
             self.write_config("prepared_data", name=PREPARE_FINETUNE_CFG)

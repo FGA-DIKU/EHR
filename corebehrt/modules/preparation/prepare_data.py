@@ -29,7 +29,8 @@ from corebehrt.functional.preparation.utils import (
     get_background_length_pd,
     get_concept_id_to_delay,
     get_non_priority_tokens,
-    add_bos_eos_tokens
+    add_bos_eos_tokens,
+    add_bos_tokens
 )
 from corebehrt.functional.utils.time import get_hours_since_epoch
 from corebehrt.modules.cohort_handling.patient_filter import filter_df_by_pids
@@ -162,9 +163,8 @@ class DatasetPreparer:
 
         if data_cfg.get("add_decoder_tokens", False):
             data.patients = data.process_in_parallel(
-                add_bos_eos_tokens,
+                add_bos_tokens,
                 bos_token=DEFAULT_VOCABULARY[BOS_TOKEN],
-                eos_token=DEFAULT_VOCABULARY[EOS_TOKEN],
             )
 
         data.patients = data.process_in_parallel(normalize_segments_for_patient)

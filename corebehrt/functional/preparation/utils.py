@@ -119,6 +119,16 @@ def get_concept_id_to_delay(concept_pattern_delays: dict, vocab: dict) -> dict:
 
     return concept_id_to_delay
 
+def add_bos_tokens(patient: PatientData, bos_token: int) -> PatientData:
+    """
+    Adds BOS token to the patient's data.
+    """
+    patient.concepts = [bos_token] + patient.concepts
+    patient.abspos = [patient.abspos[0]] + patient.abspos
+    patient.segments = [patient.segments[0]] + patient.segments
+    patient.ages = [patient.ages[0]] + patient.ages
+    return patient
+
 def add_bos_eos_tokens(patient: PatientData, bos_token: int, eos_token: int) -> PatientData:
     """
     Adds BOS and EOS tokens to the patient's data.
