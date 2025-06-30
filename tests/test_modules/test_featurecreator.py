@@ -102,6 +102,17 @@ class TestFeatureCreator(unittest.TestCase):
             (result["segment"].values == self.expected_segments.values).all()
         )
 
+    def test_create_background_wo_dob(self):
+        # Remove DOB rows for only patient 1
+        concepts_wo_dob = self.concepts.copy()
+        patient_1_dob_mask = (concepts_wo_dob[PID_COL] == 1) & (
+            concepts_wo_dob[CONCEPT_COL] == "DOB"
+        )
+        concepts_wo_dob = concepts_wo_dob[~patient_1_dob_mask].copy()
+        with self.assertRaises(ValueError) as context:
+            self.feature_creator(concepts_wo_dob)
+        self.assertIn("Some patients have no DOB", str(context.exception))
+
     def test_create_abspos(self):
         result, _ = self.feature_creator(self.concepts)
         self.assertIn("abspos", result.columns)
