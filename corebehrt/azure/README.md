@@ -1,4 +1,4 @@
-# Running CoreBEHRT in Azure with SDK v2
+# Running BONSAI in Azure with SDK v2
 
 ## Setting up the instance environment
 
@@ -32,11 +32,11 @@ The normal configuration files can be used when running in Azure with only minor
 
 A path on the data store must be specified as `<datastore>:<path>`, while an asset must be specified as `<asset_name>:<asset_version>` or `<asset_name>@<asset_label>`.
 
-Example from `create_data.yaml`, using the CoreBEHRT example data directory registered Azure asset (`CoreBEHRT_example_data`, latest version) as input, and folders on `researcher-data` for output:
+Example from `create_data.yaml`, using the BONSAI example data directory registered Azure asset (`BONSAI_example_data`, latest version) as input, and folders on `researcher-data` for output:
 
 ```yaml
 paths:
-    data: "CoreBEHRT_example_data@latest"
+    data: "BONSAI_example_data@latest"
     features: "researher-data:unit_tests/corebehrt/output/features"
     tokenized: "researher-data:unit_tests/corebehrt/output/tokenized"
 ```
@@ -49,9 +49,9 @@ The `azure` submodule can be run directly from the command line:
 python -m corebehrt.azure [-h] {build_env, job}
 ```
 
-### Building the CoreBEHRT environment
+### Building the BONSAI environment
 
-The `CoreBEHRT` Azure environment needed for running CoreBEHRT jobs can be built using the sub-command:
+The `BONSAI` Azure environment needed for running BONSAI jobs can be built using the sub-command:
 
 ```bash
 python -m corebehrt.azure build_env
@@ -61,7 +61,7 @@ The environment must be build, before jobs can be run.
 
 ### Running jobs
 
-CoreBEHRT jobs are run using the `job` sub-command:
+BONSAI jobs are run using the `job` sub-command:
 
 ```bash
 python -m corebehrt.azure job {create_data,create_outcomes,pretrain,select_cohort,finetune_cv} <compute> [-e <experiment>] [-o <output_id>=<output_name>] [-o ...] [-c <path_to_config>] [--log_system_metrics]
@@ -96,7 +96,7 @@ python -m corebehrt.azure job create_data CPU-20-LP -e "CBTest" -o features=CBFe
 
 ### Running pipelines
 
-CoreBEHRT pipelines are currently added in `corebehrt.azure.pipelines`. The following pipelines are available:
+BONSAI pipelines are currently added in `corebehrt.azure.pipelines`. The following pipelines are available:
 
 - **E2E Pipeline**: Complete end-to-end pipeline including pretraining and finetuning
 
@@ -136,13 +136,13 @@ python -m corebehrt.azure pipeline finetune --data <data-path> --features <featu
 Running E2E on example MEDS data:
 
 ```bash
-python -m corebehrt.azure pipeline E2E CPU-20-LP corebehrt/azure/configs/small --data CoreBEHRT_example_data@latest -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
+python -m corebehrt.azure pipeline E2E CPU-20-LP corebehrt/azure/configs/small --data BONSAI_example_data@latest -cp pretrain=GPU-A100-Single -cp finetune_cv=GPU-A100-Single -e full_e2e_test
 ```
 
 Running finetune with a pretrained model:
 
 ```bash
-python -m corebehrt.azure pipeline FINETUNE CPU-20-LP corebehrt/azure/configs/finetune --data CoreBEHRT_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized -cp finetune_cv=GPU-A100-Single -e finetune_test
+python -m corebehrt.azure pipeline FINETUNE CPU-20-LP corebehrt/azure/configs/finetune --data BONSAI_example_data@latest --pretrain_model "researcher_data:DIR/MODEL" --features CBFeatures --tokenized CBTokenized -cp finetune_cv=GPU-A100-Single -e finetune_test
 ```
 
 You can also run
@@ -251,14 +251,14 @@ See the `test.yaml` files in subdirectories of `corebehrt/azure/configs` for exa
 
 Available tests are:
 
-- **small**: Runs E2E on `example_data/example_MEDS_data` (`CoreBEHRT_example_data@latest`).
+- **small**: Runs E2E on `example_data/example_MEDS_data` (`BONSAI_example_data@latest`).
 - **full**: Runs E2E on `MEDS_all_20240910:1`.
 
 ## Running from a python script
 
-### Building the CoreBEHRT environment (script)
+### Building the BONSAI environment (script)
 
-The CoreBEHRT environment can be build from a script/notebook using:
+The BONSAI environment can be build from a script/notebook using:
 
 ```python
 from corebehrt.azure import environment
@@ -268,7 +268,7 @@ environment.build()
 
 ### Running jobs (script)
 
-Each CoreBEHRT main can be run from a script/notebook as well:
+Each BONSAI main can be run from a script/notebook as well:
 
 ```python
 
@@ -280,4 +280,4 @@ job = create_job(<job_name>, cfg, compute=<compute>, register_output=<output_map
 util.run_job(job, <experiment>)
 ```
 
-where `<job_name>` is one of the CoreBEHRT main scripts, `<compute>` is the name of the compute cluster to use, `<register_output>` (optional) is a dict mapping output names to asset names, and `<log_system_metrics>` (optional, default is `False`) is a boolean.
+where `<job_name>` is one of the BONSAI main scripts, `<compute>` is the name of the compute cluster to use, `<register_output>` (optional) is a dict mapping output names to asset names, and `<log_system_metrics>` (optional, default is `False`) is a boolean.
