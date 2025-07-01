@@ -157,6 +157,8 @@ def create_background(concepts: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFram
     dob_rows = concepts[concepts[CONCEPT_COL] == BIRTH_CODE]
     birthdates = dict(zip(dob_rows[PID_COL], dob_rows[TIMESTAMP_COL]))
     concepts[BIRTHDATE_COL] = concepts[PID_COL].map(birthdates)
+    if concepts[BIRTHDATE_COL].isna().any():
+        raise ValueError("Some patients have no DOB")
 
     # Use boolean masking instead of index-based selection for background rows
     bg_mask = concepts[TIMESTAMP_COL].isna()
