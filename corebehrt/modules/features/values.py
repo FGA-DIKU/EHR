@@ -34,6 +34,10 @@ class ValueCreator:
         # Extract prefix from concept and use it for values codes
         if add_prefix and prefix_regex is not None:
             values["prefix"] = values[CONCEPT_COL].str.extract(prefix_regex)
+            # Handle cases where regex doesn't match
+            prefix_na_mask = values["prefix"].isna()
+            if prefix_na_mask.any():
+                values.loc[prefix_na_mask, "prefix"] = "UNK"
             values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
         else:
             values.loc[:, "code"] = values["binned_value"]
