@@ -33,7 +33,7 @@ class ValueCreator:
 
         # Extract prefix from concept and use it for values codes
         if add_prefix:
-            values["prefix"] = values[CONCEPT_COL].str.extract(r"^([^/]+)/")
+            values["prefix"] = values[CONCEPT_COL].str.extract(prefix_regex)
             values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
         else:
             values.loc[:, "code"] = values["binned_value"]
