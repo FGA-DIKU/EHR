@@ -216,7 +216,14 @@ def handle_numeric_values(
     if features_cfg and "values" in features_cfg:
         num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
         add_prefix = features_cfg.values.value_creator_kwargs.get("add_prefix", False)
-        prefix_regex = features_cfg.values.value_creator_kwargs.get("prefix_regex", r"^([^/]+)/")
-        return ValueCreator.bin_results(concepts, num_bins=num_bins, add_prefix=add_prefix, prefix_regex=prefix_regex)
+        prefix_regex = features_cfg.values.value_creator_kwargs.get(
+            "prefix_regex", r"^([^/]+)/"
+        )
+        return ValueCreator.bin_results(
+            concepts,
+            num_bins=num_bins,
+            add_prefix=add_prefix,
+            prefix_regex=prefix_regex,
+        )
 
     return concepts.drop(columns=["numeric_value"])

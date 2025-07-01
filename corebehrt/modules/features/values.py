@@ -1,5 +1,5 @@
 import pandas as pd
-from corebehrt.constants.data import CONCEPT_COL, VALUE_COL
+from corebehrt.constants.data import CONCEPT_COL
 
 
 class ValueCreator:
@@ -9,7 +9,12 @@ class ValueCreator:
     """
 
     @staticmethod
-    def bin_results(concepts: pd.DataFrame, num_bins=100, add_prefix=False, prefix_regex=r"^([^/]+)/") -> pd.DataFrame:
+    def bin_results(
+        concepts: pd.DataFrame,
+        num_bins=100,
+        add_prefix=False,
+        prefix_regex=r"^([^/]+)/",
+    ) -> pd.DataFrame:
         if concepts.empty:
             # Return empty DataFrame with same columns plus the expected new ones
             return concepts.assign(
@@ -27,7 +32,7 @@ class ValueCreator:
         values = concepts.dropna(subset=["binned_value"]).copy()
 
         # Extract prefix from concept and use it for values codes
-        if add_prefix: 
+        if add_prefix:
             values["prefix"] = values[CONCEPT_COL].str.extract(r"^([^/]+)/")
             values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
         else:
@@ -35,12 +40,12 @@ class ValueCreator:
 
         values.loc[:, "order"] = 1
         concatted = pd.concat([concepts, values])
-        
+
         # Drop columns that are not needed
         columns_to_drop = ["numeric_value", "binned_value"]
         if add_prefix:
             columns_to_drop.append("prefix")
-        
+
         return concatted.drop(columns=columns_to_drop, axis=1)
 
     @staticmethod
