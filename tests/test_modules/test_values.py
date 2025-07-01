@@ -84,20 +84,19 @@ class TestCreators(unittest.TestCase):
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["code"]
         )
-        expected_binned_concepts = [
-            [
-                lab,
-                prefix + "VAL_" + str(int(float(value) * 100))
-                if value != "Kommentar"
-                else None,
-            ]
-            for prefix, lab, values in zip(
-                ["S/", "S/", "L/", "L/", "L/"],
-                self.lab_dict_normed_prefix.keys(),
-                self.lab_dict_normed_prefix.values(),
-            )
-            for value in values
-        ]
+
+        expected_binned_concepts = []
+        for lab, values in self.lab_dict_normed_prefix.items():
+            prefix = lab.split("/")[0]  # Extract prefix from key
+            for value in values:
+                expected_binned_concepts.append(
+                    [
+                        lab,
+                        f"{prefix}/VAL_{int(float(value) * 100)}"
+                        if value != "Kommentar"
+                        else None,
+                    ]
+                )
         expected_flattened_binned_concepts = [
             item
             for sublist in expected_binned_concepts

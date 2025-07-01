@@ -13,7 +13,7 @@ class ValueCreator:
         concepts: pd.DataFrame,
         num_bins=100,
         add_prefix=False,
-        prefix_regex=r"^([^/]+)/",
+        prefix_regex=None,
     ) -> pd.DataFrame:
         if concepts.empty:
             # Return empty DataFrame with same columns plus the expected new ones
@@ -32,7 +32,7 @@ class ValueCreator:
         values = concepts.dropna(subset=["binned_value"]).copy()
 
         # Extract prefix from concept and use it for values codes
-        if add_prefix:
+        if add_prefix and prefix_regex is not None:
             values["prefix"] = values[CONCEPT_COL].str.extract(prefix_regex)
             values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
         else:

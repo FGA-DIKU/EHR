@@ -217,8 +217,10 @@ def handle_numeric_values(
         num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
         add_prefix = features_cfg.values.value_creator_kwargs.get("add_prefix", False)
         prefix_regex = features_cfg.values.value_creator_kwargs.get(
-            "prefix_regex", r"^([^/]+)/"
+            "prefix_regex", None
         )
+        if prefix_regex is not None and not is_valid_regex(prefix_regex):
+            raise ValueError(f"Invalid regex: {prefix_regex}")
         return ValueCreator.bin_results(
             concepts,
             num_bins=num_bins,
