@@ -1,4 +1,5 @@
 import pandas as pd
+from corebehrt.constants.data import CONCEPT_COL, VALUE_COL
 
 
 class ValueCreator:
@@ -8,7 +9,7 @@ class ValueCreator:
     """
 
     @staticmethod
-    def bin_results(concepts: pd.DataFrame, num_bins=100) -> pd.DataFrame:
+    def bin_results(concepts: pd.DataFrame, num_bins=100, add_prefix=False, prefix_regex=r"^([^/]+)/") -> pd.DataFrame:
         if concepts.empty:
             # Return empty DataFrame with same columns plus the expected new ones
             return concepts.assign(
@@ -24,10 +25,23 @@ class ValueCreator:
         concepts["index"] = concepts.index
         concepts.loc[:, "order"] = 0
         values = concepts.dropna(subset=["binned_value"]).copy()
-        values.loc[:, "code"] = values["binned_value"]
+
+        # Extract prefix from concept and use it for values codes
+        if add_prefix: 
+            values["prefix"] = values[CONCEPT_COL].str.extract(r"^([^/]+)/")
+            values.loc[:, "code"] = values["prefix"] + "/" + values["binned_value"]
+        else:
+            values.loc[:, "code"] = values["binned_value"]
+
         values.loc[:, "order"] = 1
         concatted = pd.concat([concepts, values])
-        return concatted.drop(columns=["numeric_value", "binned_value"], axis=1)
+        
+        # Drop columns that are not needed
+        columns_to_drop = ["numeric_value", "binned_value"]
+        if add_prefix:
+            columns_to_drop.append("prefix")
+        
+        return concatted.drop(columns=columns_to_drop, axis=1)
 
     @staticmethod
     def bin(normalized_values: pd.Series, num_bins=100) -> pd.Series:

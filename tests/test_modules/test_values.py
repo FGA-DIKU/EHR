@@ -39,8 +39,17 @@ class TestCreators(unittest.TestCase):
             "LAB6": ["1.00"],
         }
 
+        self.lab_dict_normed_prefix = {
+            "S/LAB1": ["0.20", "0.30", "0.40", "0.25", "0.35", "0.21"],
+            "S/LAB2": ["0.99", "0.81", "0.42", "0.21"],
+            "L/LAB4": ["Kommentar"],
+            "L/LAB5": ["0.11", "0.15", "0.12"],
+            "L/LAB6": ["1.00"],
+        }
+
         # Create sample data as pandas DataFrames
         self.concepts_pd_normed = self._create_concepts(self.lab_dict_normed)
+        self.concepts_pd_normed_prefix = self._create_concepts(self.lab_dict_normed_prefix)
 
     def test_create_binned_value(self):
         binned_values = ValueCreator.bin_results(self.concepts_pd_normed, num_bins=100)
@@ -53,6 +62,27 @@ class TestCreators(unittest.TestCase):
                 "VAL_" + str(int(float(value) * 100)) if value != "Kommentar" else None,
             ]
             for lab, values in self.lab_dict_normed.items()
+            for value in values
+        ]
+        expected_flattened_binned_concepts = [
+            item
+            for sublist in expected_binned_concepts
+            for item in sublist
+            if item is not None
+        ]
+        self.assertEqual(sorted_concepts, expected_flattened_binned_concepts)
+
+    def test_create_binned_value_with_prefix(self):
+        binned_values = ValueCreator.bin_results(self.concepts_pd_normed_prefix, num_bins=100, add_prefix=True, prefix_regex=r"^([^/]+)/")
+        sorted_concepts = list(
+            binned_values.sort_values(by=["index", "order"]).sort_index()["code"]
+        )
+        expected_binned_concepts = [
+            [
+                lab,
+                prefix + "VAL_" + str(int(float(value) * 100)) if value != "Kommentar" else None,
+            ]
+            for prefix, lab, values in zip(["S/", "S/", "L/", "L/", "L/"], self.lab_dict_normed_prefix.keys(), self.lab_dict_normed_prefix.values())
             for value in values
         ]
         expected_flattened_binned_concepts = [
