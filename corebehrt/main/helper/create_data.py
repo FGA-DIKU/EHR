@@ -216,16 +216,16 @@ def handle_numeric_values(
     if features_cfg and "values" in features_cfg:
         num_bins = features_cfg.values.value_creator_kwargs.get("num_bins", 100)
         add_prefix = features_cfg.values.value_creator_kwargs.get("add_prefix", False)
-        prefix_regex = features_cfg.values.value_creator_kwargs.get(
-            "prefix_regex", None
+        separator_regex = features_cfg.values.value_creator_kwargs.get(
+            "separator_regex", None
         )
-        if prefix_regex is not None and not is_valid_regex(prefix_regex):
-            raise ValueError(f"Invalid regex: {prefix_regex}")
+        if separator_regex is not None and not is_valid_regex(separator_regex):
+            raise ValueError(f"Invalid regex: {separator_regex}")
         return ValueCreator.bin_results(
             concepts,
             num_bins=num_bins,
             add_prefix=add_prefix,
-            prefix_regex=prefix_regex,
+            separator_regex=separator_regex,
         )
 
     return concepts.drop(columns=["numeric_value"])

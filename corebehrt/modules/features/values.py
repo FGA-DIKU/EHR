@@ -13,7 +13,7 @@ class ValueCreator:
         concepts: pd.DataFrame,
         num_bins=100,
         add_prefix=False,
-        prefix_regex=None,
+        separator_regex=None,
     ) -> pd.DataFrame:
         if concepts.empty:
             # Return empty DataFrame with same columns plus the expected new ones
@@ -32,8 +32,8 @@ class ValueCreator:
         values = concepts.dropna(subset=["binned_value"]).copy()
 
         # Extract prefix from concept and use it for values codes
-        if add_prefix and prefix_regex is not None:
-            values["prefix"] = values[CONCEPT_COL].str.extract(prefix_regex)
+        if add_prefix and separator_regex is not None:
+            values["prefix"] = values[CONCEPT_COL].str.extract(separator_regex)
             # Handle cases where regex doesn't match
             prefix_na_mask = values["prefix"].isna()
             if prefix_na_mask.any():

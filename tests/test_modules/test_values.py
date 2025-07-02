@@ -79,7 +79,7 @@ class TestCreators(unittest.TestCase):
             self.concepts_pd_normed_prefix,
             num_bins=100,
             add_prefix=True,
-            prefix_regex=r"^([^/]+)/",
+            separator_regex=r"^([^/]+)/",
         )
         sorted_concepts = list(
             binned_values.sort_values(by=["index", "order"]).sort_index()["code"]
