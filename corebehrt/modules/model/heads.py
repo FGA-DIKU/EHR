@@ -2,10 +2,10 @@ import torch
 
 
 class FineTuneHead(torch.nn.Module):
-    def __init__(self, hidden_size: int):
+    def __init__(self, hidden_size: int, classifier_hidden_size: int = 512):
         super().__init__()
-        self.classifier = torch.nn.Linear(hidden_size, 1)
-        self.pool = BiGRU(hidden_size)
+        # Use 2 linear layers with a larger intermediate size
+        self.pool = BiGRU(hidden_size, classifier_hidden_size)
 
     def forward(
         self,
@@ -21,7 +21,7 @@ class FineTuneHead(torch.nn.Module):
 
 
 class BiGRU(torch.nn.Module):
-    def __init__(self, hidden_size):
+    def __init__(self, hidden_size, classifier_hidden_size):
         super().__init__()
         self.hidden_size = hidden_size
         self.rnn_hidden_size = hidden_size // 2
@@ -30,9 +30,13 @@ class BiGRU(torch.nn.Module):
         )
         # Add layer normalization
         self.norm = torch.nn.LayerNorm(hidden_size)
-        # Adjust the input size of the classifier based on the bidirectionality
-        classifier_input_size = hidden_size
-        self.classifier = torch.nn.Linear(classifier_input_size, 1)
+        # Use 2 linear layers with a larger intermediate size
+        self.classifier = torch.nn.Sequential(
+            torch.nn.Linear(hidden_size, classifier_hidden_size),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.1),
+            torch.nn.Linear(classifier_hidden_size, 1)
+        )
 
     def forward(
         self,
