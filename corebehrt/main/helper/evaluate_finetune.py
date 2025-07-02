@@ -2,6 +2,7 @@ from os.path import join
 from typing import List
 import torch
 import pandas as pd
+import numpy as np
 
 from corebehrt.modules.setup.manager import ModelManager
 from corebehrt.modules.trainer.inference import EHRInferenceRunner
@@ -51,6 +52,9 @@ def compute_metrics(cfg, targets, all_probas, logger):
     """
     if not hasattr(cfg, "metrics") or not cfg.metrics:
         return
+    
+    targets = np.asarray(targets)
+    all_probas = np.asarray(all_probas)
 
     metrics = {k: instantiate_function(v) for k, v in cfg.metrics.items()}
     fold_metrics_list = []

@@ -13,6 +13,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
+from corebehrt.functional.evaluation.delong import delong_roc_auc, delong_roc_auc_std
 
 logger = logging.getLogger(__name__)  # Get the logger for this module
 
@@ -137,6 +138,16 @@ class PR_AUC(BaseMetric):
             logger.warn("PR AUC score could not be computed")
             return 0
 
+
+class Delong_ROC_AUC(BaseMetric):
+    def __call__(self, outputs, batch):
+        probas, targets = self._return_probas_and_targets(outputs, batch)
+        return delong_roc_auc(targets, probas)
+    
+class Delong_ROC_AUC_std(BaseMetric):
+    def __call__(self, outputs, batch):
+        probas, targets = self._return_probas_and_targets(outputs, batch)
+        return delong_roc_auc_std(targets, probas)
 
 class F1(BaseMetric):
     def __call__(self, outputs, batch):

@@ -61,6 +61,10 @@ metrics:
     _target_: corebehrt.modules.monitoring.metrics.PR_AUC
   precentage_positives:
     _target_: corebehrt.modules.monitoring.metrics.Percentage_Positives
+  delong_roc_auc:
+    _target_: corebehrt.modules.monitoring.metrics.Delong_ROC_AUC
+  delong_roc_auc_std:
+    _target_: corebehrt.modules.monitoring.metrics.Delong_ROC_AUC_std
 
   mean_probability:
     _target_: corebehrt.modules.monitoring.metrics.Mean_Probability

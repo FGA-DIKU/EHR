@@ -19,6 +19,10 @@ metrics:
     _target_: sklearn.metrics.roc_auc_score
   pr_auc: 
     _target_: sklearn.metrics.average_precision_score
+  delong_roc_auc:
+    _target_: corebehrt.functional.evaluation.delong.delong_roc_auc
+  delong_roc_auc_std:
+    _target_: corebehrt.functional.evaluation.delong.delong_roc_auc_std
 
 save_info: 
   sequence_length: 
