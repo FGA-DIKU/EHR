@@ -17,6 +17,8 @@ features:
   values:
     value_creator_kwargs:
       num_bins: 100
+      # add_prefix: true # option to add prefix to values based on concept
+      # separator_regex: r"^([^/]+)/" # everything before the seperator is the prefix
   agg_kwargs:
     regex: ^(?:LAB).* # example regex to aggregate all features that start with 'LAB'
     agg_func: "first"
