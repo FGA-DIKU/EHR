@@ -191,6 +191,15 @@ class EHRTrainer:
                     metrics, step_loss, epoch_loss, step=(epoch * len(train_loop)) + i
                 )
                 step_loss = 0
+        
+        # Handle any remaining loss that didn't complete an accumulation step
+        if step_loss > 0:
+            self._clip_gradients()
+            self._update()
+            self._accumulate_metrics(
+                metrics, step_loss, epoch_loss, step=(epoch * len(train_loop)) + len(train_loop) - 1
+            )
+        
         self._log_batch(metrics)
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
@@ -245,13 +254,14 @@ class EHRTrainer:
         val_loss, val_metrics = self._evaluate(epoch, mode="val")
         _, test_metrics = self._evaluate(epoch, mode="test")
         if epoch == 1:  # for testing purposes/if first epoch is best
+            final_step_loss = epoch_loss[-1] if epoch_loss else 0.0
             self._save_checkpoint(
                 epoch,
                 train_loss=epoch_loss,
                 val_loss=val_loss,
                 val_metrics=val_metrics,
                 test_metrics=test_metrics,
-                final_step_loss=epoch_loss[-1],
+                final_step_loss=final_step_loss,
                 best_model=True,
             )
 
@@ -287,13 +297,14 @@ class EHRTrainer:
             == 0
         )
         if should_save:
+            final_step_loss = epoch_loss[-1] if epoch_loss else 0.0
             self._save_checkpoint(
                 epoch,
                 train_loss=epoch_loss,
                 val_loss=val_loss,
                 val_metrics=val_metrics,
                 test_metrics=test_metrics,
-                final_step_loss=epoch_loss[-1],
+                final_step_loss=final_step_loss,
                 best_model=True,
             )
 
@@ -308,8 +319,15 @@ class EHRTrainer:
         for k, v in val_metrics.items():
             self.run_log(name=k, value=v, step=epoch)
         self.run_log(name="Val loss", value=val_loss, step=epoch)
+        
+        # Calculate average train loss safely
+        if epoch_loss and len(epoch_loss) > 0:
+            avg_train_loss = sum(epoch_loss) / (len_train_loop / self.accumulation_steps)
+        else:
+            avg_train_loss = 0.0
+            
         self.log(
-            f"Epoch {epoch} train loss: {sum(epoch_loss) / (len_train_loop / self.accumulation_steps)}"
+            f"Epoch {epoch} train loss: {avg_train_loss}"
         )
         self.log(f"Epoch {epoch} val loss: {val_loss}")
         self.log(f"Epoch {epoch} metrics: {val_metrics}\n")
@@ -330,13 +348,14 @@ class EHRTrainer:
         if self._is_improvement(current_metric_value):
             self.best_metric_value = current_metric_value
             self.early_stopping_counter = 0
+            final_step_loss = epoch_loss[-1] if epoch_loss else 0.0
             self._save_checkpoint(
                 epoch,
                 train_loss=epoch_loss,
                 val_loss=val_loss,
                 val_metrics=val_metrics,
                 test_metrics=test_metrics,
-                final_step_loss=epoch_loss[-1],
+                final_step_loss=final_step_loss,
                 best_model=True,
             )
             return False
