@@ -21,7 +21,8 @@ class TestBiGRU(unittest.TestCase):
     def setUp(self):
         torch.manual_seed(0)
         self.hidden_size = 4
-        self.gru = BiGRU(self.hidden_size)
+        self.classifier_hidden_size = 2
+        self.gru = BiGRU(self.hidden_size, self.classifier_hidden_size)
         self.batch = 2
         self.seq_len = 5
         self.hidden_states = torch.randn(self.batch, self.seq_len, self.hidden_size)

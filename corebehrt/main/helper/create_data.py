@@ -53,6 +53,8 @@ def create_and_save_features(cfg, splits, logger) -> None:
     Returns a list of lists of pids for each batch
     """
     combined_patient_info = pd.DataFrame()
+    logger.info(f"Initialized combined_patient_info as DataFrame with shape: {combined_patient_info.shape}")
+    
     for split_name in splits:
         logger.info(f"Creating features for {split_name}")
         path_name = f"{cfg.paths.data}/{split_name}"
@@ -106,7 +108,7 @@ def create_and_save_features(cfg, splits, logger) -> None:
             concepts = handle_numeric_values(concepts, cfg.get("features"))
             feature_creator = FeatureCreator()
             features, patient_info = feature_creator(concepts)
-            combined_patient_info = pd.concat([combined_patient_info, patient_info])
+            combined_patient_info = pd.concat([combined_patient_info, patient_info])            
             features = exclude_incorrect_event_ages(features)
             total_concepts_after_incorrect += len(features)
 
