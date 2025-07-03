@@ -1,10 +1,10 @@
 """
-E2E pipeline implementation.
+E2E_full pipeline implementation.
 """
 
 from corebehrt.azure.pipelines.base import PipelineMeta, PipelineArg
 
-E2E = PipelineMeta(
+E2E_full = PipelineMeta(
     name="E2E_full",
     help="Run the end-to-end pipeline with held out data.",
     inputs=[
@@ -15,7 +15,7 @@ E2E = PipelineMeta(
 
 def create(component: callable):
     """
-    Define the E2E pipeline.
+    Define the E2E_full pipeline.
 
     Param component(job_type, name=None) is a constructor for components
     which takes arguments job_type (type of job) and optional argument
