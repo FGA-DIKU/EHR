@@ -20,7 +20,7 @@ STD = 0.10
 DEFAULT_INPUT_FILE = f"../../data/vals/synthetic_data/{N}n/bn_labs_n{N}_50p_1unq.csv"
 DEFAULT_WRITE_DIR = f"../../data/vals/synthetic_data/{N}n/" 
 DEFAULT_PLOT_DIR = f"../../data/vals/synthetic_data_plots/{N}n/"
-SAVE_NAME = f'gaus_mean_{LOW_MEAN}_{HIGH_MEAN}_std_{STD}_n{N}_50p_1unq'
+SAVE_NAME = f'gaus_mean_{int(LOW_MEAN*100)}_{int(HIGH_MEAN*100)}_std_{int(STD*100)}_n{N}_50p_1unq'
 POSITIVE_DIAGS = ['S/DIAG1']
 
 # Define new lab value distributions
