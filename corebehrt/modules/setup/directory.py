@@ -329,6 +329,8 @@ class DirectoryPreparer:
             self.cfg.paths.outcome = join(outcomes, self.cfg.paths.get("outcome", ""))
             if exposure := self.cfg.paths.get("exposure", False):
                 self.cfg.paths.exposure = join(outcomes, exposure)
+            if minimum_index_dates := self.cfg.paths.get("minimum_index_dates", False):
+                self.cfg.paths.minimum_index_dates = join(minimum_index_dates, "minimum_index_dates.csv")
         self.check_file("outcome")
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
