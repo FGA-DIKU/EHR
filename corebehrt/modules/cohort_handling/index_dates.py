@@ -52,6 +52,11 @@ class IndexDateHandler:
             PID_COL  # Ensure the final concatenated series has PID_COL as index name
         )
         return result
+    
+    @staticmethod
+    def apply_minimum_index_dates(result: pd.Series, minimum_index_dates: pd.DataFrame) -> pd.Series:
+        """Apply minimum index dates to the result."""
+        return result.where(result >= minimum_index_dates[TIMESTAMP_COL], minimum_index_dates[TIMESTAMP_COL])
 
     @classmethod
     def determine_index_dates(
@@ -62,6 +67,7 @@ class IndexDateHandler:
         absolute_timestamp: Optional[dict] = None,
         n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
+        minimum_index_dates: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Determine index dates based on mode.
         Args:
@@ -70,6 +76,7 @@ class IndexDateHandler:
             absolute_timestamp: dict with year, month, day (required if index_date_mode == "absolute")
             n_hours_from_exposure: int (required if index_date_mode == "relative")
             exposures: pd.DataFrame (required if index_date_mode == "relative")
+            minimum_index_dates: pd.DataFrame (optional if index_date_mode == "relative")
         """
         pids = set(patients_info[PID_COL].unique())
 
@@ -83,6 +90,8 @@ class IndexDateHandler:
                 pids, n_hours, exposures
             )
             result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps)
+            if minimum_index_dates is not None:
+                result = cls.apply_minimum_index_dates(result, minimum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 

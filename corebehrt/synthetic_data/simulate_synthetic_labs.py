@@ -11,9 +11,9 @@ import argparse
 from pathlib import Path
 
 # Default parameters
-PATIENTS_INFO_PATH = "../../data/vals/patient_infos/patient_info_100n.parquet"
-DEFAULT_WRITE_DIR = "../../data/vals/synthetic_data/100n/"
-SAVE_NAME = 'bn_labs_n100_50p_1unq'
+PATIENTS_INFO_PATH = "../../data/vals/patient_infos/patient_info_10000n.parquet"
+DEFAULT_WRITE_DIR = "../../data/vals/synthetic_data/10000n/"
+SAVE_NAME = 'bn_labs_n10000_50p_1unq'
 
 # Define lab value ranges and their probabilities for different conditions
 LAB_VALUE_INFO = {
@@ -51,7 +51,7 @@ CONCEPT_RELATIONSHIPS = {
                 "conditions": ["high"],  # Only high lab patients get diagnosis
                 "time_relationship": {
                     "type": "after",  # Diagnosis comes after lab
-                    "min_days": 1,
+                    "min_days": 10,
                     "max_days": 180
                 }
             }

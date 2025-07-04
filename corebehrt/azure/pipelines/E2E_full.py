@@ -93,11 +93,9 @@ def create(component: callable):
         evaluate_finetune = component(
             "evaluate_finetune",
         )(
-            prepared_data=prepare_held_out.outputs.prepared_data,
             model=finetune.outputs.model,
             folds_dir = prepare_finetune.outputs.prepared_data,
             test_data_dir = prepare_held_out.outputs.prepared_data,
-            run_name = "evaluate",
         )
 
         return {

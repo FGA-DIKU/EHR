@@ -53,7 +53,7 @@ def select_cohort(
     """
 
     logger.info("Loading data")
-    patients_info, outcomes, exposures, initial_pids, exclude_pids = load_data(path_cfg)
+    patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates = load_data(path_cfg)
 
     # Remove duplicate patient records (keep first occurrence)
     patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
@@ -92,6 +92,7 @@ def select_cohort(
         absolute_timestamp=index_date_cfg[mode].get("date"),
         n_hours_from_exposure=index_date_cfg[mode].get("n_hours_from_exposure"),
         exposures=exposures,
+        minimum_index_dates=minimum_index_dates,
     )
 
     # This split is done after index date calculation but before any filtering based on index dates
@@ -156,6 +157,10 @@ def load_data(
     )
 
     exposures = select_first_event(exposures, PID_COL, TIMESTAMP_COL)
+    if path_cfg.get("minimum_index_dates", False):
+        minimum_index_dates = ConceptLoader.read_file(path_cfg.minimum_index_dates)
+    else:
+        minimum_index_dates = None
 
     initial_pids = (
         torch.load(path_cfg.initial_pids) if path_cfg.get("initial_pids", False) else []
@@ -165,4 +170,4 @@ def load_data(
         torch.load(path_cfg.exclude_pids) if path_cfg.get("exclude_pids", False) else []
     )
 
-    return patients_info, outcomes, exposures, initial_pids, exclude_pids
+    return patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates
