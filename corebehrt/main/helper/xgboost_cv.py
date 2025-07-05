@@ -7,8 +7,23 @@ from corebehrt.azure.util.log import setup_metrics_dir
 from corebehrt.constants.data import TRAIN_KEY, VAL_KEY
 from corebehrt.modules.preparation.dataset import PatientDataset
 from corebehrt.modules.setup.config import instantiate_function
-from corebehrt.main.helper.finetune_cv import log_best_metrics
 from corebehrt.modules.preparation.encode import OneHotEncoder
+
+
+def log_metrics_dict(metrics: dict, split: str) -> None:
+    """
+    Logs a dict of metrics with proper prefixing for the given split.
+    """
+    if metrics:
+        try:
+            import mlflow
+            if mlflow.active_run() is not None:
+                # Apply split prefix to all metric keys
+                prefixed_metrics = {f"{split}_{k}": v for k, v in metrics.items()}
+                mlflow.log_metrics(prefixed_metrics)
+        except ImportError:
+            # mlflow not available, skip logging
+            pass
 
 
 def cv_loop(
@@ -106,14 +121,14 @@ def xgboost_fold(
             f"train_{name}": func(y_train, train_preds)
             for name, func in metrics.items()
         }
-        log_best_metrics(0.0, train_metrics, "train")
+        log_metrics_dict(train_metrics, "train")
         logger.info(f"Train metrics: {train_metrics}")
 
         # Compute validation metrics
         val_metrics = {
             f"val_{name}": func(y_val, val_preds) for name, func in metrics.items()
         }
-        log_best_metrics(0.0, val_metrics, "val")
+        log_metrics_dict(val_metrics, "val")
         logger.info(f"Val metrics: {val_metrics}")
 
         # Compute test metrics if available
@@ -122,7 +137,7 @@ def xgboost_fold(
                 f"test_{name}": func(y_test, test_preds)
                 for name, func in metrics.items()
             }
-            log_best_metrics(0.0, test_metrics, "test")
+            log_metrics_dict(test_metrics, "test")
             logger.info(f"Test metrics: {test_metrics}")
 
     # Save model
