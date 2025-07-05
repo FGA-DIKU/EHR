@@ -35,21 +35,12 @@ def create(component: callable):
             data=data,
             features=create_data.outputs.features,
         )
-
-        create_outcomes_minimum_index_dates = component(
-            "create_outcomes",
-            name="create_outcomes_minimum_index_dates",
-        )(
-            data=data,
-            features=create_data.outputs.features,
-        )
-
+        
         select_cohort = component(
             "select_cohort",
         )(
             features=create_data.outputs.features,
             outcomes=create_outcomes.outputs.outcomes,
-            minimum_index_dates=create_outcomes_minimum_index_dates.outputs,
         )
 
         prepare_pretrain = component(
@@ -87,7 +78,6 @@ def create(component: callable):
         )(
             features=create_data.outputs.features,
             outcomes=create_outcomes.outputs.outcomes,
-            minimum_index_dates=create_outcomes_minimum_index_dates.outputs.minimum_index_dates,
         )
 
         prepare_held_out = component(

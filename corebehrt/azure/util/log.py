@@ -112,7 +112,7 @@ def log_metric(key: str, *args, **kwargs):
         mlflow.log_metric(prefix + key, *args, run_id=run.info.run_id, **kwargs)
 
 
-def log_metrics(key: str, *args, **kwargs):
+def log_metrics(metrics: dict, *args, **kwargs):
     """
     Log multiple metrics
 
@@ -121,7 +121,9 @@ def log_metrics(key: str, *args, **kwargs):
     """
     if is_mlflow_available():
         run, prefix = get_run_and_prefix()
-        mlflow.log_metrics(prefix + key, *args, run_id=run.info.run_id, **kwargs)
+        # Apply prefix to all metric keys
+        prefixed_metrics = {prefix + key: value for key, value in metrics.items()}
+        mlflow.log_metrics(prefixed_metrics, *args, run_id=run.info.run_id, **kwargs)
 
 
 def log_param(key: str, *args, **kwargs):

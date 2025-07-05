@@ -37,6 +37,7 @@ class IndexDateHandler:
     def draw_index_dates_for_unexposed(
         data_pids: List[str],
         censoring_timestamps: pd.Series,
+        minimum_index_dates: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Draw censor dates for patients not in censor_timestamps."""
         np.random.seed(42)
@@ -51,12 +52,52 @@ class IndexDateHandler:
         result.index.name = (
             PID_COL  # Ensure the final concatenated series has PID_COL as index name
         )
+        
+        # If minimum_index_dates is provided, redraw dates that fall before the minimum
+        if minimum_index_dates is not None:
+            min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+            aligned_min_dates = min_dates_series.reindex(result.index)
+            
+            # Find patients whose drawn dates are before their minimum
+            mask = aligned_min_dates.notna() & (result < aligned_min_dates)
+            patients_to_redraw = mask.sum()
+            
+            if patients_to_redraw > 0:
+                logger.info(f"Redrawing {patients_to_redraw} patients whose censoring dates fall before minimum index dates")
+                
+                # For patients that need redrawing, draw new dates from the valid range
+                for pid in result[mask].index:
+                    min_date = aligned_min_dates[pid]
+                    # Filter censoring timestamps to only include those >= min_date
+                    valid_timestamps = censoring_timestamps[censoring_timestamps >= min_date]
+                    
+                    if len(valid_timestamps) > 0:
+                        # Draw from valid timestamps
+                        new_date = np.random.choice(valid_timestamps.values)
+                        result[pid] = new_date
+                    else:
+                        # If no valid timestamps, use the minimum date
+                        result[pid] = min_date
+                        logger.warning(f"No valid censoring timestamps >= minimum date for patient {pid}, using minimum date")
+        
         return result
     
     @staticmethod
     def apply_minimum_index_dates(result: pd.Series, minimum_index_dates: pd.DataFrame) -> pd.Series:
         """Apply minimum index dates to the result."""
-        return result.where(result >= minimum_index_dates[TIMESTAMP_COL], minimum_index_dates[TIMESTAMP_COL])
+        # Convert minimum_index_dates DataFrame to Series with PID as index
+        min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+        
+        # Align the series by reindexing min_dates_series to match result's index
+        # This will fill missing values with NaN for patients not in minimum_index_dates
+        aligned_min_dates = min_dates_series.reindex(result.index)
+        
+        # Only apply minimum dates where we have valid minimum dates (not NaN)
+        mask = aligned_min_dates.notna()
+        result = result.copy()
+        result[mask] = result[mask].where(result[mask] >= aligned_min_dates[mask], aligned_min_dates[mask])
+        
+        return result
 
     @classmethod
     def determine_index_dates(
@@ -89,9 +130,7 @@ class IndexDateHandler:
             exposed_timestamps = cls.get_index_timestamps_for_exposed(
                 pids, n_hours, exposures
             )
-            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps)
-            if minimum_index_dates is not None:
-                result = cls.apply_minimum_index_dates(result, minimum_index_dates)
+            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 
