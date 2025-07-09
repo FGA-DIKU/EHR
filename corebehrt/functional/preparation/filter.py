@@ -49,6 +49,7 @@ def exclude_short_sequences(
 ) -> List[PatientData]:
     return [p for p in patients if len(p.concepts) >= min_len]
 
+
 def _remove_last_sep_token(patient: PatientData) -> PatientData:
     """Remove the last single SEP token from the patient's data if it exists."""
     if patient.concepts[-1] == DEFAULT_VOCABULARY[SEP_TOKEN]:
@@ -57,6 +58,7 @@ def _remove_last_sep_token(patient: PatientData) -> PatientData:
         patient.segments = patient.segments[:-1]
         patient.ages = patient.ages[:-1]
     return patient
+
 
 def censor_patient(
     patient: PatientData, censor_dates: pd.Series, predict_token_id: int
