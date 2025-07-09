@@ -83,4 +83,9 @@ def create(component: callable):
             test_data_dir=prepare_held_out.outputs.prepared_data,
         )
 
+        return {
+            "model": xgboost.outputs.model,
+            "predictions": eval_xgboost.outputs.predictions,
+        }
+
     return pipeline
