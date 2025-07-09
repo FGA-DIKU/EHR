@@ -16,6 +16,8 @@ from corebehrt.modules.preparation.dataset import PatientData
 from corebehrt.constants.data import (
     PID_COL,
     TIMESTAMP_COL,
+    DEFAULT_VOCABULARY,
+    SEP_TOKEN,
 )
 
 
@@ -48,6 +50,16 @@ def exclude_short_sequences(
     return [p for p in patients if len(p.concepts) >= min_len]
 
 
+def _remove_last_sep_token(patient: PatientData) -> PatientData:
+    """Remove the last single SEP token from the patient's data if it exists."""
+    if patient.concepts[-1] == DEFAULT_VOCABULARY[SEP_TOKEN]:
+        patient.concepts = patient.concepts[:-1]
+        patient.abspos = patient.abspos[:-1]
+        patient.segments = patient.segments[:-1]
+        patient.ages = patient.ages[:-1]
+    return patient
+
+
 def censor_patient(
     patient: PatientData, censor_dates: pd.Series, predict_token_id: int
 ) -> PatientData:
@@ -75,6 +87,7 @@ def censor_patient(
     patient.segments = patient.segments[:idx]
     patient.ages = patient.ages[:idx]
 
+    patient = _remove_last_sep_token(patient)
     patient = _append_predict_token(patient, predict_token_id, censor_date)
 
     return patient
