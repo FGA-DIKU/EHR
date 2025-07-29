@@ -77,15 +77,17 @@ def create(component: callable):
             outcomes=create_outcomes.outputs.outcomes,
         )
 
-        eval_xgboost = component(
-            model=xgboost.outputs.model,
+        evaluate_xgboost = component(
+            "evaluate_xgboost",
+        )(
+            model=xgboost.outputs,
             folds_dir=prepare_finetune.outputs.prepared_data,
             test_data_dir=prepare_held_out.outputs.prepared_data,
         )
 
         return {
             "model": xgboost.outputs.model,
-            "predictions": eval_xgboost.outputs.predictions,
+            "predictions": evaluate_xgboost.outputs.predictions,
         }
 
     return pipeline

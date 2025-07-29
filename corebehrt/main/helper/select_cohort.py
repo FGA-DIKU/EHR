@@ -93,6 +93,7 @@ def select_cohort(
         n_hours_from_exposure=index_date_cfg[mode].get("n_hours_from_exposure"),
         exposures=exposures,
         minimum_index_dates=minimum_index_dates,
+        n_hours_from_minimum_index_date=index_date_cfg[mode].get("n_hours_from_minimum_index_date", 0),
     )
 
     # This split is done after index date calculation but before any filtering based on index dates
