@@ -185,4 +185,4 @@ def load_data(
         torch.load(path_cfg.exclude_pids) if path_cfg.get("exclude_pids", False) else []
     )
 
-    return patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates
+    return patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates, secondary_censoring_timestamps

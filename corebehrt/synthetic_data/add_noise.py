@@ -11,7 +11,7 @@ import os
 from theoretical_separation import cohens_d, sweep_threshold_auc, manual_mann_whitney_u, scipy_mann_whitney_u
 
 # Default parameters
-N = 10000
+N = 100000
 LOW_MEAN = 0.45
 HIGH_MEAN = 0.55
 STD = 0.10
@@ -20,14 +20,14 @@ DEFAULT_WRITE_DIR = f"../../../data/vals/synthetic_data/{N}n/"
 DEFAULT_PLOT_DIR = f"../../../data/vals/synthetic_data_plots/{N}n/"
 
 # Default noise parameters
-DEFAULT_SWITCH_PERCENTAGE = 0.0  # 5% label switching
-DEFAULT_REMOVE_PERCENTAGE = 0.05 #0   # 0% data removal
+DEFAULT_SWITCH_PERCENTAGE = 0.0  # % label switching
+DEFAULT_REMOVE_PERCENTAGE = 0.25 #0  % data removal
 DEFAULT_SEED = 42                 # Fixed seed for reproducibility
 
 def add_label_noise(data: pd.DataFrame, switch_percentage: float = 0.05) -> pd.DataFrame:
     """
     Add noise by switching labels for a percentage of positive and negative cases.
-    This is done by swapping diagnostic codes (add S/DIAG1 to negatives, remove from positives).
+    This is done by swapping lab values between positive and negative patients.
     
     Args:
         data: DataFrame containing the synthetic data
@@ -50,31 +50,37 @@ def add_label_noise(data: pd.DataFrame, switch_percentage: float = 0.05) -> pd.D
     positive_to_switch = set(np.random.choice(list(positive_patients), n_positive_to_switch, replace=False))
     negative_to_switch = set(np.random.choice(list(negative_patients), n_negative_to_switch, replace=False))
     
-    # Swap diagnostic codes (add S/DIAG1 to negatives, remove from positives)
-    print(f"Swapping diagnostic codes for {len(positive_to_switch)} positive and {len(negative_to_switch)} negative patients...")
+    print(f"Swapping lab values for {len(positive_to_switch)} positive and {len(negative_to_switch)} negative patients...")
     
-    # Remove S/DIAG1 from positive patients being switched
-    for patient_id in positive_to_switch:
-        # Remove diagnostic code
-        diag_mask = (noisy_data['subject_id'] == patient_id) & (noisy_data['code'] == 'S/DIAG1')
-        noisy_data = noisy_data[~diag_mask]
-        # Update label
-        noisy_data.loc[noisy_data['subject_id'] == patient_id, 'is_positive'] = False
+    # Create pairs of patients to swap lab values
+    positive_switch_list = list(positive_to_switch)
+    negative_switch_list = list(negative_to_switch)
     
-    # Add S/DIAG1 to negative patients being switched
-    for patient_id in negative_to_switch:
-        # Add diagnostic code (assuming we have the same structure as existing DIAG1 records)
-        existing_diag = noisy_data[noisy_data['code'] == 'S/DIAG1'].iloc[0] if len(noisy_data[noisy_data['code'] == 'S/DIAG1']) > 0 else None
-        if existing_diag is not None:
-            new_diag_row = existing_diag.copy()
-            new_diag_row['subject_id'] = patient_id
-            new_diag_row['is_positive'] = True
-            noisy_data = pd.concat([noisy_data, pd.DataFrame([new_diag_row])], ignore_index=True)
-        # Update label
-        noisy_data.loc[noisy_data['subject_id'] == patient_id, 'is_positive'] = True
+    # Ensure we have equal numbers to swap (take the minimum)
+    n_pairs = min(len(positive_switch_list), len(negative_switch_list))
     
-    print(f"Switched {len(positive_to_switch)} positive patients to negative")
-    print(f"Switched {len(negative_to_switch)} negative patients to positive")
+    for i in range(n_pairs):
+        pos_patient = positive_switch_list[i]
+        neg_patient = negative_switch_list[i]
+        
+        # Get lab values for both patients
+        pos_labs = noisy_data[(noisy_data['subject_id'] == pos_patient) & (noisy_data['code'] == 'S/LAB1')]['numeric_value'].values
+        neg_labs = noisy_data[(noisy_data['subject_id'] == neg_patient) & (noisy_data['code'] == 'S/LAB1')]['numeric_value'].values
+        
+        # Swap the lab values only if both patients have lab data
+        if len(pos_labs) > 0 and len(neg_labs) > 0:
+            # Create masks for the lab records
+            pos_mask = (noisy_data['subject_id'] == pos_patient) & (noisy_data['code'] == 'S/LAB1')
+            neg_mask = (noisy_data['subject_id'] == neg_patient) & (noisy_data['code'] == 'S/LAB1')
+            
+            # Ensure we have the same number of lab records for both patients
+            min_labs = min(len(pos_labs), len(neg_labs))
+            
+            # Swap the numeric values (only the first min_labs records)
+            noisy_data.loc[pos_mask, 'numeric_value'] = neg_labs[:min_labs]
+            noisy_data.loc[neg_mask, 'numeric_value'] = pos_labs[:min_labs]
+    
+    print(f"Swapped lab values for {n_pairs} patient pairs")
     
     return noisy_data
 
@@ -106,6 +112,39 @@ def remove_random_data(data: pd.DataFrame, remove_percentage: float = 0.10) -> p
     cleaned_data = data.drop(lab_indices_to_remove)
     
     print(f"Removed {n_lab_records_to_remove} lab records ({remove_percentage*100:.1f}% of lab data)")
+    print(f"Preserved all diagnostic codes (S/DIAG1)")
+    
+    return cleaned_data
+
+def remove_random_patients_lab_data(data: pd.DataFrame, remove_percentage: float = 0.10) -> pd.DataFrame:
+    """
+    Remove lab data for a random percentage of patients, so that these patients have no lab data.
+    
+    Args:
+        data: DataFrame containing the synthetic data
+        remove_percentage: Percentage of patients to remove lab data from (0.0 to 1.0)
+        
+    Returns:
+        pd.DataFrame: DataFrame with lab data removed for selected patients
+    """
+    if remove_percentage <= 0:
+        return data
+    
+    # Get all patients with lab data
+    lab_mask = data['code'] == 'S/LAB1'
+    patients_with_labs = set(data[lab_mask]['subject_id'].unique())
+    
+    # Calculate number of patients to remove lab data from
+    n_patients_to_remove = int(len(patients_with_labs) * remove_percentage)
+    
+    # Randomly select patients to remove lab data from
+    patients_to_remove = set(np.random.choice(list(patients_with_labs), n_patients_to_remove, replace=False))
+    
+    # Remove all lab data for selected patients
+    lab_data_to_remove = (data['code'] == 'S/LAB1') & (data['subject_id'].isin(patients_to_remove))
+    cleaned_data = data[~lab_data_to_remove]
+    
+    print(f"Removed lab data for {len(patients_to_remove)} patients ({remove_percentage*100:.1f}% of patients with lab data)")
     print(f"Preserved all diagnostic codes (S/DIAG1)")
     
     return cleaned_data
@@ -199,9 +238,11 @@ def create_comparison_plot(original_data: pd.DataFrame, noisy_data: pd.DataFrame
     original_positive = original_data[lab_mask & original_data['is_positive']]['numeric_value']
     original_negative = original_data[lab_mask & ~original_data['is_positive']]['numeric_value']
     
-    # Get noisy values
-    noisy_positive = noisy_data[lab_mask & noisy_data['is_positive']]['numeric_value']
-    noisy_negative = noisy_data[lab_mask & ~noisy_data['is_positive']]['numeric_value']
+    # Get noisy values - fix the boolean indexing issue
+    noisy_lab_mask = noisy_data['code'] == 'S/LAB1'
+    noisy_lab_data = noisy_data[noisy_lab_mask]
+    noisy_positive = noisy_lab_data[noisy_lab_data['is_positive']]['numeric_value']
+    noisy_negative = noisy_lab_data[~noisy_lab_data['is_positive']]['numeric_value']
     
     # Create subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))

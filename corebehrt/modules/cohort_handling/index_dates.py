@@ -28,52 +28,59 @@ class IndexDateHandler:
         """Get index timestamps for exposed patients."""
         hours_delta = pd.Timedelta(hours=n_hours_from_exposure)
         exposures = filter_table_by_pids(exposures, pids)
-        # Set PID as index and get timestamp series
         result = exposures.set_index(PID_COL)[TIMESTAMP_COL] + hours_delta
-        result.index.name = PID_COL  # Ensure index name is set to PID_COL
+        result.index.name = PID_COL
         return result
+
+    @staticmethod
+    def _ensure_series_format(data: pd.Series | pd.DataFrame) -> pd.Series:
+        """Ensure data is in Series format with PID as index."""
+        if isinstance(data, pd.DataFrame):
+            return data.set_index(PID_COL)[TIMESTAMP_COL]
+        return data
 
     @staticmethod
     def draw_index_dates_for_unexposed_w_secondary_censoring(
         data_pids: List[str],
         censoring_timestamps: pd.Series,
-        secondary_censoring_timestamps: Optional[pd.DataFrame] = None,
+        secondary_censoring_timestamps: pd.Series,
     ) -> pd.Series:
-        """Draw censor dates for patients not in censor_timestamps."""
+        """
+        Draw censor dates for patients not in censoring_timestamps.
+        Uses secondary censoring timestamps for missing patients when available.
+        """
         np.random.seed(42)
-        missing_pids = set(data_pids) - set(censoring_timestamps.index)
         
-        # Initialize result with existing censoring timestamps
+        # Ensure proper Series format
+        censoring_timestamps = IndexDateHandler._ensure_series_format(censoring_timestamps)
+        secondary_censoring_timestamps = IndexDateHandler._ensure_series_format(secondary_censoring_timestamps)
+        
+        missing_pids = set(data_pids) - set(censoring_timestamps.index)
         result = censoring_timestamps.copy()
         
-        # For patients with secondary censoring timestamps, use those instead
-        if secondary_censoring_timestamps is not None:
-            # Get patients that have secondary censoring timestamps
-            secondary_pids = set(secondary_censoring_timestamps.index) & set(data_pids)
-            
-            # Update result with secondary censoring timestamps for those patients
-            for pid in secondary_pids:
-                if pid in result.index:
-                    # Replace existing censoring timestamp with secondary one
-                    result[pid] = secondary_censoring_timestamps.loc[pid, TIMESTAMP_COL]
-                else:
-                    # Add new entry with secondary censoring timestamp
-                    result[pid] = secondary_censoring_timestamps.loc[pid, TIMESTAMP_COL]
-            
-            # Remove these patients from missing_pids since they now have censoring dates
-            missing_pids = missing_pids - secondary_pids
-        
-        # For remaining missing patients, draw from normal censoring timestamps
         if missing_pids:
-            random_abspos = np.random.choice(
-                censoring_timestamps.values, size=len(missing_pids)
-            )
-            new_entries = pd.Series(
-                random_abspos, index=pd.Index(list(missing_pids), name=PID_COL)
-            )
-            result = pd.concat([result, new_entries])
+            # Get patients that have secondary censoring timestamps
+            secondary_pids = set(secondary_censoring_timestamps.index) & missing_pids
+            
+            # Use secondary timestamps directly for patients that have them
+            for pid in secondary_pids:
+                result[pid] = secondary_censoring_timestamps.loc[pid]
+            
+            # For remaining missing patients, draw randomly from secondary censoring dates
+            remaining_missing = missing_pids - secondary_pids
+            if remaining_missing and len(secondary_censoring_timestamps) > 0:
+                random_secondary_dates = np.random.choice(
+                    secondary_censoring_timestamps.values, 
+                    size=len(remaining_missing),
+                    replace=True
+                )
+                new_entries = pd.Series(
+                    random_secondary_dates, 
+                    index=pd.Index(list(remaining_missing), name=PID_COL)
+                )
+                result = pd.concat([result, new_entries])
         
-        result.index.name = PID_COL  # Ensure the final series has PID_COL as index name
+        result.index.name = PID_COL
         return result
 
     @staticmethod
@@ -83,92 +90,78 @@ class IndexDateHandler:
         minimum_index_dates: Optional[pd.DataFrame] = None,
         maximum_index_dates: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
-        """Draw censor dates for patients not in censor_timestamps."""
+        """
+        Draw censor dates for patients not in censoring_timestamps.
+        Includes validation against minimum/maximum index dates.
+        """
         np.random.seed(42)
         missing_pids = set(data_pids) - set(censoring_timestamps.index)
-        random_abspos = np.random.choice(
-            censoring_timestamps.values, size=len(missing_pids)
-        )
-        new_entries = pd.Series(
-            random_abspos, index=pd.Index(list(missing_pids), name=PID_COL)
-        )
-        result = pd.concat([censoring_timestamps, new_entries])
-        result.index.name = (
-            PID_COL  # Ensure the final concatenated series has PID_COL as index name
-        )
         
-        # If minimum_index_dates or maximum_index_dates are provided, redraw dates that fall outside the valid range
+        # Draw random timestamps for missing patients
+        random_abspos = np.random.choice(censoring_timestamps.values, size=len(missing_pids))
+        new_entries = pd.Series(random_abspos, index=pd.Index(list(missing_pids), name=PID_COL))
+        result = pd.concat([censoring_timestamps, new_entries])
+        result.index.name = PID_COL
+        
+        # Validate and redraw dates outside valid range
         if minimum_index_dates is not None or maximum_index_dates is not None:
-            min_dates_series = None
-            max_dates_series = None
-            
-            if minimum_index_dates is not None:
-                min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
-                aligned_min_dates = min_dates_series.reindex(result.index)
-            
-            if maximum_index_dates is not None:
-                max_dates_series = maximum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
-                aligned_max_dates = max_dates_series.reindex(result.index)
-            
-            # Find patients whose drawn dates are outside the valid range
-            mask = pd.Series(False, index=result.index)
-            
-            if minimum_index_dates is not None:
-                mask |= aligned_min_dates.notna() & (result < aligned_min_dates)
-            
-            if maximum_index_dates is not None:
-                mask |= aligned_max_dates.notna() & (result > aligned_max_dates)
-            
-            patients_to_redraw = mask.sum()
-            
-            if patients_to_redraw > 0:
-                logger.info(f"Redrawing {patients_to_redraw} patients whose censoring dates fall outside valid index date range")
-                
-                # For patients that need redrawing, draw new dates from the valid range
-                for pid in result[mask].index:
-                    min_date = aligned_min_dates[pid] if minimum_index_dates is not None else None
-                    max_date = aligned_max_dates[pid] if maximum_index_dates is not None else None
-                    
-                    # Filter censoring timestamps to only include those within the valid range
-                    valid_timestamps = censoring_timestamps.copy()
-                    
-                    if min_date is not None:
-                        valid_timestamps = valid_timestamps[valid_timestamps >= min_date]
-                    
-                    if max_date is not None:
-                        valid_timestamps = valid_timestamps[valid_timestamps <= max_date]
-                    
-                    if len(valid_timestamps) > 0:
-                        # Draw from valid timestamps
-                        new_date = np.random.choice(valid_timestamps.values)
-                        result[pid] = new_date
-                    else:
-                        # If no valid timestamps, use the minimum date if available, otherwise maximum date
-                        if min_date is not None:
-                            result[pid] = min_date
-                            logger.warning(f"No valid censoring timestamps >= minimum date for patient {pid}, using minimum date")
-                        elif max_date is not None:
-                            result[pid] = max_date
-                            logger.warning(f"No valid censoring timestamps <= maximum date for patient {pid}, using maximum date")
-                        else:
-                            logger.warning(f"No valid censoring timestamps in range for patient {pid}")
+            result = IndexDateHandler._validate_and_redraw_dates(
+                result, censoring_timestamps, minimum_index_dates, maximum_index_dates
+            )
         
         return result
-    
+
     @staticmethod
-    def apply_minimum_index_dates(result: pd.Series, minimum_index_dates: pd.DataFrame) -> pd.Series:
-        """Apply minimum index dates to the result."""
-        # Convert minimum_index_dates DataFrame to Series with PID as index
-        min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+    def _validate_and_redraw_dates(
+        result: pd.Series,
+        censoring_timestamps: pd.Series,
+        minimum_index_dates: Optional[pd.DataFrame],
+        maximum_index_dates: Optional[pd.DataFrame]
+    ) -> pd.Series:
+        """Validate dates against min/max constraints and redraw if necessary."""
+        min_dates_series = None
+        max_dates_series = None
         
-        # Align the series by reindexing min_dates_series to match result's index
-        # This will fill missing values with NaN for patients not in minimum_index_dates
-        aligned_min_dates = min_dates_series.reindex(result.index)
+        if minimum_index_dates is not None:
+            min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+            aligned_min_dates = min_dates_series.reindex(result.index)
         
-        # Only apply minimum dates where we have valid minimum dates (not NaN)
-        mask = aligned_min_dates.notna()
-        result = result.copy()
-        result[mask] = result[mask].where(result[mask] >= aligned_min_dates[mask], aligned_min_dates[mask])
+        if maximum_index_dates is not None:
+            max_dates_series = maximum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+            aligned_max_dates = max_dates_series.reindex(result.index)
+        
+        # Find patients whose dates are outside valid range
+        mask = pd.Series(False, index=result.index)
+        if minimum_index_dates is not None:
+            mask |= aligned_min_dates.notna() & (result < aligned_min_dates)
+        if maximum_index_dates is not None:
+            mask |= aligned_max_dates.notna() & (result > aligned_max_dates)
+        
+        patients_to_redraw = mask.sum()
+        if patients_to_redraw > 0:
+            logger.info(f"Redrawing {patients_to_redraw} patients whose censoring dates fall outside valid index date range")
+            
+            for pid in result[mask].index:
+                min_date = aligned_min_dates[pid] if minimum_index_dates is not None else None
+                max_date = aligned_max_dates[pid] if maximum_index_dates is not None else None
+                
+                valid_timestamps = censoring_timestamps.copy()
+                if min_date is not None:
+                    valid_timestamps = valid_timestamps[valid_timestamps >= min_date]
+                if max_date is not None:
+                    valid_timestamps = valid_timestamps[valid_timestamps <= max_date]
+                
+                if len(valid_timestamps) > 0:
+                    result[pid] = np.random.choice(valid_timestamps.values)
+                else:
+                    if min_date is not None:
+                        result[pid] = min_date
+                        logger.warning(f"No valid censoring timestamps >= minimum date for patient {pid}, using minimum date")
+                    elif max_date is not None:
+                        result[pid] = max_date
+                        logger.warning(f"No valid censoring timestamps <= maximum date for patient {pid}, using maximum date")
+                    else:
+                        logger.warning(f"No valid censoring timestamps in range for patient {pid}")
         
         return result
 
@@ -177,7 +170,7 @@ class IndexDateHandler:
         cls,
         patients_info: pd.DataFrame,
         index_date_mode: str,
-        *,  # force keyword arguments,
+        *,  # force keyword arguments
         absolute_timestamp: Optional[dict] = None,
         n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
@@ -188,53 +181,81 @@ class IndexDateHandler:
         secondary_censoring_timestamps: Optional[pd.DataFrame] = None,
         n_hours_from_secondary_censoring_timestamps: Optional[int] = None,
     ) -> pd.Series:
-        """Determine index dates based on mode.
+        """
+        Determine index dates based on mode.
+        
         Args:
-            patients_info: pd.DataFrame with patients info
-            index_date_mode: str, "absolute" or "relative"
-            absolute_timestamp: dict with year, month, day (required if index_date_mode == "absolute")
-            n_hours_from_exposure: int (required if index_date_mode == "relative")
-            exposures: pd.DataFrame (required if index_date_mode == "relative")
-            minimum_index_dates: pd.DataFrame (optional if index_date_mode == "relative")
-            maximum_index_dates: pd.DataFrame (optional if index_date_mode == "relative")
+            patients_info: DataFrame with patients info
+            index_date_mode: "absolute" or "relative"
+            absolute_timestamp: dict with year, month, day (required if mode == "absolute")
+            n_hours_from_exposure: int (required if mode == "relative")
+            exposures: DataFrame (required if mode == "relative")
+            minimum_index_dates: DataFrame (optional)
+            maximum_index_dates: DataFrame (optional)
+            n_hours_from_minimum_index_date: int (optional)
+            n_hours_from_maximum_index_date: int (optional)
+            secondary_censoring_timestamps: DataFrame (optional)
+            n_hours_from_secondary_censoring_timestamps: int (optional)
+            
+        Returns:
+            pd.Series: Index dates for all patients
         """
         pids = set(patients_info[PID_COL].unique())
 
-        result = None
         if index_date_mode == "absolute":
             absolute_timestamp = datetime(**absolute_timestamp)
             result = cls.create_timestamp_series(pids, absolute_timestamp)
         elif index_date_mode == "relative":
-            n_hours = n_hours_from_exposure or 0
-            exposed_timestamps = cls.get_index_timestamps_for_exposed(
-                pids, n_hours, exposures
+            result = cls._handle_relative_mode(
+                pids, n_hours_from_exposure, exposures,
+                minimum_index_dates, maximum_index_dates,
+                n_hours_from_minimum_index_date, n_hours_from_maximum_index_date,
+                secondary_censoring_timestamps, n_hours_from_secondary_censoring_timestamps
             )
-            if n_hours_from_minimum_index_date is not None:
-                minimum_index_dates = cls.get_index_timestamps_for_exposed(
-                    pids, n_hours_from_minimum_index_date, minimum_index_dates
-                )
-                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
-                minimum_index_dates = minimum_index_dates.reset_index()
-            if n_hours_from_maximum_index_date is not None:
-                maximum_index_dates = cls.get_index_timestamps_for_exposed(
-                    pids, n_hours_from_maximum_index_date, maximum_index_dates
-                )
-                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
-                maximum_index_dates = maximum_index_dates.reset_index()
-            
-            if n_hours_from_secondary_censoring_timestamps is not None:
-                secondary_censoring_timestamps = cls.get_index_timestamps_for_exposed(
-                    pids, n_hours_from_secondary_censoring_timestamps, secondary_censoring_timestamps
-                )
-                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
-                secondary_censoring_timestamps = secondary_censoring_timestamps.reset_index()
-                result = cls.draw_index_dates_for_unexposed(pids, secondary_censoring_timestamps)
-            else:   
-                result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 
-        # Ensure the series has both index name and series name
         result.index.name = PID_COL
         result.name = TIMESTAMP_COL
         return result
+
+    @classmethod
+    def _handle_relative_mode(
+        cls,
+        pids: Set[str],
+        n_hours_from_exposure: Optional[int],
+        exposures: Optional[pd.DataFrame],
+        minimum_index_dates: Optional[pd.DataFrame],
+        maximum_index_dates: Optional[pd.DataFrame],
+        n_hours_from_minimum_index_date: Optional[int],
+        n_hours_from_maximum_index_date: Optional[int],
+        secondary_censoring_timestamps: Optional[pd.DataFrame],
+        n_hours_from_secondary_censoring_timestamps: Optional[int]
+    ) -> pd.Series:
+        """Handle relative mode index date calculation."""
+        n_hours = n_hours_from_exposure or 0
+        exposed_timestamps = cls.get_index_timestamps_for_exposed(pids, n_hours, exposures)
+        
+        # Process minimum/maximum index dates
+        if n_hours_from_minimum_index_date is not None:
+            minimum_index_dates = cls.get_index_timestamps_for_exposed(
+                pids, n_hours_from_minimum_index_date, minimum_index_dates
+            ).reset_index()
+        
+        if n_hours_from_maximum_index_date is not None:
+            maximum_index_dates = cls.get_index_timestamps_for_exposed(
+                pids, n_hours_from_maximum_index_date, maximum_index_dates
+            ).reset_index()
+        
+        # Handle secondary censoring if provided
+        if n_hours_from_secondary_censoring_timestamps is not None:
+            secondary_censoring_timestamps = cls.get_index_timestamps_for_exposed(
+                pids, n_hours_from_secondary_censoring_timestamps, secondary_censoring_timestamps
+            )
+            return cls.draw_index_dates_for_unexposed_w_secondary_censoring(
+                list(pids), exposed_timestamps, secondary_censoring_timestamps
+            )
+        else:
+            return cls.draw_index_dates_for_unexposed(
+                pids, exposed_timestamps, minimum_index_dates, maximum_index_dates
+            )
