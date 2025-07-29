@@ -35,7 +35,7 @@ class BiGRU(torch.nn.Module):
             torch.nn.Linear(hidden_size, classifier_hidden_size),
             torch.nn.ReLU(),
             torch.nn.Dropout(0.1),
-            torch.nn.Linear(classifier_hidden_size, 1)
+            torch.nn.Linear(classifier_hidden_size, 1),
         )
 
     def forward(

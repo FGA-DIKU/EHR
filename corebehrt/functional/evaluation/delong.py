@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import scipy.stats
 
+
 # AUC comparison adapted from
 # https://github.com/Netflix/vmaf/
 def compute_midrank(x):
@@ -22,12 +23,12 @@ def compute_midrank(x):
         j = i
         while j < N and Z[j] == Z[i]:
             j += 1
-        T[i:j] = 0.5*(i + j - 1)
+        T[i:j] = 0.5 * (i + j - 1)
         i = j
     T2 = np.empty(N, dtype=float)
     # Note(kazeevn) +1 is due to Python using 0-based indexing
     # instead of 1-based in the AUC formula in the paper
-    T2[J] = (T + 1)
+    T2[J] = T + 1
     return T2
 
 
@@ -70,7 +71,7 @@ def fastDeLong(predictions_sorted_transposed, label_1_count):
     aucs = tz[:, :m].sum(axis=1) / m / n - float(m + 1.0) / 2.0 / n
     v01 = (tz[:, :m] - tx[:, :]) / n
     v10 = 1.0 - (tz[:, m:] - ty[:, :]) / m
-    
+
     # For single classifier case (k=1), we need to handle covariance differently
     if k == 1:
         # For single classifier, compute variance instead of covariance
@@ -85,8 +86,9 @@ def fastDeLong(predictions_sorted_transposed, label_1_count):
         if sy.ndim == 0:
             sy = np.array([[sy]])
         delongcov = sx / m + sy / n
-    
+
     return aucs, delongcov
+
 
 def calc_pvalue(aucs, sigma):
     """Computes log(10) of p-values.
@@ -118,8 +120,11 @@ def delong_roc_variance(ground_truth, predictions):
     order, label_1_count = compute_ground_truth_statistics(ground_truth)
     predictions_sorted_transposed = predictions[np.newaxis, order]
     aucs, delongcov = fastDeLong(predictions_sorted_transposed, label_1_count)
-    assert len(aucs) == 1, "There is a bug in the code, please forward this to the developers"
+    assert len(aucs) == 1, (
+        "There is a bug in the code, please forward this to the developers"
+    )
     return aucs[0], delongcov
+
 
 def delong_roc_std(ground_truth, predictions):
     """
@@ -133,6 +138,7 @@ def delong_roc_std(ground_truth, predictions):
     std_dev = np.sqrt(np.diag(delong_cov))
     return auc, std_dev[0]
 
+
 def delong_roc_test(ground_truth, predictions_one, predictions_two):
     """
     Computes log(p-value) for hypothesis that two ROC AUCs are different
@@ -144,9 +150,12 @@ def delong_roc_test(ground_truth, predictions_one, predictions_two):
           np.array of floats of the probability of being class 1
     """
     order, label_1_count = compute_ground_truth_statistics(ground_truth)
-    predictions_sorted_transposed = np.vstack((predictions_one, predictions_two))[:, order]
+    predictions_sorted_transposed = np.vstack((predictions_one, predictions_two))[
+        :, order
+    ]
     aucs, delongcov = fastDeLong(predictions_sorted_transposed, label_1_count)
     return calc_pvalue(aucs, delongcov)
+
 
 def delong_roc_auc(ground_truth, predictions):
     """
@@ -157,6 +166,7 @@ def delong_roc_auc(ground_truth, predictions):
     """
     auc, _ = delong_roc_variance(ground_truth, predictions)
     return auc
+
 
 def delong_roc_auc_std(ground_truth, predictions):
     """

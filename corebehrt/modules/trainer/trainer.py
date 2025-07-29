@@ -191,15 +191,18 @@ class EHRTrainer:
                     metrics, step_loss, epoch_loss, step=(epoch * len(train_loop)) + i
                 )
                 step_loss = 0
-        
+
         # Handle any remaining loss that didn't complete an accumulation step
         if step_loss > 0:
             self._clip_gradients()
             self._update()
             self._accumulate_metrics(
-                metrics, step_loss, epoch_loss, step=(epoch * len(train_loop)) + len(train_loop) - 1
+                metrics,
+                step_loss,
+                epoch_loss,
+                step=(epoch * len(train_loop)) + len(train_loop) - 1,
             )
-        
+
         self._log_batch(metrics)
         self.validate_and_log(epoch, epoch_loss, train_loop)
         torch.cuda.empty_cache()
@@ -319,16 +322,16 @@ class EHRTrainer:
         for k, v in val_metrics.items():
             self.run_log(name=k, value=v, step=epoch)
         self.run_log(name="Val loss", value=val_loss, step=epoch)
-        
+
         # Calculate average train loss safely
         if epoch_loss and len(epoch_loss) > 0:
-            avg_train_loss = sum(epoch_loss) / (len_train_loop / self.accumulation_steps)
+            avg_train_loss = sum(epoch_loss) / (
+                len_train_loop / self.accumulation_steps
+            )
         else:
             avg_train_loss = 0.0
-            
-        self.log(
-            f"Epoch {epoch} train loss: {avg_train_loss}"
-        )
+
+        self.log(f"Epoch {epoch} train loss: {avg_train_loss}")
         self.log(f"Epoch {epoch} val loss: {val_loss}")
         self.log(f"Epoch {epoch} metrics: {val_metrics}\n")
 

@@ -35,7 +35,7 @@ def create(component: callable):
             data=data,
             features=create_data.outputs.features,
         )
-        
+
         select_cohort = component(
             "select_cohort",
         )(
@@ -94,8 +94,8 @@ def create(component: callable):
             "evaluate_finetune",
         )(
             model=finetune.outputs.model,
-            folds_dir = prepare_finetune.outputs.prepared_data,
-            test_data_dir = prepare_held_out.outputs.prepared_data,
+            folds_dir=prepare_finetune.outputs.prepared_data,
+            test_data_dir=prepare_held_out.outputs.prepared_data,
         )
 
         return {

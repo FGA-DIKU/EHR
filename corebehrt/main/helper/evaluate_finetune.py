@@ -52,7 +52,7 @@ def compute_metrics(cfg, targets, all_probas, logger):
     """
     if not hasattr(cfg, "metrics") or not cfg.metrics:
         return
-    
+
     targets = np.asarray(targets)
     all_probas = np.asarray(all_probas)
 

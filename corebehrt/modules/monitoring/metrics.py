@@ -143,11 +143,13 @@ class Delong_ROC_AUC(BaseMetric):
     def __call__(self, outputs, batch):
         probas, targets = self._return_probas_and_targets(outputs, batch)
         return delong_roc_auc(targets, probas)
-    
+
+
 class Delong_ROC_AUC_std(BaseMetric):
     def __call__(self, outputs, batch):
         probas, targets = self._return_probas_and_targets(outputs, batch)
         return delong_roc_auc_std(targets, probas)
+
 
 class F1(BaseMetric):
     def __call__(self, outputs, batch):

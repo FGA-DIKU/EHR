@@ -17,6 +17,7 @@ def log_metrics_dict(metrics: dict, split: str) -> None:
     if metrics:
         try:
             import mlflow
+
             if mlflow.active_run() is not None:
                 # Apply split prefix to all metric keys
                 prefixed_metrics = {f"{split}_{k}": v for k, v in metrics.items()}
