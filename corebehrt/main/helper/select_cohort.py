@@ -53,7 +53,7 @@ def select_cohort(
     """
 
     logger.info("Loading data")
-    patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates = load_data(path_cfg)
+    patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates, secondary_censoring_timestamps = load_data(path_cfg)
 
     # Remove duplicate patient records (keep first occurrence)
     patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
@@ -96,6 +96,8 @@ def select_cohort(
         maximum_index_dates=maximum_index_dates,
         n_hours_from_minimum_index_date=index_date_cfg[mode].get("n_hours_from_minimum_index_date", None),
         n_hours_from_maximum_index_date=index_date_cfg[mode].get("n_hours_from_maximum_index_date", None),
+        secondary_censoring_timestamps=secondary_censoring_timestamps,
+        n_hours_from_secondary_censoring_timestamps=index_date_cfg[mode].get("n_hours_from_secondary_censoring_timestamps", None),
     )
 
     # This split is done after index date calculation but before any filtering based on index dates
@@ -169,6 +171,11 @@ def load_data(
         maximum_index_dates = ConceptLoader.read_file(path_cfg.maximum_index_dates)
     else:
         maximum_index_dates = None
+
+    if path_cfg.get("secondary_censoring_timestamps", False):
+        secondary_censoring_timestamps = ConceptLoader.read_file(path_cfg.secondary_censoring_timestamps)
+    else:
+        secondary_censoring_timestamps = None
 
     initial_pids = (
         torch.load(path_cfg.initial_pids) if path_cfg.get("initial_pids", False) else []

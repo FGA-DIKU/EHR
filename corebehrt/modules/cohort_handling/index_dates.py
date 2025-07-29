@@ -34,6 +34,49 @@ class IndexDateHandler:
         return result
 
     @staticmethod
+    def draw_index_dates_for_unexposed_w_secondary_censoring(
+        data_pids: List[str],
+        censoring_timestamps: pd.Series,
+        secondary_censoring_timestamps: Optional[pd.DataFrame] = None,
+    ) -> pd.Series:
+        """Draw censor dates for patients not in censor_timestamps."""
+        np.random.seed(42)
+        missing_pids = set(data_pids) - set(censoring_timestamps.index)
+        
+        # Initialize result with existing censoring timestamps
+        result = censoring_timestamps.copy()
+        
+        # For patients with secondary censoring timestamps, use those instead
+        if secondary_censoring_timestamps is not None:
+            # Get patients that have secondary censoring timestamps
+            secondary_pids = set(secondary_censoring_timestamps.index) & set(data_pids)
+            
+            # Update result with secondary censoring timestamps for those patients
+            for pid in secondary_pids:
+                if pid in result.index:
+                    # Replace existing censoring timestamp with secondary one
+                    result[pid] = secondary_censoring_timestamps.loc[pid, TIMESTAMP_COL]
+                else:
+                    # Add new entry with secondary censoring timestamp
+                    result[pid] = secondary_censoring_timestamps.loc[pid, TIMESTAMP_COL]
+            
+            # Remove these patients from missing_pids since they now have censoring dates
+            missing_pids = missing_pids - secondary_pids
+        
+        # For remaining missing patients, draw from normal censoring timestamps
+        if missing_pids:
+            random_abspos = np.random.choice(
+                censoring_timestamps.values, size=len(missing_pids)
+            )
+            new_entries = pd.Series(
+                random_abspos, index=pd.Index(list(missing_pids), name=PID_COL)
+            )
+            result = pd.concat([result, new_entries])
+        
+        result.index.name = PID_COL  # Ensure the final series has PID_COL as index name
+        return result
+
+    @staticmethod
     def draw_index_dates_for_unexposed(
         data_pids: List[str],
         censoring_timestamps: pd.Series,
@@ -142,6 +185,8 @@ class IndexDateHandler:
         maximum_index_dates: Optional[pd.DataFrame] = None,
         n_hours_from_minimum_index_date: Optional[int] = None,
         n_hours_from_maximum_index_date: Optional[int] = None,
+        secondary_censoring_timestamps: Optional[pd.DataFrame] = None,
+        n_hours_from_secondary_censoring_timestamps: Optional[int] = None,
     ) -> pd.Series:
         """Determine index dates based on mode.
         Args:
@@ -176,7 +221,16 @@ class IndexDateHandler:
                 )
                 # Convert Series back to DataFrame for draw_index_dates_for_unexposed
                 maximum_index_dates = maximum_index_dates.reset_index()
-            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
+            
+            if n_hours_from_secondary_censoring_timestamps is not None:
+                secondary_censoring_timestamps = cls.get_index_timestamps_for_exposed(
+                    pids, n_hours_from_secondary_censoring_timestamps, secondary_censoring_timestamps
+                )
+                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
+                secondary_censoring_timestamps = secondary_censoring_timestamps.reset_index()
+                result = cls.draw_index_dates_for_unexposed(pids, secondary_censoring_timestamps)
+            else:   
+                result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 

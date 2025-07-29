@@ -333,6 +333,8 @@ class DirectoryPreparer:
                 self.cfg.paths.minimum_index_dates = join(outcomes, minimum_index_dates)
             if maximum_index_dates := self.cfg.paths.get("maximum_index_dates", False):
                 self.cfg.paths.maximum_index_dates = join(outcomes, maximum_index_dates)
+            if secondary_censoring_timestamps := self.cfg.paths.get("secondary_censoring_timestamps", False):
+                self.cfg.paths.secondary_censoring_timestamps = join(outcomes, secondary_censoring_timestamps)
         self.check_file("outcome")
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
