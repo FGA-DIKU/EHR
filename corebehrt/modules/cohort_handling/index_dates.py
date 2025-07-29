@@ -141,6 +141,7 @@ class IndexDateHandler:
         minimum_index_dates: Optional[pd.DataFrame] = None,
         maximum_index_dates: Optional[pd.DataFrame] = None,
         n_hours_from_minimum_index_date: Optional[int] = None,
+        n_hours_from_maximum_index_date: Optional[int] = None,
     ) -> pd.Series:
         """Determine index dates based on mode.
         Args:
@@ -166,6 +167,10 @@ class IndexDateHandler:
             if n_hours_from_minimum_index_date is not None:
                 minimum_index_dates = cls.get_index_timestamps_for_exposed(
                     pids, n_hours_from_minimum_index_date, minimum_index_dates
+                )
+            if n_hours_from_maximum_index_date is not None:
+                maximum_index_dates = cls.get_index_timestamps_for_exposed(
+                    pids, n_hours_from_maximum_index_date, maximum_index_dates
                 )
             result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
         else:
