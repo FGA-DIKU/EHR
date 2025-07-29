@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import pandas as pd
 import torch
@@ -53,7 +53,7 @@ def select_cohort(
     """
 
     logger.info("Loading data")
-    patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates = load_data(path_cfg)
+    patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates = load_data(path_cfg)
 
     # Remove duplicate patient records (keep first occurrence)
     patients_info = patients_info.drop_duplicates(subset=PID_COL, keep="first")
@@ -93,7 +93,9 @@ def select_cohort(
         n_hours_from_exposure=index_date_cfg[mode].get("n_hours_from_exposure"),
         exposures=exposures,
         minimum_index_dates=minimum_index_dates,
+        maximum_index_dates=maximum_index_dates,
         n_hours_from_minimum_index_date=index_date_cfg[mode].get("n_hours_from_minimum_index_date", 0),
+        n_hours_from_maximum_index_date=index_date_cfg[mode].get("n_hours_from_maximum_index_date", 0),
     )
 
     # This split is done after index date calculation but before any filtering based on index dates
@@ -146,7 +148,7 @@ def log_patient_num(logger, patients_info):
 
 def load_data(
     path_cfg,
-) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, List[str], List[str]]:
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, List[str], List[str], Optional[pd.DataFrame], Optional[pd.DataFrame]]:
     """Load patient, outcomes, and exposures data."""
     patients_info = ConceptLoader.read_file(path_cfg.patients_info)
     outcomes = ConceptLoader.read_file(path_cfg.outcome)
@@ -163,6 +165,11 @@ def load_data(
     else:
         minimum_index_dates = None
 
+    if path_cfg.get("maximum_index_dates", False):
+        maximum_index_dates = ConceptLoader.read_file(path_cfg.maximum_index_dates)
+    else:
+        maximum_index_dates = None
+
     initial_pids = (
         torch.load(path_cfg.initial_pids) if path_cfg.get("initial_pids", False) else []
     )
@@ -171,4 +178,4 @@ def load_data(
         torch.load(path_cfg.exclude_pids) if path_cfg.get("exclude_pids", False) else []
     )
 
-    return patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates
+    return patients_info, outcomes, exposures, initial_pids, exclude_pids, minimum_index_dates, maximum_index_dates

@@ -38,6 +38,7 @@ class IndexDateHandler:
         data_pids: List[str],
         censoring_timestamps: pd.Series,
         minimum_index_dates: Optional[pd.DataFrame] = None,
+        maximum_index_dates: Optional[pd.DataFrame] = None,
     ) -> pd.Series:
         """Draw censor dates for patients not in censor_timestamps."""
         np.random.seed(42)
@@ -53,32 +54,61 @@ class IndexDateHandler:
             PID_COL  # Ensure the final concatenated series has PID_COL as index name
         )
         
-        # If minimum_index_dates is provided, redraw dates that fall before the minimum
-        if minimum_index_dates is not None:
-            min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
-            aligned_min_dates = min_dates_series.reindex(result.index)
+        # If minimum_index_dates or maximum_index_dates are provided, redraw dates that fall outside the valid range
+        if minimum_index_dates is not None or maximum_index_dates is not None:
+            min_dates_series = None
+            max_dates_series = None
             
-            # Find patients whose drawn dates are before their minimum
-            mask = aligned_min_dates.notna() & (result < aligned_min_dates)
+            if minimum_index_dates is not None:
+                min_dates_series = minimum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+                aligned_min_dates = min_dates_series.reindex(result.index)
+            
+            if maximum_index_dates is not None:
+                max_dates_series = maximum_index_dates.set_index(PID_COL)[TIMESTAMP_COL]
+                aligned_max_dates = max_dates_series.reindex(result.index)
+            
+            # Find patients whose drawn dates are outside the valid range
+            mask = pd.Series(False, index=result.index)
+            
+            if minimum_index_dates is not None:
+                mask |= aligned_min_dates.notna() & (result < aligned_min_dates)
+            
+            if maximum_index_dates is not None:
+                mask |= aligned_max_dates.notna() & (result > aligned_max_dates)
+            
             patients_to_redraw = mask.sum()
             
             if patients_to_redraw > 0:
-                logger.info(f"Redrawing {patients_to_redraw} patients whose censoring dates fall before minimum index dates")
+                logger.info(f"Redrawing {patients_to_redraw} patients whose censoring dates fall outside valid index date range")
                 
                 # For patients that need redrawing, draw new dates from the valid range
                 for pid in result[mask].index:
-                    min_date = aligned_min_dates[pid]
-                    # Filter censoring timestamps to only include those >= min_date
-                    valid_timestamps = censoring_timestamps[censoring_timestamps >= min_date]
+                    min_date = aligned_min_dates[pid] if minimum_index_dates is not None else None
+                    max_date = aligned_max_dates[pid] if maximum_index_dates is not None else None
+                    
+                    # Filter censoring timestamps to only include those within the valid range
+                    valid_timestamps = censoring_timestamps.copy()
+                    
+                    if min_date is not None:
+                        valid_timestamps = valid_timestamps[valid_timestamps >= min_date]
+                    
+                    if max_date is not None:
+                        valid_timestamps = valid_timestamps[valid_timestamps <= max_date]
                     
                     if len(valid_timestamps) > 0:
                         # Draw from valid timestamps
                         new_date = np.random.choice(valid_timestamps.values)
                         result[pid] = new_date
                     else:
-                        # If no valid timestamps, use the minimum date
-                        result[pid] = min_date
-                        logger.warning(f"No valid censoring timestamps >= minimum date for patient {pid}, using minimum date")
+                        # If no valid timestamps, use the minimum date if available, otherwise maximum date
+                        if min_date is not None:
+                            result[pid] = min_date
+                            logger.warning(f"No valid censoring timestamps >= minimum date for patient {pid}, using minimum date")
+                        elif max_date is not None:
+                            result[pid] = max_date
+                            logger.warning(f"No valid censoring timestamps <= maximum date for patient {pid}, using maximum date")
+                        else:
+                            logger.warning(f"No valid censoring timestamps in range for patient {pid}")
         
         return result
     
@@ -109,6 +139,7 @@ class IndexDateHandler:
         n_hours_from_exposure: Optional[int] = None,
         exposures: Optional[pd.DataFrame] = None,
         minimum_index_dates: Optional[pd.DataFrame] = None,
+        maximum_index_dates: Optional[pd.DataFrame] = None,
         n_hours_from_minimum_index_date: Optional[int] = None,
     ) -> pd.Series:
         """Determine index dates based on mode.
@@ -119,6 +150,7 @@ class IndexDateHandler:
             n_hours_from_exposure: int (required if index_date_mode == "relative")
             exposures: pd.DataFrame (required if index_date_mode == "relative")
             minimum_index_dates: pd.DataFrame (optional if index_date_mode == "relative")
+            maximum_index_dates: pd.DataFrame (optional if index_date_mode == "relative")
         """
         pids = set(patients_info[PID_COL].unique())
 
@@ -135,7 +167,7 @@ class IndexDateHandler:
                 minimum_index_dates = cls.get_index_timestamps_for_exposed(
                     pids, n_hours_from_minimum_index_date, minimum_index_dates
                 )
-            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates)
+            result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
 

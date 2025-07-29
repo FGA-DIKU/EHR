@@ -149,6 +149,99 @@ class TestIndexDateHandler(unittest.TestCase):
             combined.sort_index(), all_in_series.sort_index(), check_names=True
         )
 
+    def test_draw_index_dates_for_unexposed_with_maximum_dates(self):
+        """Test that maximum_index_dates constraint is properly applied."""
+        # Create test data with some dates that exceed maximum
+        censoring_timestamps = pd.Series({
+            1: pd.Timestamp("2021-05-01"),
+            2: pd.Timestamp("2021-05-02"),
+        })
+        censoring_timestamps.index.name = PID_COL
+        
+        # Create maximum index dates that some existing timestamps exceed
+        maximum_index_dates = pd.DataFrame({
+            PID_COL: [1, 2, 3, 4],
+            TIMESTAMP_COL: [
+                pd.Timestamp("2021-05-01 12:00"),  # p1's timestamp is before this
+                pd.Timestamp("2021-05-01 12:00"),  # p2's timestamp is after this
+                pd.Timestamp("2021-05-01 12:00"),  # p3 will be drawn
+                pd.Timestamp("2021-05-01 12:00"),  # p4 will be drawn
+            ]
+        })
+        
+        # p1 should be redrawn (original is before max), p2 should stay (within range)
+        # p3, p4 should be drawn from valid range
+        result = IndexDateHandler.draw_index_dates_for_unexposed(
+            data_pids=[1, 2, 3, 4],
+            censoring_timestamps=censoring_timestamps,
+            maximum_index_dates=maximum_index_dates
+        )
+        
+        self.assertEqual(len(result), 4)
+        
+        # p1 should be redrawn to be <= max date
+        self.assertLessEqual(result[1], pd.Timestamp("2021-05-01 12:00"))
+        
+        # p2 should remain unchanged (was already within range)
+        self.assertEqual(result[2], pd.Timestamp("2021-05-02"))
+        
+        # p3, p4 should be drawn from valid timestamps (<= max date)
+        for pid in [3, 4]:
+            self.assertLessEqual(result[pid], pd.Timestamp("2021-05-01 12:00"))
+            self.assertIn(result[pid], [pd.Timestamp("2021-05-01"), pd.Timestamp("2021-05-02")])
+
+    def test_draw_index_dates_for_unexposed_with_minimum_and_maximum_dates(self):
+        """Test that both minimum and maximum_index_dates constraints work together."""
+        censoring_timestamps = pd.Series({
+            1: pd.Timestamp("2021-05-01 12:00"),
+            2: pd.Timestamp("2021-05-02 12:00"),
+        })
+        censoring_timestamps.index.name = PID_COL
+        
+        minimum_index_dates = pd.DataFrame({
+            PID_COL: [1, 2, 3, 4],
+            TIMESTAMP_COL: [
+                pd.Timestamp("2021-05-01 10:00"),  # p1's timestamp is after this
+                pd.Timestamp("2021-05-03 00:00"),  # p2's timestamp is before this
+                pd.Timestamp("2021-05-01 10:00"),  # p3 will be drawn
+                pd.Timestamp("2021-05-01 10:00"),  # p4 will be drawn
+            ]
+        })
+        
+        maximum_index_dates = pd.DataFrame({
+            PID_COL: [1, 2, 3, 4],
+            TIMESTAMP_COL: [
+                pd.Timestamp("2021-05-01 14:00"),  # p1's timestamp is before this
+                pd.Timestamp("2021-05-01 14:00"),  # p2's timestamp is after this
+                pd.Timestamp("2021-05-01 14:00"),  # p3 will be drawn
+                pd.Timestamp("2021-05-01 14:00"),  # p4 will be drawn
+            ]
+        })
+        
+        # p1 should stay (within both min and max)
+        # p2 should be redrawn (exceeds max)
+        # p3, p4 should be drawn from valid range
+        result = IndexDateHandler.draw_index_dates_for_unexposed(
+            data_pids=[1, 2, 3, 4],
+            censoring_timestamps=censoring_timestamps,
+            minimum_index_dates=minimum_index_dates,
+            maximum_index_dates=maximum_index_dates
+        )
+        
+        self.assertEqual(len(result), 4)
+        
+        # p1 should remain unchanged (within both constraints)
+        self.assertEqual(result[1], pd.Timestamp("2021-05-01 12:00"))
+        
+        # p2 should be redrawn to be within both min and max
+        self.assertGreaterEqual(result[2], pd.Timestamp("2021-05-03 00:00"))
+        self.assertLessEqual(result[2], pd.Timestamp("2021-05-01 14:00"))
+        
+        # p3, p4 should be drawn from valid range
+        for pid in [3, 4]:
+            self.assertGreaterEqual(result[pid], pd.Timestamp("2021-05-01 10:00"))
+            self.assertLessEqual(result[pid], pd.Timestamp("2021-05-01 14:00"))
+
     # --------------------------------------------------------
     # determine_index_dates
     # --------------------------------------------------------
