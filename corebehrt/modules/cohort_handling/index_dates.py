@@ -168,10 +168,14 @@ class IndexDateHandler:
                 minimum_index_dates = cls.get_index_timestamps_for_exposed(
                     pids, n_hours_from_minimum_index_date, minimum_index_dates
                 )
+                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
+                minimum_index_dates = minimum_index_dates.reset_index()
             if n_hours_from_maximum_index_date is not None:
                 maximum_index_dates = cls.get_index_timestamps_for_exposed(
                     pids, n_hours_from_maximum_index_date, maximum_index_dates
                 )
+                # Convert Series back to DataFrame for draw_index_dates_for_unexposed
+                maximum_index_dates = maximum_index_dates.reset_index()
             result = cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
