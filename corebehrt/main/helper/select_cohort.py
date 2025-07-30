@@ -61,7 +61,6 @@ def select_cohort(
         exclude_pids,
         minimum_index_dates,
         maximum_index_dates,
-        secondary_censoring_timestamps,
     ) = load_data(path_cfg)
 
     # Remove duplicate patient records (keep first occurrence)
@@ -108,10 +107,6 @@ def select_cohort(
         ),
         n_hours_from_maximum_index_date=index_date_cfg[mode].get(
             "n_hours_from_maximum_index_date", None
-        ),
-        secondary_censoring_timestamps=secondary_censoring_timestamps,
-        n_hours_from_secondary_censoring_timestamps=index_date_cfg[mode].get(
-            "n_hours_from_secondary_censoring_timestamps", None
         ),
     )
 
@@ -195,13 +190,6 @@ def load_data(
     else:
         maximum_index_dates = None
 
-    if path_cfg.get("secondary_censoring_timestamps", False):
-        secondary_censoring_timestamps = ConceptLoader.read_file(
-            path_cfg.secondary_censoring_timestamps
-        )
-    else:
-        secondary_censoring_timestamps = None
-
     initial_pids = (
         torch.load(path_cfg.initial_pids) if path_cfg.get("initial_pids", False) else []
     )
@@ -218,5 +206,4 @@ def load_data(
         exclude_pids,
         minimum_index_dates,
         maximum_index_dates,
-        secondary_censoring_timestamps,
     )

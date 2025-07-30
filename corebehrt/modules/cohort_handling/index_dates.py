@@ -40,66 +40,6 @@ class IndexDateHandler:
         return data
 
     @staticmethod
-    def draw_index_dates_for_unexposed_w_secondary_censoring(
-        data_pids: List[str],
-        censoring_timestamps: pd.Series,
-        secondary_censoring_timestamps: pd.Series,
-    ) -> pd.Series:
-        """
-        Draw censor dates for patients not in censoring_timestamps.
-        Uses secondary censoring timestamps for missing patients when available.
-        """
-        np.random.seed(42)
-
-        # Ensure proper Series format
-        censoring_timestamps = IndexDateHandler._ensure_series_format(
-            censoring_timestamps
-        )
-        secondary_censoring_timestamps = IndexDateHandler._ensure_series_format(
-            secondary_censoring_timestamps
-        )
-
-        # Debug logging
-        logger.info(f"Secondary timestamps range: {secondary_censoring_timestamps.min()} to {secondary_censoring_timestamps.max()}")
-        logger.info(f"Secondary timestamps sample: {secondary_censoring_timestamps.head(10).tolist()}")
-        logger.info(f"Total secondary timestamps available: {len(secondary_censoring_timestamps)}")
-
-        missing_pids = set(data_pids) - set(censoring_timestamps.index)
-        result = censoring_timestamps.copy()
-
-        if missing_pids:
-            # Get patients that have secondary censoring timestamps
-            secondary_pids = set(secondary_censoring_timestamps.index) & missing_pids
-
-            # Use secondary timestamps directly for patients that have them
-            for pid in secondary_pids:
-                result[pid] = secondary_censoring_timestamps.loc[pid]
-
-            # For remaining missing patients, draw randomly from secondary censoring dates
-            remaining_missing = missing_pids - secondary_pids
-            if remaining_missing and len(secondary_censoring_timestamps) > 0:
-                random_secondary_dates = np.random.choice(
-                    secondary_censoring_timestamps.values,
-                    size=len(remaining_missing),
-                    replace=True,
-                )
-                new_entries = pd.Series(
-                    random_secondary_dates,
-                    index=pd.Index(list(remaining_missing), name=PID_COL),
-                )
-                result = pd.concat([result, new_entries])
-                
-                # Debug logging for randomly drawn dates
-                logger.info(f"Number of patients with primary censoring timestamps: {len(censoring_timestamps)}")
-                logger.info(f"Number of patients with secondary timestamps: {len(secondary_pids)}")
-                logger.info(f"Number of patients without secondary timestamps: {len(remaining_missing)}")
-                logger.info(f"Sample of randomly drawn dates: {random_secondary_dates[:10]}")
-                logger.info(f"Random dates range: {random_secondary_dates.min()} to {random_secondary_dates.max()}")
-
-        result.index.name = PID_COL
-        return result
-
-    @staticmethod
     def draw_index_dates_for_unexposed(
         data_pids: List[str],
         censoring_timestamps: pd.Series,
@@ -232,8 +172,6 @@ class IndexDateHandler:
             maximum_index_dates: DataFrame (optional)
             n_hours_from_minimum_index_date: int (optional)
             n_hours_from_maximum_index_date: int (optional)
-            secondary_censoring_timestamps: DataFrame (optional)
-            n_hours_from_secondary_censoring_timestamps: int (optional)
 
         Returns:
             pd.Series: Index dates for all patients
@@ -252,8 +190,6 @@ class IndexDateHandler:
                 maximum_index_dates,
                 n_hours_from_minimum_index_date,
                 n_hours_from_maximum_index_date,
-                secondary_censoring_timestamps,
-                n_hours_from_secondary_censoring_timestamps,
             )
         else:
             raise ValueError(f"Unsupported index date mode: {index_date_mode}")
@@ -272,8 +208,6 @@ class IndexDateHandler:
         maximum_index_dates: Optional[pd.DataFrame],
         n_hours_from_minimum_index_date: Optional[int],
         n_hours_from_maximum_index_date: Optional[int],
-        secondary_censoring_timestamps: Optional[pd.DataFrame],
-        n_hours_from_secondary_censoring_timestamps: Optional[int],
     ) -> pd.Series:
         """Handle relative mode index date calculation."""
         n_hours = n_hours_from_exposure or 0
@@ -292,20 +226,4 @@ class IndexDateHandler:
                 pids, n_hours_from_maximum_index_date, maximum_index_dates
             ).reset_index()
 
-        # Handle secondary censoring if provided
-        if n_hours_from_secondary_censoring_timestamps is not None:
-            logger.info(
-                f"Using secondary censoring timestamps with n_hours_from_secondary_censoring_timestamps: {n_hours_from_secondary_censoring_timestamps}"
-            )
-            secondary_censoring_timestamps = cls.get_index_timestamps_for_exposed(
-                pids,
-                n_hours_from_secondary_censoring_timestamps,
-                secondary_censoring_timestamps,
-            )
-            return cls.draw_index_dates_for_unexposed_w_secondary_censoring(
-                list(pids), exposed_timestamps, secondary_censoring_timestamps
-            )
-        else:
-            return cls.draw_index_dates_for_unexposed(
-                pids, exposed_timestamps, minimum_index_dates, maximum_index_dates
-            )
+        return cls.draw_index_dates_for_unexposed(pids, exposed_timestamps, minimum_index_dates, maximum_index_dates)

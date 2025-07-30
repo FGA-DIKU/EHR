@@ -333,12 +333,6 @@ class DirectoryPreparer:
                 self.cfg.paths.minimum_index_dates = join(outcomes, minimum_index_dates)
             if maximum_index_dates := self.cfg.paths.get("maximum_index_dates", False):
                 self.cfg.paths.maximum_index_dates = join(outcomes, maximum_index_dates)
-            if secondary_censoring_timestamps := self.cfg.paths.get(
-                "secondary_censoring_timestamps", False
-            ):
-                self.cfg.paths.secondary_censoring_timestamps = join(
-                    outcomes, secondary_censoring_timestamps
-                )
         self.check_file("outcome")
         if self.cfg.paths.get("exposure", False):
             self.check_file("exposure")
@@ -348,9 +342,29 @@ class DirectoryPreparer:
         # Tokenized must be set. Initial pids is optional.
         if tokenized := self.cfg.paths.get("tokenized", False):
             self.check_directory("tokenized")
+            # Print contents of tokenized folder
+            tokenized_path = self.cfg.paths.tokenized
+            if os.path.exists(tokenized_path):
+                print(f"Contents of tokenized folder ({tokenized_path}):")
+                try:
+                    contents = os.listdir(tokenized_path)
+                    if contents:
+                        for item in contents:
+                            item_path = join(tokenized_path, item)
+                            if os.path.isfile(item_path):
+                                size = os.path.getsize(item_path)
+                                print(f"  File: {item} ({size} bytes)")
+                            else:
+                                print(f"  Directory: {item}")
+                    else:
+                        print("  (empty)")
+                except Exception as e:
+                    print(f"  Error reading directory: {e}")
+            else:
+                print(f"Tokenized folder does not exist: {tokenized_path}")
         if initial_pids := self.cfg.paths.get("initial_pids", False):
-             self.check_file("initial_pids")
-             self.cfg.paths.initial_pids = join(tokenized, initial_pids)
+            initial_pids = join(tokenized, initial_pids)
+            self.cfg.paths.initial_pids = initial_pids
 
         self.create_directory("cohort", clear=True)
         self.write_config("cohort", name=COHORT_CFG)
