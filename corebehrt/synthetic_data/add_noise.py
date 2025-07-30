@@ -28,14 +28,15 @@ DEFAULT_PLOT_DIR = f"../../../data/vals/synthetic_data_plots/{N}n/"
 DEFAULT_SWITCH_PERCENTAGE = 0.0  # % label switching
 DEFAULT_REMOVE_PERCENTAGE = 0.25  # 0  % data removal
 DEFAULT_SEED = 42  # Fixed seed for reproducibility
-
+POS_DIAG = "S/DIAG_POSITIVE"
+NEG_DIAG = "S/DIAG_NEGATIVE"
 
 def add_label_noise(
     data: pd.DataFrame, switch_percentage: float = 0.05
 ) -> pd.DataFrame:
     """
-    Add noise by switching labels for a percentage of positive and negative cases.
-    This is done by swapping lab values between positive and negative patients.
+    Add noise by switching diagnoses for a percentage of positive and negative cases.
+    This is done by swapping S/DIAG_POSITIVE and S/DIAG_NEGATIVE between patients.
 
     Args:
         data: DataFrame containing the synthetic data
@@ -67,10 +68,10 @@ def add_label_noise(
     )
 
     print(
-        f"Swapping lab values for {len(positive_to_switch)} positive and {len(negative_to_switch)} negative patients..."
+        f"Swapping diagnoses for {len(positive_to_switch)} positive and {len(negative_to_switch)} negative patients..."
     )
 
-    # Create pairs of patients to swap lab values
+    # Create pairs of patients to swap diagnoses
     positive_switch_list = list(positive_to_switch)
     negative_switch_list = list(negative_to_switch)
 
@@ -81,32 +82,22 @@ def add_label_noise(
         pos_patient = positive_switch_list[i]
         neg_patient = negative_switch_list[i]
 
-        # Get lab values for both patients
-        pos_labs = noisy_data[
-            (noisy_data["subject_id"] == pos_patient) & (noisy_data["code"] == "S/LAB1")
-        ]["numeric_value"].values
-        neg_labs = noisy_data[
-            (noisy_data["subject_id"] == neg_patient) & (noisy_data["code"] == "S/LAB1")
-        ]["numeric_value"].values
+        # Get diagnosis records for both patients
+        pos_diag_mask = (noisy_data["subject_id"] == pos_patient) & (
+            noisy_data["code"] == POS_DIAG
+        )
+        neg_diag_mask = (noisy_data["subject_id"] == neg_patient) & (
+            noisy_data["code"] == NEG_DIAG
+        )
 
-        # Swap the lab values only if both patients have lab data
-        if len(pos_labs) > 0 and len(neg_labs) > 0:
-            # Create masks for the lab records
-            pos_mask = (noisy_data["subject_id"] == pos_patient) & (
-                noisy_data["code"] == "S/LAB1"
-            )
-            neg_mask = (noisy_data["subject_id"] == neg_patient) & (
-                noisy_data["code"] == "S/LAB1"
-            )
+        # Swap the diagnoses by changing the codes
+        if noisy_data[pos_diag_mask].shape[0] > 0 and noisy_data[neg_diag_mask].shape[0] > 0:
+            # Change positive patient's diagnosis to negative
+            noisy_data.loc[pos_diag_mask, "code"] = NEG_DIAG
+            # Change negative patient's diagnosis to positive
+            noisy_data.loc[neg_diag_mask, "code"] = POS_DIAG
 
-            # Ensure we have the same number of lab records for both patients
-            min_labs = min(len(pos_labs), len(neg_labs))
-
-            # Swap the numeric values (only the first min_labs records)
-            noisy_data.loc[pos_mask, "numeric_value"] = neg_labs[:min_labs]
-            noisy_data.loc[neg_mask, "numeric_value"] = pos_labs[:min_labs]
-
-    print(f"Swapped lab values for {n_pairs} patient pairs")
+    print(f"Swapped diagnoses for {n_pairs} patient pairs")
 
     return noisy_data
 
@@ -145,7 +136,7 @@ def remove_random_data(
     print(
         f"Removed {n_lab_records_to_remove} lab records ({remove_percentage * 100:.1f}% of lab data)"
     )
-    print(f"Preserved all diagnostic codes (S/DIAG1)")
+    print(f"Preserved all diagnostic codes ({POS_DIAG} and {NEG_DIAG})")
 
     return cleaned_data
 
@@ -187,7 +178,7 @@ def remove_random_patients_lab_data(
     print(
         f"Removed lab data for {len(patients_to_remove)} patients ({remove_percentage * 100:.1f}% of patients with lab data)"
     )
-    print(f"Preserved all diagnostic codes (S/DIAG1)")
+    print(f"Preserved all diagnostic codes ({POS_DIAG} and {NEG_DIAG})")
 
     return cleaned_data
 
@@ -344,7 +335,7 @@ def calculate_theoretical_performance(data: pd.DataFrame) -> dict:
     lab_data = data[lab_mask]
 
     # Get diagnostic data to identify positive/negative patients
-    diag_mask = data["code"] == "S/DIAG1"
+    diag_mask = data["code"] == POS_DIAG
     positive_patients = set(data[diag_mask]["subject_id"].unique())
 
     # Count patients with and without lab data
@@ -462,7 +453,7 @@ def main():
     # Check if is_positive column exists, if not add it
     if "is_positive" not in data.columns:
         print("Adding is_positive column...")
-        positive_diags = ["S/DIAG1"]
+        positive_diags = [POS_DIAG]
         positive_patients = set()
         for diag in positive_diags:
             positive_patients.update(data[data["code"] == diag]["subject_id"].unique())

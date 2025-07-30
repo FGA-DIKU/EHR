@@ -46,9 +46,18 @@ CONCEPT_RELATIONSHIPS = {
         },
         "add_base_concept": ["high", "low"],  # Add lab for all conditions
         "related_concepts": {
-            "S/DIAG1": {
+            "S/DIAG_POSITIVE": {
                 "prob": 1,  # 100% chance of getting diagnosis if lab is high
                 "conditions": ["high"],  # Only high lab patients get diagnosis
+                "time_relationship": {
+                    "type": "after",  # Diagnosis comes after lab
+                    "min_days": 10,
+                    "max_days": 180,
+                },
+            },
+            "S/DIAG_NEGATIVE": {
+                "prob": 1,  # 100% chance of getting diagnosis if lab is low
+                "conditions": ["low"],  # Only low lab patients get diagnosis
                 "time_relationship": {
                     "type": "after",  # Diagnosis comes after lab
                     "min_days": 10,
@@ -296,13 +305,18 @@ def generate_data(patient_df: pd.DataFrame, write_dir: str) -> None:
     # Print statistics
     total_patients = len(patient_df)
     patients_with_labs = len(data[data["code"] == "S/LAB1"])
-    patients_with_diagnosis = len(data[data["code"] == "S/DIAG1"])
+    patients_with_positive_diagnosis = len(data[data["code"] == "S/DIAG_POSITIVE"])
+    patients_with_negative_diagnosis = len(data[data["code"] == "S/DIAG_NEGATIVE"])
     print(f"Total patients: {total_patients}")
     print(f"Patients with labs: {patients_with_labs}")
-    print(f"Patients with diagnosis: {patients_with_diagnosis}")
+    print(f"Patients with positive diagnosis: {patients_with_positive_diagnosis}")
+    print(f"Patients with negative diagnosis: {patients_with_negative_diagnosis}")
     print(f"Percentage with labs: {patients_with_labs / total_patients * 100:.2f}%")
     print(
-        f"Percentage with diagnosis: {patients_with_diagnosis / total_patients * 100:.2f}%"
+        f"Percentage with positive diagnosis: {patients_with_positive_diagnosis / total_patients * 100:.2f}%"
+    )
+    print(
+        f"Percentage with negative diagnosis: {patients_with_negative_diagnosis / total_patients * 100:.2f}%"
     )
     print("\nLab value distribution:")
     print(data["numeric_value"].value_counts())
