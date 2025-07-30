@@ -2,7 +2,8 @@ from corebehrt.azure.util import job
 
 INPUTS = {
     "features": {"type": "uri_folder"},
-    "initial_pids": {"type": "uri_file", "optional": True},
+    #"initial_pids": {"type": "uri_file", "optional": True},
+    "tokenized": {"type": "uri_folder"},
     "exclude_pids": {"type": "uri_file", "optional": True},
     "outcomes": {"type": "uri_folder"},
 }

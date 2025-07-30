@@ -59,6 +59,11 @@ class IndexDateHandler:
             secondary_censoring_timestamps
         )
 
+        # Debug logging
+        logger.info(f"Secondary timestamps range: {secondary_censoring_timestamps.min()} to {secondary_censoring_timestamps.max()}")
+        logger.info(f"Secondary timestamps sample: {secondary_censoring_timestamps.head(10).tolist()}")
+        logger.info(f"Total secondary timestamps available: {len(secondary_censoring_timestamps)}")
+
         missing_pids = set(data_pids) - set(censoring_timestamps.index)
         result = censoring_timestamps.copy()
 
@@ -83,6 +88,13 @@ class IndexDateHandler:
                     index=pd.Index(list(remaining_missing), name=PID_COL),
                 )
                 result = pd.concat([result, new_entries])
+                
+                # Debug logging for randomly drawn dates
+                logger.info(f"Number of patients with primary censoring timestamps: {len(censoring_timestamps)}")
+                logger.info(f"Number of patients with secondary timestamps: {len(secondary_pids)}")
+                logger.info(f"Number of patients without secondary timestamps: {len(remaining_missing)}")
+                logger.info(f"Sample of randomly drawn dates: {random_secondary_dates[:10]}")
+                logger.info(f"Random dates range: {random_secondary_dates.min()} to {random_secondary_dates.max()}")
 
         result.index.name = PID_COL
         return result

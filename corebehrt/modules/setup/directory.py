@@ -345,9 +345,12 @@ class DirectoryPreparer:
         if self.cfg.paths.get("minimum_index_dates", False):
             self.check_file("minimum_index_dates")
 
-        # Initial pids is optional.
-        if self.cfg.paths.get("initial_pids", False):
-            self.check_file("initial_pids")
+        # Tokenized must be set. Initial pids is optional.
+        if tokenized := self.cfg.paths.get("tokenized", False):
+            self.check_directory("tokenized")
+        if initial_pids := self.cfg.paths.get("initial_pids", False):
+             self.check_file("initial_pids")
+             self.cfg.paths.initial_pids = join(tokenized, initial_pids)
 
         self.create_directory("cohort", clear=True)
         self.write_config("cohort", name=COHORT_CFG)

@@ -40,6 +40,7 @@ def create(component: callable):
             "select_cohort",
         )(
             features=create_data.outputs.features,
+            tokenized=create_data.outputs.tokenized,
             outcomes=create_outcomes.outputs.outcomes,
         )
 
@@ -77,6 +78,7 @@ def create(component: callable):
             name="select_held_out_cohort",
         )(
             features=create_data.outputs.features,
+            tokenized=create_data.outputs.tokenized,
             outcomes=create_outcomes.outputs.outcomes,
         )
 
