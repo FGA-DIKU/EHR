@@ -113,7 +113,8 @@ class DatasetPreparer:
             index_dates.set_index(PID_COL)[ABSPOS_COL]
             + self.cfg.outcome.n_hours_censoring
         )
-        self._validate_censoring(data.patients, censor_dates, logger)
+
+        self._validate_censoring(data.patients, censor_dates, index_dates, logger)
         if "concept_pattern_hours_delay" in self.cfg:
             concept_id_to_delay = get_concept_id_to_delay(
                 self.cfg.concept_pattern_hours_delay, self.vocab
@@ -123,12 +124,14 @@ class DatasetPreparer:
                 censor_dates=censor_dates,
                 predict_token_id=self.predict_token,
                 concept_id_to_delay=concept_id_to_delay,
+                index_dates=index_dates,
             )
         else:
             data.patients = data.process_in_parallel(
                 censor_patient,
                 censor_dates=censor_dates,
                 predict_token_id=self.predict_token,
+                index_dates=index_dates,
             )
 
         background_length = get_background_length(data, self.vocab)
@@ -267,7 +270,7 @@ class DatasetPreparer:
 
     @staticmethod
     def _validate_censoring(
-        patients: List["PatientData"], censor_dates: pd.Series, logger: logging.Logger
+        patients: List["PatientData"], censor_dates: pd.Series, index_dates: pd.Series, logger: logging.Logger
     ) -> None:
         """Validate censoring dates and log basic statistics.
 
@@ -278,6 +281,9 @@ class DatasetPreparer:
         """
         patient_pids = set(p.pid for p in patients)
         censor_pids = set(censor_dates.index)
+        index_pids = set(index_dates[PID_COL].unique())
+
+        missing_censor_pids = index_pids - censor_pids
 
         missing_censor_dates = patient_pids - censor_pids
         extra_censor_dates = censor_pids - patient_pids
@@ -288,6 +294,12 @@ class DatasetPreparer:
             )
             raise ValueError(f"Some patients are missing censor dates. Missing PIDs: {list(missing_censor_dates)[:10]}...")
         
+        if missing_censor_pids:
+            logger.error(
+                f"Missing censor dates for {len(missing_censor_pids)} patients: {list(missing_censor_pids)[:10]}..."
+            )
+            raise ValueError(f"Some patients are missing censor dates from index dates. Missing PIDs: {list(missing_censor_pids)[:10]}...")
+
         if extra_censor_dates:
             logger.warning(
                 f"Found {len(extra_censor_dates)} censor dates for patients not in the dataset: {list(extra_censor_dates)[:10]}..."
