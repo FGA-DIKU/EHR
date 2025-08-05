@@ -49,7 +49,7 @@ def exclude_short_sequences(
 
 
 def censor_patient(
-    patient: PatientData, censor_dates: pd.Series, predict_token_id: int, index_dates: pd.DataFrame = None
+    patient: PatientData, censor_dates: pd.Series, predict_token_id: int
 ) -> PatientData:
     """
     Censors a patient's data by truncating all attributes at the censor date,
@@ -60,28 +60,11 @@ def censor_patient(
     Args:
         patient: The PatientData object to be censored.
         censor_dates: A mapping from patient IDs to their respective censor dates.
-        predict_token_id: The concept ID to use for the predict token.
-        index_dates: Optional DataFrame with index dates for debugging.
+        cls_token_id: The concept ID to use for the CLS token.
 
     Returns:
         The censored PatientData object with truncated attributes and appended CLS token.
     """
-    if patient.pid not in censor_dates.index:
-        print(f"Patient ID {patient.pid} (type: {type(patient.pid)}) not found in censor_dates")
-        print(f"Censor dates index types: {[type(x) for x in list(censor_dates.index)[:5]]}")
-        print(f"Available patient IDs in censor_dates: {list(censor_dates.index)[:10]}... (showing first 10)")
-        
-        if index_dates is not None:
-            if patient.pid in index_dates[PID_COL].values:
-                print(f"Patient ID {patient.pid} IS found in index_dates")
-                patient_index_row = index_dates[index_dates[PID_COL] == patient.pid]
-                print(f"Index date row for patient {patient.pid}: {patient_index_row}")
-            else:
-                print(f"Patient ID {patient.pid} is NOT found in index_dates either")
-                print(f"Available patient IDs in index_dates: {list(index_dates[PID_COL].unique())[:10]}... (showing first 10)")
-        
-        raise KeyError(f"Patient ID {patient.pid} not found in censor_dates. Available patient IDs: {list(censor_dates.index)[:10]}... (showing first 10)")
-    
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
     idx = bisect_right(patient.abspos, censor_date)
@@ -102,7 +85,6 @@ def censor_patient_with_delays(
     censor_dates: pd.Series,
     predict_token_id: int,
     concept_id_to_delay: dict = None,
-    index_dates: pd.DataFrame = None,
 ) -> PatientData:
     """
     Censors a patient's data using concept-specific delays applied to their censor date.
@@ -114,30 +96,12 @@ def censor_patient_with_delays(
     Args:
         patient: The patient data to censor.
         censor_dates: Series mapping patient IDs to their base censor dates.
-        predict_token_id: The concept ID to use for the predict token.
         concept_id_to_delay: Optional dictionary mapping concept IDs to delay values (in hours). Concepts not present in the dictionary use a delay of 0.
-        index_dates: Optional DataFrame with index dates for debugging.
 
     Returns:
         The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates,
         and a predict token.
     """
-    if patient.pid not in censor_dates.index:
-        print(f"Patient ID {patient.pid} (type: {type(patient.pid)}) not found in censor_dates")
-        print(f"Censor dates index types: {[type(x) for x in list(censor_dates.index)[:5]]}")
-        print(f"Available patient IDs in censor_dates: {list(censor_dates.index)[:10]}... (showing first 10)")
-        
-        if index_dates is not None:
-            if patient.pid in index_dates[PID_COL].values:
-                print(f"Patient ID {patient.pid} IS found in index_dates")
-                patient_index_row = index_dates[index_dates[PID_COL] == patient.pid]
-                print(f"Index date row for patient {patient.pid}: {patient_index_row}")
-            else:
-                print(f"Patient ID {patient.pid} is NOT found in index_dates either")
-                print(f"Available patient IDs in index_dates: {list(index_dates[PID_COL].unique())[:10]}... (showing first 10)")
-        
-        raise KeyError(f"Patient ID {patient.pid} not found in censor_dates. Available patient IDs: {list(censor_dates.index)[:10]}... (showing first 10)")
-    
     base_censor_date = censor_dates[patient.pid]
 
     # Initialize keep mask
