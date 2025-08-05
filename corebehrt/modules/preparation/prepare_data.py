@@ -280,11 +280,18 @@ class DatasetPreparer:
         censor_pids = set(censor_dates.index)
 
         missing_censor_dates = patient_pids - censor_pids
+        extra_censor_dates = censor_pids - patient_pids
+        
         if missing_censor_dates:
             logger.error(
-                f"Missing censor dates for {len(missing_censor_dates)} patients"
+                f"Missing censor dates for {len(missing_censor_dates)} patients: {list(missing_censor_dates)[:10]}..."
             )
-            raise ValueError("Some patients are missing censor dates")
+            raise ValueError(f"Some patients are missing censor dates. Missing PIDs: {list(missing_censor_dates)[:10]}...")
+        
+        if extra_censor_dates:
+            logger.warning(
+                f"Found {len(extra_censor_dates)} censor dates for patients not in the dataset: {list(extra_censor_dates)[:10]}..."
+            )
 
         logger.info(f"Censoring validated for {len(patient_pids)} patients")
 

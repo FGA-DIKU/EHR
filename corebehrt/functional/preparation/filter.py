@@ -65,6 +65,9 @@ def censor_patient(
     Returns:
         The censored PatientData object with truncated attributes and appended CLS token.
     """
+    if patient.pid not in censor_dates.index:
+        raise KeyError(f"Patient ID {patient.pid} not found in censor_dates. Available patient IDs: {list(censor_dates.index)[:10]}... (showing first 10)")
+    
     censor_date = censor_dates[patient.pid]
     # Find the position where censor_date fits in the sorted abspos list
     idx = bisect_right(patient.abspos, censor_date)
@@ -102,6 +105,9 @@ def censor_patient_with_delays(
         The censored PatientData object with only concepts and attributes occurring before or at their effective censor dates,
         and a predict token.
     """
+    if patient.pid not in censor_dates.index:
+        raise KeyError(f"Patient ID {patient.pid} not found in censor_dates. Available patient IDs: {list(censor_dates.index)[:10]}... (showing first 10)")
+    
     base_censor_date = censor_dates[patient.pid]
 
     # Initialize keep mask
