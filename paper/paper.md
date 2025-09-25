@@ -50,7 +50,7 @@ The framework is intended for machine learning researchers and clinical data sci
 # Figures
 \autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
 
-![The BONSAI pipeline.\label{fig:pipeline}](../docs/BONSAI_pipeline.jpg){width=100%}
+![The BONSAI pipeline.\label{fig:pipeline}](../docs/BONSAI_pipeline.png){width=100%}
 
 The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:censoring} A shows the censoring scheme for the post-hoc setup, and \autoref{fig:censoring} B shows the censoring scheme in a prospective setup.
 
