@@ -64,7 +64,7 @@ Figure \autoref{fig:pipeline} depicts the overall pipeline of BONSAI.
 
 ![The BONSAI pipeline.\label{fig:pipeline}](../docs/COREBEHRT_overview_dark.jpg){width=100%}
 
-The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:post_hoc_censoring}A shows the censoring scheme for the post-hoc setup, and \autoref{fig:prospective_censoring} shows the censoring scheme in a prospective setup.
+The figures below depict the censoring scheme for the data preprocessing, where \autoref{fig:post_hoc_censoring} A shows the censoring scheme for the post-hoc setup, and \autoref{fig:prospective_censoring} B shows the censoring scheme in a prospective setup.
 
 ![Censoring in the post-hoc setup (A) and simulated prospective setup (B).\label{fig:prospective_censoring}](../docs/BONSAI_censoring.jpg){width=80%}
 
@@ -72,6 +72,7 @@ The figures below depict the censoring scheme for the data preprocessing, where 
 The codebase is primarily built on PyTorch v2.5.1 for deep learning [@pytorch_2019], with transformer architectures implemented using the Hugging Face Transformers library (v4.48.0 and above) [@huggingface_transformers]. Additional support for Azure workflows is provided via azureml-mlflow [@mlflow].
 
 Other key dependencies include:
+
 - numpy (≥2.1.3)
 - pandas (≥2.2.3)
 - pyarrow (≥18.0.0)
