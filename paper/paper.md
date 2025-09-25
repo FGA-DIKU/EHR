@@ -1,13 +1,5 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
 title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
-=======
-title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using BERT-based models'
->>>>>>> 6ea7e61 (name change)
-=======
-title: 'BONSAI: A framework for processing and analysing Electronic Health Records (EHR) data using transformer-based models'
->>>>>>> 26164a8 (transformer model)
 tags:
     - Python
     - EHR
@@ -56,11 +48,7 @@ BONSAI was developed to provide an end-to-end pipeline in a modular setup, enabl
 The framework is intended for machine learning researchers and clinical data scientists who are working with or interested in EHR data and wish to explore, benchmark, or develop transformer-based models in a scalable and reproducible manner. While BONSAI builds on the earlier CORE-BEHRT framework [@odgaard2024core], it introduces improvements in modularity and configurability, as well as support for more data sources (such as numerical input). In contrast to frameworks like Med-BERT [@rasmy2021med] or BEHRT [@li2020behrt], which have more rigid assumptions about data preprocessing and modeling setup, BONSAI offers a general-purpose, flexible design adaptable to a wide range of EHR tasks. 
 
 # Figures
-<<<<<<< HEAD
-Figure \autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
-=======
 \autoref{fig:pipeline} depicts the overall pipeline of BONSAI. 
->>>>>>> 6ea7e61 (name change)
 
 ![The BONSAI pipeline.\label{fig:pipeline}](../docs/BONSAI_pipeline.jpg){width=100%}
 
