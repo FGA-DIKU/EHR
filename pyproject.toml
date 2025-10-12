@@ -12,8 +12,8 @@ license = { file = "LICENSE" }
 authors = [
     { name = "Kiril Klein", email = "kikl@di.ku.dk" },
     { name = "Mikkel Odgaard" },
-    { name = "Stephan Lorenzen" },
-    { name = "Maria Montgomery" },
+    { name = "Stephan Sloth Lorenzen" },
+    { name = "Maria Elkjær Montgomery" },
 ]
 keywords = ["EHR", "BERT", "healthcare", "machine learning"]
 classifiers = [
@@ -38,7 +38,8 @@ dependencies = [
     "scikit-learn>=1.5.2",
     "torch==2.5.1",
     "tqdm==4.67.1",
-    "transformers>=4.48.0"
+    "transformers>=4.48.0",
+    "xgboost>=3.0.2"
 ]
 
 [tool.setuptools.packages.find]
