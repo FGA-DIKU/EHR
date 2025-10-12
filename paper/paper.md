@@ -7,7 +7,7 @@ tags:
     - healthcare
     - machine learning
 authors:
-  - name: Maria Montgomery
+  - name: Maria Elkjær Montgomery
     orcid: 0009-0000-3809-0513
     equal-contrib: true
     affiliation: 1 
@@ -19,7 +19,7 @@ authors:
     orcid: 0000-0002-9072-0874
     equal-contrib: true
     affiliation: 1 
-  - name: Stephan Lorenzen
+  - name: Stephan Sloth Lorenzen
     orcid: 0000-0001-6701-3752
     equal-contrib: true
     affiliation: 1 
@@ -27,7 +27,7 @@ authors:
     orcid: 
     affiliation: 1 
 affiliations:
- - name: Copenhagen University, Denmark
+ - name: University of Copenhagen, Denmark
    index: 1
 date: 23 June 2025
 bibliography: paper.bib
