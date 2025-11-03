@@ -165,4 +165,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 If you use BONSAI in your research, please cite the following paper:
 
 ```bibtex
+@article{Montgomery2025,
+  author = {Montgomery, A. and others},
+  title = {BONSAI: A framework for processing and analysing {E}lectronic {H}ealth {R}ecords ({EHR}) data using transformer-based models},
+  journal = {Journal of Open Source Software},
+  volume = {10},
+  number = {114},
+  pages = {8869},
+  year = {2025},
+  doi = {10.21105/joss.08869}
+}
 ```
