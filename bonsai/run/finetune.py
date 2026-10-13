@@ -85,7 +85,6 @@ def main(cfg: DictConfig) -> None:
         max_seqlen=pretrain_cfg["max_seqlen"],
         hidden_size=pretrain_cfg["hidden_size"],
         num_layers=pretrain_cfg["num_layers"],
-        num_attention_heads=pretrain_cfg["num_attention_heads"],
         bias=pretrain_cfg["bias"],
         attn_type=pretrain_cfg["attn_type"],
         predict_token_id=vocab["[CLS]"],
