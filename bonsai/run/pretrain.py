@@ -70,7 +70,7 @@ def main(cfg: DictConfig) -> None:
         enable_version_counter=False,
         save_last=True,
     )
-    early_stopping = EarlyStopping("val/loss", min_delta=1e-4, patience=2)
+    early_stopping = EarlyStopping("val/loss", mode="min", min_delta=1e-4, patience=2)
 
     trainer = L.Trainer(
         accelerator=cfg.hardware.accelerator,
