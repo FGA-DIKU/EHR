@@ -26,7 +26,7 @@ def main(cfg: DictConfig) -> None:
     save_path = Path(cfg.paths.save_path)
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logging.info(f"Starting create_outcome for `{save_path.stem}`")
+    logging.info(f"Starting create_outcome_cohort for `{save_path.stem}`")
 
     all_outcomes = []
     for i, split in enumerate(cfg.splits):

@@ -42,9 +42,7 @@ class TestIndexDates(unittest.TestCase):
         ]
 
     def cfg(self, missing):
-        return OmegaConf.create(
-            {"index": {"missing": missing, "conditional_criteria": self.criteria}}
-        )
+        return OmegaConf.create({"missing": missing, "conditional_criteria": self.criteria})
 
     def test_drop(self):
         result = get_index_dates(self.df, self.cfg("drop"), seed=0)
