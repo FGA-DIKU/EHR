@@ -19,7 +19,11 @@ class TestIndexDates(unittest.TestCase):
             {
                 "subject_id": [1, 1, 2],
                 "code": ["A", "B", "B"],
-                "time": [datetime(2020, 1, 1), datetime(2021, 1, 1), datetime(2020, 6, 1)],
+                "time": [
+                    datetime(2020, 1, 1),
+                    datetime(2021, 1, 1),
+                    datetime(2020, 6, 1),
+                ],
             }
         )
         self.criteria = [
@@ -28,7 +32,9 @@ class TestIndexDates(unittest.TestCase):
                 "mode": "match",
                 "args": {
                     "dependence": "independent",
-                    "conditions": [{"column": "code", "value": ["A"], "operator": "in"}],
+                    "conditions": [
+                        {"column": "code", "value": ["A"], "operator": "in"}
+                    ],
                 },
             },
             {"action": "overwrite", "mode": "first", "args": {"col": "time"}},
@@ -36,7 +42,9 @@ class TestIndexDates(unittest.TestCase):
         ]
 
     def cfg(self, missing):
-        return OmegaConf.create({"index": {"missing": missing, "conditional_criteria": self.criteria}})
+        return OmegaConf.create(
+            {"index": {"missing": missing, "conditional_criteria": self.criteria}}
+        )
 
     def test_drop(self):
         result = get_index_dates(self.df, self.cfg("drop"), seed=0)
@@ -58,7 +66,11 @@ class TestFillNansWithSampled(unittest.TestCase):
 
     def test_reproducible_with_seed(self):
         dates = pl.Series([datetime(2020 + i, 1, 1) for i in range(10)] + [None] * 20)
-        self.assertTrue(fill_nans_with_sampled(dates, seed=1).equals(fill_nans_with_sampled(dates, seed=1)))
+        self.assertTrue(
+            fill_nans_with_sampled(dates, seed=1).equals(
+                fill_nans_with_sampled(dates, seed=1)
+            )
+        )
 
     def test_all_null_raises(self):
         with self.assertRaises(ValueError):

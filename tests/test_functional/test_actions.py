@@ -43,34 +43,75 @@ class TestActions(unittest.TestCase):
             events(),
             criteria(
                 {"action": "overwrite", "mode": "first", "args": {"col": "time"}},
-                {"action": "overwrite", "mode": "rename", "args": {"time": "index_date"}},
+                {
+                    "action": "overwrite",
+                    "mode": "rename",
+                    "args": {"time": "index_date"},
+                },
             ),
         )
         self.assertEqual(result.columns, ["subject_id", "index_date"])
         dates = dict(result.sort("subject_id").iter_rows())
-        self.assertEqual(dates, {1: datetime(2020, 1, 1), 2: datetime(2020, 1, 3), 3: datetime(2020, 1, 5)})
+        self.assertEqual(
+            dates,
+            {1: datetime(2020, 1, 1), 2: datetime(2020, 1, 3), 3: datetime(2020, 1, 5)},
+        )
 
     def test_append_reference(self):
-        refs = {"index_dates": pl.DataFrame({"subject_id": [1, 2], "index_date": [datetime(2020, 1, 1)] * 2})}
+        refs = {
+            "index_dates": pl.DataFrame(
+                {"subject_id": [1, 2], "index_date": [datetime(2020, 1, 1)] * 2}
+            )
+        }
         result = action_router(
-            events(), criteria({"action": "append", "mode": "reference", "args": {"name": "index_dates"}}), refs
+            events(),
+            criteria(
+                {
+                    "action": "append",
+                    "mode": "reference",
+                    "args": {"name": "index_dates"},
+                }
+            ),
+            refs,
         )
         self.assertEqual(result.height, 5)
-        self.assertTrue(result.filter(pl.col("subject_id") == 3)["index_date"].is_null().all())
+        self.assertTrue(
+            result.filter(pl.col("subject_id") == 3)["index_date"].is_null().all()
+        )
 
     def test_append_rejects_several_rows_per_subject(self):
-        step = {"action": "append", "mode": "shift_date", "args": {"col": "time", "shift": "1d"}}
+        step = {
+            "action": "append",
+            "mode": "shift_date",
+            "args": {"col": "time", "shift": "1d"},
+        }
         with self.assertRaises(pl.exceptions.PolarsError):
             action_router(events(), criteria(step))
 
     def test_shift_date(self):
-        refs = {"index_dates": pl.DataFrame({"subject_id": [1], "index_date": [datetime(2020, 1, 1)]})}
+        refs = {
+            "index_dates": pl.DataFrame(
+                {"subject_id": [1], "index_date": [datetime(2020, 1, 1)]}
+            )
+        }
         result = action_router(
             events(),
             criteria(
-                {"action": "overwrite", "mode": "reference", "args": {"name": "index_dates"}},
-                {"action": "overwrite", "mode": "shift_date", "args": {"col": "index_date", "shift": "5y"}},
-                {"action": "overwrite", "mode": "rename", "args": {"index_date": "censor_date"}},
+                {
+                    "action": "overwrite",
+                    "mode": "reference",
+                    "args": {"name": "index_dates"},
+                },
+                {
+                    "action": "overwrite",
+                    "mode": "shift_date",
+                    "args": {"col": "index_date", "shift": "5y"},
+                },
+                {
+                    "action": "overwrite",
+                    "mode": "rename",
+                    "args": {"index_date": "censor_date"},
+                },
             ),
             refs,
         )
@@ -78,7 +119,9 @@ class TestActions(unittest.TestCase):
 
     def test_unsupported_mode_and_action(self):
         with self.assertRaises(ValueError):
-            action_router(events(), criteria({"action": "overwrite", "mode": "nope", "args": {}}))
+            action_router(
+                events(), criteria({"action": "overwrite", "mode": "nope", "args": {}})
+            )
         with self.assertRaises(ValueError):
             action_router(events(), criteria({"action": "nope", **MATCH_A}))
 
@@ -122,10 +165,13 @@ class TestPipeline(unittest.TestCase):
                 "subject_id": [1, 1, 2, 2, 3, 4, 4],
                 "code": ["A", "O", "A", "O", "O", "A", "O"],
                 "time": [
-                    datetime(2020, 1, 1), datetime(2021, 1, 1),  # 1: outcome after index
-                    datetime(2020, 1, 1), datetime(2019, 1, 1),  # 2: outcome before index
-                    datetime(2021, 1, 1),                        # 3: no index
-                    datetime(2020, 1, 1), datetime(2020, 1, 1),  # 4: outcome on index day
+                    datetime(2020, 1, 1),
+                    datetime(2021, 1, 1),  # 1: outcome after index
+                    datetime(2020, 1, 1),
+                    datetime(2019, 1, 1),  # 2: outcome before index
+                    datetime(2021, 1, 1),  # 3: no index
+                    datetime(2020, 1, 1),
+                    datetime(2020, 1, 1),  # 4: outcome on index day
                 ],
             }
         )
