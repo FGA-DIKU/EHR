@@ -3,7 +3,7 @@ from typing import Literal
 
 import polars as pl
 
-COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}  # NEW
+COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}
 
 
 def get_condition_expression(cond) -> pl.Expr:
@@ -13,7 +13,7 @@ def get_condition_expression(cond) -> pl.Expr:
         return col.is_in(cond["value"])
     if op == "startswith_any":
         return pl.any_horizontal([col.str.starts_with(v) for v in cond["value"]])
-    if op in COMPARE:  # NEW block
+    if op in COMPARE:
         rhs = (
             pl.col(cond["value_col"]) if "value_col" in cond else pl.lit(cond["value"])
         )

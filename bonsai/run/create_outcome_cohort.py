@@ -31,12 +31,13 @@ def main(cfg: DictConfig) -> None:
     all_outcomes = []
     for i, split in enumerate(cfg.splits):
         shards = [shard for shard in (input_dir / split).glob("*.parquet")]
+        assert len(shards) > 0
         for j, shard in enumerate(shards):
             refs = {}
             df = pl.read_parquet(shard, columns=["subject_id", "time", "code"])
             df = df.drop_nulls(["subject_id", "code"])
 
-            shard_seed = cfg.index.seed + i + j
+            shard_seed = cfg.index.seed + 1000 * i + j
             shard_index = get_index_dates(df, cfg.index, seed=shard_seed)
             refs["index_dates"] = shard_index
             refs["outcome_dates"] = action_router(
@@ -51,14 +52,13 @@ def main(cfg: DictConfig) -> None:
             all_outcomes.append(
                 shard_cohort.select("subject_id")
                 .unique()
-                .join(refs["index_dates"], on="subject_id", how="left")
+                .join(refs["index_dates"], on="subject_id", how="inner")
                 .join(refs["outcome_dates"], on="subject_id", how="left")
                 .join(refs["censor_dates"], on="subject_id", how="left")
                 .with_columns(split=pl.lit(split))
             )
 
     all_outcomes = pl.concat(all_outcomes).sort("subject_id", maintain_order=True)
-    logging.info(f"Total number of subjects in outcomes: {len(all_outcomes):_}")
 
     n_early = all_outcomes.filter(pl.col("outcome_date") < pl.col("index_date")).height
     if n_early:
