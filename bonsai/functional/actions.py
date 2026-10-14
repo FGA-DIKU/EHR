@@ -18,7 +18,9 @@ def action_router(df: pl.DataFrame, conditional_criteria: list, refs=None):
         elif cond.mode == "rename":
             output = df.rename(dict(cond.args))
         elif cond.mode == "shift_date":
-            output = df.with_columns(pl.col(cond.args.col).dt.offset_by(cond.args.shift))
+            output = df.with_columns(
+                pl.col(cond.args.col).dt.offset_by(cond.args.shift)
+            )
         elif cond.mode == "add_column":
             output = add_column(df, **cond.args)
         # TODO: custom
@@ -39,4 +41,3 @@ def action_router(df: pl.DataFrame, conditional_criteria: list, refs=None):
         else:
             raise ValueError(f"Action={cond.action} not supported")
     return df
-

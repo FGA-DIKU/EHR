@@ -12,14 +12,16 @@ def fill_nans_with_sampled(dates, seed=None):
         dates.drop_nulls().sample(dates.len(), with_replacement=True, seed=seed)
     )
 
+
 def get_index_dates(df: pl.DataFrame, cfg, seed: int) -> pl.DataFrame:
     """Index dates for one shard. sample: missing dates are drawn from this shard's observed ones."""
     index_dates = action_router(df, cfg.conditional_criteria)
     if cfg.missing == "drop":
         return index_dates.drop_nulls("index_date")
- 
+
     index_dates = (
-        df.select("subject_id").unique()
+        df.select("subject_id")
+        .unique()
         .join(index_dates, on="subject_id", how="left")
         .sort("subject_id")  # fixed order -> reproducible sampling
     )

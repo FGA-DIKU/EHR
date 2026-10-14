@@ -5,6 +5,7 @@ import polars as pl
 
 COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}  # NEW
 
+
 def get_condition_expression(cond) -> pl.Expr:
     op = cond["operator"]
     col = pl.col(cond["column"])
@@ -12,8 +13,10 @@ def get_condition_expression(cond) -> pl.Expr:
         return col.is_in(cond["value"])
     if op == "startswith_any":
         return pl.any_horizontal([col.str.starts_with(v) for v in cond["value"]])
-    if op in COMPARE:                                         # NEW block
-        rhs = pl.col(cond["value_col"]) if "value_col" in cond else pl.lit(cond["value"])
+    if op in COMPARE:  # NEW block
+        rhs = (
+            pl.col(cond["value_col"]) if "value_col" in cond else pl.lit(cond["value"])
+        )
         if cond.get("offset"):
             rhs = rhs.dt.offset_by(cond["offset"])
         return COMPARE[op](col, rhs)
@@ -21,10 +24,12 @@ def get_condition_expression(cond) -> pl.Expr:
 
 
 def match(
-    df: pl.DataFrame, conditions: list, dependence: Literal["independent", "dependent", "same_row"]
+    df: pl.DataFrame,
+    conditions: list,
+    dependence: Literal["independent", "dependent", "same_row"],
 ) -> pl.DataFrame:
     """Earliest time each subject meets the definition.
- 
+
     independent: any condition (earliest time any is met)
     dependent:   all conditions, possibly on different rows (time the last one is met)
     same_row:    all conditions on the same row (earliest such row)
@@ -58,7 +63,10 @@ def match(
 
     return res.select("subject_id", combine(cols).alias("time"))
 
-def add_column(df: pl.DataFrame, name: str, value, dtype: str | None = None) -> pl.DataFrame:
+
+def add_column(
+    df: pl.DataFrame, name: str, value, dtype: str | None = None
+) -> pl.DataFrame:
     """Add a constant column. dtype='datetime' parses an ISO date string."""
     expr = pl.lit(value)
     if dtype == "datetime":

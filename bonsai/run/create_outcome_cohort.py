@@ -39,8 +39,12 @@ def main(cfg: DictConfig) -> None:
             shard_seed = cfg.index.seed + i + j
             shard_index = get_index_dates(df, cfg.index, seed=shard_seed)
             refs["index_dates"] = shard_index
-            refs["outcome_dates"] = action_router(df, cfg.outcome.conditional_criteria, refs)
-            refs["censor_dates"] = action_router(df, cfg.censor.conditional_criteria, refs)
+            refs["outcome_dates"] = action_router(
+                df, cfg.outcome.conditional_criteria, refs
+            )
+            refs["censor_dates"] = action_router(
+                df, cfg.censor.conditional_criteria, refs
+            )
 
             shard_cohort = action_router(df, cfg.cohort.conditional_criteria, refs)
 
@@ -53,13 +57,14 @@ def main(cfg: DictConfig) -> None:
                 .with_columns(split=pl.lit(split))
             )
 
-
     all_outcomes = pl.concat(all_outcomes).sort("subject_id", maintain_order=True)
     logging.info(f"Total number of subjects in outcomes: {len(all_outcomes):_}")
 
     n_early = all_outcomes.filter(pl.col("outcome_date") < pl.col("index_date")).height
     if n_early:
-        raise ValueError(f"{n_early:_} subjects have outcome_date before index_date; check the outcome config")
+        raise ValueError(
+            f"{n_early:_} subjects have outcome_date before index_date; check the outcome config"
+        )
 
     logging.info(
         f"Total number of subjects: {len(all_outcomes):_} ({all_outcomes['outcome_date'].is_not_null().sum():_} positives)"
