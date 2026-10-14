@@ -66,7 +66,9 @@ The example configs live in [`configs/examples/`](configs/examples/). Every valu
 
 **Input** is a MEDS dataset. Point `paths.input_dir` at it in a data-creation config and set `dataset=<name>`.
 
-**Outcomes** are produced by [`create_outcome.py`](bonsai/run/create_outcome.py). If it does not fit your case, supply your own `.parquet` with five columns:
+**Outcomes** are produced by [`create_outcome_cohort.py`](bonsai/run/create_outcome_cohort.py).
+
+If it does not fit your case, supply your own `.parquet` with five columns:
 
 | column | meaning |
 |---|---|
