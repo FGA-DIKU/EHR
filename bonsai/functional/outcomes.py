@@ -1,77 +1,7 @@
-from typing import Literal
-
 import polars as pl
 
 from bonsai.functional.features import compute_abspos
-
-
-def get_condition_expression(cond) -> pl.Expr:
-    """Build a Polars expression for a condition."""
-    match = cond.get("match", "exact")
-
-    if match == "exact":
-        return pl.col(cond["col"]).is_in(cond["vals"])
-
-    if match == "prefix":
-        return pl.any_horizontal(
-            [pl.col(cond["col"]).str.starts_with(val) for val in cond["vals"]]
-        )
-
-    raise ValueError(f"Match can only be [exact, prefix], not {match}")
-
-
-def get_subject_first_row_for_conditions(
-    df: pl.DataFrame, conditions: list, dependence: Literal["independent", "dependent"]
-) -> pl.DataFrame:
-    """Earliest time each subject meets the definition: any condition (independent) or all (dependent)."""
-    if dependence not in ("independent", "dependent"):
-        raise ValueError(
-            f"Dependence can only be [independent, dependent], not {dependence}"
-        )
-
-    # Build conditions
-    per_cond = [
-        df.filter(get_condition_expression(cond))
-        .group_by("subject_id")
-        .agg(pl.col("time").min().alias(f"_time{i}"))
-        for i, cond in enumerate(conditions)
-    ]
-
-    # Joins conditions
-    how = "full" if dependence == "independent" else "inner"
-    res = per_cond[0]
-    for other in per_cond[1:]:
-        res = res.join(other, on="subject_id", how=how, coalesce=True)
-
-    # Find dependence time
-    cols = [f"_time{i}" for i in range(len(conditions))]
-    combine = pl.min_horizontal if dependence == "independent" else pl.max_horizontal
-
-    return res.select("subject_id", combine(cols).alias("time"))
-
-
-def get_date_from_absolute_date(absolute_date):
-    assert absolute_date is not None
-    return pl.datetime(**absolute_date)
-
-
-def get_date_from_relative_date(relative_dates: pl.Expr, relative_shift: dict):
-    assert relative_dates is not None
-    assert relative_shift is not None
-    return relative_dates + pl.duration(**relative_shift)
-
-
-def get_date_from_exposure_date(subjects, df, dependence, conditions):
-    assert subjects is not None
-    assert df is not None
-    assert dependence is not None
-    assert conditions is not None
-    result = get_subject_first_row_for_conditions(
-        df, conditions=conditions, dependence=dependence
-    )
-    return subjects.join(
-        result.select("subject_id", "time"), on="subject_id", how="left"
-    )
+from bonsai.functional.matching import get_matches
 
 
 def fill_nans_with_sampled(dates, seed=None):
@@ -81,6 +11,82 @@ def fill_nans_with_sampled(dates, seed=None):
     return dates.fill_null(
         dates.drop_nulls().sample(dates.len(), with_replacement=True, seed=seed)
     )
+
+
+def get_index_dates(df: pl.DataFrame, cfg) -> pl.DataFrame:
+    """Index dates for one shard. Supports match/date for index_date and drop/sample for nulls"""
+    if cfg.mode == "match":
+        index_dates = get_matches(
+            df, cfg.args.conditions, cfg.args.dependence, cfg.args.occurence
+        )
+    elif cfg.mode == "date":
+        index_dates = (
+            df.select("subject_id").unique().with_columns(time=pl.datetime(**cfg.args))
+        )
+    else:
+        raise ValueError(f"Mode={cfg.mode} not supported")
+
+    index_dates = index_dates.rename({"time": "index_date"})
+
+    if cfg.missing == "drop":
+        return index_dates
+    elif cfg.missing == "sample":
+        index_dates = (
+            df.select("subject_id")
+            .unique()
+            .join(index_dates, on="subject_id", how="left")
+            .sort("subject_id")  # fixed order -> reproducible sampling
+        )
+        return index_dates.with_columns(
+            index_date=fill_nans_with_sampled(index_dates["index_date"], seed=42)
+        )
+    else:
+        raise ValueError(f"Missing={cfg.missing} not supported")
+
+
+def get_outcome_dates(df: pl.DataFrame, cfg, refs: dict) -> pl.DataFrame:
+    """Outcome dates for one shard. Supports only 'match'"""
+    if cfg.mode == "match":
+        outcome_dates = get_matches(
+            df, cfg.args.conditions, cfg.args.dependence, cfg.args.occurence
+        )
+    else:
+        raise ValueError(f"Mode={cfg.mode} not supported")
+
+    outcome_dates = outcome_dates.rename({"time": "outcome_date"})
+
+    # Take only rows where outcome_date happens AFTER index_date
+    outcome_dates = outcome_dates.join(
+        refs["index_date"], on="subject_id", how="left"
+    ).filter(pl.col("outcome_date") >= pl.col("index_date"))
+
+    return outcome_dates
+
+
+def get_censor_dates(df: pl.DataFrame, cfg, refs) -> pl.DataFrame:
+    if cfg.mode == "offset":
+        censor_dates = refs["index_date"].dt.offset_by(cfg.args.offset_by)
+    else:
+        raise ValueError(f"Mode={cfg.mode} not supported")
+
+    return censor_dates
+
+
+def get_cohort(df: pl.DataFrame, cfg, refs) -> pl.DataFrame:
+    df = df.join(refs["index_date"], on="subject_id", how="left")
+
+    cohort = df.select("subject_id").unique()
+    for cond in cfg.conditional_criteria:
+        pop = get_matches(df, cond.args.conditions, cond.args.dependence)
+
+        if cond.action == "exclude":
+            cohort = cohort.join(pop, on="subject_id", how="anti")
+        elif cond.action == "include":
+            cohort = cohort.join(pop, on="subject_id", how="semi")
+        else:
+            raise ValueError(f"Action={cond.action} not supported")
+
+    return df
 
 
 def binarize_outcomes(
