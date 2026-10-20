@@ -88,7 +88,7 @@ def get_cohort(df: pl.DataFrame, cfg, refs) -> pl.DataFrame:
         else:
             raise ValueError(f"Action={cond.action} not supported")
 
-    return df
+    return cohort
 
 
 def binarize_outcomes(
