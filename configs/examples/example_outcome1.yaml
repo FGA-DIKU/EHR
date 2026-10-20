@@ -26,11 +26,11 @@ outcome:
   mode: match
   args:
     dependence: any
+    occurence: first
     conditions:
       - column: code
         value: [ DIAGNOSIS//SYN_POS_DIAG ]
         operator: startswith_any
-    occurence: first
 
 censor:
   mode: offset
@@ -42,6 +42,7 @@ cohort:
     - action: exclude
       args:
         dependence: all_row
+        occurence: all
         conditions: 
         - column: code
           value: [ DIAGNOSIS//SYN_POS_DIAG ]
@@ -52,6 +53,7 @@ cohort:
     - action: exclude
       args:
         dependence: any
+        occurence: all
         conditions:
           - column: code
             value: [ LABTEST//NPUD220 ]

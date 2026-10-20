@@ -27,7 +27,7 @@ def get_matches(
     df: pl.DataFrame,
     conditions: list,
     dependence: Literal["any", "all", "all_row"],
-    occurence: Literal["first", "last", None] = None,
+    occurence: Literal["first", "last", "all"],
 ) -> pl.DataFrame:
     """All times each subject meets the definition."""
     cols = [f"_c{i}" for i in range(len(conditions))]

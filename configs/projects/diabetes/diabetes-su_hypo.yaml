@@ -19,21 +19,21 @@ index:
   mode: match
   args:
     dependence: any
+    occurence: first
     conditions:
       - column: code
         value: [ MEDICATION//A10BB ]
         operator: startswith_any 
-    occurence: first
 
 outcome:
   mode: match
   args:
     dependence: any
+    occurence: first
     conditions:
         - column: code
           value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162]
           operator: startswith_any 
-    occurence: first
 
 censor:
   mode: offset
@@ -45,6 +45,7 @@ cohort:
     - action: exclude #exclude outcomes prior to index
       args:
         dependence: all_row
+        occurence: all
         conditions:
             - column: code
               value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162]
@@ -57,6 +58,7 @@ cohort:
     - action: exclude
       args: 
         dependence: any
+        occurence: all
         conditions:
           - column: code
             value: [DIAGNOSIS//DE10]
@@ -64,6 +66,7 @@ cohort:
     - action: include
       args:
         dependence: any
+        occurence: all
         conditions:
           - column: code
             value: [MEDICATION//A10]

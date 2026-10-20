@@ -77,7 +77,9 @@ def get_cohort(df: pl.DataFrame, cfg, refs) -> pl.DataFrame:
 
     cohort = df.select("subject_id").unique()
     for cond in cfg.conditional_criteria:
-        pop = get_matches(df, cond.args.conditions, cond.args.dependence)
+        pop = get_matches(
+            df, cond.args.conditions, cond.args.dependence, cond.args.occurence
+        )
 
         if cond.action == "exclude":
             cohort = cohort.join(pop, on="subject_id", how="anti")
