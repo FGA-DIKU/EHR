@@ -41,18 +41,18 @@ def main(cfg: DictConfig) -> None:
             df = pl.read_parquet(shard, columns=["subject_id", "time", "code"])
             df = df.drop_nulls(["subject_id", "code"])
 
-            refs["index_dates"] = get_index_dates(df, cfg.index)
-            refs["outcome_dates"] = get_outcome_dates(df, cfg.outcome, refs)
-            refs["censor_dates"] = get_censor_dates(df, cfg.censor, refs)
+            refs["index_date"] = get_index_dates(df, cfg.index)
+            refs["outcome_date"] = get_outcome_dates(df, cfg.outcome, refs)
+            refs["censor_date"] = get_censor_dates(df, cfg.censor, refs)
 
             shard_cohort = get_cohort(df, cfg.cohort, refs)
 
             all_outcomes.append(
                 shard_cohort.select("subject_id")
                 .unique()
-                .join(refs["outcome_dates"], on="subject_id", how="left")
-                .join(refs["index_dates"], on="subject_id", how="inner")
-                .join(refs["censor_dates"], on="subject_id", how="inner")
+                .join(refs["outcome_date"], on="subject_id", how="left")
+                .join(refs["index_date"], on="subject_id", how="inner")
+                .join(refs["censor_date"], on="subject_id", how="inner")
                 .with_columns(split=pl.lit(split))
             )
 
