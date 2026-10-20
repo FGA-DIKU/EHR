@@ -34,6 +34,9 @@ outcome:
         - column: code
           value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162]
           operator: startswith_any 
+        - column: time
+          operator: gt
+          value_col: index_date
 
 censor:
   mode: offset

@@ -25,12 +25,15 @@ index:
 outcome:
   mode: match
   args:
-    dependence: any
+    dependence: all_row
     occurence: first
     conditions:
       - column: code
         value: [ SYN//Negative ]
         operator: startswith_any
+      - column: time
+        operator: gt
+        value_col: index_date
 
 censor:
   mode: offset

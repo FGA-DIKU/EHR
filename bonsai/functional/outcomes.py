@@ -46,6 +46,7 @@ def get_index_dates(df: pl.DataFrame, cfg) -> pl.DataFrame:
 
 def get_outcome_dates(df: pl.DataFrame, cfg, refs: dict) -> pl.DataFrame:
     """Outcome dates for one shard. Supports only 'match'"""
+    df = df.join(refs["index_date"], on="subject_id", how="left")
     if cfg.mode == "match":
         outcome_dates = get_matches(
             df, cfg.args.conditions, cfg.args.dependence, cfg.args.occurence
