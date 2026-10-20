@@ -28,7 +28,7 @@ index:
 outcome:
   mode: match
   args:
-    dependence: any
+    dependence: all_row
     occurence: first
     conditions:
         - column: code
