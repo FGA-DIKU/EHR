@@ -31,7 +31,12 @@ def get_index_dates(df: pl.DataFrame, cfg) -> pl.DataFrame:
     if cfg.missing == "drop":
         return index_dates
     elif cfg.missing == "sample":
-        index_dates = index_dates.sort("subject_id")
+        index_dates = (
+            df.select("subject_id")
+            .unique()
+            .join(index_dates, on="subject_id", how="left")
+            .sort("subject_id")
+        )
         return index_dates.with_columns(
             index_date=fill_nans_with_sampled(index_dates["index_date"], seed=42)
         )
