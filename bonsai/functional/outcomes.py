@@ -56,9 +56,11 @@ def get_outcome_dates(df: pl.DataFrame, cfg, refs: dict) -> pl.DataFrame:
     outcome_dates = outcome_dates.rename({"time": "outcome_date"})
 
     # Take only rows where outcome_date happens AFTER index_date
-    outcome_dates = outcome_dates.join(
-        refs["index_date"], on="subject_id", how="left"
-    ).filter(pl.col("outcome_date") >= pl.col("index_date"))
+    outcome_dates = (
+        outcome_dates.join(refs["index_date"], on="subject_id", how="left")
+        .filter(pl.col("outcome_date") >= pl.col("index_date"))
+        .drop("index_date")
+    )
 
     return outcome_dates
 
