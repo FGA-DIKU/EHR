@@ -106,9 +106,7 @@ def binarize_outcomes(
     outcomes = outcomes.filter(~(has_outcome & (pl.col("outcome_date") < window_start)))
 
     if outcomes.select((pl.col("censor_date") > window_start).any()).item():
-        raise ValueError(
-            "censor_date is after the prediction window start; outcomes would leak into the input"
-        )
+        raise ValueError("censor_date is after the prediction window start")
 
     in_window = has_outcome
     if end_include is not None:
