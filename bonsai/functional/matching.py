@@ -14,11 +14,14 @@ def get_condition_expression(cond) -> pl.Expr:
     if op == "startswith_any":
         return pl.any_horizontal([col.str.starts_with(v) for v in cond["value"]])
     if op in COMPARE:
-        rhs = (
-            pl.col(cond["value_col"]) if "value_col" in cond else pl.lit(cond["value"])
-        )
-        if cond.get("offset"):
-            rhs = rhs.dt.offset_by(cond["offset"])
+        if "value_col" in cond:
+            rhs = pl.col(cond["value_col"])
+        elif "date_format" in cond:
+            rhs = pl.lit(cond["value"]).str.to_date(cond["date_format"])
+        else:
+            rhs = pl.lit(cond["value"])
+        if cond.get("offset_by"):
+            rhs = rhs.dt.offset_by(cond["offset_by"])
         return COMPARE[op](col, rhs)
     raise ValueError(f"Operator={op} not supported")
 
