@@ -6,7 +6,24 @@ import polars as pl
 COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}
 
 
+def get_group_expression(group) -> pl.Expr:
+    exprs = [get_condition_expression(c) for c in group["conditions"]]
+    dep = group["dependence"]
+    if dep == "any":
+        return pl.any_horizontal(exprs)
+    if dep == "all_row":
+        return pl.all_horizontal(exprs)
+    if dep == "all":
+        time = pl.col("time")
+        return pl.any_horizontal(exprs) & pl.all_horizontal(
+            time >= time.filter(e).min().over("subject_id") for e in exprs
+        )
+    raise ValueError(f"Dependence={dep} not supported")
+
+
 def get_condition_expression(cond) -> pl.Expr:
+    if "conditions" in cond:  # nested group
+        return get_group_expression(cond)
     op = cond["operator"]
     col = pl.col(cond["column"])
     if op == "in":
