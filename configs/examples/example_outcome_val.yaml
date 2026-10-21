@@ -25,15 +25,10 @@ index:
 outcome:
   mode: match
   args:
-    dependence: all_row
     occurence: first
-    conditions:
-      - column: code
-        value: [ SYN//Negative ]
-        operator: startswith_any
-      - column: time
-        operator: gt
-        value_col: index_date
+    all_row:
+      - {column: code, value: [ SYN//Negative ], operator: startswith_any}
+      - {column: time, operator: gt, value_col: index_date}
 
 censor:
   mode: offset
@@ -44,12 +39,7 @@ cohort:
   conditional_criteria:
     - action: exclude
       args:
-        dependence: all_row
         occurence: all
-        conditions: 
-        - column: code
-          value: [ SYN//Negative ]
-          operator: startswith_any
-        - column: time
-          operator: lt
-          value_col: index_date
+        all_row:
+          - {column: code, value: [ SYN//Negative ], operator: startswith_any}
+          - {column: time, operator: lt, value_col: index_date}

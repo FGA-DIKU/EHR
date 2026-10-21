@@ -16,9 +16,7 @@ def fill_nans_with_sampled(dates, seed=None):
 def get_index_dates(df: pl.DataFrame, cfg) -> pl.DataFrame:
     """Index dates for one shard. Supports match/date for index_date and drop/sample for nulls"""
     if cfg.mode == "match":
-        index_dates = get_matches(
-            df, cfg.args.conditions, cfg.args.dependence, cfg.args.occurence
-        )
+        index_dates = get_matches(df, cfg.args)
     elif cfg.mode == "date":
         index_dates = (
             df.select("subject_id").unique().with_columns(time=pl.datetime(**cfg.args))
@@ -48,9 +46,7 @@ def get_outcome_dates(df: pl.DataFrame, cfg, refs: dict) -> pl.DataFrame:
     """Outcome dates for one shard. Supports only 'match'"""
     df = df.join(refs["index_date"], on="subject_id", how="left")
     if cfg.mode == "match":
-        outcome_dates = get_matches(
-            df, cfg.args.conditions, cfg.args.dependence, cfg.args.occurence
-        )
+        outcome_dates = get_matches(df, cfg.args)
     else:
         raise ValueError(f"Mode={cfg.mode} not supported")
 
@@ -83,9 +79,7 @@ def get_cohort(df: pl.DataFrame, cfg, refs) -> pl.DataFrame:
 
     cohort = df.select("subject_id").unique()
     for cond in cfg.conditional_criteria:
-        pop = get_matches(
-            df, cond.args.conditions, cond.args.dependence, cond.args.occurence
-        )
+        pop = get_matches(df, cond.args)
 
         if cond.action == "exclude":
             cohort = cohort.join(pop, on="subject_id", how="anti")

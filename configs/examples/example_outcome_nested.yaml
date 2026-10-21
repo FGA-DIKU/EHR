@@ -25,33 +25,18 @@ index:
 outcome:
   mode: match
   args:
-    dependence: any
     occurence: first
-    conditions: # (male AND labtest) OR diagnosis
-      - dependence: all # Male AND labtest
-        conditions:
-          - dependence: all_row
-            conditions:
-            - column: code
-              operator: startswith_any
-              value: [SEX//MAND]
-            - column: time
-              operator: gt
-              value_col: index_date
-          - dependence: any # insulin code
-            conditions:
-              - column: code
-                operator: startswith_any
-                value: [LABTEST]
-
-      - dependence: all_row
-        conditions:
-        - column: code # OR some diagnosis
-          operator: startswith_any
-          value: [DIAGNOSIS//SYN_OTHER]
-        - column: time
-          operator: gt
-          value_col: index_date
+    any:  # (male AND labtest) OR diagnosis
+      - all:
+          - all_row:
+              - {column: code, operator: startswith_any, value: [SEX//MAND]}
+              - {column: time, operator: gt, value_col: index_date}
+          - all_row: 
+              - {column: code, operator: startswith_any, value: [LABTEST]}
+              - {column: time, operator: gt, value_col: index_date}
+      - all_row:
+          - {column: code, operator: startswith_any, value: [DIAGNOSIS//SYN_OTHER]}
+          - {column: time, operator: gt, value_col: index_date}
 
 censor:
   mode: offset
@@ -62,13 +47,8 @@ cohort:
   conditional_criteria:
     - action: exclude #exclude outcomes prior to index
       args:
-        dependence: all_row
         occurence: all
-        conditions:
-        - column: code
-          value: [DIAGNOSIS//DE11, DIAGNOSIS//DE10]
-          operator: startswith_any 
-        - column: time
-          operator: lt
-          value_col: index_date
+        all_row:
+          - {column: code, value: [DIAGNOSIS//DE11, DIAGNOSIS//DE10], operator: startswith_any}
+          - {column: time, operator: lt, value_col: index_date}
               

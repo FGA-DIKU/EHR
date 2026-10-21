@@ -1,83 +1,58 @@
 import operator as op_
-from typing import Literal
 
 import polars as pl
 
 COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}
+DEPENDENCES = {"any", "all", "all_row"}
 
 
-def get_group_expression(group) -> pl.Expr:
-    exprs = [get_condition_expression(c) for c in group["conditions"]]
-    dep = group["dependence"]
-    if dep == "any":
-        return pl.any_horizontal(exprs)
-    if dep == "all_row":
-        return pl.all_horizontal(exprs)
-    if dep == "all":
+def get_condition_expression(condition) -> pl.Expr:
+    dependence = DEPENDENCES.intersection(condition)
+    if dependence:
+        if len(dependence) != 1:
+            raise ValueError("A criteria group must have exactly one dependence")
+        dep = dependence.pop()
+        exprs = [get_condition_expression(c) for c in condition[dep]]
+        if not exprs:
+            raise ValueError(f"Dependence={dep} requires at least one condition")
+        if dep == "any":
+            return pl.any_horizontal(exprs)
+        if dep == "all_row":
+            return pl.all_horizontal(exprs)
+
         time = pl.col("time")
         return pl.any_horizontal(exprs) & pl.all_horizontal(
-            time >= time.filter(e).min().over("subject_id") for e in exprs
+            time >= time.filter(expr).min().over("subject_id") for expr in exprs
         )
-    raise ValueError(f"Dependence={dep} not supported")
 
-
-def get_condition_expression(cond) -> pl.Expr:
-    if "conditions" in cond:  # nested group
-        return get_group_expression(cond)
-    op = cond["operator"]
-    col = pl.col(cond["column"])
+    op = condition["operator"]
+    col = pl.col(condition["column"])
     if op == "in":
-        return col.is_in(cond["value"])
+        return col.is_in(condition["value"])
     if op == "startswith_any":
-        return pl.any_horizontal([col.str.starts_with(v) for v in cond["value"]])
+        return pl.any_horizontal([col.str.starts_with(v) for v in condition["value"]])
     if op in COMPARE:
-        if "value_col" in cond:
-            rhs = pl.col(cond["value_col"])
-        elif "date_format" in cond:
-            rhs = pl.lit(cond["value"]).str.to_date(cond["date_format"])
+        if "value_col" in condition:
+            rhs = pl.col(condition["value_col"])
+        elif "date_format" in condition:
+            rhs = pl.lit(condition["value"]).str.to_date(condition["date_format"])
         else:
-            rhs = pl.lit(cond["value"])
-        if cond.get("offset_by"):
-            rhs = rhs.dt.offset_by(cond["offset_by"])
+            rhs = pl.lit(condition["value"])
+        if condition.get("offset_by"):
+            rhs = rhs.dt.offset_by(condition["offset_by"])
         return COMPARE[op](col, rhs)
     raise ValueError(f"Operator={op} not supported")
 
 
-def get_matches(
-    df: pl.DataFrame,
-    conditions: list,
-    dependence: Literal["any", "all", "all_row"],
-    occurence: Literal["first", "last", "all"],
-) -> pl.DataFrame:
-    """All times each subject meets the definition."""
-    cols = [f"_c{i}" for i in range(len(conditions))]
-    exprs = [get_condition_expression(c) for c in conditions]
+def get_matches(df: pl.DataFrame, args) -> pl.DataFrame:
+    """Return all times each subject meets an inline criteria definition."""
+    occurence = args["occurence"]
+    criteria = {key: value for key, value in args.items() if key != "occurence"}
+    if len(criteria) != 1:
+        raise ValueError("Match args must contain exactly one criteria group")
 
-    # Finds all matches
-    matches = df.select(
-        "subject_id", "time", *[expr.alias(col) for col, expr in zip(cols, exprs)]
-    ).filter(pl.any_horizontal(cols))
-
-    # Filter based on dependence
-    if dependence == "all_row":
-        # Finds where all matches
-        matches = matches.filter(pl.all_horizontal(cols))
-    elif dependence == "all":
-        # Finds where all conditions are met
-        matches = matches.filter(
-            pl.all_horizontal(
-                pl.col("time")
-                >= pl.col("time").filter(pl.col(c)).min().over("subject_id")
-                for c in cols
-            )
-        )
-    elif dependence == "any":
-        # Already dropped in `.filter(pl.any_horizontal(cols))` above
-        pass
-    else:
-        raise ValueError(f"Dependence={dependence} not supported")
-
-    matches = matches.select("subject_id", "time").unique()
+    expression = get_condition_expression(criteria)
+    matches = df.filter(expression).select("subject_id", "time").unique()
 
     if occurence == "first":
         matches = matches.group_by("subject_id").agg(pl.col("time").min())
