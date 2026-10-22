@@ -1,0 +1,56 @@
+# @package _global_
+defaults:
+  - /core/base_create@
+  - _self_
+
+dataset: correlated_MEDS_data
+
+paths: 
+  input_dir: example_data/${dataset}
+  save_path: ${oc.env:BONSAI_PROCESSED_DATA}/${dataset}/outcomes/${hydra:job.config_name}.parquet
+
+splits:
+  - train
+  - tuning
+  - held_out
+
+index:
+  missing: drop
+  mode: date
+  args:
+    year: 2010
+    month: 1
+    day: 1
+
+outcome:
+  mode: match
+  args:
+    occurrence: first
+    criteria:
+      any:  # (male AND labtest) OR diagnosis
+        - all:
+            - all_row:
+                - {column: code, operator: startswith_any, value: [SEX//MAND]}
+                - {column: time, operator: gt, value_col: index_date}
+            - all_row:
+                - {column: code, operator: startswith_any, value: [LABTEST]}
+                - {column: time, operator: gt, value_col: index_date}
+        - all_row:
+            - {column: code, operator: startswith_any, value: [DIAGNOSIS//SYN_OTHER]}
+            - {column: time, operator: gt, value_col: index_date}
+
+censor:
+  mode: offset
+  args:
+    offset_by: 0d
+
+cohort:
+  conditional_criteria:
+    - action: exclude #exclude outcomes prior to index
+      args:
+        occurrence: all
+        criteria:
+          all_row:
+            - {column: code, value: [DIAGNOSIS//DE11, DIAGNOSIS//DE10], operator: startswith_any}
+            - {column: time, operator: lt, value_col: index_date}
+              
