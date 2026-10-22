@@ -27,9 +27,7 @@ class PretrainDataset(Dataset):
             raise ValueError("Cannot pack an empty dataset")
 
         # Check that every feature is aligned with the code sequence.
-        feature_keys = [
-            "code", "abspos", "segment", "age"
-        ]
+        feature_keys = ["code", "abspos", "segment", "age"]
 
         if "numeric_value" in subjects[0]:
             feature_keys.append("numeric_value")
@@ -49,10 +47,12 @@ class PretrainDataset(Dataset):
         )
 
         # Start and end positions of each patient
-        self.offsets = torch.cat([
-            torch.zeros(1, dtype=torch.long),
-            lengths.cumsum(0),
-        ])
+        self.offsets = torch.cat(
+            [
+                torch.zeros(1, dtype=torch.long),
+                lengths.cumsum(0),
+            ]
+        )
 
         # Patient identifiers
         self.subject_ids = torch.tensor(
@@ -62,17 +62,14 @@ class PretrainDataset(Dataset):
 
         # Pack features into contiguous tensors
         self.features = {
-            key: torch.cat([s[key] for s in subjects], dim=0)
-            for key in feature_keys
+            key: torch.cat([s[key] for s in subjects], dim=0) for key in feature_keys
         }
 
     def __getitem__(self, index: int) -> dict:
         start = int(self.offsets[index])
         end = int(self.offsets[index + 1])
 
-        subject = {
-            "subject_id": int(self.subject_ids[index])
-        }
+        subject = {"subject_id": int(self.subject_ids[index])}
 
         for key, values in self.features.items():
             subject[key] = values[start:end].clone()
