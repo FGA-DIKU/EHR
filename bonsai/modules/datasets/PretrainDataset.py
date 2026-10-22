@@ -39,7 +39,6 @@ class PretrainDataset(BaseDataset):
         return truncated_subject
 
 
-
 class MLMPretrainDataset(PretrainDataset):
     def __init__(
         self,
@@ -168,4 +167,3 @@ class ValueARPretrainDataset(ARPretrainDataset):
             subject["target"] == -100, float("nan")
         )
         return subject
-

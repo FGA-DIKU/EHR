@@ -19,7 +19,9 @@ class BaseDataset(Dataset):
         feature_keys = [key for key in subjects[0] if key != "subject_id"]
         required = {"code", "abspos", "age", "segment"}
         if not required.issubset(feature_keys):
-            raise ValueError(f"Missing required subject features: {required - set(feature_keys)}")
+            raise ValueError(
+                f"Missing required subject features: {required - set(feature_keys)}"
+            )
 
         expected_keys = set(subjects[0])
         lengths = []
@@ -30,13 +32,19 @@ class BaseDataset(Dataset):
             for key in feature_keys:
                 value = subject[key]
                 if not isinstance(value, torch.Tensor) or value.ndim != 1:
-                    raise ValueError(f"Feature {key!r} at index {i} must be a 1-D tensor")
+                    raise ValueError(
+                        f"Feature {key!r} at index {i} must be a 1-D tensor"
+                    )
                 if len(value) != length:
-                    raise ValueError(f"Misaligned feature {key!r} for subject at index {i}")
+                    raise ValueError(
+                        f"Misaligned feature {key!r} for subject at index {i}"
+                    )
             lengths.append(length)
 
         lengths_tensor = torch.tensor(lengths, dtype=torch.long)
-        self.offsets = torch.cat((torch.zeros(1, dtype=torch.long), lengths_tensor.cumsum(0)))
+        self.offsets = torch.cat(
+            (torch.zeros(1, dtype=torch.long), lengths_tensor.cumsum(0))
+        )
         self.subject_ids = torch.tensor(
             [subject["subject_id"] for subject in subjects], dtype=torch.long
         )

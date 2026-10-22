@@ -43,5 +43,3 @@ class FinetuneDataset(BaseDataset):
         subject["attention_mask"] = torch.ones(len(subject["code"]), dtype=torch.bool)
 
         return subject
-
-
