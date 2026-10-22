@@ -1,4 +1,3 @@
-from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -19,15 +18,65 @@ class PretrainDataset(Dataset):
         background_length: int,
         cutoff_date: Optional[dict] = None,
     ):
-        self.subjects = subjects
         self.max_len = max_len
         self.background_length = background_length
         self.cutoff_date = (
             compute_abspos(datetime(**cutoff_date)) if cutoff_date is not None else None
         )
+        if not subjects:
+            raise ValueError("Cannot pack an empty dataset")
+
+        # Check that every feature is aligned with the code sequence.
+        feature_keys = [
+            "code", "abspos", "segment", "age"
+        ]
+
+        if "numeric_value" in subjects[0]:
+            feature_keys.append("numeric_value")
+
+        for subject in subjects:
+            if set(subject) != {"subject_id", *feature_keys}:
+                raise ValueError("Inconsistent subject features")
+
+            n = len(subject["code"])
+            if any(len(subject[key]) != n for key in feature_keys):
+                raise ValueError("Subject feature lengths do not match")
+
+        # Patient sequence lengths
+        lengths = torch.tensor(
+            [len(s["code"]) for s in subjects],
+            dtype=torch.long,
+        )
+
+        # Start and end positions of each patient
+        self.offsets = torch.cat([
+            torch.zeros(1, dtype=torch.long),
+            lengths.cumsum(0),
+        ])
+
+        # Patient identifiers
+        self.subject_ids = torch.tensor(
+            [s["subject_id"] for s in subjects],
+            dtype=torch.long,
+        )
+
+        # Pack features into contiguous tensors
+        self.features = {
+            key: torch.cat([s[key] for s in subjects], dim=0)
+            for key in feature_keys
+        }
 
     def __getitem__(self, index: int) -> dict:
-        subject = deepcopy(self.subjects[index])
+        start = int(self.offsets[index])
+        end = int(self.offsets[index + 1])
+
+        subject = {
+            "subject_id": int(self.subject_ids[index])
+        }
+
+        for key, values in self.features.items():
+            subject[key] = values[start:end].clone()
+
         if self.cutoff_date is not None:
             subject = censor_subject(subject, self.cutoff_date)
         truncated_subject = truncate_subject(
@@ -40,7 +89,7 @@ class PretrainDataset(Dataset):
         return truncated_subject
 
     def __len__(self):
-        return len(self.subjects)
+        return len(self.subject_ids)
 
 
 class MLMPretrainDataset(PretrainDataset):
