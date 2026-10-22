@@ -31,7 +31,7 @@ class TestMatching(unittest.TestCase):
             }
         )
         args = {
-            "occurence": "first",
+            "occurrence": "first",
             "criteria": {
                 "any": [
                     {
@@ -95,7 +95,7 @@ class TestMatching(unittest.TestCase):
         matches = get_matches(
             df,
             {
-                "occurence": "first",
+                "occurrence": "first",
                 "criteria": {
                     "any": [{"column": "code", "operator": "in", "value": ["B", "C"]}]
                 },
@@ -115,7 +115,7 @@ class TestMatching(unittest.TestCase):
         leaf = {"column": "code", "operator": "in", "value": ["A"]}
         for criteria in ({"any": [leaf], "all": [leaf]}, {"none": [leaf]}, {"any": []}):
             with self.subTest(criteria=criteria), self.assertRaises(ValueError):
-                get_matches(df, {"occurence": "all", "criteria": criteria})
+                get_matches(df, {"occurrence": "all", "criteria": criteria})
 
 
 if __name__ == "__main__":

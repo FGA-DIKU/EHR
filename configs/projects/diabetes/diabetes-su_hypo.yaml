@@ -18,7 +18,7 @@ index:
   missing: drop
   mode: match
   args:
-    occurence: first
+    occurrence: first
     criteria:
       any:
         - {column: code, value: [ MEDICATION//A10BB ], operator: startswith_any} 
@@ -26,7 +26,7 @@ index:
 outcome:
   mode: match
   args:
-    occurence: first
+    occurrence: first
     criteria:
       all_row:
         - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
@@ -41,7 +41,7 @@ cohort:
   conditional_criteria:
     - action: exclude #exclude outcomes prior to index
       args:
-        occurence: all
+        occurrence: all
         criteria:
           all_row:
             - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
@@ -50,14 +50,14 @@ cohort:
     # Our diabetes cohort exclude/include
     - action: exclude
       args: 
-        occurence: all
+        occurrence: all
         criteria:
           all_row:
             - {column: code, value: [DIAGNOSIS//DE10], operator: startswith_any}
             - {column: time, operator: lt, value_col: index_date}
     - action: include
       args:
-        occurence: all
+        occurrence: all
         criteria:
           all_row:
             - {column: code, value: [MEDICATION//A10, DIAGNOSIS//DE11], operator: startswith_any}

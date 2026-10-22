@@ -25,7 +25,7 @@ index:
 outcome:
   mode: match
   args:
-    occurence: first
+    occurrence: first
     criteria:
       all_row:
         - {column: code, value: [ SYN//Negative ], operator: startswith_any}
@@ -40,7 +40,7 @@ cohort:
   conditional_criteria:
     - action: exclude
       args:
-        occurence: all
+        occurrence: all
         criteria:
           all_row:
             - {column: code, value: [ SYN//Negative ], operator: startswith_any}

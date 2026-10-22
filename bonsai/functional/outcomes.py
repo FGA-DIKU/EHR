@@ -46,9 +46,9 @@ def get_outcome_dates(df: pl.DataFrame, cfg, refs: dict) -> pl.DataFrame:
     """Outcome dates for one shard. Supports only 'match'"""
     df = df.join(refs["index_date"], on="subject_id", how="left")
     if cfg.mode == "match":
-        if cfg.args.occurence == "all":
+        if cfg.args.occurrence == "all":
             raise ValueError(
-                f"Occurence={cfg.args.occurence} not supported; single-date outcomes only"
+                f"occurrence={cfg.args.occurrence} not supported; single-date outcomes only"
             )
         outcome_dates = get_matches(df, cfg.args)
     else:

@@ -54,17 +54,17 @@ def get_match_expression(condition) -> pl.Expr:
 
 def get_matches(df: pl.DataFrame, args) -> pl.DataFrame:
     """Return all times each subject meets the criteria."""
-    occurence = args["occurence"]
+    occurrence = args["occurrence"]
     expression = get_condition_expression(args["criteria"])
     matches = df.filter(expression).select("subject_id", "time").unique()
 
-    if occurence == "first":
+    if occurrence == "first":
         matches = matches.group_by("subject_id").agg(pl.col("time").min())
-    elif occurence == "last":
+    elif occurrence == "last":
         matches = matches.group_by("subject_id").agg(pl.col("time").max())
-    elif occurence == "all":
+    elif occurrence == "all":
         pass
     else:
-        raise ValueError(f"Occurence={occurence} not supported")
+        raise ValueError(f"occurrence={occurrence} not supported")
 
     return matches
