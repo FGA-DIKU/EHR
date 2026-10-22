@@ -26,17 +26,18 @@ outcome:
   mode: match
   args:
     occurence: first
-    any:  # (male AND labtest) OR diagnosis
-      - all:
-          - all_row:
-              - {column: code, operator: startswith_any, value: [SEX//MAND]}
-              - {column: time, operator: gt, value_col: index_date}
-          - all_row: 
-              - {column: code, operator: startswith_any, value: [LABTEST]}
-              - {column: time, operator: gt, value_col: index_date}
-      - all_row:
-          - {column: code, operator: startswith_any, value: [DIAGNOSIS//SYN_OTHER]}
-          - {column: time, operator: gt, value_col: index_date}
+    criteria:
+      any:  # (male AND labtest) OR diagnosis
+        - all:
+            - all_row:
+                - {column: code, operator: startswith_any, value: [SEX//MAND]}
+                - {column: time, operator: gt, value_col: index_date}
+            - all_row:
+                - {column: code, operator: startswith_any, value: [LABTEST]}
+                - {column: time, operator: gt, value_col: index_date}
+        - all_row:
+            - {column: code, operator: startswith_any, value: [DIAGNOSIS//SYN_OTHER]}
+            - {column: time, operator: gt, value_col: index_date}
 
 censor:
   mode: offset
@@ -48,7 +49,8 @@ cohort:
     - action: exclude #exclude outcomes prior to index
       args:
         occurence: all
-        all_row:
-          - {column: code, value: [DIAGNOSIS//DE11, DIAGNOSIS//DE10], operator: startswith_any}
-          - {column: time, operator: lt, value_col: index_date}
+        criteria:
+          all_row:
+            - {column: code, value: [DIAGNOSIS//DE11, DIAGNOSIS//DE10], operator: startswith_any}
+            - {column: time, operator: lt, value_col: index_date}
               

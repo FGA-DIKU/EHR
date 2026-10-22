@@ -19,16 +19,18 @@ index:
   mode: match
   args:
     occurence: first
-    any:
-      - {column: code, value: [ MEDICATION//A10BB ], operator: startswith_any} 
+    criteria:
+      any:
+        - {column: code, value: [ MEDICATION//A10BB ], operator: startswith_any} 
 
 outcome:
   mode: match
   args:
     occurence: first
-    all_row:
-      - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
-      - {column: time, operator: gt, value_col: index_date}
+    criteria:
+      all_row:
+        - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
+        - {column: time, operator: gt, value_col: index_date}
 
 censor:
   mode: offset
@@ -40,20 +42,23 @@ cohort:
     - action: exclude #exclude outcomes prior to index
       args:
         occurence: all
-        all_row:
-          - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
-          - {column: time, operator: lt, value_col: index_date}
+        criteria:
+          all_row:
+            - {column: code, value: [DIAGNOSIS//DE160, DIAGNOSIS//DE161, DIAGNOSIS//DE162], operator: startswith_any}
+            - {column: time, operator: lt, value_col: index_date}
 
     # Our diabetes cohort exclude/include
     - action: exclude
       args: 
         occurence: all
-        all_row:
-          - {column: code, value: [DIAGNOSIS//DE10], operator: startswith_any}
-          - {column: time, operator: lt, value_col: index_date}
+        criteria:
+          all_row:
+            - {column: code, value: [DIAGNOSIS//DE10], operator: startswith_any}
+            - {column: time, operator: lt, value_col: index_date}
     - action: include
       args:
         occurence: all
-        all_row:
-          - {column: code, value: [MEDICATION//A10, DIAGNOSIS//DE11], operator: startswith_any}
-          - {column: time, operator: lt, value_col: index_date}
+        criteria:
+          all_row:
+            - {column: code, value: [MEDICATION//A10, DIAGNOSIS//DE11], operator: startswith_any}
+            - {column: time, operator: lt, value_col: index_date}

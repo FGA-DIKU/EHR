@@ -32,45 +32,47 @@ class TestMatching(unittest.TestCase):
         )
         args = {
             "occurence": "first",
-            "any": [
-                {
-                    "all": [
-                        {
-                            "all_row": [
-                                {
-                                    "column": "code",
-                                    "operator": "startswith_any",
-                                    "value": ["SEX//MAND"],
-                                },
-                                {
-                                    "column": "time",
-                                    "operator": "gt",
-                                    "value_col": "index_date",
-                                },
-                            ]
-                        },
-                        {
-                            "column": "code",
-                            "operator": "startswith_any",
-                            "value": ["LABTEST"],
-                        },
-                    ]
-                },
-                {
-                    "all_row": [
-                        {
-                            "column": "code",
-                            "operator": "startswith_any",
-                            "value": ["DIAGNOSIS//SYN_OTHER"],
-                        },
-                        {
-                            "column": "time",
-                            "operator": "gt",
-                            "value_col": "index_date",
-                        },
-                    ]
-                },
-            ],
+            "criteria": {
+                "any": [
+                    {
+                        "all": [
+                            {
+                                "all_row": [
+                                    {
+                                        "column": "code",
+                                        "operator": "startswith_any",
+                                        "value": ["SEX//MAND"],
+                                    },
+                                    {
+                                        "column": "time",
+                                        "operator": "gt",
+                                        "value_col": "index_date",
+                                    },
+                                ]
+                            },
+                            {
+                                "column": "code",
+                                "operator": "startswith_any",
+                                "value": ["LABTEST"],
+                            },
+                        ]
+                    },
+                    {
+                        "all_row": [
+                            {
+                                "column": "code",
+                                "operator": "startswith_any",
+                                "value": ["DIAGNOSIS//SYN_OTHER"],
+                            },
+                            {
+                                "column": "time",
+                                "operator": "gt",
+                                "value_col": "index_date",
+                            },
+                        ]
+                    },
+                ]
+            },
         }
 
         matches = get_matches(df, args).sort("subject_id")
@@ -94,7 +96,9 @@ class TestMatching(unittest.TestCase):
             df,
             {
                 "occurence": "first",
-                "any": [{"column": "code", "operator": "in", "value": ["B", "C"]}],
+                "criteria": {
+                    "any": [{"column": "code", "operator": "in", "value": ["B", "C"]}]
+                },
             },
         ).sort("subject_id")
 
@@ -105,6 +109,13 @@ class TestMatching(unittest.TestCase):
                 "time": [2, 1],
             },
         )
+
+    def test_invalid_group_raises(self):
+        df = pl.DataFrame({"subject_id": [1], "code": ["A"], "time": [1]})
+        leaf = {"column": "code", "operator": "in", "value": ["A"]}
+        for criteria in ({"any": [leaf], "all": [leaf]}, {"none": [leaf]}, {"any": []}):
+            with self.subTest(criteria=criteria), self.assertRaises(ValueError):
+                get_matches(df, {"occurence": "all", "criteria": criteria})
 
 
 if __name__ == "__main__":

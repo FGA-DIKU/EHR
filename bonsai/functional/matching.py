@@ -3,28 +3,36 @@ import operator as op_
 import polars as pl
 
 COMPARE = {"lt": op_.lt, "le": op_.le, "gt": op_.gt, "ge": op_.ge, "eq": op_.eq}
-DEPENDENCES = {"any", "all", "all_row"}
 
 
 def get_condition_expression(condition) -> pl.Expr:
-    dependence = DEPENDENCES.intersection(condition)
-    if dependence:
-        if len(dependence) != 1:
-            raise ValueError("A criteria group must have exactly one dependence")
-        dep = dependence.pop()
-        exprs = [get_condition_expression(c) for c in condition[dep]]
-        if not exprs:
-            raise ValueError(f"Dependence={dep} requires at least one condition")
-        if dep == "any":
-            return pl.any_horizontal(exprs)
-        if dep == "all_row":
-            return pl.all_horizontal(exprs)
+    if "column" in condition:
+        return get_match_expression(condition)
 
+    # Otherwise a group, e.g. {"any": [condition, ...]}
+    if len(condition) != 1:
+        raise ValueError(
+            f"A group must have exactly one dependence, got {list(condition)}"
+        )
+    dependence, conditions = list(condition.items())[0]
+    if not conditions:
+        raise ValueError(f"Dependence={dependence} requires at least one condition")
+    exprs = [get_condition_expression(c) for c in conditions]
+
+    if dependence == "any":
+        return pl.any_horizontal(exprs)
+    if dependence == "all_row":
+        return pl.all_horizontal(exprs)
+    if dependence == "all":
+        # Every condition has been met at or before this row's time
         time = pl.col("time")
         return pl.any_horizontal(exprs) & pl.all_horizontal(
             time >= time.filter(expr).min().over("subject_id") for expr in exprs
         )
+    raise ValueError(f"Dependence={dependence} not supported")
 
+
+def get_match_expression(condition) -> pl.Expr:
     op = condition["operator"]
     col = pl.col(condition["column"])
     if op == "in":
@@ -45,13 +53,9 @@ def get_condition_expression(condition) -> pl.Expr:
 
 
 def get_matches(df: pl.DataFrame, args) -> pl.DataFrame:
-    """Return all times each subject meets an inline criteria definition."""
+    """Return all times each subject meets the criteria."""
     occurence = args["occurence"]
-    criteria = {key: value for key, value in args.items() if key != "occurence"}
-    if len(criteria) != 1:
-        raise ValueError("Match args must contain exactly one criteria group")
-
-    expression = get_condition_expression(criteria)
+    expression = get_condition_expression(args["criteria"])
     matches = df.filter(expression).select("subject_id", "time").unique()
 
     if occurence == "first":
